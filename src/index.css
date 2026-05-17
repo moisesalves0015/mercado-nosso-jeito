@@ -34,9 +34,7 @@ body{
 .bg{
   position:fixed;
   inset:0;
-  background:
-    url("/bg-supermercado.jpeg")
-    center center / cover;
+  background:#090705; /* Full black background, keeping the image file intact in public/ */
   z-index: -2;
 }
 
@@ -46,8 +44,8 @@ body{
   background:
     linear-gradient(
       to bottom,
-      rgba(0,0,0,.2),
-      rgba(0,0,0,.6)
+      rgba(0,0,0,.5),
+      rgba(0,0,0,.85)
     );
   z-index: -1;
 }
@@ -61,7 +59,7 @@ body{
   z-index:10;
   width:min(430px,100%);
   margin:auto;
-  padding: 12px 16px 80px 16px;
+  padding: 12px 8px 80px 8px; /* Narrower side margins */
 }
 
 /* =========================================================
@@ -74,6 +72,38 @@ body{
   justify-content:space-between;
   margin-top: 10px;
   margin-bottom: 12px;
+}
+
+.product-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  border: 1px solid #D4AF37;
+  border-radius: 12px;
+  padding: 4px 4px 4px 10px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.price {
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
 }
 
 .circle-btn{
@@ -160,7 +190,7 @@ body{
 ========================================================= */
 .search-container {
   padding: 0 4px;
-  margin-bottom: 16px;
+  margin-bottom: 4px; /* Reduced vertical spacing */
 }
 .search-bar {
   display: flex;
@@ -193,8 +223,8 @@ body{
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 10px;
-  margin-bottom: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 2px; /* Reduced vertical spacing */
   scrollbar-width: none;
 }
 .category-row::-webkit-scrollbar {
@@ -210,7 +240,7 @@ body{
 .category-icon-wrapper {
   width: 56px;
   height: 56px;
-  border-radius: 20px;
+  border-radius: 6px; /* Tight border-radius */
   background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
   border: 1px solid rgba(255,255,255,0.1);
   backdrop-filter: blur(12px);
@@ -218,23 +248,104 @@ body{
   justify-content: center;
   align-items: center;
   box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3);
-  color: #F4D7A5;
+  color: #FFDF73;
 }
 .category-text {
   font-size: 11px;
   font-weight: 500;
-  color: #E7BC79;
+  color: #D4AF37;
   text-align: center;
   white-space: nowrap;
+}
+
+/* =========================================================
+   INFO CARDS ROW
+========================================================= */
+.info-cards-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  margin-bottom: 8px; /* Tighter margins */
+}
+.info-cards-row::-webkit-scrollbar {
+  display: none;
+}
+
+.info-card {
+  flex: 1; /* Fluid mobile distribution to fit all 3 on screen */
+  min-width: 0; /* Avoid layout breaks */
+  height: 42px; /* Set exactly to 42px as requested */
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px; /* Reduced border-radius */
+  padding: 4px 4px 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.info-card-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-right: 8px; /* Space for chevron */
+  min-width: 0; /* Essential for ellipsis */
+}
+
+.info-card-content h4 {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-card-content p {
+  font-size: 7px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Maximum of 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-card-chevron {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); /* Centered vertically */
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
 }
 
 /* =========================================================
    PROMO BANNER
 ========================================================= */
 .promo-banner {
-  border-radius: 24px;
-  margin-bottom: 18px;
-  padding: 20px 24px;
+  border-radius: 6px; /* Tight border-radius */
+  margin-bottom: 4px; /* Reduced vertical spacing */
+  padding: 12px 16px; /* More compact padding */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -284,72 +395,36 @@ body{
 
 .section{
   position:relative;
-  border-radius:24px;
-  padding: 16px;
-  margin-bottom: 12px;
+  border-radius:6px; /* Tight border-radius */
+  padding: 2px 0; /* Extremely tight padding to pull sections close vertically */
+  margin-bottom: 2px; /* Reduced vertical spacing */
   overflow: visible; /* to allow arrows to overflow */
 }
 
 .hero-section {
-  border: 1.5px solid rgba(214,168,95,.4);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(130,84,34,.6),
-      rgba(255,255,255,.1)
-    );
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.4);
-  padding: 12px 0 12px 12px; /* Reduced padding */
+  border: none;
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .standard-section {
-  padding: 8px 0 8px 8px; /* Further reduced padding */
-  border: 1px solid rgba(255,255,255,.15);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.4);
+  padding: 0;
+  border: none;
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
-.standard-section.purple {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(77,59,182,.6),
-      rgba(255,255,255,.08)
-    );
-  border: 1.5px solid rgba(120, 100, 220, 0.4);
+.standard-section.purple, .standard-section.orange, .standard-section.green {
+  background: transparent !important;
+  border: none;
 }
 
-.standard-section.orange {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(170,84,38,.6),
-      rgba(255,255,255,.08)
-    );
-  border: 1.5px solid rgba(210, 110, 60, 0.4);
-}
-
-.standard-section.green {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(88,133,42,.6),
-      rgba(255,255,255,.08)
-    );
-  border: 1.5px solid rgba(120, 170, 60, 0.4);
-}
-
-.section-inner-glass {
-  background: rgba(255,255,255,.03);
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.05);
-  margin-top: 4px; /* Reduced margin */
-  margin-right: 4px; /* Reduced right margin */
-  padding: 10px 0 10px 10px; /* Reduced padding */
-}
+/* section-inner-glass removed */
 
 /* =========================================================
    SECTION HEADER
@@ -359,8 +434,8 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom: 4px; /* Decreased margin */
-  padding-right: 16px;
+  margin-bottom: 6px;
+  padding: 4px 16px 4px 8px;
   flex-wrap: nowrap; /* Prevent line breaks */
 }
 
@@ -373,23 +448,26 @@ body{
 }
 
 .section-header h2{
-  font-size: 20px; /* Slightly smaller */
+  font-size: 15px; /* Decreased size */
   line-height:1.1;
-  font-weight:700;
+  font-weight:800;
   color:#fff;
-  letter-spacing:-0.5px;
+  letter-spacing:-0.3px;
   white-space: nowrap; /* Prevent line breaks */
 }
 
-.hero-section .section-header h2 {
-  color: #E7BC79;
-  font-size: 18px; /* Slightly smaller */
-  letter-spacing: 0.5px;
+.hero-section .section-header h2{
+  font-size: 15px; /* Uniform decreased size */
+  font-weight:800;
+  color:#fff;
+  margin:0;
+  letter-spacing:-0.3px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .section-header p{
   font-size:12px;
-  color:#D4C2A7;
+  color:#D4AF37;
   white-space: nowrap; /* Prevent line breaks */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -408,7 +486,7 @@ body{
   opacity: 0;
   transition: all 0.5s ease;
   font-size: 12px;
-  color: #D4C2A7;
+  color: #D4AF37;
   white-space: nowrap;
 }
 
@@ -424,8 +502,9 @@ body{
 
 .section-header a{
   text-decoration:none;
-  color:#D4C2A7;
-  font-size:13px;
+  color:#D4AF37; /* Gold ver tudo links */
+  font-size:11px;
+  font-weight: 600;
   white-space: nowrap; /* Prevent line breaks */
   flex-shrink: 0;
   margin-left: 8px;
@@ -441,9 +520,11 @@ body{
 
 .products{
   display:flex;
-  gap:12px;
+  gap:8px; /* Decreased horizontal spacing between cards */
   overflow-x:auto;
   scrollbar-width:none;
+  padding-top: 10px; /* Pull cards closer to title */
+  padding-bottom: 8px;
   padding-right: 16px;
 }
 
@@ -484,10 +565,10 @@ body{
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
+  border-radius: 12px; /* Reduced border-radius */
   padding: 20px;
   box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5);
-  margin-bottom: 16px;
+  margin-bottom: 8px; /* Reduced margin */
 }
 
 /* =========================================================
@@ -522,27 +603,24 @@ body{
 ========================================================= */
 
 .product-card{
-  width: 94px; /* Decreased width */
-  max-height: 170px; /* Added max-height */
+  width: 94px;
+  max-height: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-}
-
-/* Individual Glass Background for Hero Section Products */
-.hero-section .product-card {
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.05);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05); /* Individual Glass Background globally */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px; /* Reduced border-radius */
   padding: 4px;
-  margin-top: 16px;
+  margin-top: 8px; /* Pulled closer to title */
   padding-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.hero-section .product-image-wrapper {
-  margin-top: -20px;
+.product-image-wrapper {
+  margin-top: -20px; /* Floats image globally outside the card */
 }
 
 /* =========================================================
@@ -618,34 +696,34 @@ body{
 
 .price-pill{
   width: 100%;
-  height: 26px;
-  border-radius: 13px;
+  height: 24px;
+  border-radius: 99px; /* 100% rounded pill shape */
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding: 2px 2px 2px 8px;
-  background: rgba(40,40,30,0.8);
-  border: 1px solid rgba(255,255,255,.1);
+  padding: 2px 4px 2px 8px; /* Increased right padding to 4px so button is well-spaced from the edge */
+  background: rgba(255, 255, 255, 0.03); /* Subtle backdrop pop on dark backgrounds */
+  border: 1.2px solid #D4AF37; /* Solid gold, no glow shadow */
 }
 
 .product-price{
-  font-size:12px;
+  font-size:11px;
   font-weight:600;
   color:#fff;
   white-space: nowrap;
 }
 
 .add-btn{
-  width:20px;
-  height:20px;
+  width:14px; /* Decreased button size */
+  height:14px;
   border:none;
   border-radius:50%;
   display:grid;
   place-items:center;
-  background: linear-gradient(180deg, #F4D7A5, #D79A42);
-  color:#16110B;
-  font-size:14px;
-  font-weight:700;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37); /* Gold background, no glow shadow */
+  color:#000;
+  font-size:10px;
+  font-weight:900;
   cursor:pointer;
   flex-shrink: 0;
 }
@@ -665,8 +743,8 @@ body{
   justify-content:space-around;
   align-items: center;
   z-index:100;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-top-left-radius: 6px; /* Tight border-radius */
+  border-top-right-radius: 6px; /* Tight border-radius */
   padding-bottom: env(safe-area-inset-bottom);
 }
 

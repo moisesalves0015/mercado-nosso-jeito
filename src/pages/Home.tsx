@@ -1,7 +1,7 @@
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Flame, Beef, Wine, PartyPopper } from 'lucide-react';
+import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
@@ -43,16 +43,10 @@ export const Home = () => {
         </div>
       </div>
 
-      <div className="hero-text-container">
-        <div className="hero-text-marquee">
-          <span>Comece o Dia com o Melhor - Café da Manhã Perfeito! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-          <span>Comece o Dia com o Melhor - Café da Manhã Perfeito! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-        </div>
-      </div>
-
       <Section
-        title="ESSENCIAIS DO CAFÉ"
+        title="Essenciais do Café"
         theme="hero"
+        linkText="Ver tudo >"
       >
         <ProductCard
           title="Pão de Queijo Tradicional (1kg)"
@@ -80,6 +74,48 @@ export const Home = () => {
           image="/cafe-novo.png"
         />
       </Section>
+
+      {/* INFO CARDS ROW */}
+      <div className="info-cards-row">
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Bike size={18} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Entrega rápida</h4>
+            <p>Receba em até 30 min na sua casa.</p>
+          </div>
+          <div className="info-card-chevron">
+            <ChevronRight size={8} color="#D4AF37" />
+          </div>
+        </div>
+
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Award size={18} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Clube do Nosso Jeito</h4>
+            <p>Ofertas exclusivas só para você!</p>
+          </div>
+          <div className="info-card-chevron">
+            <ChevronRight size={8} color="#D4AF37" />
+          </div>
+        </div>
+
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Lock size={16} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Compras seguras</h4>
+            <p>Seus dados sempre protegidos.</p>
+          </div>
+          <div className="info-card-chevron">
+            <ChevronRight size={8} color="#D4AF37" />
+          </div>
+        </div>
+      </div>
 
       {/* PROMO BANNER */}
       <Link to="/promotions" style={{textDecoration: 'none'}}>

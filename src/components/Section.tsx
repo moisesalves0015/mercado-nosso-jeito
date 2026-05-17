@@ -57,15 +57,7 @@ export const Section: React.FC<SectionProps> = ({
 
       <div className="products-wrapper">
         {isHero && <div className="scroll-arrow left">&lt;</div>}
-        
-        {isHero ? (
-          <div className="products">{children}</div>
-        ) : (
-          <div className="section-inner-glass">
-            <div className="products">{children}</div>
-          </div>
-        )}
-        
+        <div className="products">{children}</div>
         {isHero && <div className="scroll-arrow right">&gt;</div>}
       </div>
     </section>

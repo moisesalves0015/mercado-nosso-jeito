@@ -1,0 +1,23 @@
+{
+  "name": "Mercado do Nosso Jeito",
+  "short_name": "Mercado",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090705",
+  "theme_color": "#090705",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/ovos-novo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/cafe-novo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
