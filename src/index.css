@@ -836,8 +836,10 @@ body{
 /* PRODUCT IMAGE SUPERMERCADO BLURRED HERO BACKGROUND */
 .product-hero-container {
   position: relative;
-  width: 100%;
-  height: 200px;
+  width: calc(100% + 16px); /* Full-width edge to edge, offsetting parent padding */
+  margin-left: -8px;
+  margin-right: -8px;
+  height: 240px; /* Increased height */
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -848,7 +850,7 @@ body{
   position: absolute;
   inset: 0;
   background: url("/bg-supermercado.jpeg") center center / cover;
-  filter: blur(10px) brightness(0.3);
+  filter: blur(1.5px) brightness(0.45); /* Lowered blur so supermarket is beautiful and recognizable */
   z-index: 1;
 }
 
@@ -861,8 +863,8 @@ body{
 
 .product-hero-image-wrapper {
   position: relative;
-  width: 130px;
-  height: 130px;
+  width: 170px; /* Increased image size */
+  height: 170px;
   display: flex;
   align-items: center;
   justify-content: center;
