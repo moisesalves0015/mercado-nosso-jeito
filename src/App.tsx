@@ -5,6 +5,7 @@ import { Search } from './pages/Search';
 import { Promotions } from './pages/Promotions';
 import { Orders } from './pages/Orders';
 import { Profile } from './pages/Profile';
+import { ProductDetail } from './pages/ProductDetail';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
