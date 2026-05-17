@@ -1,7 +1,7 @@
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Beef, Wine, Bike, Award, Lock, ChevronRight, SlidersHorizontal, LayoutGrid, Apple, Droplet, MoreHorizontal } from 'lucide-react';
+import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, SlidersHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
@@ -24,49 +24,27 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* PREMIUM CATEGORY ROW */}
+      {/* CATEGORY ROW (REVERTED EXACTLY AS REQUESTED) */}
       <div className="category-row">
-        <div className="category-item active">
-          <div className="category-icon-wrapper active">
-            <LayoutGrid size={20} color="#FFDF73" />
-          </div>
-          <span className="category-text">Todas</span>
-        </div>
         <div className="category-item">
-          <div className="category-icon-wrapper">
-            <Croissant size={20} color="#FFDF73" />
-          </div>
+          <div className="category-icon-wrapper"><Croissant size={28} /></div>
           <span className="category-text">Padaria</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper">
-            <Beef size={20} color="#FFDF73" />
-          </div>
+          <div className="category-icon-wrapper"><Flame size={28} /></div>
+          <span className="category-text">Ofertas</span>
+        </div>
+        <div className="category-item">
+          <div className="category-icon-wrapper"><Beef size={28} /></div>
           <span className="category-text">Carnes</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper">
-            <Wine size={20} color="#FFDF73" />
-          </div>
-          <span className="category-text">Bebidas</span>
+          <div className="category-icon-wrapper"><Wine size={28} /></div>
+          <span className="category-text">Adega</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper">
-            <Apple size={20} color="#FFDF73" />
-          </div>
-          <span className="category-text">Hortifruti</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper">
-            <Droplet size={20} color="#FFDF73" />
-          </div>
-          <span className="category-text">Limpeza</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper">
-            <MoreHorizontal size={20} color="#FFDF73" />
-          </div>
-          <span className="category-text">Mais</span>
+          <div className="category-icon-wrapper"><PartyPopper size={28} /></div>
+          <span className="category-text">Presentes</span>
         </div>
       </div>
 
@@ -141,9 +119,6 @@ export const Home = () => {
             <h4>Entrega rápida</h4>
             <p>Receba em até 30 min na sua casa.</p>
           </div>
-          <div className="info-card-chevron">
-            <ChevronRight size={8} color="#D4AF37" />
-          </div>
         </div>
 
         <div className="info-card">
@@ -153,9 +128,6 @@ export const Home = () => {
           <div className="info-card-content">
             <h4>Clube do Nosso Jeito</h4>
             <p>Ofertas exclusivas só para você!</p>
-          </div>
-          <div className="info-card-chevron">
-            <ChevronRight size={8} color="#D4AF37" />
           </div>
         </div>
 
@@ -167,11 +139,19 @@ export const Home = () => {
             <h4>Compras seguras</h4>
             <p>Seus dados sempre protegidos.</p>
           </div>
-          <div className="info-card-chevron">
-            <ChevronRight size={8} color="#D4AF37" />
-          </div>
         </div>
       </div>
+
+      {/* PINK FRETE GRÁTIS BANNER */}
+      <Link to="/promotions" style={{textDecoration: 'none'}}>
+        <div className="promo-banner">
+          <div className="promo-text">
+            <h3>Frete Grátis</h3>
+            <p>Na sua primeira compra no app!</p>
+          </div>
+          <PartyPopper size={40} color="#fff" />
+        </div>
+      </Link>
 
       <Section
         title="Bebidas"
@@ -182,26 +162,26 @@ export const Home = () => {
         <ProductCard
           title="Suco de Laranja Integral Do Bem (1L)"
           price="R$ 14,90"
-          image="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=600"
+          image="/suco_do_bem_laranja_integral.png"
           badge="Promocional"
           badgeStyle="light"
         />
         <ProductCard
           title="Café Torrado e Moído Pilão (500g)"
           price="R$ 17,90"
-          image="https://images.unsplash.com/photo-1587049352847-4d4b1f6db9c6?q=80&w=600"
+          image="/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png"
           badge="Melhor Preço"
           badgeStyle="orange"
         />
         <ProductCard
-          title="Chá Leão Erva Doce (15un)"
+          title="Chá Matte Natural Leão (100g)"
           price="R$ 9,90"
-          image="https://images.unsplash.com/photo-1576092762791-dd9e2220c4af?q=80&w=600"
+          image="/Cha-Matte-Natural-100g-Leao.png"
         />
         <ProductCard
-          title="Leite Longa Vida Itambé Integral"
+          title="Leite Longa Vida Integral (1L)"
           price="R$ 5,49"
-          image="https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=600"
+          image="/leite-integral-interna.png"
         />
       </Section>
 
