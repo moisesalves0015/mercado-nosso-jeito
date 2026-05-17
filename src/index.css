@@ -156,7 +156,130 @@ body{
 }
 
 /* =========================================================
-   SECTION
+   SEARCH BAR
+========================================================= */
+.search-container {
+  padding: 0 4px;
+  margin-bottom: 16px;
+}
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  border-radius: 99px;
+  padding: 10px 16px;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.2);
+}
+.search-bar input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-family: inherit;
+  font-size: 14px;
+  width: 100%;
+  margin-left: 10px;
+}
+.search-bar input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* =========================================================
+   CATEGORY ROW
+========================================================= */
+.category-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  scrollbar-width: none;
+}
+.category-row::-webkit-scrollbar {
+  display: none;
+}
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 64px;
+}
+.category-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3);
+  color: #F4D7A5;
+}
+.category-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: #E7BC79;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   PROMO BANNER
+========================================================= */
+.promo-banner {
+  border-radius: 24px;
+  margin-bottom: 18px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #FF6B6B 0%, #8A2387 50%, #E94057 100%);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(16px);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 12px 24px rgba(233, 64, 87, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.promo-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 50%);
+  transform: rotate(30deg);
+  pointer-events: none;
+}
+
+.promo-text {
+  position: relative;
+  z-index: 1;
+}
+
+.promo-text h3 {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 4px;
+  line-height: 1.1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  letter-spacing: -0.5px;
+}
+.promo-text p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.95);
+  font-weight: 500;
+}
+
+/* =========================================================
+   HERO TEXT MARQUEE
 ========================================================= */
 
 .section{
@@ -172,42 +295,51 @@ body{
   background:
     linear-gradient(
       145deg,
-      rgba(130,84,34,.3),
-      rgba(255,255,255,.05)
+      rgba(130,84,34,.6),
+      rgba(255,255,255,.1)
     );
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.4);
   padding: 12px 0 12px 12px; /* Reduced padding */
 }
 
 .standard-section {
   padding: 8px 0 8px 8px; /* Further reduced padding */
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.4);
 }
 
 .standard-section.purple {
   background:
     linear-gradient(
       145deg,
-      rgba(77,59,182,.32),
-      rgba(255,255,255,.03)
+      rgba(77,59,182,.6),
+      rgba(255,255,255,.08)
     );
+  border: 1.5px solid rgba(120, 100, 220, 0.4);
 }
 
 .standard-section.orange {
   background:
     linear-gradient(
       145deg,
-      rgba(170,84,38,.32),
-      rgba(255,255,255,.03)
+      rgba(170,84,38,.6),
+      rgba(255,255,255,.08)
     );
+  border: 1.5px solid rgba(210, 110, 60, 0.4);
 }
 
 .standard-section.green {
   background:
     linear-gradient(
       145deg,
-      rgba(88,133,42,.28),
-      rgba(255,255,255,.03)
+      rgba(88,133,42,.6),
+      rgba(255,255,255,.08)
     );
+  border: 1.5px solid rgba(120, 170, 60, 0.4);
 }
 
 .section-inner-glass {
@@ -342,6 +474,39 @@ body{
   .scroll-arrow {
     display: none;
   }
+}
+
+/* =========================================================
+   NEW PAGES GLASS PANEL
+========================================================= */
+.glass-panel {
+  background: linear-gradient(145deg, rgba(30, 30, 30, 0.7), rgba(15, 15, 15, 0.85));
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5);
+  margin-bottom: 16px;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+.app-footer {
+  text-align: center;
+  padding: 24px 0 40px;
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+}
+.app-footer h4 {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.app-footer p {
+  margin-bottom: 4px;
 }
 
 .scroll-arrow.left {
