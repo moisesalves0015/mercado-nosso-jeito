@@ -55,29 +55,29 @@ export const Home = () => {
         theme="hero"
       >
         <ProductCard
-          title="Pão de Queijo Forno de Minas (1kg)"
+          title="Pão de Queijo Tradicional (1kg)"
           price="R$ 32,90"
-          image="https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?q=80&w=600"
+          image="/paodequeijo-novo.webp"
         />
         <ProductCard
-          title="Iogurte Grego Danone Tradicional (4x)"
+          title="Iogurte Grego Danone (4x)"
           price="R$ 18,90"
-          image="https://images.unsplash.com/photo-1571115177098-24ec42ed204d?q=80&w=600"
+          image="/iogurte-novo.webp"
         />
         <ProductCard
-          title="Granola Kelloggs Integral (500g)"
+          title="Granola Mel Barano (500g)"
           price="R$ 24,90"
-          image="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?q=80&w=600"
+          image="/granola-novo.png"
         />
         <ProductCard
-          title="Ovo Branco Médio Mantiqueira (12un)"
+          title="Ovo Branco Médio (12un)"
           price="R$ 15,90"
-          image="https://images.unsplash.com/photo-1587486913049-53fc88980cfc?q=80&w=600"
+          image="/ovos-novo.png"
         />
         <ProductCard
-          title="Café Melitta Vácuo (500g)"
+          title="Café Melitta Tradicional (500g)"
           price="R$ 19,90"
-          image="https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600"
+          image="/cafe-novo.png"
         />
       </Section>
 
