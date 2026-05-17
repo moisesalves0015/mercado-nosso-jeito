@@ -885,45 +885,55 @@ body{
    BOTTOM NAV
 ========================================================= */
 
-.bottom-nav{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  height: 60px;
-  background: #fff;
-  display:flex;
-  justify-content:space-around;
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 74px; /* Increased from 60px to push items up and clear iPhone home bar! */
+  background: #000000; /* Solid premium black background */
+  display: flex;
+  justify-content: space-around;
   align-items: center;
-  z-index:100;
-  border-top-left-radius: 6px; /* Tight border-radius */
-  border-top-right-radius: 6px; /* Tight border-radius */
-  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+  border-top: 1.2px solid rgba(212, 175, 55, 0.18); /* Elegant gold top line */
+  border-top-left-radius: 16px; /* High fidelity curved top-corners */
+  border-top-right-radius: 16px;
+  padding-bottom: 14px; /* Push items up to clear native iOS home indicator bar! */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
 }
 
-.bottom-nav a{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+.bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap:4px;
-  text-decoration:none;
-  color:#777;
-  font-size:10px;
-  font-weight: 500;
-  width: 60px;
+  gap: 3px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.45); /* Elegant gray-white for inactive */
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 12px;
+  transition: all 0.25s ease;
 }
 
-.bottom-nav a.active{
-  color:#000;
+.bottom-nav a.active {
+  color: #FFDF73; /* Rich gold for active items */
+  background: rgba(255, 223, 115, 0.1); /* Subtle premium golden tint background */
+  transform: translateY(-2px); /* Slight hover levitation */
 }
 
 .bottom-nav a .nav-icon {
   font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
 }
 
 .bottom-nav a.active .nav-icon {
-  font-weight: bold;
+  transform: scale(1.1); /* Slight pop animation for the active icon */
 }
 
 /* =========================================================
@@ -990,7 +1000,7 @@ body{
   width: calc(100% + 16px); /* Full-width edge to edge, offsetting parent padding */
   margin-left: -8px;
   margin-right: -8px;
-  height: 240px; /* Increased height */
+  height: 290px; /* Increased from 240px */
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -1014,13 +1024,13 @@ body{
 
 .product-hero-image-wrapper {
   position: relative;
-  width: 170px; /* Increased image size */
-  height: 170px;
+  width: 210px; /* Increased from 170px */
+  height: 210px; /* Increased from 170px */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 3;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.65));
 }
 
 .product-hero-image {
@@ -1509,4 +1519,98 @@ body{
   color: rgba(255,255,255,0.95);
   font-weight: 500;
   margin: 0;
+}
+
+/* =========================================================
+   PRODUCT SPECIFICATIONS CARD & CLUBE INVITE
+========================================================= */
+.product-specifications-card {
+  margin: 12px 0;
+  padding: 12px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.product-specifications-card h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #D4AF37; /* Gold header */
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.spec-description {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 10px 0;
+}
+
+.spec-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 8px;
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+}
+
+.spec-label {
+  color: rgba(255,255,255,0.45);
+}
+
+.spec-value {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* CLUBE NOSSO JEITO PREMIUM BANNER */
+.clube-nosso-jeito-invite {
+  margin: 14px 0;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(16, 12, 8, 0.8) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.1), 0 8px 16px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.clube-invite-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #FFDF73;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.clube-invite-text {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 8px;
+}
+
+.clube-invite-btn {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clube-invite-btn:active {
+  transform: scale(0.97);
 }

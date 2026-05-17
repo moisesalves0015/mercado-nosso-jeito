@@ -94,7 +94,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Suco de Laranja Integral Do Bem (1L)',
     price: 'R$ 14,90',
     priceNum: 14.90,
-    image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=600',
+    image: '/suco_do_bem_laranja_integral.png',
     badge: 'Promocional',
     rating: 4.5,
     ratingCount: 320,
@@ -108,7 +108,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Café Torrado e Moído Pilão (500g)',
     price: 'R$ 17,90',
     priceNum: 17.90,
-    image: 'https://images.unsplash.com/photo-1587049352847-4d4b1f6db9c6?q=80&w=600',
+    image: '/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png',
     badge: 'Melhor Preço',
     rating: 4.6,
     ratingCount: 1850,
@@ -116,14 +116,120 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     stockStatus: 'Em estoque',
     deliveryTime: 'Receba hoje até as 18h',
     category: 'Bebidas'
+  },
+  'cha-matte-natural-leao-100g': {
+    id: 'cha-matte-natural-leao-100g',
+    title: 'Chá Matte Natural Leão (100g)',
+    price: 'R$ 9,90',
+    priceNum: 9.90,
+    image: '/Cha-Matte-Natural-100g-Leao.png',
+    badge: 'Orgânico',
+    rating: 4.7,
+    ratingCount: 430,
+    soldCount: '1.5K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Bebidas'
+  },
+  'leite-longa-vida-integral-1l': {
+    id: 'leite-longa-vida-integral-1l',
+    title: 'Leite Longa Vida Integral (1L)',
+    price: 'R$ 5,49',
+    priceNum: 5.49,
+    image: '/leite-integral-interna.png',
+    badge: 'Essencial',
+    rating: 4.8,
+    ratingCount: 5120,
+    soldCount: '8K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Bebidas'
+  },
+  'pao-pullman-forma-integral-500g': {
+    id: 'pao-pullman-forma-integral-500g',
+    title: 'Pão Pullman Forma Integral (500g)',
+    price: 'R$ 12,90',
+    priceNum: 12.90,
+    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600',
+    badge: 'Fibras',
+    rating: 4.6,
+    ratingCount: 890,
+    soldCount: '2K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Alimentos'
+  },
+  'queijo-minas-frescal-itambe-300g': {
+    id: 'queijo-minas-frescal-itambe-300g',
+    title: 'Queijo Minas Frescal Itambé (300g)',
+    price: 'R$ 19,90',
+    priceNum: 19.90,
+    image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=600',
+    badge: 'Frescal',
+    rating: 4.7,
+    ratingCount: 650,
+    soldCount: '1.8K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Alimentos'
+  },
+  'peito-de-peru-fatiado-sadia-100g': {
+    id: 'peito-de-peru-fatiado-sadia-100g',
+    title: 'Peito de Peru Fatiado Sadia (100g)',
+    price: 'R$ 7,49',
+    priceNum: 7.49,
+    image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5e?q=80&w=600',
+    badge: 'Proteico',
+    rating: 4.8,
+    ratingCount: 1540,
+    soldCount: '5K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Alimentos'
+  },
+  'manteiga-itambe-extra-sal-200g': {
+    id: 'manteiga-itambe-extra-sal-200g',
+    title: 'Manteiga Itambé Extra Sal (200g)',
+    price: 'R$ 11,90',
+    priceNum: 11.90,
+    image: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?q=80&w=600',
+    badge: 'Tradicional',
+    rating: 4.8,
+    ratingCount: 2200,
+    soldCount: '4K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Alimentos'
+  },
+  'sabao-liquido-premium': {
+    id: 'sabao-liquido-premium',
+    title: 'Sabão Líquido Premium',
+    price: 'R$ 19,90',
+    priceNum: 19.90,
+    image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?q=80&w=600',
+    badge: 'Concentrado',
+    rating: 4.9,
+    ratingCount: 310,
+    soldCount: '900+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba amanhã até as 12h',
+    category: 'Limpeza'
+  },
+  'multiuso-fresh-ultra': {
+    id: 'multiuso-fresh-ultra',
+    title: 'Multiuso Fresh Ultra',
+    price: 'R$ 12,90',
+    priceNum: 12.90,
+    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=600',
+    badge: 'Multiuso',
+    rating: 4.6,
+    ratingCount: 740,
+    soldCount: '3K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba hoje até as 18h',
+    category: 'Limpeza'
   }
 };
-
-const SUGGESTED_PRODUCTS = [
-  { title: 'Granola Mel Barano (500g)', price: 'R$ 24,90', image: '/granola-novo.png' },
-  { title: 'Ovo Branco Médio (12un)', price: 'R$ 15,90', image: '/ovos-novo.png' },
-  { title: 'Iogurte Grego Danone (4x)', price: 'R$ 18,90', image: '/iogurte-novo.webp' },
-];
 
 export const ProductDetail = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -148,6 +254,17 @@ export const ProductDetail = () => {
   const discountMultiplier = purchaseMode === 'subscribe' ? 0.9 : 1.0;
   const couponMultiplier = couponApplied ? 0.8 : 1.0; // Extra 20% off
   const finalPrice = product.priceNum * discountMultiplier * couponMultiplier;
+
+  // Filter suggested products from the same category or overall catalog dynamically
+  const suggestedProducts = Object.values(PRODUCTS_MOCK)
+    .filter(p => p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+
+  const fallbackSuggested = Object.values(PRODUCTS_MOCK)
+    .filter(p => p.id !== product.id)
+    .slice(0, 4);
+
+  const finalSuggested = suggestedProducts.length >= 2 ? suggestedProducts : fallbackSuggested;
 
   const handleShare = () => {
     if (navigator.share) {
@@ -355,6 +472,50 @@ export const ProductDetail = () => {
           </div>
         </div>
 
+        {/* EXPLICATIVE DETAILED SPECIFICATIONS BLOCK */}
+        <div className="product-specifications-card">
+          <h3>Descrição do Produto</h3>
+          <p className="spec-description">
+            {product.category === 'Café da Manhã' && "O acompanhamento perfeito para o seu café da manhã em família! Selecionado sob rigorosos padrões de qualidade, garantindo frescor incomparável, sabor marcante e nutrientes essenciais para começar o seu dia com toda a energia que você merece."}
+            {product.category === 'Bebidas' && "Perfeito para refrescar o seu dia ou complementar momentos especiais com amigos e família. Armazenado sob temperatura ideal, garantindo refrescância máxima, sabor inigualável e qualidade premium em cada gole."}
+            {product.category === 'Alimentos' && "Ingrediente de altíssima qualidade selecionado especialmente para as suas receitas. Sabor autêntico, embalagem higiênica e procedência garantida para levar o melhor sabor à mesa do seu lar."}
+            {product.category === 'Limpeza' && "Fórmula ultra concentrada de alta performance desenvolvida para eliminar as sujeiras mais difíceis com o mínimo esforço. Deixa um perfume refrescante e protege as superfícies da sua casa."}
+          </p>
+          <div className="spec-grid">
+            <div className="spec-item">
+              <span className="spec-label">Categoria:</span>
+              <span className="spec-value">{product.category}</span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">Origem:</span>
+              <span className="spec-value">Nacional (Brasil)</span>
+            </div>
+            <div className="spec-item">
+              <span className="spec-label">Conservação:</span>
+              <span className="spec-value">
+                {product.category === 'Limpeza' ? "Manter fora do alcance de crianças" : "Manter refrigerado após aberto"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* CLUBE NOSSO JEITO EXCLUSIVE PROMOTION BANNER */}
+        <div className="clube-nosso-jeito-invite">
+          <div className="clube-invite-title">✨ Clube do Nosso Jeito</div>
+          <p className="clube-invite-text">
+            Faça parte do nosso clube de assinaturas exclusivo! Economize 10% adicionais em todos os produtos, garanta frete grátis em entregas recorrentes e tenha suporte VIP em minutos.
+          </p>
+          <button 
+            className="clube-invite-btn"
+            onClick={() => {
+              setPurchaseMode('subscribe');
+              window.scrollTo({ top: 320, behavior: 'smooth' });
+            }}
+          >
+            Assinar agora com 10% OFF
+          </button>
+        </div>
+
         {/* OBVIOUS HIGH-CONTRAST CONVERSION CALL-TO-ACTION (CTA) BUTTON */}
         <div className="cta-container">
           <button 
@@ -406,7 +567,7 @@ export const ProductDetail = () => {
             <h3>Quem comprou também levou</h3>
           </div>
           <div className="products suggested-carousel">
-            {SUGGESTED_PRODUCTS.map((prod, index) => (
+            {finalSuggested.map((prod, index) => (
               <ProductCard 
                 key={index}
                 title={prod.title}
