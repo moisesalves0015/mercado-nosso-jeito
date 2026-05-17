@@ -274,8 +274,9 @@ body{
 }
 
 .info-card {
-  flex: 1; /* Fluid mobile distribution to fit all 3 on screen */
-  min-width: 0; /* Avoid layout breaks */
+  width: calc((100% - 8px) / 3); /* Exactly 3 cards span the width of the screen / banner */
+  max-width: 134px; /* Safe maximum width */
+  flex-shrink: 0;
   height: 42px; /* Set exactly to 42px as requested */
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -520,12 +521,12 @@ body{
 
 .products{
   display:flex;
-  gap:8px; /* Decreased horizontal spacing between cards */
+  gap:6px; /* Decreased horizontal spacing between cards */
   overflow-x:auto;
   scrollbar-width:none;
-  padding-top: 10px; /* Pull cards closer to title */
-  padding-bottom: 8px;
-  padding-right: 16px;
+  padding-top: 4px; /* Extremely pulled closer to title */
+  padding-bottom: 4px;
+  padding-right: 8px;
 }
 
 .products::-webkit-scrollbar{
@@ -603,7 +604,8 @@ body{
 ========================================================= */
 
 .product-card{
-  width: 94px;
+  width: calc((100% - 18px) / 4); /* Exactly 4 cards span the width of the screen / banner */
+  max-width: 98px; /* Safe maximum width */
   max-height: 180px;
   flex-shrink: 0;
   display: flex;
@@ -612,9 +614,9 @@ body{
   position: relative;
   background: rgba(255, 255, 255, 0.05); /* Individual Glass Background globally */
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px; /* Reduced border-radius */
+  border-radius: 6px; /* Tight border-radius */
   padding: 4px;
-  margin-top: 8px; /* Pulled closer to title */
+  margin-top: 4px; /* Extremely pulled closer to title */
   padding-bottom: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
