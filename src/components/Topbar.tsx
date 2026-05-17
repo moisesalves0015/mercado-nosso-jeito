@@ -1,30 +1,34 @@
-import { MapPin, Home, Croissant } from 'lucide-react';
+import { MapPin, ChevronRight, User, Croissant } from 'lucide-react';
 
 export const Topbar = () => {
   return (
-    <>
-      <div className="topbar">
-        <div className="circle-btn">
-          <MapPin size={24} color="#E7BC79" />
+    <div className="topbar">
+      {/* ADDRESS PILL */}
+      <div className="address-pill">
+        <MapPin size={14} color="#D4AF37" className="address-pin" />
+        <div className="address-info">
+          <span className="address-label">Entregar em</span>
+          <span className="address-value">Rua das Flores, 123</span>
         </div>
-        <div className="logo">
-          <div className="logo-text">
-            <h1>mercado do</h1>
-            <span>nosso jeito</span>
-          </div>
-          <div className="logo-icon">
-            <Croissant size={32} color="#E7BC79" />
-          </div>
-        </div>
-        <div className="circle-btn">
-          <Home size={24} color="#E7BC79" />
-        </div>
+        <ChevronRight size={10} color="#D4AF37" />
       </div>
-      
-      <div className="sub-nav">
-        <span>Todas</span>
-        <span>Home & Decor</span>
+
+      {/* BRAND LOGO */}
+      <div className="logo">
+        <div className="logo-text">
+          <h1 className="logo-main">mercado do</h1>
+          <span className="logo-sub">nosso jeito</span>
+        </div>
+        <Croissant size={26} color="#FFDF73" className="logo-croissant" />
       </div>
-    </>
+
+      {/* PROFILE BUTTON */}
+      <div className="profile-wrapper">
+        <div className="profile-circle">
+          <User size={16} color="#fff" />
+        </div>
+        <span className="profile-text">Meu perfil</span>
+      </div>
+    </div>
   );
 };

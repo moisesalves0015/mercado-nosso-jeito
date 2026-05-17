@@ -1,7 +1,7 @@
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, ChevronRight } from 'lucide-react';
+import { Search, Croissant, Beef, Wine, Bike, Award, Lock, ChevronRight, SlidersHorizontal, LayoutGrid, Apple, Droplet, MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
@@ -9,39 +9,95 @@ export const Home = () => {
     <main className="app">
       <Topbar />
 
-      {/* SEARCH BAR */}
+      {/* SEARCH BAR WITH FILTER BUTTON */}
       <div className="search-container">
-        <Link to="/search" style={{textDecoration: 'none'}}>
-          <div className="search-bar">
-            <Search size={18} color="#E7BC79" />
-            <input type="text" placeholder="O que você procura hoje?" disabled style={{pointerEvents: 'none'}} />
+        <div className="search-bar-wrapper">
+          <Link to="/search" style={{textDecoration: 'none', flex: 1}}>
+            <div className="search-bar">
+              <Search size={16} color="rgba(255, 255, 255, 0.4)" />
+              <input type="text" placeholder="O que você procura hoje?" disabled style={{pointerEvents: 'none'}} />
+            </div>
+          </Link>
+          <div className="search-filter-btn">
+            <SlidersHorizontal size={14} color="#D4AF37" />
           </div>
-        </Link>
+        </div>
       </div>
 
-      {/* CATEGORY ROW */}
+      {/* PREMIUM CATEGORY ROW */}
       <div className="category-row">
+        <div className="category-item active">
+          <div className="category-icon-wrapper active">
+            <LayoutGrid size={20} color="#FFDF73" />
+          </div>
+          <span className="category-text">Todas</span>
+        </div>
         <div className="category-item">
-          <div className="category-icon-wrapper"><Croissant size={28} /></div>
+          <div className="category-icon-wrapper">
+            <Croissant size={20} color="#FFDF73" />
+          </div>
           <span className="category-text">Padaria</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper"><Flame size={28} /></div>
-          <span className="category-text">Ofertas</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><Beef size={28} /></div>
+          <div className="category-icon-wrapper">
+            <Beef size={20} color="#FFDF73" />
+          </div>
           <span className="category-text">Carnes</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper"><Wine size={28} /></div>
-          <span className="category-text">Adega</span>
+          <div className="category-icon-wrapper">
+            <Wine size={20} color="#FFDF73" />
+          </div>
+          <span className="category-text">Bebidas</span>
         </div>
         <div className="category-item">
-          <div className="category-icon-wrapper"><PartyPopper size={28} /></div>
-          <span className="category-text">Presentes</span>
+          <div className="category-icon-wrapper">
+            <Apple size={20} color="#FFDF73" />
+          </div>
+          <span className="category-text">Hortifruti</span>
+        </div>
+        <div className="category-item">
+          <div className="category-icon-wrapper">
+            <Droplet size={20} color="#FFDF73" />
+          </div>
+          <span className="category-text">Limpeza</span>
+        </div>
+        <div className="category-item">
+          <div className="category-icon-wrapper">
+            <MoreHorizontal size={20} color="#FFDF73" />
+          </div>
+          <span className="category-text">Mais</span>
         </div>
       </div>
+
+      {/* HERO PROMO BANNER (MOVED UP AND HIGHLY DETAILED) */}
+      <Link to="/promotions" style={{textDecoration: 'none'}}>
+        <div className="hero-banner">
+          <div className="hero-left">
+            <div className="hero-badge">
+              <span className="hero-badge-icon">🔥</span>
+              <span>OFERTA DO DIA</span>
+            </div>
+            <h2>Descontos que você vai amar!</h2>
+            <p>Economize hoje em itens selecionados.</p>
+            <button className="hero-btn">Ver ofertas</button>
+          </div>
+          
+          <div className="hero-right">
+            <div className="hero-image-wrapper">
+              <img src="/basket_hero.png" alt="Cesta de Ofertas" className="hero-basket-img" />
+            </div>
+          </div>
+
+          {/* SLIDER DOTS */}
+          <div className="hero-dots">
+            <span className="dot active"></span>
+            <span className="dot"></span>
+            <span className="dot"></span>
+            <span className="dot"></span>
+          </div>
+        </div>
+      </Link>
 
       <Section
         title="Essenciais do Café"
@@ -116,17 +172,6 @@ export const Home = () => {
           </div>
         </div>
       </div>
-
-      {/* PROMO BANNER */}
-      <Link to="/promotions" style={{textDecoration: 'none'}}>
-        <div className="promo-banner">
-          <div className="promo-text">
-            <h3>Frete Grátis</h3>
-            <p>Na sua primeira compra no app!</p>
-          </div>
-          <PartyPopper size={40} color="#fff" />
-        </div>
-      </Link>
 
       <Section
         title="Bebidas"
