@@ -1614,3 +1614,649 @@ body{
 .clube-invite-btn:active {
   transform: scale(0.97);
 }
+
+/* =========================================================
+   CLUBE DO NOSSO JEITO (LOYALTY SYSTEM STYLES)
+========================================================= */
+
+.clube-page {
+  padding-top: 56px;
+  padding-bottom: 96px;
+  background: #090705;
+  color: #fff;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.clube-topbar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 56px;
+  background: rgba(9, 7, 5, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1.2px solid rgba(212, 175, 55, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 200;
+}
+
+.clube-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clube-logo-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.clube-coins-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 750;
+  color: #FFDF73;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clube-coins-badge.pop {
+  transform: scale(1.15);
+  background: rgba(212, 175, 55, 0.25);
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.5);
+}
+
+/* APPLE WALLET-STYLE HERO CARD */
+.clube-hero-card {
+  margin: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(30, 24, 18, 0.9) 0%, rgba(10, 8, 6, 0.95) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clube-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -40%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.clube-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.clube-vip-tier {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  padding: 3px 8px;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+}
+
+.clube-hero-body h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 4px 0;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+}
+
+.clube-hero-body p {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.clube-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.clube-progress-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.clube-progress-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.clube-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37, #FFDF73);
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+/* MINIMALIST DAILY MISSIONS SECTION */
+.clube-section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  margin: 16px 0 8px 0;
+}
+
+.clube-section-title-row h3 {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #FFDF73;
+  margin: 0;
+}
+
+.clube-section-streak-text {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #FF6B6B;
+}
+
+.clube-missions-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 16px 12px;
+  scrollbar-width: none;
+}
+
+.clube-missions-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.clube-mission-card {
+  width: 115px;
+  flex-shrink: 0;
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.clube-mission-card.completed {
+  border: 1px solid rgba(52, 199, 89, 0.35);
+  background: rgba(52, 199, 89, 0.04);
+}
+
+.clube-mission-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clube-mission-card.completed .clube-mission-icon-box {
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.clube-mission-info h4 {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 2px 0;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 22px;
+}
+
+.clube-mission-info p {
+  font-size: 10px;
+  font-weight: 800;
+  color: #FFDF73;
+  margin: 0;
+}
+
+.clube-mission-card.completed .clube-mission-info p {
+  color: #34C759;
+}
+
+.clube-mission-btn {
+  width: 100%;
+  border: none;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  color: #000;
+  font-size: 9.5px;
+  font-weight: 850;
+  padding: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clube-mission-btn.completed {
+  background: rgba(52, 199, 89, 0.15);
+  color: #34C759;
+  cursor: default;
+}
+
+.clube-mission-btn:active:not(.completed) {
+  transform: scale(0.96);
+}
+
+/* PREMIUM INTEGRATED SPONSORED ADS */
+.clube-ads-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.clube-ad-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  gap: 12px;
+  transition: all 0.25s ease;
+}
+
+.clube-ad-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.clube-ad-logo-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.clube-ad-logo-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.clube-ad-text {
+  min-width: 0;
+}
+
+.clube-ad-text h4 {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clube-ad-text p {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clube-ad-btn {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #FFDF73;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.clube-ad-btn:active {
+  background: rgba(212, 175, 55, 0.2);
+  transform: scale(0.97);
+}
+
+/* VIRTUAL LEDGER & HISTORY */
+.clube-wallet-section {
+  margin: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.clube-wallet-stats {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 10px;
+}
+
+.clube-stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clube-stat-box span:first-child {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+}
+
+.clube-stat-box span:last-child {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.clube-ledger-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clube-ledger-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.clube-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+}
+
+.clube-ledger-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.clube-ledger-left span:first-child {
+  color: #fff;
+  font-weight: 600;
+}
+
+.clube-ledger-left span:last-child {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.clube-ledger-val {
+  font-weight: 800;
+}
+
+.clube-ledger-val.plus {
+  color: #34C759;
+}
+
+.clube-ledger-val.minus {
+  color: #FF6B6B;
+}
+
+/* TROQUE SUAS MOEDAS (REWARDS SECTION) */
+.clube-rewards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.clube-reward-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.clube-reward-card:active {
+  transform: translateY(2px);
+}
+
+.clube-reward-img-wrapper {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clube-reward-img-wrapper img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+
+.clube-reward-details h4 {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 2px 0;
+  line-height: 1.2;
+}
+
+.clube-reward-details p {
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.clube-reward-cost-pill {
+  width: 100%;
+  border-radius: 99px;
+  border: 1px solid #D4AF37;
+  background: rgba(212, 175, 55, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 4px 10px;
+}
+
+.clube-reward-cost-text {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #FFDF73;
+}
+
+.clube-reward-claim-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  border: none;
+  display: grid;
+  place-items: center;
+  color: #000;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* SKELETON LOADERS */
+.clube-skeleton-wrapper {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-anim 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer-anim {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* SUCCESS REDEEM MODAL OVERLAY */
+.clube-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+
+.clube-modal-content {
+  width: 100%;
+  max-width: 320px;
+  background: linear-gradient(135deg, #16120e 0%, #0c0907 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: popup-zoom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popup-zoom {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.clube-modal-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFDF73;
+}
+
+.clube-modal-text h3 {
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 6px 0;
+}
+
+.clube-modal-text p {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.clube-modal-coupon-box {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(212, 175, 55, 0.5);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: #FFDF73;
+  letter-spacing: 1px;
+}
+
+.clube-modal-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clube-modal-btn:active {
+  transform: scale(0.97);
+}
+
