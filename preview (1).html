@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Mercado do Nosso Jeito</title>
+
+<style>
+
+/* =========================================================
+   RESET
+========================================================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,
+body{
+  width:100%;
+  min-height:100%;
+}
+
+body{
+
+  font-family:
+    Inter,
+    SF Pro Display,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+
+  background:#090705;
+
+  overflow-x:hidden;
+
+  color:#fff;
+
+}
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.bg{
+
+  position:fixed;
+  inset:0;
+
+  background:
+    url("https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1800")
+    center center / cover;
+
+  filter:
+    blur(10px)
+    brightness(.28)
+    saturate(120%);
+
+  transform:scale(1.08);
+
+}
+
+.overlay{
+
+  position:fixed;
+  inset:0;
+
+  background:
+
+    radial-gradient(
+      circle at top,
+      rgba(222,169,83,.15),
+      transparent 28%
+    ),
+
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.1),
+      rgba(0,0,0,.72)
+    );
+
+}
+
+/* =========================================================
+   APP
+========================================================= */
+
+.app{
+
+  position:relative;
+  z-index:10;
+
+  width:min(430px,100%);
+
+  margin:auto;
+
+  padding:
+    18px
+    14px
+    120px;
+
+}
+
+/* =========================================================
+   GLASS
+========================================================= */
+
+.glass{
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.09),
+      rgba(255,255,255,.03)
+    );
+
+  backdrop-filter:
+    blur(22px)
+    saturate(180%);
+
+  -webkit-backdrop-filter:
+    blur(22px)
+    saturate(180%);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  box-shadow:
+
+    inset 0 1px 1px rgba(255,255,255,.08),
+
+    inset 0 -1px 1px rgba(255,255,255,.02),
+
+    0 10px 30px rgba(0,0,0,.45);
+
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar{
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  margin-bottom:14px;
+
+}
+
+.circle-btn{
+
+  width:62px;
+  height:62px;
+
+  border-radius:50%;
+
+  display:grid;
+  place-items:center;
+
+  background:
+    rgba(255,255,255,.05);
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  backdrop-filter:blur(14px);
+
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.06),
+    0 10px 18px rgba(0,0,0,.38);
+
+  font-size:28px;
+
+}
+
+.logo{
+
+  text-align:center;
+
+}
+
+.logo h1{
+
+  font-size:18px;
+  line-height:1;
+
+  font-weight:900;
+
+}
+
+.logo span{
+
+  color:#E7BC79;
+
+}
+
+/* =========================================================
+   SUBTEXT
+========================================================= */
+
+.subtext{
+
+  font-size:16px;
+
+  line-height:1.4;
+
+  color:#D9C4A7;
+
+  margin:
+    4px
+    4px
+    16px;
+
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.section{
+
+  position:relative;
+
+  overflow:hidden;
+
+  border-radius:30px;
+
+  padding:18px;
+
+  margin-bottom:18px;
+
+}
+
+.section::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:0;
+  left:0;
+  right:0;
+
+  height:34%;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.07),
+      transparent
+    );
+
+  pointer-events:none;
+
+}
+
+.hero{
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(130,84,34,.28),
+      rgba(255,255,255,.03)
+    );
+
+}
+
+.purple{
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(77,59,182,.32),
+      rgba(255,255,255,.03)
+    );
+
+}
+
+.orange{
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(170,84,38,.32),
+      rgba(255,255,255,.03)
+    );
+
+}
+
+.green{
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(88,133,42,.28),
+      rgba(255,255,255,.03)
+    );
+
+}
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.section-header{
+
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+
+  margin-bottom:16px;
+
+}
+
+.section-header h2{
+
+  font-size:18px;
+
+  line-height:1.1;
+
+  font-weight:900;
+
+  letter-spacing:.2px;
+
+  color:#F0D6A7;
+
+}
+
+.section-header p{
+
+  font-size:13px;
+
+  color:#D4C2A7;
+
+  margin-top:5px;
+
+}
+
+.section-header a{
+
+  text-decoration:none;
+
+  color:#E9C78C;
+
+  font-size:13px;
+
+  margin-top:3px;
+
+}
+
+/* =========================================================
+   PRODUCTS ROW
+========================================================= */
+
+.products{
+
+  display:flex;
+  gap:12px;
+
+  overflow-x:auto;
+
+  scrollbar-width:none;
+
+}
+
+.products::-webkit-scrollbar{
+  display:none;
+}
+
+/* =========================================================
+   PRODUCT CARD
+========================================================= */
+
+.product-card{
+
+  position:relative;
+
+  min-width:148px;
+
+  border-radius:20px;
+
+  padding:
+    10px
+    10px
+    12px;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.075),
+      rgba(255,255,255,.028)
+    );
+
+  border:
+    1px solid rgba(255,255,255,.08);
+
+  backdrop-filter:
+    blur(18px);
+
+  overflow:hidden;
+
+  box-shadow:
+
+    inset 0 1px 1px rgba(255,255,255,.08),
+
+    inset 0 -1px 1px rgba(255,255,255,.03),
+
+    0 10px 24px rgba(0,0,0,.42);
+
+  transition:
+    transform .3s ease,
+    box-shadow .3s ease;
+
+}
+
+/* REFLECTION */
+
+.product-card::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:0;
+  left:0;
+  right:0;
+
+  height:38%;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.08),
+      transparent
+    );
+
+  pointer-events:none;
+
+}
+
+/* HOVER */
+
+.product-card:hover{
+
+  transform:
+    translateY(-4px);
+
+  box-shadow:
+
+    inset 0 1px 1px rgba(255,255,255,.09),
+
+    0 14px 28px rgba(0,0,0,.48),
+
+    0 0 20px rgba(214,168,95,.10);
+
+}
+
+/* =========================================================
+   BADGE
+========================================================= */
+
+.badge{
+
+  position:absolute;
+
+  top:10px;
+  left:10px;
+
+  z-index:4;
+
+  padding:
+    5px
+    10px;
+
+  border-radius:999px;
+
+  background:
+    rgba(214,168,95,.14);
+
+  border:
+    1px solid rgba(214,168,95,.18);
+
+  backdrop-filter:
+    blur(10px);
+
+  font-size:10px;
+
+  font-weight:800;
+
+  color:#F4D7A5;
+
+  letter-spacing:.2px;
+
+}
+
+/* =========================================================
+   IMAGE CONTAINER
+========================================================= */
+
+.product-image-wrapper{
+
+  position:relative;
+
+  width:100%;
+  height:150px;
+
+  border-radius:16px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  overflow:hidden;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.06),
+      rgba(255,255,255,.02)
+    );
+
+  border:
+    1px solid rgba(255,255,255,.05);
+
+  backdrop-filter:
+    blur(12px);
+
+  box-shadow:
+
+    inset 0 1px 1px rgba(255,255,255,.05),
+
+    inset 0 -1px 1px rgba(255,255,255,.02);
+
+}
+
+/* TOP LIGHT */
+
+.product-image-wrapper::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:0;
+  left:0;
+  right:0;
+
+  height:35%;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.08),
+      transparent
+    );
+
+}
+
+.product-image-wrapper img{
+
+  width:84%;
+  height:84%;
+
+  object-fit:contain;
+
+  filter:
+    drop-shadow(0 12px 18px rgba(0,0,0,.45));
+
+}
+
+/* =========================================================
+   INFO
+========================================================= */
+
+.product-info{
+
+  margin-top:10px;
+
+}
+
+/* TITLE */
+
+.product-title{
+
+  font-size:13px;
+
+  line-height:1.25;
+
+  font-weight:700;
+
+  color:white;
+
+  min-height:34px;
+
+  letter-spacing:-.1px;
+
+}
+
+/* =========================================================
+   PRICE BAR
+========================================================= */
+
+.price-bar{
+
+  margin-top:10px;
+
+  height:38px;
+
+  border-radius:13px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:
+    0
+    5px
+    0
+    12px;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.07),
+      rgba(255,255,255,.03)
+    );
+
+  border:
+    1px solid rgba(255,255,255,.06);
+
+  backdrop-filter:
+    blur(10px);
+
+  box-shadow:
+
+    inset 0 1px 1px rgba(255,255,255,.05),
+
+    inset 0 -1px 1px rgba(255,255,255,.02);
+
+}
+
+/* PRICE */
+
+.product-price{
+
+  font-size:14px;
+
+  font-weight:900;
+
+  color:white;
+
+  letter-spacing:-.2px;
+
+}
+
+/* =========================================================
+   PLUS BUTTON
+========================================================= */
+
+.add-btn{
+
+  width:27px;
+  height:27px;
+
+  border:none;
+
+  border-radius:50%;
+
+  display:grid;
+  place-items:center;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      #F4D7A5,
+      #D79A42
+    );
+
+  color:#16110B;
+
+  font-size:17px;
+  font-weight:900;
+
+  cursor:pointer;
+
+  box-shadow:
+
+    0 0 14px rgba(214,168,95,.20),
+
+    inset 0 1px 1px rgba(255,255,255,.25);
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease;
+
+}
+
+.add-btn:hover{
+
+  transform:scale(1.06);
+
+  box-shadow:
+    0 0 18px rgba(214,168,95,.30);
+
+}
+
+/* =========================================================
+   BOTTOM NAV
+========================================================= */
+
+.bottom-nav{
+
+  position:fixed;
+
+  left:50%;
+  bottom:18px;
+
+  transform:translateX(-50%);
+
+  width:min(390px,calc(100% - 24px));
+
+  padding:
+    14px
+    18px;
+
+  border-radius:28px;
+
+  display:flex;
+  justify-content:space-between;
+
+  z-index:100;
+
+}
+
+.bottom-nav a{
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+
+  gap:5px;
+
+  text-decoration:none;
+
+  color:white;
+
+  font-size:12px;
+
+  opacity:.72;
+
+  transition:
+    opacity .3s ease,
+    transform .3s ease;
+
+}
+
+.bottom-nav a.active{
+
+  color:#F0D6A7;
+
+  opacity:1;
+
+}
+
+.bottom-nav a:hover{
+
+  transform:
+    translateY(-2px);
+
+  opacity:1;
+
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:430px){
+
+  .product-card{
+    min-width:142px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+<div class="overlay"></div>
+
+<main class="app">
+
+  <!-- =====================================================
+       TOPBAR
+  ====================================================== -->
+
+  <div class="topbar">
+
+    <div class="circle-btn glass">
+      📍
+    </div>
+
+    <div class="logo">
+      <h1>
+        mercado do <br>
+        <span>nosso jeito</span>
+      </h1>
+    </div>
+
+    <div class="circle-btn glass">
+      🏠
+    </div>
+
+  </div>
+
+  <!-- =====================================================
+       TEXT
+  ====================================================== -->
+
+  <p class="subtext">
+    Viaje pelos sabores de Portugal —
+    Uma seleção premium exclusiva!
+  </p>
+
+  <!-- =====================================================
+       HERO
+  ====================================================== -->
+
+  <section class="section hero glass">
+
+    <div class="section-header">
+
+      <div>
+        <h2>SABOR DE PORTUGAL</h2>
+        <p>Especialidades Gourmet</p>
+      </div>
+
+      <a href="#">
+        Ver tudo
+      </a>
+
+    </div>
+
+    <div class="products">
+
+      <!-- CARD -->
+
+      <div class="product-card">
+
+        <div class="badge">
+          Importado
+        </div>
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Azeite Virgem Extra Herdade
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 64,90
+            </div>
+
+            <button class="add-btn">
+              +
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- CARD -->
+
+      <div class="product-card">
+
+        <div class="badge">
+          Premium
+        </div>
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Vinho Tinto Quinta do Porto
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 119,00
+            </div>
+
+            <button class="add-btn">
+              +
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- CARD -->
+
+      <div class="product-card">
+
+        <div class="badge">
+          Gourmet
+        </div>
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1452195100486-9cc805987862?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Queijo Serra da Estrela
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 49,90
+            </div>
+
+            <button class="add-btn">
+              +
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- =====================================================
+       AZEITES
+  ====================================================== -->
+
+  <section class="section purple glass">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Azeites & Vinhos</h2>
+        <p>Experiência Portuguesa Premium</p>
+      </div>
+
+      <a href="#">
+        Ver tudo
+      </a>
+
+    </div>
+
+    <div class="products">
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Azeite Quinta do Portal
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 54,90
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1569919659476-f0852f6834b7?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Vinho Branco Quinta
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 98,00
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- =====================================================
+       CHARCUTARIA
+  ====================================================== -->
+
+  <section class="section orange glass">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Charcutaria</h2>
+        <p>Tradicional e Artesanal</p>
+      </div>
+
+      <a href="#">
+        Ver tudo
+      </a>
+
+    </div>
+
+    <div class="products">
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Chouriço Serrano Fatiado
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 22,90
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Doce de Abóbora com Nozes
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 16,90
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- =====================================================
+       LIMPEZA
+  ====================================================== -->
+
+  <section class="section green glass">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Limpeza</h2>
+        <p>Produtos do dia a dia</p>
+      </div>
+
+      <a href="#">
+        Ver tudo
+      </a>
+
+    </div>
+
+    <div class="products">
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1583947215259-38e31be8751f?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Sabão Líquido Premium
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 19,90
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            src="https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=600"
+          >
+
+        </div>
+
+        <div class="product-info">
+
+          <div class="product-title">
+            Multiuso Fresh Ultra
+          </div>
+
+          <div class="price-bar">
+
+            <div class="product-price">
+              R$ 12,90
+            </div>
+
+            <button class="add-btn">+</button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
+
+<nav class="bottom-nav glass">
+
+  <a href="#" class="active">
+    🏠
+    <span>Início</span>
+  </a>
+
+  <a href="#">
+    🔍
+    <span>Busca</span>
+  </a>
+
+  <a href="#">
+    ✨
+    <span>Promoções</span>
+  </a>
+
+  <a href="#">
+    📦
+    <span>Pedidos</span>
+  </a>
+
+  <a href="#">
+    👤
+    <span>Perfil</span>
+  </a>
+
+</nav>
+
+<script>
+
+/* =========================================================
+   GLASS LIGHT FOLLOW
+========================================================= */
+
+document
+.querySelectorAll(".product-card")
+.forEach(card => {
+
+  card.addEventListener("mousemove", e => {
+
+    const rect = card.getBoundingClientRect();
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    card.style.background = `
+      radial-gradient(
+        circle at ${x}px ${y}px,
+        rgba(255,255,255,.12),
+        rgba(255,255,255,.03)
+      )
+    `;
+
+  });
+
+  card.addEventListener("mouseleave", () => {
+
+    card.style.background = `
+      linear-gradient(
+        180deg,
+        rgba(255,255,255,.075),
+        rgba(255,255,255,.028)
+      )
+    `;
+
+  });
+
+});
+
+/* =========================================================
+   BUTTON CLICK EFFECT
+========================================================= */
+
+document
+.querySelectorAll(".add-btn")
+.forEach(btn => {
+
+  btn.addEventListener("click", () => {
+
+    btn.style.transform = "scale(.88)";
+
+    setTimeout(() => {
+
+      btn.style.transform = "scale(1)";
+
+    },120);
+
+  });
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,531 @@
+/* =========================================================
+   RESET
+========================================================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,
+body{
+  width:100%;
+  min-height:100%;
+}
+
+body{
+  font-family:
+    'Outfit',
+    Inter,
+    SF Pro Display,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background:#090705;
+  overflow-x:hidden;
+  color:#fff;
+}
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.bg{
+  position:fixed;
+  inset:0;
+  background:
+    url("/bg-supermercado.jpeg")
+    center center / cover;
+  z-index: -2;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.2),
+      rgba(0,0,0,.6)
+    );
+  z-index: -1;
+}
+
+/* =========================================================
+   APP
+========================================================= */
+
+.app{
+  position:relative;
+  z-index:10;
+  width:min(430px,100%);
+  margin:auto;
+  padding: 12px 16px 80px 16px;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.circle-btn{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  font-size:20px;
+  cursor: pointer;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.logo-text{
+  text-align:right;
+}
+
+.logo h1{
+  font-size:22px;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:-0.5px;
+}
+
+.logo span{
+  font-weight:700;
+}
+
+.logo-icon {
+  font-size: 32px;
+}
+
+/* =========================================================
+   SUB-NAV & HERO TEXT
+========================================================= */
+
+.sub-nav {
+  display:flex;
+  justify-content:space-between;
+  font-size: 15px;
+  color: #D4C2A7;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.sub-nav span:first-child {
+  color: #fff;
+}
+
+.hero-text-container {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  margin-bottom: 2px; /* Aproximei mais do card "Essenciais do Café" */
+}
+
+.hero-text-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+}
+
+.hero-text-marquee span {
+  font-size: 16px;
+  line-height: 1.3;
+  color: #E7BC79;
+  font-weight: 500;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.section{
+  position:relative;
+  border-radius:24px;
+  padding: 16px;
+  margin-bottom: 12px;
+  overflow: visible; /* to allow arrows to overflow */
+}
+
+.hero-section {
+  border: 1.5px solid rgba(214,168,95,.4);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(130,84,34,.3),
+      rgba(255,255,255,.05)
+    );
+  padding: 12px 0 12px 12px; /* Reduced padding */
+}
+
+.standard-section {
+  padding: 8px 0 8px 8px; /* Further reduced padding */
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.standard-section.purple {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(77,59,182,.32),
+      rgba(255,255,255,.03)
+    );
+}
+
+.standard-section.orange {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(170,84,38,.32),
+      rgba(255,255,255,.03)
+    );
+}
+
+.standard-section.green {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(88,133,42,.28),
+      rgba(255,255,255,.03)
+    );
+}
+
+.section-inner-glass {
+  background: rgba(255,255,255,.03);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.05);
+  margin-top: 4px; /* Reduced margin */
+  margin-right: 4px; /* Reduced right margin */
+  padding: 10px 0 10px 10px; /* Reduced padding */
+}
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 4px; /* Decreased margin */
+  padding-right: 16px;
+  flex-wrap: nowrap; /* Prevent line breaks */
+}
+
+.section-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap; /* Prevent line breaks */
+}
+
+.section-header h2{
+  font-size: 20px; /* Slightly smaller */
+  line-height:1.1;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:-0.5px;
+  white-space: nowrap; /* Prevent line breaks */
+}
+
+.hero-section .section-header h2 {
+  color: #E7BC79;
+  font-size: 18px; /* Slightly smaller */
+  letter-spacing: 0.5px;
+}
+
+.section-header p{
+  font-size:12px;
+  color:#D4C2A7;
+  white-space: nowrap; /* Prevent line breaks */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.animated-subtitle-container {
+  display: grid;
+  height: 16px;
+  overflow: hidden;
+  align-items: center;
+}
+
+.animated-subtitle {
+  grid-area: 1 / 1;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: all 0.5s ease;
+  font-size: 12px;
+  color: #D4C2A7;
+  white-space: nowrap;
+}
+
+.animated-subtitle.active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.animated-subtitle.exit {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.section-header a{
+  text-decoration:none;
+  color:#D4C2A7;
+  font-size:13px;
+  white-space: nowrap; /* Prevent line breaks */
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* =========================================================
+   PRODUCTS ROW
+========================================================= */
+
+.products-wrapper {
+  position: relative;
+}
+
+.products{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  padding-right: 16px;
+}
+
+.products::-webkit-scrollbar{
+  display:none;
+}
+
+.scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #F4D7A5, #D79A42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16110B;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 10;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .scroll-arrow {
+    display: none;
+  }
+}
+
+.scroll-arrow.left {
+  left: -14px;
+}
+
+.scroll-arrow.right {
+  right: 2px;
+}
+
+/* =========================================================
+   PRODUCT CARD (IMAGE REFERENCED)
+========================================================= */
+
+.product-card{
+  width: 94px; /* Decreased width */
+  max-height: 170px; /* Added max-height */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Individual Glass Background for Hero Section Products */
+.hero-section .product-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 12px;
+  padding: 4px;
+  margin-top: 16px;
+  padding-bottom: 8px;
+}
+
+.hero-section .product-image-wrapper {
+  margin-top: -20px;
+}
+
+/* =========================================================
+   IMAGE CONTAINER
+========================================================= */
+
+.product-image-wrapper{
+  position:relative;
+  width:84px; /* Decreased width */
+  height:84px; /* Decreased height */
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  margin-bottom: 8px; /* Move photo closer to title (was 14px) */
+}
+
+.product-image-wrapper img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+}
+
+/* =========================================================
+   BADGE
+========================================================= */
+
+.badge-wrapper {
+  position: absolute;
+  bottom: -6px; /* Adjusted overlap based on smaller margin */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  white-space: nowrap;
+}
+
+.badge{
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size:10px;
+  font-weight:600; /* Removido negrito forte */
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: #F4D7A5; /* Escrita preta em fundo brilhante */
+  color: #000;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.product-title{
+  font-size:11px;
+  line-height:1.2;
+  font-weight:500;
+  color:white;
+  text-align: center;
+  width: 100%;
+  max-height: 26.4px; /* Constrain max height */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Ensure ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-bottom: 2px; /* Moved closer to price (was 6px) */
+}
+
+/* =========================================================
+   PRICE PILL
+========================================================= */
+
+.price-pill{
+  width: 100%;
+  height: 26px;
+  border-radius: 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 2px 2px 2px 8px;
+  background: rgba(40,40,30,0.8);
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+.product-price{
+  font-size:12px;
+  font-weight:600;
+  color:#fff;
+  white-space: nowrap;
+}
+
+.add-btn{
+  width:20px;
+  height:20px;
+  border:none;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background: linear-gradient(180deg, #F4D7A5, #D79A42);
+  color:#16110B;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   BOTTOM NAV
+========================================================= */
+
+.bottom-nav{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height: 60px;
+  background: #fff;
+  display:flex;
+  justify-content:space-around;
+  align-items: center;
+  z-index:100;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav a{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content: center;
+  gap:4px;
+  text-decoration:none;
+  color:#777;
+  font-size:10px;
+  font-weight: 500;
+  width: 60px;
+}
+
+.bottom-nav a.active{
+  color:#000;
+}
+
+.bottom-nav a .nav-icon {
+  font-size: 22px;
+}
+
+.bottom-nav a.active .nav-icon {
+  font-weight: bold;
+}
