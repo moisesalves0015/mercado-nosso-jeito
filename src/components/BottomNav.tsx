@@ -7,7 +7,10 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide the mini-cart bar on the Cart checkout page itself
+  // Hide completely on login, register, and admin pages
+  const isHiddenRoute = ['/login', '/register'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  if (isHiddenRoute) return null;
+
   const showMiniCart = totalItems > 0 && location.pathname !== '/cart';
 
   return (

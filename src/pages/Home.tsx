@@ -1,63 +1,116 @@
+import { useState, useEffect } from 'react';
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda } from 'lucide-react';
+import { Search, Croissant, Flame, Sparkles, Candy, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda, Headphones, MoreHorizontal, PartyPopper } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface Product {
+  id: string;
+  title: string;
+  price: number | string;
+  image: string;
+  category: string;
+  badge?: string;
+  badgeStyle?: 'orange' | 'light';
+  diamondReward?: number;
+}
+
 export const Home = () => {
+  const [bebidas, setBebidas] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const loadProducts = () => {
+      const stored = localStorage.getItem('app-products');
+      if (stored) {
+        const allProds = JSON.parse(stored) as Product[];
+        setBebidas(allProds.filter(p => p.category === 'Bebidas'));
+      } else {
+        // Fallback default drinks
+        const defaults: Product[] = [
+          { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "https://images.unsplash.com/photo-1608270586620-248524c67de9?q=80&w=600", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
+          { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=600", category: "Bebidas", diamondReward: 1 },
+          { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "https://images.unsplash.com/photo-1622543956221-c6328ecf8443?q=80&w=600", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
+          { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600", category: "Bebidas", diamondReward: 1 }
+        ];
+        setBebidas(defaults);
+      }
+    };
+
+    loadProducts();
+    window.addEventListener('app-products-updated', loadProducts);
+    return () => window.removeEventListener('app-products-updated', loadProducts);
+  }, []);
+
   return (
     <main className="app">
       <Topbar />
 
-      {/* SEARCH BAR WITH FILTER BUTTON */}
+      {/* SEARCH BAR WITH FILTER BUTTON INSIDE */}
       <div className="search-container">
-        <div className="search-bar-wrapper">
-          <Link to="/search" style={{textDecoration: 'none', flex: 1}}>
-            <div className="search-bar">
+        <Link to="/search" style={{textDecoration: 'none'}}>
+          <div className="search-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
               <Search size={16} color="rgba(255, 255, 255, 0.4)" />
               <input type="text" placeholder="O que você procura hoje?" disabled style={{pointerEvents: 'none'}} />
             </div>
-          </Link>
-          <div className="search-filter-btn">
-            <SlidersHorizontal size={14} color="#D4AF37" />
+            <div className="search-filter-btn-inside" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', paddingLeft: '8px' }}>
+              <SlidersHorizontal size={14} color="#D4AF37" />
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* CATEGORY ROW (REVERTED EXACTLY AS REQUESTED) */}
       <div className="category-row">
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper" style={{ border: '1px solid rgba(14, 165, 233, 0.4)', background: 'rgba(14, 165, 233, 0.08)', boxShadow: '0 2px 8px rgba(14, 165, 233, 0.15)' }}><CupSoda size={28} color="#0EA5E9" /></div>
-            <span className="category-text" style={{ color: '#0EA5E9', fontWeight: 'bold' }}>Bebidas</span>
+            <div className="category-icon-wrapper"><CupSoda size={20} /></div>
+            <span className="category-text">Bebidas</span>
           </div>
         </Link>
         <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper" style={{ border: '1px solid rgba(212, 175, 55, 0.4)', background: 'rgba(212, 175, 55, 0.08)', boxShadow: '0 2px 8px rgba(212, 175, 55, 0.15)' }}><Cigarette size={28} color="#D4AF37" /></div>
-            <span className="category-text" style={{ color: '#D4AF37', fontWeight: 'bold' }}>Tabacaria</span>
+            <div className="category-icon-wrapper"><Cigarette size={20} /></div>
+            <span className="category-text">Tabacaria</span>
           </div>
         </Link>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><Croissant size={28} /></div>
-          <span className="category-text">Padaria</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><Flame size={28} /></div>
-          <span className="category-text">Ofertas</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><Beef size={28} /></div>
-          <span className="category-text">Carnes</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><Wine size={28} /></div>
-          <span className="category-text">Adega</span>
-        </div>
-        <div className="category-item">
-          <div className="category-icon-wrapper"><PartyPopper size={28} /></div>
-          <span className="category-text">Presentes</span>
-        </div>
+        <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><Headphones size={20} /></div>
+            <span className="category-text">Eletrônicos</span>
+          </div>
+        </Link>
+        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><Croissant size={20} /></div>
+            <span className="category-text">Padaria</span>
+          </div>
+        </Link>
+        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><Flame size={20} /></div>
+            <span className="category-text">Ofertas</span>
+          </div>
+        </Link>
+        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><Sparkles size={20} /></div>
+            <span className="category-text">Limpeza</span>
+          </div>
+        </Link>
+        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><Candy size={20} /></div>
+            <span className="category-text">Doces</span>
+          </div>
+        </Link>
+        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><MoreHorizontal size={20} /></div>
+            <span className="category-text">Mais</span>
+          </div>
+        </Link>
       </div>
 
       {/* HERO PROMO BANNER (MOVED UP AND HIGHLY DETAILED) */}
@@ -141,7 +194,7 @@ export const Home = () => {
             <Award size={18} color="#D4AF37" />
           </div>
           <div className="info-card-content">
-            <h4>Clube do Nosso Jeito</h4>
+            <h4>Nosso Clube</h4>
             <p>Ofertas exclusivas só para você!</p>
           </div>
         </div>
@@ -174,31 +227,12 @@ export const Home = () => {
         linkText="Ver tudo >"
         theme="purple"
       >
-        <ProductCard
-          title="Suco de Laranja Integral Do Bem (1L)"
-          price="R$ 14,90"
-          image="/suco_do_bem_laranja_integral.png"
-          badge="Promocional"
-          badgeStyle="light"
-          diamondReward={10}
-        />
-        <ProductCard
-          title="Café Torrado e Moído Pilão (500g)"
-          price="R$ 17,90"
-          image="/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png"
-          badge="Melhor Preço"
-          badgeStyle="orange"
-        />
-        <ProductCard
-          title="Chá Matte Natural Leão (100g)"
-          price="R$ 9,90"
-          image="/Cha-Matte-Natural-100g-Leao.png"
-        />
-        <ProductCard
-          title="Leite Longa Vida Integral (1L)"
-          price="R$ 5,49"
-          image="/leite-integral-interna.png"
-        />
+        {bebidas.map(product => (
+          <ProductCard key={product.id} {...product} />
+        ))}
+        {bebidas.length === 0 && (
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
+        )}
       </Section>
 
       <Section

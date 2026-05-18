@@ -229,6 +229,118 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     stockStatus: 'Em estoque',
     deliveryTime: 'Receba hoje até as 18h',
     category: 'Limpeza'
+  },
+  'carregador-de-parede-turbo-usb-c-20w': {
+    id: 'carregador-de-parede-turbo-usb-c-20w',
+    title: 'Carregador de Parede Turbo USB-C (20W)',
+    price: 'R$ 49,90',
+    priceNum: 49.90,
+    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=600',
+    badge: 'Carga Rápida',
+    rating: 4.8,
+    ratingCount: 512,
+    soldCount: '1.2K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'cabo-usb-c-para-lightning-reforcado-1m': {
+    id: 'cabo-usb-c-para-lightning-reforcado-1m',
+    title: 'Cabo USB-C para Lightning Reforçado (1m)',
+    price: 'R$ 29,90',
+    priceNum: 29.90,
+    image: 'https://images.unsplash.com/photo-1541667590928-2c6b0ef4fcb3?q=80&w=600',
+    badge: 'Ultra Resistente',
+    rating: 4.7,
+    ratingCount: 384,
+    soldCount: '900+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'cabo-usb-c-para-usb-c-turbo-1-2m': {
+    id: 'cabo-usb-c-para-usb-c-turbo-1-2m',
+    title: 'Cabo USB-C para USB-C Turbo (1.2m)',
+    price: 'R$ 24,90',
+    priceNum: 24.90,
+    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=600',
+    badge: 'Turbo Power',
+    rating: 4.8,
+    ratingCount: 290,
+    soldCount: '600+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'fone-de-ouvido-com-fio-e-microfone-p2': {
+    id: 'fone-de-ouvido-com-fio-e-microfone-p2',
+    title: 'Fone de Ouvido com Fio e Microfone P2',
+    price: 'R$ 19,90',
+    priceNum: 19.90,
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600',
+    badge: 'Clássico',
+    rating: 4.5,
+    ratingCount: 180,
+    soldCount: '400+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'fone-de-ouvido-bluetooth-tws-premium': {
+    id: 'fone-de-ouvido-bluetooth-tws-premium',
+    title: 'Fone de Ouvido Bluetooth TWS Premium',
+    price: 'R$ 79,90',
+    priceNum: 79.90,
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600',
+    badge: 'Mais Procurado',
+    rating: 4.6,
+    ratingCount: 920,
+    soldCount: '2K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'carregador-veicular-fast-charge-dual-usb': {
+    id: 'carregador-veicular-fast-charge-dual-usb',
+    title: 'Carregador Veicular Fast Charge Dual USB',
+    price: 'R$ 34,90',
+    priceNum: 34.90,
+    image: 'https://images.unsplash.com/photo-1629131726617-578c64227f6a?q=80&w=600',
+    badge: 'Veicular',
+    rating: 4.7,
+    ratingCount: 220,
+    soldCount: '500+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'power-bank-portatil-10000mah-ultra-rapido': {
+    id: 'power-bank-portatil-10000mah-ultra-rapido',
+    title: 'Power Bank Portátil 10000mAh Ultra Rápido',
+    price: 'R$ 89,90',
+    priceNum: 89.90,
+    image: 'https://images.unsplash.com/photo-1609592424109-dd89569ed053?q=80&w=600',
+    badge: 'Bateria Extra',
+    rating: 4.9,
+    ratingCount: 430,
+    soldCount: '1K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
+  },
+  'pilha-alcalina-duracell-aa-4-unidades': {
+    id: 'pilha-alcalina-duracell-aa-4-unidades',
+    title: 'Pilha Alcalina Duracell AA (4 unidades)',
+    price: 'R$ 22,90',
+    priceNum: 22.90,
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600',
+    badge: 'Duracell',
+    rating: 4.9,
+    ratingCount: 1850,
+    soldCount: '5K+',
+    stockStatus: 'Em estoque',
+    deliveryTime: 'Receba em até 30 min',
+    category: 'Eletrônicos'
   }
 };
 
@@ -482,6 +594,7 @@ export const ProductDetail = () => {
             {product.category === 'Bebidas' && "Perfeito para refrescar o seu dia ou complementar momentos especiais com amigos e família. Armazenado sob temperatura ideal, garantindo refrescância máxima, sabor inigualável e qualidade premium em cada gole."}
             {product.category === 'Alimentos' && "Ingrediente de altíssima qualidade selecionado especialmente para as suas receitas. Sabor autêntico, embalagem higiênica e procedência garantida para levar o melhor sabor à mesa do seu lar."}
             {product.category === 'Limpeza' && "Fórmula ultra concentrada de alta performance desenvolvida para eliminar as sujeiras mais difíceis com o mínimo esforço. Deixa um perfume refrescante e protege as superfícies da sua casa."}
+            {product.category === 'Eletrônicos' && "Acessório eletrônico indispensável e de altíssima qualidade, perfeito para resolver suas necessidades tecnológicas com agilidade e total segurança. Previamente testado para uso imediato e com garantia de fábrica de 90 dias."}
           </p>
           <div className="spec-grid">
             <div className="spec-item">

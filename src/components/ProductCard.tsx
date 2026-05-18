@@ -1,6 +1,25 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 
+const DiamondIcon = ({ size = 10 }: { size?: number }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    width={size} 
+    height={size} 
+    fill="none" 
+    stroke="#000" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M6 3h12l4 6-10 12L2 9z" />
+    <path d="M11 3 8 9l4 12" />
+    <path d="M13 3 16 9 12 21" />
+    <path d="M2 9h20" />
+  </svg>
+);
+
 export const ProductCard = ({
   title,
   price,
@@ -10,7 +29,7 @@ export const ProductCard = ({
   diamondReward,
 }: {
   title: string;
-  price: string;
+  price: number | string;
   image: string;
   badge?: string;
   badgeStyle?: 'light' | 'orange';
@@ -25,7 +44,13 @@ export const ProductCard = ({
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 
-  const numericPrice = parseFloat(price.replace('R$', '').replace(',', '.').trim()) || 0;
+  const formattedPrice = typeof price === 'number' 
+    ? `R$ ${price.toFixed(2).replace('.', ',')}` 
+    : price;
+
+  const numericPrice = typeof price === 'number' 
+    ? price 
+    : (parseFloat(price.replace('R$', '').replace(',', '.').trim()) || 0);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,15 +107,29 @@ export const ProductCard = ({
       <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className="product-image-wrapper">
           <img src={image} alt={title} />
-          {badge && (
+          
+          {/* Render badge area at the bottom-center of the image wrapper */}
+          {(badge || diamondReward) && (
             <div className="badge-wrapper">
-              <div className={`badge ${badgeStyle}`}>{badge}</div>
-            </div>
-          )}
-          {diamondReward && (
-            <div className="product-diamond-reward-badge" title={`Ganhe ${diamondReward} diamantes ao comprar!`}>
-              <span className="diamond-reward-icon">♦</span>
-              <span>+{diamondReward}</span>
+              {badge && diamondReward ? (
+                // Both exist: render them with alternating classes
+                <>
+                  <div className={`badge ${badgeStyle} badge-alternate-promo`}>{badge}</div>
+                  <div className="badge diamond-badge badge-alternate-diamond" title={`Ganhe ${diamondReward} diamantes!`}>
+                    <DiamondIcon size={9} />
+                    <span>+{diamondReward}</span>
+                  </div>
+                </>
+              ) : badge ? (
+                // Only promo badge
+                <div className={`badge ${badgeStyle}`}>{badge}</div>
+              ) : (
+                // Only diamond badge
+                <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
+                  <DiamondIcon size={9} />
+                  <span>+{diamondReward}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -99,7 +138,7 @@ export const ProductCard = ({
       </Link>
 
       <div className="price-pill">
-        <div className="product-price">{price}</div>
+        <div className="product-price">{formattedPrice}</div>
         <button className="add-btn" onClick={handleAdd}>+</button>
       </div>
     </div>

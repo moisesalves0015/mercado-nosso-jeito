@@ -1,4 +1,5 @@
 import { MapPin, ChevronRight, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Topbar = () => {
   return (
@@ -22,12 +23,14 @@ export const Topbar = () => {
       </div>
 
       {/* PROFILE BUTTON */}
-      <div className="profile-wrapper">
-        <div className="profile-circle">
-          <User size={16} color="#fff" />
+      <Link to="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="profile-wrapper">
+          <div className="profile-circle">
+            <User size={16} color="#fff" />
+          </div>
+          <span className="profile-text">Meu perfil</span>
         </div>
-        <span className="profile-text">Meu perfil</span>
-      </div>
+      </Link>
     </div>
   );
 };

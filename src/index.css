@@ -83,6 +83,7 @@ body{
   margin-top: 8px;
   margin-bottom: 10px;
   width: 100%;
+  position: relative;
 }
 
 /* ADDRESS PILL */
@@ -90,13 +91,22 @@ body{
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-  padding: 4px 10px;
+  border-radius: 8px; /* High-end tighter border radius */
+  padding: 5px 10px;
   cursor: pointer;
   max-width: 155px;
-  height: 34px;
+  height: 36px;
+  position: relative;
+  z-index: 2;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.address-pill:hover {
+  background: rgba(212, 175, 55, 0.06);
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
 }
 .address-pin {
   flex-shrink: 0;
@@ -107,13 +117,15 @@ body{
   min-width: 0;
 }
 .address-label {
-  font-size: 7.5px;
+  font-size: 8px;
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.1;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
 }
 .address-value {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 700;
   color: #fff;
   white-space: nowrap;
@@ -126,6 +138,10 @@ body{
 .logo {
   display: flex;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
 }
 .logo-text {
   display: flex;
@@ -133,7 +149,7 @@ body{
   text-align: center;
 }
 .logo-main {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   color: #fff;
   line-height: 1;
@@ -141,7 +157,7 @@ body{
   margin: 0;
 }
 .logo-sub {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   color: #FFDF73;
   line-height: 1;
@@ -154,30 +170,42 @@ body{
   align-items: center;
   gap: 2px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 2;
 }
 .profile-wrapper:active {
   transform: scale(0.95);
 }
 .profile-circle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1.5px solid rgba(212, 175, 55, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(212, 175, 55, 0.08);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  transition: background 0.2s ease;
+  background: rgba(212, 175, 55, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+.profile-wrapper:hover .profile-circle {
+  border-color: #D4AF37;
+  background: rgba(212, 175, 55, 0.12);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+  transform: translateY(-1px);
 }
 .profile-wrapper:active .profile-circle {
-  background: rgba(212, 175, 55, 0.2);
+  background: rgba(212, 175, 55, 0.25);
 }
 .profile-text {
-  font-size: 7.5px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.profile-wrapper:hover .profile-text {
+  color: #FFDF73;
 }
 
 /* =========================================================
@@ -287,7 +315,7 @@ body{
    SEARCH BAR
 ========================================================= */
 .search-container {
-  padding: 0 4px;
+  padding: 0; /* Align perfectly with other banners */
   margin-bottom: 4px; /* Reduced vertical spacing */
 }
 .search-bar {
@@ -296,7 +324,7 @@ body{
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(16px);
-  border-radius: 99px;
+  border-radius: 6px;
   padding: 10px 16px;
   box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.2);
 }
@@ -319,27 +347,36 @@ body{
 ========================================================= */
 .category-row {
   display: flex;
-  gap: 14px;
+  justify-content: space-between; /* Space out items evenly to fill full content width */
   overflow-x: auto;
   padding-bottom: 8px;
-  margin-top: 10px;
+  margin-top: 2px;
   margin-bottom: 12px;
   scrollbar-width: none;
 }
 .category-row::-webkit-scrollbar {
   display: none;
 }
+.category-row > a {
+  flex: 1; /* Make the Link elements themselves have uniform flex allocation! */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
 .category-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 64px;
+  gap: 4px;
   cursor: pointer;
+  width: 100%;
 }
 .category-icon-wrapper {
-  width: 56px;
-  height: 56px;
+  width: 44px; /* Squeezed down from 56px for ultra-compact layout */
+  height: 44px;
   border-radius: 6px; /* Tight border-radius */
   background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
   border: 1px solid rgba(255,255,255,0.1);
@@ -356,8 +393,8 @@ body{
   background: rgba(255,255,255,0.15);
 }
 .category-text {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 9px; /* Reduced from 11px to match premium compact aesthetic */
+  font-weight: 600;
   color: #D4AF37;
   text-align: center;
   white-space: nowrap;
@@ -368,10 +405,10 @@ body{
 ========================================================= */
 .info-cards-row {
   display: flex;
-  gap: 8px;
+  gap: 4px; /* Squeezed even more as requested to increase space efficiency */
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 4px;
+  padding: 4px 0; /* Remove horizontal padding so card widths align perfectly with borders */
   margin-bottom: 8px; /* Tighter margins */
 }
 .info-cards-row::-webkit-scrollbar {
@@ -379,10 +416,10 @@ body{
 }
 
 .info-card {
-  width: calc((100% - 16px) / 3); /* Squeezed mathematically to fit exactly within margins */
+  width: calc((100% - 8px) / 3); /* Squeezed mathematically to fit exactly within margins with a 4px gap */
   max-width: 134px;
   flex-shrink: 0;
-  min-height: 46px;
+  min-height: 50px; /* Taller premium height as requested */
   background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); /* Category style glass background */
   border: 1px solid rgba(255,255,255,0.1); /* Category style border */
   backdrop-filter: blur(12px);
@@ -409,8 +446,8 @@ body{
 }
 
 .info-card-content h4 {
-  font-size: 10px; /* Increased text size from 8.5px */
-  font-weight: 700;
+  font-size: 10.5px; /* Squeezed a bit more for premium styling */
+  font-weight: 800;
   color: #fff;
   margin: 0;
   white-space: nowrap;
@@ -419,7 +456,7 @@ body{
 }
 
 .info-card-content p {
-  font-size: 8px; /* Increased text size from 7px */
+  font-size: 9px; /* Increased to 9px for better mobile legibility */
   color: rgba(255, 255, 255, 0.65);
   margin: 0;
   line-height: 1.15;
@@ -682,7 +719,7 @@ body{
 
 .products{
   display:flex;
-  gap:6px; /* Decreased horizontal spacing between cards */
+  gap:4px; /* Space bem fino entre os produtos */
   overflow-x:auto;
   scrollbar-width:none;
   padding-top: 4px; /* Extremely pulled closer to title */
@@ -785,8 +822,8 @@ body{
 
 /* Maintain exact mobile styling for horizontal scroll lists */
 .products .product-card {
-  width: calc((100% - 18px) / 4); /* Exactly 4 cards span the width of the screen / banner */
-  max-width: 98px; /* Safe maximum width */
+  width: calc((100% - 16px) / 4.25); /* Exactly 4 full cards plus a portion of the 5th card on screen */
+  max-width: 104px; /* Increased slightly to match 4.25 distribution beautifully */
   max-height: 180px;
   padding: 4px;
   margin-top: 4px;
@@ -824,24 +861,35 @@ body{
 
 .badge-wrapper {
   position: absolute;
-  bottom: -6px; /* Adjusted overlap based on smaller margin */
+  bottom: -6px; /* Positioned exactly overlapping the bottom of the image */
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
   white-space: nowrap;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 18px; /* Safe standard height to anchor the children badges */
+  width: 120px; /* Safe width bounds to center items */
 }
 
-.badge{
-  padding: 3px 8px;
+.badge {
+  position: absolute; /* Absolute within badge-wrapper for perfect centering overlay */
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size:10px;
-  font-weight:600; /* Removido negrito forte */
+  font-size: 8.5px; /* Elegant compact text size */
+  font-weight: 700;
   letter-spacing: 0;
   white-space: nowrap;
-  background: #F4D7A5; /* Escrita preta em fundo brilhante */
+  background: #F4D7A5; /* Light cream gold */
   color: #000;
   border: none;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.25s ease;
 }
 
 /* =========================================================
@@ -3067,35 +3115,89 @@ body{
   box-shadow: none !important;
 }
 
-/* HIGH-DOPAMINE FLOATING PRODUCT DIAMOND BADGE */
-.product-diamond-reward-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+/* HIGH-DOPAMINE ALTERNATING / ROTATING ELEVATOR BADGES */
+@keyframes slide-elevator-promo {
+  0%, 45% {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  48%, 97% {
+    transform: translateY(-16px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  98% {
+    transform: translateY(16px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@keyframes slide-elevator-diamond {
+  0%, 45% {
+    transform: translateY(16px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  48%, 97% {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  100% {
+    transform: translateY(-16px);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes diamond-heartbeat {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.4));
+  }
+  30% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.85));
+  }
+  60% {
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.4));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 1px rgba(212, 175, 55, 0.4));
+  }
+}
+
+.badge-alternate-promo {
+  animation: slide-elevator-promo 6s infinite ease-in-out;
+}
+
+.badge-alternate-diamond {
+  animation: slide-elevator-diamond 6s infinite ease-in-out;
+}
+
+/* Custom styles for Diamond badge */
+.diamond-badge {
   background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   color: #000 !important;
-  font-size: 8.5px !important;
-  font-weight: 900 !important;
-  padding: 2px 6px !important;
-  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 5px rgba(212, 175, 55, 0.4) !important;
+}
+
+.diamond-badge svg {
   display: flex !important;
-  align-items: center !important;
-  gap: 2.5px;
-  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.35) !important;
-  z-index: 5;
-  letter-spacing: -0.2px;
-  transition: all 0.3s ease;
-}
-
-.product-card:hover .product-diamond-reward-badge {
-  transform: scale(1.08) translateY(-1px);
-  box-shadow: 0 6px 14px rgba(212, 175, 55, 0.5) !important;
-}
-
-.diamond-reward-icon {
-  font-size: 9px !important;
-  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: diamond-heartbeat 2s ease-in-out infinite; /* Breathing heartbeat instead of spinning! */
 }
 
 /* PREMIUM INNOVATED SPONSORED CARDS GRID (VERTICAL) */
@@ -3722,6 +3824,52 @@ body{
   }
   50% {
     transform: translateX(4px);
+  }
+}
+
+/* Icy Product Feed scrollbar hiding style */
+.mini-feed-container::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* CONFINED FALLING SNOWFLAKES STYLING */
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(210px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.snowflake-particle {
+  position: absolute;
+  top: -15px;
+  color: rgba(224, 242, 254, 0.45); /* Sky light blue snowflake color */
+  pointer-events: none;
+  user-select: none;
+  z-index: 1; /* Falls behind text and product cards */
+  animation: snow-fall linear infinite;
+  font-family: inherit;
+  line-height: 1;
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
