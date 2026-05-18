@@ -8,7 +8,6 @@ import {
   ShoppingBag, 
   Flame, 
   ArrowRight, 
-  Sparkles,
   MessageCircle,
   ExternalLink,
   Truck
