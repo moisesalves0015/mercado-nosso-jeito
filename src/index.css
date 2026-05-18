@@ -16,11 +16,8 @@ body{
 
 body{
   font-family:
+    'Manrope',
     'Outfit',
-    Inter,
-    SF Pro Display,
-    -apple-system,
-    BlinkMacSystemFont,
     sans-serif;
   background:#090705;
   overflow-x:hidden;
@@ -60,6 +57,20 @@ body{
   width:min(430px,100%);
   margin:auto;
   padding: 12px 8px 80px 8px; /* Narrower side margins */
+}
+
+@media (min-width: 768px) {
+  .app {
+    width: 100%;
+    max-width: 960px;
+    padding: 24px 20px 100px 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1200px;
+  }
 }
 
 /* =========================================================
@@ -753,10 +764,10 @@ body{
    PRODUCT CARD (IMAGE REFERENCED)
 ========================================================= */
 
-.product-card{
-  width: calc((100% - 18px) / 4); /* Exactly 4 cards span the width of the screen / banner */
-  max-width: 98px; /* Safe maximum width */
-  max-height: 180px;
+.product-card {
+  width: 100%;
+  max-width: 140px; /* Elegant and solid default size for grids */
+  max-height: 190px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -766,10 +777,20 @@ body{
   border: 1px solid rgba(255, 255, 255, 0.1); /* Category style border */
   backdrop-filter: blur(12px);
   border-radius: 6px; /* Tight border-radius */
-  padding: 4px;
+  padding: 8px 6px;
   margin-top: 4px; /* Extremely pulled closer to title */
   padding-bottom: 8px;
   box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3); /* Integrated category shadows */
+}
+
+/* Maintain exact mobile styling for horizontal scroll lists */
+.products .product-card {
+  width: calc((100% - 18px) / 4); /* Exactly 4 cards span the width of the screen / banner */
+  max-width: 98px; /* Safe maximum width */
+  max-height: 180px;
+  padding: 4px;
+  margin-top: 4px;
+  padding-bottom: 8px;
 }
 
 .product-image-wrapper {
@@ -887,8 +908,10 @@ body{
 
 .bottom-nav {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px; /* Centered and capped on mobile default */
   bottom: 0;
   height: 74px; /* Increased from 60px to push items up and clear iPhone home bar! */
   background: #000000; /* Solid premium black background */
@@ -901,6 +924,18 @@ body{
   border-top-right-radius: 16px;
   padding-bottom: 14px; /* Push items up to clear native iOS home indicator bar! */
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bottom-nav {
+    max-width: 1200px;
+  }
 }
 
 .bottom-nav a {
@@ -964,6 +999,18 @@ body{
   justify-content: space-between;
   padding: 0 12px;
   z-index: 200;
+}
+
+@media (min-width: 768px) {
+  .product-detail-header {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-detail-header {
+    max-width: 1200px;
+  }
 }
 
 .header-icon-btn {
@@ -1473,31 +1520,24 @@ body{
    PROMO BANNER
 ========================================================= */
 .promo-banner {
-  border-radius: 6px; /* Tight border-radius */
+  width: 100%;
+  background: radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.15) 0%, rgba(9, 7, 5, 0) 70%), 
+              rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
   margin-top: 10px;
   margin-bottom: 8px; /* Reduced vertical spacing */
-  padding: 12px 16px; /* More compact padding */
+  padding: 16px; /* Premium spacing */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #FF6B6B 0%, #8A2387 50%, #E94057 100%);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  backdrop-filter: blur(16px);
-  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 12px 24px rgba(233, 64, 87, 0.4);
   position: relative;
   overflow: hidden;
+  box-shadow: none;
 }
 
 .promo-banner::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 50%);
-  transform: rotate(30deg);
-  pointer-events: none;
+  display: none;
 }
 
 .promo-text {
@@ -1506,19 +1546,25 @@ body{
 }
 
 .promo-text h3 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   color: #fff;
   margin: 0 0 4px 0;
-  line-height: 1.1;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  letter-spacing: -0.5px;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
 }
+
 .promo-text p {
-  font-size: 13px;
-  color: rgba(255,255,255,0.95);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
   margin: 0;
+}
+
+.promo-banner svg {
+  color: #D4AF37 !important;
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.4));
+  flex-shrink: 0;
 }
 
 /* =========================================================
@@ -1645,6 +1691,18 @@ body{
   justify-content: space-between;
   padding: 0 16px;
   z-index: 200;
+}
+
+@media (min-width: 768px) {
+  .clube-topbar {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .clube-topbar {
+    max-width: 1200px;
+  }
 }
 
 .clube-logo-container {
@@ -1899,6 +1957,23 @@ body{
   padding: 0 16px;
 }
 
+@media (min-width: 768px) {
+  .clube-ads-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .clube-ad-card {
+    flex: 1 1 calc(50% - 6px); /* 2 columns on tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  .clube-ad-card {
+    flex: 1 1 calc(33.333% - 8px); /* 3 columns on desktop */
+  }
+}
+
 .clube-ad-card {
   display: flex;
   align-items: center;
@@ -2066,9 +2141,23 @@ body{
 /* TROQUE SUAS MOEDAS (REWARDS SECTION) */
 .clube-rewards-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   padding: 0 16px;
+}
+
+@media (min-width: 768px) {
+  .clube-rewards-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .clube-rewards-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
 }
 
 .clube-reward-card {
@@ -2179,7 +2268,7 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+  z-index: 1000 !important;
   padding: 16px;
 }
 
@@ -2259,4 +2348,1303 @@ body{
 .clube-modal-btn:active {
   transform: scale(0.97);
 }
+
+/* =========================================================
+   RESPONSIVE OVERRIDES FOR TABLET AND DESKTOP VIEWPORTS
+========================================================= */
+
+@media (min-width: 768px) {
+  /* Categories Row Centering */
+  .category-row {
+    justify-content: center;
+    overflow-x: visible;
+    gap: 24px;
+  }
+
+  /* Info Cards Row Centering */
+  .info-cards-row {
+    justify-content: center;
+    overflow-x: visible;
+    gap: 16px;
+  }
+  .info-card {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  /* Daily Missions Row Centering */
+  .clube-missions-scroll {
+    overflow-x: visible;
+    justify-content: center;
+    gap: 16px;
+  }
+  .clube-mission-card {
+    width: 100%;
+    max-width: 160px;
+  }
+
+  /* Reading container width for list pages like Profile and Orders */
+  .orders-page > div,
+  .profile-page > div {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Responsive Product Detail split side-by-side layout */
+  .product-detail-page {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 28px;
+    align-items: start;
+    padding-top: 80px;
+  }
+  .product-hero-container {
+    position: sticky;
+    top: 80px;
+    height: 480px;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .product-detail-content {
+    padding: 0;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE PRODUCTS GRID
+========================================================= */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0 16px 100px;
+  justify-items: center;
+}
+
+@media (min-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 0 20px 100px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+}
+
+/* =========================================================
+   PREMIUM HIGH-DOPAMINE REWARD MODAL & DIAMOND FALL STYLES
+========================================================= */
+
+.reward-modal-premium {
+  position: relative !important;
+  z-index: 10 !important; /* Always sits on top of full-screen falling diamonds! */
+  overflow: hidden !important;
+  border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9), 0 0 25px rgba(212, 175, 55, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  padding: 32px 24px !important;
+  max-width: 340px !important;
+  background: rgba(9, 7, 5, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-radius: 20px !important;
+}
+
+.falling-diamonds-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2 !important; /* Falls behind the reward modal (z-index 10) but above overlay backdrop */
+  overflow: hidden;
+}
+
+@keyframes diamond-modal-fall {
+  0% {
+    transform: translateY(-60px) rotate(0deg) scale(0.4);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.95;
+  }
+  88% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(105vh) rotate(540deg) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.falling-diamond {
+  position: absolute;
+  top: -60px;
+  animation: diamond-modal-fall linear infinite;
+}
+
+.reward-icon-box {
+  background: rgba(212, 175, 55, 0.12) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  width: 56px !important;
+  height: 56px !important;
+  z-index: 1;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 16px auto !important;
+  border-radius: 50% !important;
+}
+
+.animate-pop {
+  animation: modal-icon-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes modal-icon-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.premium-congrats-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #FFDF73;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  background: rgba(212, 175, 55, 0.1);
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  z-index: 1;
+}
+
+.reward-amount-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin: 8px 0 12px 0;
+  z-index: 1;
+}
+
+.reward-plus {
+  font-size: 28px;
+  font-weight: 900;
+  color: #FFDF73;
+}
+
+.reward-val-shimmer {
+  font-size: 52px;
+  font-weight: 950;
+  font-family: 'Manrope', sans-serif;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+  background: linear-gradient(135deg, #fff 30%, #FFDF73 50%, #fff 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: reward-shimmer-anim 3s linear infinite;
+}
+
+@keyframes reward-shimmer-anim {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.reward-unit {
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFDF73;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reward-premium-desc {
+  font-size: 12px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  line-height: 1.45 !important;
+  margin: 0 auto 16px auto !important;
+  max-width: 260px;
+  z-index: 1;
+}
+
+.coupon-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.coupon-code-value {
+  font-size: 15px;
+  font-weight: 900;
+  color: #FFDF73;
+  letter-spacing: 1px;
+}
+
+.premium-btn-rainbow {
+  background: linear-gradient(135deg, #FFDF73 0%, #D4AF37 50%, #FFDF73 100%) !important;
+  background-size: 200% auto;
+  color: #000 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.5px;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  animation: reward-shimmer-anim 2.5s linear infinite;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+  z-index: 1;
+  padding: 12px 0 !important;
+}
+
+.premium-btn-rainbow:active {
+  transform: scale(0.96) !important;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2) !important;
+}
+
+/* CLUB PAGE DYNAMIC GAMIFICATION & DOPAMINE STYLES */
+
+/* VIP Progress Shimmer & Glow */
+.clube-progress-fill {
+  position: relative;
+  background: linear-gradient(90deg, #D4AF37, #FFDF73) !important;
+  box-shadow: 0 0 12px rgba(255, 223, 115, 0.6) !important;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.clube-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: translateX(-100%);
+  animation: progress-shimmer-pulse 2.2s infinite linear;
+}
+@keyframes progress-shimmer-pulse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Weekly Checkin Grid / Calendar */
+.clube-weekly-calendar {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 10px;
+  border-radius: 16px;
+  margin: 12px 16px 20px 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.weekly-day-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.weekly-day-slot:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.weekly-day-slot.completed {
+  background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(52, 199, 89, 0.02) 100%);
+  border-color: rgba(52, 199, 89, 0.3);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.05);
+}
+
+.weekly-day-slot.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.03) 100%);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  animation: calendar-pulse 2s infinite ease-in-out;
+}
+
+.weekly-day-slot.locked {
+  opacity: 0.6;
+}
+
+@keyframes calendar-pulse {
+  0% { box-shadow: 0 0 8px rgba(212, 175, 55, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+  100% { box-shadow: 0 0 8px rgba(212, 175, 55, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+}
+
+.weekly-day-name {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.weekly-day-slot.completed .weekly-day-name {
+  color: #34C759;
+}
+.weekly-day-slot.active .weekly-day-name {
+  color: #FFDF73;
+}
+
+.weekly-day-val {
+  font-size: 8px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.2px;
+}
+
+.weekly-day-slot.completed .weekly-day-val {
+  color: rgba(52, 199, 89, 0.7);
+}
+.weekly-day-slot.active .weekly-day-val {
+  color: #FFDF73;
+  text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+}
+
+.weekly-day-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.03);
+  transition: all 0.3s ease;
+}
+
+.weekly-day-slot.completed .weekly-day-icon-wrap {
+  background: rgba(52, 199, 89, 0.15);
+  color: #34C759;
+}
+.weekly-day-slot.active .weekly-day-icon-wrap {
+  background: rgba(212, 175, 55, 0.2);
+  color: #FFDF73;
+  transform: scale(1.1);
+}
+
+/* Enhancements on Mission Cards */
+.clube-missions-scroll {
+  padding: 4px 16px 16px 16px !important;
+}
+
+.clube-mission-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-mission-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(212, 175, 55, 0.05) !important;
+}
+
+.clube-mission-card.completed {
+  border-color: rgba(52, 199, 89, 0.15) !important;
+  background: rgba(52, 199, 89, 0.01) !important;
+  opacity: 0.85;
+}
+
+.clube-mission-icon-box {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.clube-mission-card:hover .clube-mission-icon-box {
+  transform: scale(1.1) rotate(5deg);
+  border-color: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+.clube-mission-btn {
+  font-weight: 800 !important;
+  letter-spacing: 0.2px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.clube-mission-btn:not(.completed) {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  color: #FFDF73 !important;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.1) !important;
+  animation: btn-breath 2.5s infinite ease-in-out;
+}
+
+.clube-mission-btn:not(.completed):hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.1) 100%) !important;
+  transform: scale(1.04);
+  box-shadow: 0 6px 15px rgba(212, 175, 55, 0.2) !important;
+}
+
+.clube-mission-btn.completed {
+  background: rgba(52, 199, 89, 0.12) !important;
+  border: 1px solid rgba(52, 199, 89, 0.2) !important;
+  color: #34C759 !important;
+}
+
+@keyframes btn-breath {
+  0% { transform: scale(1); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.1); }
+  50% { transform: scale(1.03); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25); }
+  100% { transform: scale(1); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.1); }
+}
+
+/* Premium Ad spotlight */
+.clube-ad-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden;
+}
+
+.clube-ad-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35) !important;
+}
+
+.clube-ad-logo-box {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.clube-ad-card:hover .clube-ad-logo-box img {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.clube-ad-logo-box img {
+  transition: transform 0.4s ease;
+}
+
+/* Premium Rewards dynamic overlays */
+.clube-reward-card {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.clube-reward-card::before {
+  content: 'POPULAR';
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #000;
+  background: #FFDF73;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+.clube-reward-card:nth-child(2)::before {
+  content: 'CUPOM';
+  background: #FF6B6B;
+  color: #fff;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.clube-reward-card:nth-child(1)::before {
+  content: 'ILIMITADO';
+  background: #4DADFF;
+  color: #fff;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.clube-reward-card:hover::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.clube-reward-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.35) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+.clube-reward-img-wrapper {
+  overflow: hidden;
+  position: relative;
+}
+
+.clube-reward-img-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(9, 7, 5, 0.9));
+}
+
+.clube-reward-card:hover .clube-reward-img-wrapper img {
+  transform: scale(1.06);
+}
+
+.clube-reward-img-wrapper img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-reward-claim-btn {
+  background: linear-gradient(135deg, #FFDF73 0%, #D4AF37 100%) !important;
+  color: #000 !important;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.25) !important;
+  transition: all 0.3s ease !important;
+}
+
+.clube-reward-claim-btn:hover {
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* ELEGANT VERTICAL CHECKLIST REDESIGN */
+.clube-missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+.clube-mission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-mission-row:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(212, 175, 55, 0.2) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.clube-mission-row.completed {
+  border-color: rgba(52, 199, 89, 0.15) !important;
+  background: rgba(52, 199, 89, 0.01) !important;
+  opacity: 0.85;
+}
+
+.clube-mission-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.clube-mission-icon-box {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  background: rgba(212, 175, 55, 0.06) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.clube-mission-row.completed .clube-mission-icon-box {
+  background: rgba(52, 199, 89, 0.08) !important;
+}
+
+.clube-mission-details {
+  min-width: 0;
+  text-align: left;
+}
+
+.clube-mission-details h4 {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  margin: 0 0 1px 0 !important;
+  line-height: 1.2 !important;
+}
+
+.clube-mission-details p {
+  font-size: 9.5px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.clube-mission-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.clube-mission-reward-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: #FFDF73;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.clube-mission-row.completed .clube-mission-reward-badge {
+  background: rgba(52, 199, 89, 0.08);
+  border-color: rgba(52, 199, 89, 0.15);
+  color: #34C759;
+}
+
+.clube-mission-action-btn {
+  padding: 6px 12px !important;
+  border: none !important;
+  font-size: 9.5px !important;
+  font-weight: 900 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+}
+
+.clube-mission-action-btn:not(.completed) {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  color: #000 !important;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.2) !important;
+}
+
+.clube-mission-action-btn:not(.completed):hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35) !important;
+}
+
+.clube-mission-action-btn.completed {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+/* HIGH-DOPAMINE FLOATING PRODUCT DIAMOND BADGE */
+.product-diamond-reward-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #000 !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2.5px;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.35) !important;
+  z-index: 5;
+  letter-spacing: -0.2px;
+  transition: all 0.3s ease;
+}
+
+.product-card:hover .product-diamond-reward-badge {
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 6px 14px rgba(212, 175, 55, 0.5) !important;
+}
+
+.diamond-reward-icon {
+  font-size: 9px !important;
+  line-height: 1;
+}
+
+/* PREMIUM INNOVATED SPONSORED CARDS GRID (VERTICAL) */
+.clube-ads-grid-vertical {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px !important;
+  padding: 0 16px 20px !important;
+}
+
+@media (min-width: 768px) {
+  .clube-ads-grid-vertical {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* THE BEAUTIFUL VERTICAL CARD STYLING */
+.clube-ad-card-vertical {
+  position: relative !important;
+  background: rgba(14, 11, 9, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* TOP BANNER VISUAL */
+.clube-ad-banner-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 95px !important;
+  overflow: hidden !important;
+}
+
+.clube-ad-banner {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-ad-card-vertical:hover .clube-ad-banner {
+  transform: scale(1.08) rotate(1deg) !important;
+}
+
+.clube-ad-banner-overlay-dark {
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%) !important;
+}
+
+/* FLOATING BANNER TAGS */
+.clube-ad-category-tag {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  font-size: 7.5px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  padding: 1.5px 5px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+}
+
+.clube-ad-duration-tag {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  color: #FFDF73 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  padding: 1.5px 5px !important;
+  border-radius: 4px !important;
+}
+
+/* OVERLAPPED FLOATING BRAND LOGO */
+.clube-ad-logo-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  z-index: 3 !important;
+}
+
+.clube-ad-logo-box {
+  position: absolute !important;
+  top: -24px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  background: rgba(18, 14, 11, 0.95) !important;
+  border: 2px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-ad-card-vertical:hover .clube-ad-logo-box {
+  transform: translateY(-2px) scale(1.05) rotate(4deg) !important;
+}
+
+/* BRAND NEON GLOW EFFECTS */
+.brand-melitta .clube-ad-logo-box { border-color: rgba(212, 175, 55, 0.6) !important; box-shadow: 0 0 12px rgba(212, 175, 55, 0.2) !important; }
+.brand-danonegrego .clube-ad-logo-box { border-color: rgba(99, 102, 241, 0.6) !important; box-shadow: 0 0 12px rgba(99, 102, 241, 0.2) !important; }
+.brand-dobem .clube-ad-logo-box { border-color: rgba(16, 185, 129, 0.6) !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.2) !important; }
+
+.clube-ad-card-vertical.brand-melitta:not(.completed) {
+  border-color: rgba(212, 175, 55, 0.15) !important;
+}
+.clube-ad-card-vertical.brand-melitta:not(.completed):hover {
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 12px 35px rgba(212, 175, 55, 0.12), inset 0 0 15px rgba(212, 175, 55, 0.04) !important;
+}
+
+.clube-ad-card-vertical.brand-danonegrego:not(.completed) {
+  border-color: rgba(99, 102, 241, 0.15) !important;
+}
+.clube-ad-card-vertical.brand-danonegrego:not(.completed):hover {
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 12px 35px rgba(99, 102, 241, 0.12), inset 0 0 15px rgba(99, 102, 241, 0.04) !important;
+}
+
+.clube-ad-card-vertical.brand-dobem:not(.completed) {
+  border-color: rgba(16, 185, 129, 0.15) !important;
+}
+.clube-ad-card-vertical.brand-dobem:not(.completed):hover {
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.12), inset 0 0 15px rgba(16, 185, 129, 0.04) !important;
+}
+
+/* BRAND DETAIL TAGS */
+.clube-ad-brand-tag-vertical {
+  font-size: 7.5px !important;
+  font-weight: 900 !important;
+  background: rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.85) !important;
+  padding: 1.5px 5px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+}
+
+.brand-melitta .clube-ad-brand-tag-vertical { color: #FFDF73 !important; background: rgba(212,175,55,0.08) !important; }
+.brand-danonegrego .clube-ad-brand-tag-vertical { color: #818CF8 !important; background: rgba(99,102,241,0.08) !important; }
+.brand-dobem .clube-ad-brand-tag-vertical { color: #34D399 !important; background: rgba(16,185,129,0.08) !important; }
+
+/* DETAILS AREA */
+.clube-ad-details {
+  padding: 30px 14px 10px !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.clube-ad-title-vertical {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  margin: 3px 0 !important;
+  line-height: 1.25 !important;
+}
+
+.clube-ad-desc-vertical {
+  font-size: 9px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  margin: 0 0 10px !important;
+  line-height: 1.35 !important;
+}
+
+/* REWARD PILLS */
+.clube-ad-reward-wrapper {
+  margin-top: auto !important;
+}
+
+.clube-ad-reward-badge-vertical {
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  color: #000 !important;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15) !important;
+  letter-spacing: -0.2px !important;
+}
+
+.clube-ad-reward-badge-vertical.free {
+  background: rgba(52, 199, 89, 0.12) !important;
+  border-color: rgba(52, 199, 89, 0.25) !important;
+  color: #34C759 !important;
+  box-shadow: none !important;
+}
+
+.clube-ad-reward-badge-vertical.completed {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.4) !important;
+  box-shadow: none !important;
+}
+
+/* ACTION BUTTONS */
+.clube-ad-action-wrapper {
+  padding: 0 14px 14px !important;
+  width: 100% !important;
+}
+
+.clube-ad-btn-vertical {
+  width: 100% !important;
+  padding: 7px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  border: none !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.clube-ad-btn-vertical:not(.completed) {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  color: #000 !important;
+  box-shadow: 0 4px 10px rgba(212,175,55,0.15) !important;
+}
+
+.clube-ad-btn-vertical:not(.completed):hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 6px 14px rgba(212,175,55,0.3) !important;
+}
+
+.clube-ad-btn-vertical.completed {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  cursor: default !important;
+}
+
+/* GLASS COMPLETED COVER */
+.clube-ad-completed-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(9, 7, 5, 0.72) !important;
+  backdrop-filter: blur(1.5px) !important;
+  z-index: 10 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  opacity: 0;
+  pointer-events: none !important;
+  transition: opacity 0.4s ease !important;
+}
+
+.clube-ad-card-vertical.completed .clube-ad-completed-overlay {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.clube-ad-completed-check {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: #34C759 !important;
+  color: #000 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 10px rgba(52, 199, 89, 0.4) !important;
+}
+
+.clube-ad-completed-overlay span {
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  color: rgba(255,255,255,0.8) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+
+/* IMMERSIVE AD THEATER SYSTEM */
+.clube-ad-theater-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(2, 2, 2, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+
+.clube-ad-theater-screen {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  height: 85vh !important;
+  max-height: 650px !important;
+  background: #000 !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.85) !important;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease !important;
+}
+
+/* Pulsing Brand Aura Frames */
+.clube-ad-theater-overlay.brand-melitta .clube-ad-theater-screen { border-color: rgba(212, 175, 55, 0.5) !important; box-shadow: 0 0 35px rgba(212, 175, 55, 0.25) !important; }
+.clube-ad-theater-overlay.brand-danonegrego .clube-ad-theater-screen { border-color: rgba(99, 102, 241, 0.5) !important; box-shadow: 0 0 35px rgba(99, 102, 241, 0.25) !important; }
+.clube-ad-theater-overlay.brand-dobem .clube-ad-theater-screen { border-color: rgba(16, 185, 129, 0.5) !important; box-shadow: 0 0 35px rgba(16, 185, 129, 0.25) !important; }
+
+/* Ad Background Billboard */
+.clube-ad-theater-billboard {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  opacity: 0.85 !important;
+}
+
+.clube-ad-theater-shade {
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to bottom, 
+    rgba(0,0,0,0.85) 0%, 
+    rgba(0,0,0,0.4) 25%, 
+    rgba(0,0,0,0.4) 75%, 
+    rgba(0,0,0,0.95) 100%) !important;
+  z-index: 2 !important;
+}
+
+/* Theater Top Bar */
+.clube-ad-theater-top-bar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding: 16px 20px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  z-index: 5 !important;
+}
+
+.clube-ad-theater-brand-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.clube-ad-theater-logo {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1.5px solid rgba(255,255,255,0.2) !important;
+  padding: 2.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.clube-ad-theater-logo img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+}
+
+.clube-ad-theater-sponsor-label {
+  font-size: 7.5px !important;
+  font-weight: 900 !important;
+  color: rgba(255,255,255,0.4) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.clube-ad-theater-brand-name {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+/* STORY STYLE CIRCULAR COUNTDOWN TIMER */
+.clube-ad-theater-timer-circle {
+  position: relative !important;
+  width: 46px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.clube-ad-theater-timer-circle svg {
+  transform: rotate(-90deg) !important;
+}
+
+.clube-ad-theater-timer-bg {
+  fill: rgba(0, 0, 0, 0.6) !important;
+  stroke: rgba(255, 255, 255, 0.15) !important;
+  stroke-width: 2.5 !important;
+}
+
+.clube-ad-theater-timer-fill {
+  fill: none !important;
+  stroke: #FFDF73 !important;
+  stroke-width: 2.5 !important;
+  stroke-linecap: round !important;
+  transition: stroke-dashoffset 1s linear !important;
+}
+
+/* Circular Timer Fill Colors matched with Brand Theme */
+.brand-melitta .clube-ad-theater-timer-fill { stroke: #FFDF73 !important; }
+.brand-danonegrego .clube-ad-theater-timer-fill { stroke: #6366F1 !important; }
+.brand-dobem .clube-ad-theater-timer-fill { stroke: #10B981 !important; }
+
+.clube-ad-theater-timer-text {
+  position: absolute !important;
+  font-size: 9.5px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* Interactive Sponsor spotlight CTA button */
+.clube-ad-theater-action-cta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 10px 20px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: none !important;
+  cursor: pointer !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+  color: #fff !important;
+}
+
+.brand-melitta .clube-ad-theater-action-cta {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  color: #000 !important;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3) !important;
+}
+.brand-melitta .clube-ad-theater-action-cta:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45) !important;
+}
+
+.brand-danonegrego .clube-ad-theater-action-cta {
+  background: linear-gradient(135deg, #4F46E5, #818CF8) !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+}
+.brand-danonegrego .clube-ad-theater-action-cta:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+}
+
+.brand-dobem .clube-ad-theater-action-cta {
+  background: linear-gradient(135deg, #059669, #34D399) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+}
+.brand-dobem .clube-ad-theater-action-cta:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+}
+
+/* Bottom Spotlight & Subtitles Block */
+.clube-ad-theater-bottom-spotlight {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding: 20px 24px 24px !important;
+  z-index: 5 !important;
+}
+
+.clube-ad-theater-subtitles {
+  text-align: center !important;
+  margin-bottom: 20px !important;
+}
+
+.clube-ad-theater-subtitle-glow {
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+}
+
+.brand-melitta .clube-ad-theater-subtitle-glow { color: #FFDF73 !important; }
+.brand-danonegrego .clube-ad-theater-subtitle-glow { color: #818CF8 !important; }
+.brand-dobem .clube-ad-theater-subtitle-glow { color: #34D399 !important; }
+
+/* Interactive Progress bar Slider timeline */
+.clube-ad-theater-timeline-track {
+  width: 100% !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: rgba(255,255,255,0.15) !important;
+  overflow: hidden !important;
+}
+
+.clube-ad-theater-timeline-fill {
+  height: 100% !important;
+  border-radius: 2px !important;
+  transition: width 1s linear !important;
+}
+
+.brand-melitta .clube-ad-theater-timeline-fill {
+  background: linear-gradient(to right, #D4AF37, #FFDF73) !important;
+  box-shadow: 0 0 8px rgba(255, 223, 115, 0.8) !important;
+}
+
+.brand-danonegrego .clube-ad-theater-timeline-fill {
+  background: linear-gradient(to right, #4F46E5, #818CF8) !important;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.8) !important;
+}
+
+.brand-dobem .clube-ad-theater-timeline-fill {
+  background: linear-gradient(to right, #059669, #34D399) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8) !important;
+}
+
 

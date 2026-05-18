@@ -6,12 +6,14 @@ export const ProductCard = ({
   image,
   badge,
   badgeStyle = 'light',
+  diamondReward,
 }: {
   title: string;
   price: string;
   image: string;
   badge?: string;
   badgeStyle?: 'light' | 'orange';
+  diamondReward?: number;
 }) => {
   const slug = title
     .toLowerCase()
@@ -28,6 +30,12 @@ export const ProductCard = ({
           {badge && (
             <div className="badge-wrapper">
               <div className={`badge ${badgeStyle}`}>{badge}</div>
+            </div>
+          )}
+          {diamondReward && (
+            <div className="product-diamond-reward-badge" title={`Ganhe ${diamondReward} diamantes ao comprar!`}>
+              <span className="diamond-reward-icon">♦</span>
+              <span>+{diamondReward}</span>
             </div>
           )}
         </div>

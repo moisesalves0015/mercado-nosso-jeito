@@ -86,11 +86,13 @@ export const Home = () => {
           title="Pão de Queijo Tradicional (1kg)"
           price="R$ 32,90"
           image="/paodequeijo-novo.webp"
+          diamondReward={18}
         />
         <ProductCard
           title="Iogurte Grego Danone (4x)"
           price="R$ 18,90"
           image="/iogurte-novo.webp"
+          diamondReward={12}
         />
         <ProductCard
           title="Granola Mel Barano (500g)"
@@ -106,6 +108,7 @@ export const Home = () => {
           title="Café Melitta Tradicional (500g)"
           price="R$ 19,90"
           image="/cafe-novo.png"
+          diamondReward={15}
         />
       </Section>
 
@@ -165,6 +168,7 @@ export const Home = () => {
           image="/suco_do_bem_laranja_integral.png"
           badge="Promocional"
           badgeStyle="light"
+          diamondReward={10}
         />
         <ProductCard
           title="Café Torrado e Moído Pilão (500g)"
