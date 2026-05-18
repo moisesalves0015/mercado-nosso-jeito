@@ -1,7 +1,7 @@
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, SlidersHorizontal } from 'lucide-react';
+import { Search, Croissant, Flame, Beef, Wine, PartyPopper, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
@@ -26,6 +26,18 @@ export const Home = () => {
 
       {/* CATEGORY ROW (REVERTED EXACTLY AS REQUESTED) */}
       <div className="category-row">
+        <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper" style={{ border: '1px solid rgba(14, 165, 233, 0.4)', background: 'rgba(14, 165, 233, 0.08)', boxShadow: '0 2px 8px rgba(14, 165, 233, 0.15)' }}><CupSoda size={28} color="#0EA5E9" /></div>
+            <span className="category-text" style={{ color: '#0EA5E9', fontWeight: 'bold' }}>Bebidas</span>
+          </div>
+        </Link>
+        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper" style={{ border: '1px solid rgba(212, 175, 55, 0.4)', background: 'rgba(212, 175, 55, 0.08)', boxShadow: '0 2px 8px rgba(212, 175, 55, 0.15)' }}><Cigarette size={28} color="#D4AF37" /></div>
+            <span className="category-text" style={{ color: '#D4AF37', fontWeight: 'bold' }}>Tabacaria</span>
+          </div>
+        </Link>
         <div className="category-item">
           <div className="category-icon-wrapper"><Croissant size={28} /></div>
           <span className="category-text">Padaria</span>

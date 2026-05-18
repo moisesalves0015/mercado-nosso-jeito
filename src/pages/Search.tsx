@@ -26,6 +26,26 @@ export const Search = () => {
         </div>
       </div>
 
+      <div className="glass-panel" style={{ marginTop: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <h3 style={{ color: '#E7BC79', marginBottom: '12px', fontSize: '14px' }}>Especiais do Dia</h3>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Link to="/bebidas" style={{ flex: 1, textDecoration: 'none' }}>
+            <div style={{ background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.25)', borderRadius: '12px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.1)' }}>
+              <span style={{ color: '#0EA5E9', fontWeight: 900, fontSize: '12.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                🧊 Bebidas Geladas
+              </span>
+            </div>
+          </Link>
+          <Link to="/tabacaria" style={{ flex: 1, textDecoration: 'none' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.25)', borderRadius: '12px', padding: '12px 8px', textAlign: 'center', boxShadow: '0 4px 12px rgba(212, 175, 55, 0.1)' }}>
+              <span style={{ color: '#D4AF37', fontWeight: 900, fontSize: '12.5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                🚬 Tabacaria Premium
+              </span>
+            </div>
+          </Link>
+        </div>
+      </div>
+
       <h3 style={{ margin: '24px 0 12px 16px', color: '#fff', fontSize: '16px' }}>Recomendados para você</h3>
       <div className="products-grid">
         <ProductCard title="Café Melitta Vácuo (500g)" price="R$ 19,90" image="https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600" />

@@ -7,14 +7,14 @@ import { Orders } from './pages/Orders';
 import { Profile } from './pages/Profile';
 import { ProductDetail } from './pages/ProductDetail';
 import { Clube } from './pages/Clube';
+import { Tabacaria } from './pages/Tabacaria';
+import { Bebidas } from './pages/Bebidas';
 
 function App() {
   return (
     <BrowserRouter>
       {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&display=swap');
-        
         body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
           font-family: 'Manrope', 'Outfit', sans-serif !important;
         }
@@ -27,6 +27,8 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/clube" element={<Clube />} />
+        <Route path="/tabacaria" element={<Tabacaria />} />
+        <Route path="/bebidas" element={<Bebidas />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
