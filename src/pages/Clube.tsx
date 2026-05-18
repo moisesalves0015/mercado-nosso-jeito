@@ -78,7 +78,14 @@ export const Clube = () => {
   const [activeAd, setActiveAd] = useState<SponsorAd | null>(null);
   const [adTimer, setAdTimer] = useState<number>(3);
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
-  const [successModal, setSuccessModal] = useState<{title: string; coupon: string; desc: string; amountGained?: number} | null>(null);
+  const [successModal, setSuccessModal] = useState<{
+    title: string;
+    coupon: string;
+    desc: string;
+    amountGained?: number;
+    description?: string;
+  } | null>(null);
+  const [isAnimatingEarn, setIsAnimatingEarn] = useState<number | null>(null);
   const [completedAds, setCompletedAds] = useState<string[]>([]);
 
   // Simulated points history ledgers
@@ -216,40 +223,33 @@ export const Clube = () => {
       interval = setInterval(() => {
         setAdTimer((prev) => prev - 1);
       }, 1000);
-    } else if (isAdPlaying && adTimer === 0) {
-      setIsAdPlaying(false);
-      handleEarnCoins(activeAd?.rewardVal || 50, `Anúncio Assistido (${activeAd?.brand})`);
-      
-      // Mark ad mission completed
-      setMissions(prev => prev.map(m => m.type === 'ad' ? { ...m, completed: true, progressText: '1/1 vídeo' } : m));
-      
-      if (activeAd) {
-        setCompletedAds(prev => [...prev, activeAd.id]);
-      }
-      
-      if (activeAd?.type === 'shipping') {
-        setSuccessModal({
-          title: 'Frete Grátis Ativado!',
-          desc: 'Seu cupom de frete grátis exclusivo da marca Do Bem já está disponível na carteira!',
-          coupon: 'DOBEMFRETE'
-        });
-      } else {
-        setSuccessModal({
-          title: `+${activeAd?.rewardVal} Diamantes Ganhos!`,
-          desc: `Obrigado por assistir ao conteúdo patrocinado de ${activeAd?.brand}. Seus diamantes foram adicionados.`,
-          coupon: 'CREDITADO',
-          amountGained: activeAd?.rewardVal
-        });
-      }
-      setActiveAd(null);
     }
     return () => clearInterval(interval);
   }, [isAdPlaying, adTimer]);
 
   const handleEarnCoins = (amount: number, description: string) => {
-    setCoins((prev) => prev + amount);
+    // Progressive Count-Up Ticker Animation for Coins Balance
+    const startCoins = coins;
+    const targetCoins = startCoins + amount;
+    let tempCoins = startCoins;
+    
     setPopBadge(true);
-    setTimeout(() => setPopBadge(false), 300);
+    
+    // Smooth count-up duration: 2.4s (2400ms) for enhanced readability
+    const durationMs = 2400;
+    const stepTimeMs = 60;
+    const totalSteps = durationMs / stepTimeMs;
+    const increment = Math.max(1, Math.round(amount / totalSteps));
+    
+    const counterInterval = setInterval(() => {
+      tempCoins += increment;
+      if (tempCoins >= targetCoins) {
+        tempCoins = targetCoins;
+        clearInterval(counterInterval);
+        setPopBadge(false);
+      }
+      setCoins(tempCoins);
+    }, stepTimeMs);
 
     // Update VIP progress
     setVipProgress((prev) => {
@@ -274,21 +274,20 @@ export const Clube = () => {
       },
       ...prev,
     ]);
-
-    // Automatically trigger visual success modal for checkin / other earns
-    setSuccessModal({
-      title: 'Diamantes Creditados!',
-      desc: `${description}. Fique ativo para acumular mais diamantes e resgatar prêmios!`,
-      coupon: 'CREDITADO',
-      amountGained: amount
-    });
   };
 
   const handleCheckin = () => {
     if (checkedIn) return;
     setCheckedIn(true);
     setStreak(prev => prev + 1);
-    handleEarnCoins(15, 'Check-in Diário (Dia 8)');
+    
+    setSuccessModal({
+      title: 'Check-in Realizado!',
+      desc: 'Check-in Diário (Dia 8). Fique ativo para acumular mais diamantes e resgatar prêmios!',
+      coupon: 'CREDITADO',
+      amountGained: 15,
+      description: 'Check-in Diário (Dia 8)'
+    });
     
     // Mark checkin mission completed
     setMissions(prev => prev.map(m => m.type === 'checkin' ? { ...m, completed: true, progressText: '1/1 dia' } : m));
@@ -303,10 +302,31 @@ export const Clube = () => {
   const handleReferral = () => {
     navigator.clipboard.writeText('https://mercado.nossojeito/invite?ref=MEMBER320');
     alert('Link de indicação exclusivo copiado!');
-    handleEarnCoins(80, 'Indicação Compartilhada');
+    
+    setSuccessModal({
+      title: 'Indicação Registrada!',
+      desc: 'Sua indicação foi computada com sucesso no sistema!',
+      coupon: 'CREDITADO',
+      amountGained: 80,
+      description: 'Indicação Compartilhada'
+    });
     
     // Mark refer mission completed
     setMissions(prev => prev.map(m => m.type === 'refer' ? { ...m, completed: true, progressText: '1/3 indicados' } : m));
+  };
+
+  const handleCompleteOrder = () => {
+    if (missions[2].completed) return;
+    
+    setSuccessModal({
+      title: 'Pedido Concluído!',
+      desc: 'Parabéns por realizar o seu pedido! Seus diamantes bônus foram ativados com sucesso!',
+      coupon: 'CREDITADO',
+      amountGained: 100,
+      description: 'Missão: Fazer Pedido'
+    });
+    
+    setMissions(prev => prev.map(m => m.type === 'order' ? { ...m, completed: true, progressText: '1/1 pedido' } : m));
   };
 
   const handleRedeemReward = (reward: RewardItem) => {
@@ -546,10 +566,7 @@ export const Clube = () => {
             </div>
             <button 
               className={`clube-mission-action-btn ${missions[2].completed ? 'completed' : ''}`}
-              onClick={() => {
-                handleEarnCoins(100, 'Pedido Completado #9021');
-                setMissions(prev => prev.map(m => m.type === 'order' ? { ...m, completed: true, progressText: '1/1 pedido' } : m));
-              }}
+              onClick={handleCompleteOrder}
               disabled={missions[2].completed}
             >
               {missions[2].completed ? 'Concluído' : 'Completar'}
@@ -728,8 +745,40 @@ export const Clube = () => {
                   </div>
                 </div>
 
-                {/* Circular Story Countdown Timer */}
-                <div className="clube-ad-theater-timer-circle">
+                {/* Circular Story Countdown Timer (Turns into Close X Button when completed) */}
+                <div 
+                  className={`clube-ad-theater-timer-circle ${adTimer === 0 ? 'ad-completed-closeable' : ''}`}
+                  onClick={() => {
+                    if (adTimer === 0) {
+                      // Finalize active ad playback
+                      setIsAdPlaying(false);
+                      
+                      // Trigger success modal setup
+                      if (activeAd.type === 'shipping') {
+                        setSuccessModal({
+                          title: 'Frete Grátis Ativado!',
+                          desc: 'Seu cupom de frete grátis exclusivo da marca Do Bem já está disponível na carteira!',
+                          coupon: 'DOBEMFRETE'
+                        });
+                      } else {
+                        setSuccessModal({
+                          title: `+${activeAd.rewardVal} Diamantes Ganhos!`,
+                          desc: `Obrigado por assistir ao conteúdo patrocinado de ${activeAd.brand}. Seus diamantes foram adicionados.`,
+                          coupon: 'CREDITADO',
+                          amountGained: activeAd.rewardVal,
+                          description: `Anúncio Assistido (${activeAd.brand})`
+                        });
+                      }
+                      
+                      // Mark ad mission completed
+                      setMissions(prev => prev.map(m => m.type === 'ad' ? { ...m, completed: true, progressText: '1/1 vídeo' } : m));
+                      
+                      setCompletedAds(prev => [...prev, activeAd.id]);
+                      setActiveAd(null);
+                    }
+                  }}
+                  style={adTimer === 0 ? { cursor: 'pointer' } : undefined}
+                >
                   <svg width="46" height="46" viewBox="0 0 46 46">
                     <circle 
                       cx="23" 
@@ -743,10 +792,15 @@ export const Clube = () => {
                       r={radius} 
                       className="clube-ad-theater-timer-fill"
                       strokeDasharray={circumference}
-                      strokeDashoffset={progressOffset}
+                      strokeDashoffset={adTimer === 0 ? 0 : progressOffset}
+                      style={adTimer === 0 ? { stroke: '#FFDF73' } : undefined}
                     />
                   </svg>
-                  <span className="clube-ad-theater-timer-text">{adTimer}s</span>
+                  {adTimer === 0 ? (
+                    <span className="clube-ad-theater-timer-text" style={{ fontSize: 16, fontWeight: 900, color: '#FFDF73' }}>✕</span>
+                  ) : (
+                    <span className="clube-ad-theater-timer-text">{adTimer}s</span>
+                  )}
                 </div>
               </div>
 
@@ -755,10 +809,13 @@ export const Clube = () => {
                 <div className="clube-ad-theater-subtitles">
                   <h3 className="clube-ad-theater-ad-title" style={{ color: '#fff', fontSize: 16, fontWeight: 900, margin: '6px 0 2px' }}>{activeAd.title}</h3>
                   <p className="clube-ad-theater-ad-desc" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, margin: '0 0 8px' }}>{activeAd.desc}</p>
-                  <p className="clube-ad-theater-reward-hint" style={{ color: '#FFDF73', fontSize: 10.5, fontWeight: 800 }}>
-                    {activeAd.rewardVal > 0 
-                      ? `Aguarde mais ${adTimer} segundos para resgatar +${activeAd.rewardVal} Diamantes!` 
-                      : `Aguarde mais ${adTimer} segundos para ativar o seu Frete Grátis!`
+                  <p className="clube-ad-theater-reward-hint" style={{ color: adTimer === 0 ? '#34C759' : '#FFDF73', fontSize: 10.5, fontWeight: 800 }}>
+                    {adTimer === 0 
+                      ? "Recompensa Liberada! 🎉"
+                      : (activeAd.rewardVal > 0 
+                          ? `Aguarde mais ${adTimer} segundos para resgatar +${activeAd.rewardVal} Diamantes!` 
+                          : `Aguarde mais ${adTimer} segundos para ativar o seu Frete Grátis!`
+                        )
                     }
                   </p>
                 </div>
@@ -871,6 +928,14 @@ export const Clube = () => {
               className="clube-modal-btn premium-btn-rainbow"
               onClick={() => {
                 if (successModal.amountGained) {
+                  // Capture modal values for deferred execution
+                  const amount = successModal.amountGained;
+                  const descText = successModal.description || 'Recompensa Creditada';
+                  
+                  // Trigger flying reward text animation
+                  setIsAnimatingEarn(amount);
+                  
+                  // Explode secondary golden confetti cascade instantly
                   import('canvas-confetti').then((confettiModule) => {
                     confettiModule.default({ 
                       particleCount: 80, 
@@ -880,13 +945,31 @@ export const Clube = () => {
                       colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
                     });
                   });
+
+                  // Close success modal instantly so user sees the background
+                  setSuccessModal(null);
+
+                  // Defer points incrementation until flight animation hits the wallet (1500ms)
+                  setTimeout(() => {
+                    handleEarnCoins(amount, descText);
+                    setIsAnimatingEarn(null);
+                  }, 1500);
+                } else {
+                  setSuccessModal(null);
                 }
-                setSuccessModal(null);
               }}
             >
               Sensacional! 💎
             </button>
           </div>
+        </div>
+      )}
+
+      {/* FLYING TEXT REWARD ABSOLUTE ELEMENT CONTAINER */}
+      {isAnimatingEarn !== null && (
+        <div className="flying-reward-text-animation">
+          <PremiumDiamondSVG size={18} fill="#FFDF73" color="#FFDF73" style={{ filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.75))' }} />
+          <span>+{isAnimatingEarn}</span>
         </div>
       )}
     </main>

@@ -3647,4 +3647,82 @@ body{
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.8) !important;
 }
 
+/* =========================================================
+   FLY TO WALLET ANIMATION & STYLES
+========================================================= */
+
+.flying-reward-text-animation {
+  position: absolute !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #FFDF73 !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  animation: flyToWallet 1.50s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+@keyframes flyToWallet {
+  0% {
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(212,175,55,0.95));
+  }
+  15% {
+    top: 52%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 1;
+    filter: drop-shadow(0 0 24px rgba(212,175,55,1));
+  }
+  85% {
+    top: 28px;
+    left: calc(100% - 82px);
+    transform: translate(0, -50%) scale(0.95);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 8px rgba(212,175,55,0.8));
+  }
+  100% {
+    top: 28px;
+    left: calc(100% - 76px);
+    transform: translate(0, -50%) scale(0.65);
+    opacity: 0;
+    filter: drop-shadow(0 0 2px rgba(212,175,55,0.3));
+  }
+}
+
+/* Pulsing Close button styling in circular timer (Clean Premium Gold, No Shadow/Glow) */
+.ad-completed-closeable {
+  background: rgba(255, 223, 115, 0.08) !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  animation: pulseGoldClose 1.8s infinite ease-in-out !important;
+  transition: all 0.3s ease !important;
+}
+.ad-completed-closeable:active {
+  transform: scale(0.9) !important;
+}
+
+@keyframes pulseGoldClose {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes bounce-right {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
 

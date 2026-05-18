@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, ShoppingCart, RefreshCw } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
+import { useCart } from '../hooks/useCart';
 
 interface ProductMock {
   id: string;
@@ -249,6 +250,7 @@ export const ProductDetail = () => {
   const [frequency, setFrequency] = useState<string>('30');
   const [isFavorited, setIsFavorited] = useState<boolean>(false);
   const [couponApplied, setCouponApplied] = useState<boolean>(false);
+  const { addToCart } = useCart();
 
   // Calculations
   const discountMultiplier = purchaseMode === 'subscribe' ? 0.9 : 1.0;
@@ -520,11 +522,50 @@ export const ProductDetail = () => {
         <div className="cta-container">
           <button 
             className="main-gold-cta"
-            onClick={() => {
-              alert(purchaseMode === 'subscribe' 
-                ? `Assinatura de ${quantity}x ${product.title} a cada ${frequency} dias configurada!` 
-                : `${quantity}x ${product.title} adicionado ao carrinho!`
-              );
+            onClick={(e) => {
+              if (purchaseMode === 'subscribe') {
+                alert(`Assinatura de ${quantity}x ${product.title} a cada ${frequency} dias configurada!`);
+              } else {
+                // Trigger visual flying item thumbnail
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                const startX = rect.left + rect.width / 2;
+                const startY = rect.top + rect.height / 2;
+
+                const flyer = document.createElement('div');
+                flyer.style.position = 'fixed';
+                flyer.style.left = `${startX}px`;
+                flyer.style.top = `${startY}px`;
+                flyer.style.width = '36px';
+                flyer.style.height = '36px';
+                flyer.style.borderRadius = '50%';
+                flyer.style.background = '#fff';
+                flyer.style.border = '1.5px solid #FFDF73';
+                flyer.style.boxShadow = '0 0 10px rgba(212,175,55,0.7)';
+                flyer.style.backgroundImage = `url(${product.image})`;
+                flyer.style.backgroundSize = 'contain';
+                flyer.style.backgroundPosition = 'center';
+                flyer.style.backgroundRepeat = 'no-repeat';
+                flyer.style.zIndex = '99999';
+                flyer.style.pointerEvents = 'none';
+                flyer.style.transition = 'all 0.9s cubic-bezier(0.25, 1, 0.5, 1)';
+
+                document.body.appendChild(flyer);
+
+                const targetX = window.innerWidth / 2;
+                const targetY = window.innerHeight - 56;
+
+                flyer.getBoundingClientRect();
+
+                flyer.style.left = `${targetX - 18}px`;
+                flyer.style.top = `${targetY - 18}px`;
+                flyer.style.transform = 'scale(0.3) rotate(360deg)';
+                flyer.style.opacity = '0.3';
+
+                setTimeout(() => {
+                  flyer.remove();
+                  addToCart({ id: product.id, title: product.title, price: finalPrice, image: product.image }, quantity);
+                }, 900);
+              }
             }}
           >
             {purchaseMode === 'subscribe' ? (

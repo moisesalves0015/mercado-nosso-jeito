@@ -9,6 +9,7 @@ import { ProductDetail } from './pages/ProductDetail';
 import { Clube } from './pages/Clube';
 import { Tabacaria } from './pages/Tabacaria';
 import { Bebidas } from './pages/Bebidas';
+import { Cart } from './pages/Cart';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/clube" element={<Clube />} />
         <Route path="/tabacaria" element={<Tabacaria />} />
         <Route path="/bebidas" element={<Bebidas />} />
+        <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
