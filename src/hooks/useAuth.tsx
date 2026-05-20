@@ -7,7 +7,8 @@ import {
   signOut,
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { app } from '../firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { app, db } from '../firebase';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -30,17 +31,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const auth = getAuth(app);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        // Safe check for Admin privileges
-        const emailLower = firebaseUser.email?.toLowerCase() || '';
-        const isUserAdmin = emailLower === 'admin@mercado.com' || emailLower.startsWith('admin@');
-        setIsAdmin(isUserAdmin);
+        // Fetch user data from Firestore
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            setIsAdmin(userData.role === 'admin');
+            
+            // Sync name if missing locally
+            if (userData.name) {
+              setUserName(userData.name);
+              localStorage.setItem(`user_name_${firebaseUser.uid}`, userData.name);
+            }
+          } else {
+            // Auto-heal: Create document for existing users who registered before Firestore was added or when rules blocked it
+            const emailLower = firebaseUser.email?.toLowerCase() || '';
+            const initialRole = (emailLower === 'admin@mercado.com' || emailLower.startsWith('admin@')) ? 'admin' : 'client';
+            
+            await setDoc(userDocRef, {
+              name: firebaseUser.displayName || 'Usuário',
+              email: firebaseUser.email,
+              role: initialRole,
+              createdAt: serverTimestamp()
+            });
+            setIsAdmin(initialRole === 'admin');
+          }
+        } catch (error: any) {
+          console.error("Error fetching user role:", error);
+          alert("Erro no Firebase: " + error.message);
+          setIsAdmin(false);
+        }
 
-        // Fetch name
+        // Fetch name locally if Firestore didn't provide one
         const storedName = localStorage.getItem(`user_name_${firebaseUser.uid}`) || firebaseUser.displayName || 'Cliente';
-        setUserName(storedName);
+        if (!userName) setUserName(storedName);
+
       } else {
         setIsAdmin(false);
         setUserName('');
@@ -65,10 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, senhas);
+      const user = credential.user;
+      
       // Store local name
-      localStorage.setItem(`user_name_${credential.user.uid}`, name);
+      localStorage.setItem(`user_name_${user.uid}`, name);
       setUserName(name);
-      return credential.user;
+
+      // Create User Document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        name: name,
+        email: email,
+        role: email.toLowerCase().startsWith('admin@') ? 'admin' : 'client',
+        createdAt: serverTimestamp()
+      });
+
+      return user;
     } finally {
       setLoading(false);
     }

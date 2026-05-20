@@ -5,7 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 
 export const Topbar = () => {
   const { userName } = useAuth();
-  const displayName = userName || 'Moisés';
+  const fullName = userName || 'Moisés';
+  const displayName = fullName.split(' ')[0];
 
   const [coins, setCoins] = useState<number>(() => {
     const saved = localStorage.getItem('user_diamonds');

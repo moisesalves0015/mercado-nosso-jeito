@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 // Read securely from environment variables, or use default client-side config as fallback in production deploys (Vercel)
 const firebaseConfig = {
@@ -13,10 +14,13 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-VX2TZLWN1X"
 };
 
-// Initialize Firebase safely
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Analytics helper to guarantee safe execution in any server/non-browser environment
+// Initialize Firestore
+export const db = getFirestore(app);
+
+// Analytics helper - safe for server/non-browser environments
 export const analytics = typeof window !== "undefined"
   ? isSupported().then((supported) => (supported ? getAnalytics(app) : null))
   : null;
