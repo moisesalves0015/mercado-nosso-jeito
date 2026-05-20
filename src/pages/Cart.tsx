@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, CheckCircle, Tag } from 'lucide-react';
 import { useState } from 'react';
+import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
 
 export function Cart() {
   const navigate = useNavigate();
@@ -129,8 +130,19 @@ export function Cart() {
           </button>
         </div>
       ) : (
-        <div style={{ padding: '16px 16px 0 16px' }}>
-          {/* ITEMS LIST CONTAINER */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          
+          {/* ENTREGA RÁPIDA BANNER */}
+          <div style={{ width: '100%', marginBottom: 20 }}>
+            <img 
+              src={bannerEntregaRapida} 
+              alt="Entrega Rápida" 
+              style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
+            />
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* ITEMS LIST CONTAINER */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
             {cartItems.map((item) => (
               <div 
@@ -241,6 +253,7 @@ export function Cart() {
               Concluir Compra 💳
             </button>
           </div>
+        </div>
         </div>
       )}
 

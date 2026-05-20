@@ -70,7 +70,7 @@ export const ProductCard = ({
   const [animationState, setAnimationState] = useState<'normal' | 'reducing' | 'reduced-flash' | 'club-only'>('normal');
   const [currentPrice, setCurrentPrice] = useState<number>(numericPrice);
 
-  const triggerIncentiveEffects = (discount: number) => {
+  const triggerIncentiveEffects = () => {
     if (!cardRef.current || !pricePillRef.current) return;
     const card = cardRef.current;
     const pill = pricePillRef.current;
@@ -81,38 +81,12 @@ export const ProductCard = ({
     
     const pillCenterX = (pillRect.left + pillRect.width / 2) - cardRect.left;
     const pillCenterY = (pillRect.top + pillRect.height / 2) - cardRect.top;
-    const pillBottomY = pillRect.bottom - cardRect.top;
 
-    // 1. Spawning Red Negative Floating Value (-R$ X,XX) under the pill, without drifting downwards
-    const floater = document.createElement('div');
-    floater.className = 'deduction-floater';
-    floater.innerText = `-R$ ${discount.toFixed(2).replace('.', ',')}`;
-    floater.style.position = 'absolute';
-    floater.style.left = `${pillCenterX}px`;
-    floater.style.top = `${pillBottomY - 1}px`; // Under the price pill (exactly 1px overlap/closer)
-    floater.style.transform = 'translate(-50%, 0)';
-    floater.style.color = '#FF5E5E'; // Red color
-    floater.style.fontWeight = '900';
-    floater.style.fontSize = '9.5px'; // Slightly smaller font size
-    floater.style.pointerEvents = 'none';
-    floater.style.zIndex = '9999'; // Above everything
-    floater.style.whiteSpace = 'nowrap'; // Avoid line break
-    floater.style.opacity = '1'; // Start fully solid/opaque
-    
-    card.appendChild(floater);
-    
-    // Force DOM reflow
-    floater.getBoundingClientRect();
-    
-    // Animate: Keep it visible exactly while the price flashes (7000ms total)
-    setTimeout(() => {
-      floater.style.transition = 'opacity 0.8s ease-out';
-      floater.style.opacity = '0';
-    }, 6200); // Wait 6.2s before fading out so it stays visible during the flash
-    
-    setTimeout(() => {
-      floater.remove();
-    }, 7000); // Remove exactly when the flash phase ends
+    // Prevent duplicate floaters by removing any existing ones in this card
+    const existingFloater = card.querySelector('.deduction-floater');
+    if (existingFloater) {
+      existingFloater.remove();
+    }
 
     // 2. Yellow/Gold Diamond Explosion behind the price pill
     const numParticles = 8;
@@ -208,8 +182,8 @@ export const ProductCard = ({
           // 2. Switch to reduced-flash state (final reduced price pulses/scale-flashes)
           setAnimationState('reduced-flash');
           
-          // Trigger the yellow diamond explosion and red negative deduction floater
-          triggerIncentiveEffects(discount);
+          // Trigger the yellow diamond explosion
+          triggerIncentiveEffects();
 
           // Hold reduced-flash for 7.0 seconds (drastically slower), then display "SÓ NO CLUBE!"
           setTimeout(() => {
@@ -332,7 +306,9 @@ export const ProductCard = ({
         <div className="product-title">{title}</div>
       </Link>
 
-      <div className={`price-pill ${animationState === 'club-only' ? 'club-only-active' : ''}`} ref={pricePillRef}>
+      <div className={`price-pill ${
+        animationState === 'club-only' || animationState === 'reduced-flash' ? 'green-pill-active' : ''
+      } ${animationState === 'club-only' ? 'club-only-active' : ''}`} ref={pricePillRef}>
         {animationState === 'club-only' ? (
           <div className="club-only-flash">SÓ NO CLUBE!</div>
         ) : (
@@ -349,7 +325,7 @@ export const ProductCard = ({
           </div>
         )}
         {animationState !== 'club-only' && (
-          <button className="add-btn" onClick={handleAdd}>+</button>
+          <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd}>+</button>
         )}
       </div>
     </div>

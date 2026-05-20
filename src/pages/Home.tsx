@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
-import { Search, Croissant, Flame, Sparkles, Candy, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda, Headphones, MoreHorizontal, PartyPopper } from 'lucide-react';
+import { Search, Croissant, Flame, Sparkles, Candy, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda, Headphones, MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
+import bannerIndique from '../assets/banners/bannerIndique.svg';
 
 interface Product {
   id: string;
@@ -238,15 +240,12 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* PINK FRETE GRÁTIS BANNER */}
-      <Link to="/promotions" style={{textDecoration: 'none'}}>
-        <div className="promo-banner">
-          <div className="promo-text">
-            <h3>Frete Grátis</h3>
-            <p>Na sua primeira compra no app!</p>
-          </div>
-          <PartyPopper size={40} color="#fff" />
-        </div>
+      <Link to="/promotions" style={{ textDecoration: 'none', display: 'block', padding: 0, marginBottom: '24px' }}>
+        <img 
+          src={bannerFreteGratis} 
+          alt="Frete Grátis na sua primeira compra no app!" 
+          style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
+        />
       </Link>
 
       <Section
@@ -320,6 +319,15 @@ export const Home = () => {
           category="limpeza"
         />
       </Section>
+
+      {/* INDIQUE BANNER */}
+      <Link to="/clube" style={{ textDecoration: 'none', display: 'block', padding: 0, marginBottom: '24px' }}>
+        <img 
+          src={bannerIndique} 
+          alt="Indique e Ganhe" 
+          style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
+        />
+      </Link>
 
       {/* FOOTER */}
       <footer className="app-footer">

@@ -255,9 +255,36 @@ body{
   justify-content: center;
   align-items: center;
   color: #000;
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
+  flex-shrink: 0;
+}
+
+.add-btn.green-btn-active {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(46, 204, 113, 0.4);
+}
+
+.reduced-flash-active {
+  animation: pulse-border-green 1.5s infinite;
+}
+
+.club-only-active {
+  border-color: #2ecc71 !important;
+  background: rgba(46, 204, 113, 0.1) !important;
+}
+
+.club-only-flash {
+  animation: pulse-border-green 1.5s infinite;
+}
+
+@keyframes pulse-border-green {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
 }
 
 .logo-icon {
@@ -952,7 +979,7 @@ body{
 }
 
 .product-price.reduced-flash-active {
-  color: #FFDF73; /* Gold/yellow color for the final price */
+  color: #2ecc71; /* Green color for the final price as requested */
   font-weight: 900;
   animation: pulse-reduced-price 1.2s infinite alternate; /* Slower pulse */
   display: inline-block;
@@ -979,10 +1006,10 @@ body{
   }
 }
 
-.price-pill.club-only-active {
-  background: rgba(212, 175, 55, 0.08);
-  border-color: #FFDF73;
-  animation: pulse-border 1.2s infinite;
+.price-pill.green-pill-active {
+  background: rgba(46, 204, 113, 0.08);
+  border-color: #2ecc71;
+  animation: pulse-border-green 1.2s infinite;
 }
 
 .club-only-flash {
@@ -990,7 +1017,7 @@ body{
   text-align: center;
   font-size: 8px;
   font-weight: 900;
-  color: #FFDF73;
+  color: #2ecc71; /* Green color */
   animation: flash-text 1.2s infinite alternate; /* Slower flashing */
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -1017,6 +1044,18 @@ body{
   }
 }
 
+@keyframes pulse-border-green {
+  0% {
+    box-shadow: 0 0 2px rgba(46, 204, 113, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 2px rgba(46, 204, 113, 0.2);
+  }
+}
+
 .add-btn{
   width:14px; /* Decreased button size */
   height:14px;
@@ -1030,6 +1069,12 @@ body{
   font-weight:900;
   cursor:pointer;
   flex-shrink: 0;
+}
+
+.add-btn.green-btn-active {
+  background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(46, 204, 113, 0.4);
 }
 
 /* =========================================================
