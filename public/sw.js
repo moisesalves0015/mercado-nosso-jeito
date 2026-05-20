@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mercado-v1';
+const CACHE_NAME = 'mercado-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -29,12 +29,19 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Network-first strategy to prevent SPAs from caching old index.html and 404ing on chunks
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      return cachedResponse || fetch(e.request).catch(() => {
-        // Fallback for offline if asset isn't cached
-        return caches.match('/');
-      });
-    })
+    fetch(e.request)
+      .then((networkResponse) => {
+        // If successful, return the fresh network response
+        return networkResponse;
+      })
+      .catch(() => {
+        // If offline, fallback to cache
+        return caches.match(e.request).then((cachedResponse) => {
+          // If the request isn't in cache, fallback to the root index.html (useful for SPA offline routing)
+          return cachedResponse || caches.match('/');
+        });
+      })
   );
 });
