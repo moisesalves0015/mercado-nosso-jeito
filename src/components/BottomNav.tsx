@@ -1,4 +1,4 @@
-import { Home, Search, Star, Gem, ShoppingBag, User } from 'lucide-react';
+import { Home, Search, Star, Gem, ShoppingBag, User, Truck } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 
@@ -12,81 +12,99 @@ export const BottomNav = () => {
   if (isHiddenRoute) return null;
 
   const showMiniCart = totalItems > 0 && location.pathname !== '/cart';
+  const freeShippingThreshold = 60;
+  const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);
+  const progressPercent = Math.min(100, (totalPrice / freeShippingThreshold) * 100);
 
   return (
     <>
       {showMiniCart && (
         <div 
-          className="floating-mini-cart animate-pop"
+          className="floating-mini-cart responsive-bottom-width"
           onClick={() => navigate('/cart')}
-          style={{
-            position: 'fixed',
-            bottom: '76px', // Sits perfectly right above the bottom-nav (which is ~56px-64px high)
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 'calc(100% - 32px)',
-            maxWidth: '398px',
-            height: '52px',
-            background: 'rgba(14, 11, 9, 0.94)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1.2px solid rgba(212, 175, 55, 0.45)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.65), 0 0 15px rgba(212, 175, 55, 0.15)',
-            borderRadius: '14px',
-            zIndex: 999,
+        >
+          {/* Shipping Progress Section */}
+          <div style={{ padding: '10px 16px 6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              <Truck size={14} color="#2ecc71" />
+              <span style={{ fontSize: '11.5px', color: '#fff', fontWeight: 600 }}>
+                {missingForFreeShipping > 0 
+                  ? <>Faltam <strong style={{color:'#FFDF73'}}>R$ {missingForFreeShipping.toFixed(2).replace('.', ',')}</strong> para frete grátis</>
+                  : <strong style={{color:'#2ecc71'}}>Você ganhou frete grátis!</strong>
+                }
+              </span>
+            </div>
+            {/* Progress Bar */}
+            <div style={{ 
+              width: '100%', 
+              height: '5px', 
+              background: 'rgba(255,255,255,0.1)', 
+              borderRadius: '3px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                background: progressPercent === 100 ? '#2ecc71' : 'linear-gradient(90deg, #D4AF37, #FFDF73)',
+                borderRadius: '3px',
+                transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
+              }} />
+            </div>
+          </div>
+
+          {/* Cart Info Section */}
+          <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 16px',
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              background: 'rgba(212, 175, 55, 0.15)',
-              borderRadius: '50%',
-              width: '28px',
-              height: '28px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative'
-            }}>
-              <ShoppingBag size={14} color="#FFDF73" />
-              <span style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                background: '#FFDF73',
-                color: '#000',
-                fontSize: '8.5px',
-                fontWeight: '900',
+            padding: '8px 16px 14px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                background: 'rgba(212, 175, 55, 0.15)',
                 borderRadius: '50%',
-                width: '14px',
-                height: '14px',
-                display: 'grid',
-                placeItems: 'center',
-                boxShadow: '0 0 4px rgba(212,175,55,0.6)'
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative'
               }}>
-                {totalItems}
+                <ShoppingBag size={14} color="#FFDF73" />
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  background: '#FFDF73',
+                  color: '#000',
+                  fontSize: '8.5px',
+                  fontWeight: '900',
+                  borderRadius: '50%',
+                  width: '14px',
+                  height: '14px',
+                  display: 'grid',
+                  placeItems: 'center',
+                  boxShadow: '0 0 4px rgba(212,175,55,0.6)'
+                }}>
+                  {totalItems}
+                </span>
+              </div>
+              <span style={{ fontSize: '11.5px', fontWeight: '850', color: '#fff', letterSpacing: '-0.1px' }}>
+                Ver meu carrinho
               </span>
             </div>
-            <span style={{ fontSize: '11.5px', fontWeight: '850', color: '#fff', letterSpacing: '-0.1px' }}>
-              Ver meu carrinho
-            </span>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: '950', color: '#FFDF73' }}>
-              R$ {totalPrice.toFixed(2)}
-            </span>
-            <span style={{ fontSize: '10px', color: '#FFDF73', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: '950', color: '#FFDF73' }}>
+                R$ {totalPrice.toFixed(2)}
+              </span>
+              <span style={{ fontSize: '10px', color: '#FFDF73', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
+            </div>
           </div>
         </div>
       )}
 
-      <nav className="bottom-nav">
+      <nav className="bottom-nav responsive-bottom-width">
         <NavLink to="/" className={({ isActive }) => isActive ? "active" : ""}>
           <div className="nav-icon"><Home size={20} /></div>
           <span>Início</span>

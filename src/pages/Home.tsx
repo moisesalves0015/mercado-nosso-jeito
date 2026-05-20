@@ -23,15 +23,38 @@ export const Home = () => {
     const loadProducts = () => {
       const stored = localStorage.getItem('app-products');
       if (stored) {
-        const allProds = JSON.parse(stored) as Product[];
+        let allProds = JSON.parse(stored) as Product[];
+        let updated = false;
+        allProds = allProds.map(p => {
+          if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
+            p.image = '/heineken.png';
+            updated = true;
+          }
+          if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
+            p.image = '/coca_cola_zero.png';
+            updated = true;
+          }
+          if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
+            p.image = '/monster_energy.webp';
+            updated = true;
+          }
+          if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
+            p.image = '/spaten.webp';
+            updated = true;
+          }
+          return p;
+        });
+        if (updated) {
+          localStorage.setItem('app-products', JSON.stringify(allProds));
+        }
         setBebidas(allProds.filter(p => p.category === 'Bebidas'));
       } else {
         // Fallback default drinks
         const defaults: Product[] = [
-          { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "https://images.unsplash.com/photo-1608270586620-248524c67de9?q=80&w=600", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-          { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=600", category: "Bebidas", diamondReward: 1 },
-          { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "https://images.unsplash.com/photo-1622543956221-c6328ecf8443?q=80&w=600", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-          { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600", category: "Bebidas", diamondReward: 1 }
+          { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
+          { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
+          { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
+          { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "/spaten.webp", category: "Bebidas", diamondReward: 1 }
         ];
         setBebidas(defaults);
       }
@@ -152,28 +175,33 @@ export const Home = () => {
           price="R$ 32,90"
           image="/paodequeijo-novo.webp"
           diamondReward={18}
+          category="cafe"
         />
         <ProductCard
           title="Iogurte Grego Danone (4x)"
           price="R$ 18,90"
           image="/iogurte-novo.webp"
           diamondReward={12}
+          category="cafe"
         />
         <ProductCard
           title="Granola Mel Barano (500g)"
           price="R$ 24,90"
           image="/granola-novo.png"
+          category="cafe"
         />
         <ProductCard
           title="Ovo Branco Médio (12un)"
           price="R$ 15,90"
           image="/ovos-novo.png"
+          category="cafe"
         />
         <ProductCard
           title="Café Melitta Tradicional (500g)"
           price="R$ 19,90"
           image="/cafe-novo.png"
           diamondReward={15}
+          category="cafe"
         />
       </Section>
 
@@ -244,26 +272,30 @@ export const Home = () => {
         <ProductCard
           title="Pão Pullman Forma Integral (500g)"
           price="R$ 12,90"
-          image="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600"
+          image="/pao_de_forma.png"
           badge="Melhor Preço"
           badgeStyle="orange"
+          category="alimentos"
         />
         <ProductCard
           title="Queijo Minas Frescal Itambé (300g)"
           price="R$ 19,90"
-          image="https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=600"
+          image="/queijo_minas.png"
           badge="Promocional"
           badgeStyle="orange"
+          category="alimentos"
         />
         <ProductCard
           title="Peito de Peru Fatiado Sadia (100g)"
           price="R$ 7,49"
-          image="https://images.unsplash.com/photo-1603048297172-c92544798d5e?q=80&w=600"
+          image="/peito_de_peru.webp"
+          category="alimentos"
         />
         <ProductCard
           title="Manteiga Itambé Extra Sal (200g)"
           price="R$ 11,90"
-          image="https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?q=80&w=600"
+          image="/manteiga_itambe.png"
+          category="alimentos"
         />
       </Section>
 
@@ -276,14 +308,16 @@ export const Home = () => {
         <ProductCard
           title="Sabão Líquido Premium"
           price="R$ 19,90"
-          image="https://images.unsplash.com/photo-1583947215259-38e31be8751f?q=80&w=600"
+          image="/lava_roupa.png"
+          category="limpeza"
         />
         <ProductCard
           title="Multiuso Fresh Ultra"
           price="R$ 12,90"
-          image="https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=600"
+          image="/pano_multiuso.webp"
           badge="Melhor Preço"
           badgeStyle="orange"
+          category="limpeza"
         />
       </Section>
 

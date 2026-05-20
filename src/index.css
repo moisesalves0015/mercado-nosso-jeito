@@ -91,22 +91,18 @@ body{
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px; /* High-end tighter border radius */
-  padding: 5px 10px;
+  background: transparent;
+  border: none;
+  padding: 0;
   cursor: pointer;
   max-width: 155px;
   height: 36px;
   position: relative;
   z-index: 2;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .address-pill:hover {
-  background: rgba(212, 175, 55, 0.06);
-  border-color: rgba(212, 175, 55, 0.3);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.1);
+  opacity: 0.8;
 }
 .address-pin {
   flex-shrink: 0;
@@ -117,17 +113,16 @@ body{
   min-width: 0;
 }
 .address-label {
-  font-size: 8px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  color: #fff;
   line-height: 1.1;
-  font-weight: 500;
-  text-transform: uppercase;
+  font-weight: 700;
   letter-spacing: 0.2px;
 }
 .address-value {
   font-size: 9.5px;
-  font-weight: 700;
-  color: #fff;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -462,6 +457,7 @@ body{
   line-height: 1.15;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -722,7 +718,7 @@ body{
   gap:4px; /* Space bem fino entre os produtos */
   overflow-x:auto;
   scrollbar-width:none;
-  padding-top: 4px; /* Extremely pulled closer to title */
+  padding-top: 14px; /* Reduced to bring cards closer to titles */
   padding-bottom: 4px;
   padding-right: 8px;
 }
@@ -831,7 +827,7 @@ body{
 }
 
 .product-image-wrapper {
-  margin-top: -20px; /* Floats image globally outside the card */
+  margin-top: -12px; /* Floats image exactly 12px outside the card */
 }
 
 /* =========================================================
@@ -849,10 +845,23 @@ body{
 }
 
 .product-image-wrapper img{
-  max-width:100%;
-  max-height:100%;
   object-fit:contain;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+  transition: transform 0.3s ease;
+}
+
+/* Wide products styling */
+.product-image-wrapper.wide-product img {
+  max-width: 100%;
+  max-height: 100%;
+  transform: scale(1.05);
+}
+
+/* Tall products (bottles, cans) scaled moderately to avoid getting gigantic or cut off */
+.product-image-wrapper.tall-product img {
+  max-width: 100%;
+  max-height: 100%;
+  transform: scale(1.1); /* Moderate scale for tall items */
 }
 
 /* =========================================================
@@ -908,6 +917,7 @@ body{
   text-overflow: ellipsis; /* Ensure ellipsis */
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   margin-bottom: 2px; /* Moved closer to price (was 6px) */
 }
@@ -933,6 +943,78 @@ body{
   font-weight:600;
   color:#fff;
   white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.product-price.reducing-active {
+  color: #2ecc71; /* Green color for decreasing action */
+  font-weight: 850;
+}
+
+.product-price.reduced-flash-active {
+  color: #FFDF73; /* Gold/yellow color for the final price */
+  font-weight: 900;
+  animation: pulse-reduced-price 1.2s infinite alternate; /* Slower pulse */
+  display: inline-block;
+}
+
+.diamond-particle-yellow {
+  transition: transform 3.5s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 3.5s cubic-bezier(0.1, 0.8, 0.3, 1); /* Slower dispersing diamonds */
+  opacity: 1;
+}
+
+.deduction-floater {
+  font-family: inherit;
+  pointer-events: none;
+  transition: transform 3.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 3.5s cubic-bezier(0.25, 1, 0.5, 1); /* Slower falling negative tag */
+  opacity: 1;
+}
+
+@keyframes pulse-reduced-price {
+  0% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.price-pill.club-only-active {
+  background: rgba(212, 175, 55, 0.08);
+  border-color: #FFDF73;
+  animation: pulse-border 1.2s infinite;
+}
+
+.club-only-flash {
+  width: 100%;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 900;
+  color: #FFDF73;
+  animation: flash-text 1.2s infinite alternate; /* Slower flashing */
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+@keyframes flash-text {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 2px rgba(212, 175, 55, 0.2);
+  }
 }
 
 .add-btn{
@@ -954,12 +1036,27 @@ body{
    BOTTOM NAV
 ========================================================= */
 
+.responsive-bottom-width {
+  width: 100%;
+  max-width: 430px; /* Centered and capped on mobile default */
+}
+
+@media (min-width: 768px) {
+  .responsive-bottom-width {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-bottom-width {
+    max-width: 1200px;
+  }
+}
+
 .bottom-nav {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 430px; /* Centered and capped on mobile default */
   bottom: 0;
   height: 74px; /* Increased from 60px to push items up and clear iPhone home bar! */
   background: #000000; /* Solid premium black background */
@@ -974,15 +1071,34 @@ body{
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
 }
 
-@media (min-width: 768px) {
-  .bottom-nav {
-    max-width: 960px;
-  }
+.floating-mini-cart {
+  position: fixed;
+  left: 50%;
+  bottom: 74px; /* Rests right above the bottom-nav */
+  background: rgba(14, 11, 9, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1.2px solid rgba(212, 175, 55, 0.45);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 99; /* Exactly behind bottom-nav (z-index: 100) */
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border-top-left-radius: 16px; /* Match bottom-nav elegance */
+  border-top-right-radius: 16px;
+  overflow: hidden;
+  /* Emerges slowly from behind the bottom nav */
+  animation: slideUpCart 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@media (min-width: 1024px) {
-  .bottom-nav {
-    max-width: 1200px;
+@keyframes slideUpCart {
+  0% {
+    transform: translate(-50%, 74px); /* Pushed down behind the 74px bottom nav */
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(-50%, 0); /* Pops up to rest on top */
+    opacity: 1;
   }
 }
 
@@ -1766,6 +1882,7 @@ body{
   letter-spacing: -0.2px;
   background: linear-gradient(135deg, #FFDF73, #D4AF37);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1782,6 +1899,14 @@ body{
   color: #FFDF73;
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.clube-coins-badge:hover {
+  transform: scale(1.05);
+  background: rgba(212, 175, 55, 0.18);
+  border-color: #FFDF73;
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
 }
 
 .clube-coins-badge.pop {
@@ -1958,6 +2083,7 @@ body{
   line-height: 1.15;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   height: 22px;
@@ -2468,7 +2594,7 @@ body{
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  padding: 0 16px 100px;
+  padding: 12px 16px 100px; /* Reduced top padding to bring closer to titles */
   justify-items: center;
 }
 
@@ -2476,7 +2602,7 @@ body{
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
-    padding: 0 20px 100px;
+    padding: 12px 20px 100px; /* Reduced top padding */
   }
 }
 
@@ -2594,10 +2720,10 @@ body{
   font-family: 'Manrope', sans-serif;
   color: #fff;
   line-height: 1;
-  text-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
   background: linear-gradient(135deg, #fff 30%, #FFDF73 50%, #fff 70%);
   background-size: 200% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: reward-shimmer-anim 3s linear infinite;
 }
@@ -2770,7 +2896,6 @@ body{
 }
 .weekly-day-slot.active .weekly-day-val {
   color: #FFDF73;
-  text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
 }
 
 .weekly-day-icon-wrap {

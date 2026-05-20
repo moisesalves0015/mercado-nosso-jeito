@@ -48,8 +48,8 @@ export const Search = () => {
 
       <h3 style={{ margin: '24px 0 12px 16px', color: '#fff', fontSize: '16px' }}>Recomendados para você</h3>
       <div className="products-grid">
-        <ProductCard title="Café Melitta Vácuo (500g)" price="R$ 19,90" image="https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600" />
-        <ProductCard title="Pão Pullman Forma Integral (500g)" price="R$ 12,90" image="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600" />
+        <ProductCard title="Café Melitta Vácuo (500g)" price="R$ 19,90" image="https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=600" category="search" />
+        <ProductCard title="Pão Pullman Forma Integral (500g)" price="R$ 12,90" image="/pao_de_forma.png" category="search" />
       </div>
     </main>
   );

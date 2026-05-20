@@ -151,7 +151,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Pão Pullman Forma Integral (500g)',
     price: 'R$ 12,90',
     priceNum: 12.90,
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600',
+    image: '/pao_de_forma.png',
     badge: 'Fibras',
     rating: 4.6,
     ratingCount: 890,
@@ -165,7 +165,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Queijo Minas Frescal Itambé (300g)',
     price: 'R$ 19,90',
     priceNum: 19.90,
-    image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=600',
+    image: '/queijo_minas.png',
     badge: 'Frescal',
     rating: 4.7,
     ratingCount: 650,
@@ -179,7 +179,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Peito de Peru Fatiado Sadia (100g)',
     price: 'R$ 7,49',
     priceNum: 7.49,
-    image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5e?q=80&w=600',
+    image: '/peito_de_peru.webp',
     badge: 'Proteico',
     rating: 4.8,
     ratingCount: 1540,
@@ -193,7 +193,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Manteiga Itambé Extra Sal (200g)',
     price: 'R$ 11,90',
     priceNum: 11.90,
-    image: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?q=80&w=600',
+    image: '/manteiga_itambe.png',
     badge: 'Tradicional',
     rating: 4.8,
     ratingCount: 2200,
@@ -207,7 +207,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Sabão Líquido Premium',
     price: 'R$ 19,90',
     priceNum: 19.90,
-    image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?q=80&w=600',
+    image: '/lava_roupa.png',
     badge: 'Concentrado',
     rating: 4.9,
     ratingCount: 310,
@@ -221,7 +221,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Multiuso Fresh Ultra',
     price: 'R$ 12,90',
     priceNum: 12.90,
-    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=600',
+    image: '/pano_multiuso.webp',
     badge: 'Multiuso',
     rating: 4.6,
     ratingCount: 740,
@@ -727,6 +727,7 @@ export const ProductDetail = () => {
                 title={prod.title}
                 price={prod.price}
                 image={prod.image}
+                category="detail-suggested"
               />
             ))}
           </div>

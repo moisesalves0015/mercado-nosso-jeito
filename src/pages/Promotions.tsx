@@ -17,10 +17,10 @@ export const Promotions = () => {
       </div>
 
       <div className="products-grid">
-        <ProductCard title="Suco de Laranja Integral Do Bem (1L)" price="R$ 14,90" image="/suco_do_bem_laranja_integral.png" badge="Promocional" badgeStyle="light" />
-        <ProductCard title="Café Torrado e Moído Pilão (500g)" price="R$ 17,90" image="/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png" badge="Melhor Preço" badgeStyle="orange" />
-        <ProductCard title="Queijo Minas Frescal Itambé (300g)" price="R$ 19,90" image="https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=600" badge="Promocional" badgeStyle="orange" />
-        <ProductCard title="Multiuso Fresh Ultra" price="R$ 12,90" image="https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=600" badge="Melhor Preço" badgeStyle="orange" />
+        <ProductCard title="Suco de Laranja Integral Do Bem (1L)" price="R$ 14,90" image="/suco_do_bem_laranja_integral.png" badge="Promocional" badgeStyle="light" category="promotions" />
+        <ProductCard title="Café Torrado e Moído Pilão (500g)" price="R$ 17,90" image="/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png" badge="Melhor Preço" badgeStyle="orange" category="promotions" />
+        <ProductCard title="Queijo Minas Frescal Itambé (300g)" price="R$ 19,90" image="/queijo_minas.png" badge="Promocional" badgeStyle="orange" category="promotions" />
+        <ProductCard title="Multiuso Fresh Ultra" price="R$ 12,90" image="/pano_multiuso.webp" badge="Melhor Preço" badgeStyle="orange" category="promotions" />
       </div>
     </main>
   );

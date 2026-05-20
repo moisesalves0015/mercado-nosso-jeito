@@ -69,7 +69,16 @@ const PremiumDiamondSVG = ({ size = 24, className = '', style = {}, fill = 'none
 
 export const Clube = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [coins, setCoins] = useState<number>(320);
+  const [coins, setCoins] = useState<number>(() => {
+    const saved = localStorage.getItem('user_diamonds');
+    return saved ? parseInt(saved, 10) : 320;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('user_diamonds', coins.toString());
+    window.dispatchEvent(new Event('diamonds_updated'));
+  }, [coins]);
+
   const [popBadge, setPopBadge] = useState<boolean>(false);
   const [streak, setStreak] = useState<number>(7);
   const [checkedIn, setCheckedIn] = useState<boolean>(false);
