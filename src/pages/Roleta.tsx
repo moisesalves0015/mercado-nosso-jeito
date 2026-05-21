@@ -47,17 +47,30 @@ const RARITY_CONFIG = {
 };
 
 const DEFAULT_ITEMS: RouletteItem[] = [
-  { text: "15 💎", color: "#D4AF37", rarity: "common", multiplier: 1 },
-  { text: "Monster Gelado", color: "#E25C1D", rarity: "rare", multiplier: 1.5 },
-  { text: "Tente de Novo", color: "#1E150F", rarity: "common", multiplier: 0 },
-  { text: "Frete Grátis", color: "#059669", rarity: "rare", multiplier: 1.2 },
-  { text: "50 💎 + Bônus", color: "#D4AF37", rarity: "epic", multiplier: 2 },
-  { text: "20% OFF", color: "#5B21B6", rarity: "rare", multiplier: 1.3 },
-  { text: "Cerveja Spaten", color: "#059669", rarity: "epic", multiplier: 1.8 },
-  { text: "100 💎 JACKPOT", color: "#F59E0B", rarity: "legendary", multiplier: 3 },
-  { text: "Tente de Novo", color: "#1E150F", rarity: "common", multiplier: 0 },
-  { text: "Dobrar Prêmio", color: "#DC2626", rarity: "epic", multiplier: 2.5 }
+  { text: "15 Diamantes 💎", color: "#D4AF37", rarity: "common" },
+  { text: "Monster Gelado ⚡", color: "#E25C1D", rarity: "rare" },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common" },
+  { text: "Frete Grátis 🚚", color: "#059669", rarity: "rare" },
+  { text: "50 Diamantes 💎", color: "#D4AF37", rarity: "epic" },
+  { text: "10% de Desconto 🏷️", color: "#5B21B6", rarity: "rare" },
+  { text: "Cerveja Spaten 🍺", color: "#059669", rarity: "epic" },
+  { text: "100 Diamantes 💎", color: "#D4AF37", rarity: "legendary" },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common" }
 ];
+
+const getRarityForText = (text: string): 'common' | 'rare' | 'epic' | 'legendary' => {
+  const lowercase = text.toLowerCase();
+  if (lowercase.includes('100') || lowercase.includes('jackpot') || lowercase.includes('lendário') || lowercase.includes('lendario')) {
+    return 'legendary';
+  }
+  if (lowercase.includes('50') || lowercase.includes('spaten') || lowercase.includes('cerveja') || lowercase.includes('épico') || lowercase.includes('epico')) {
+    return 'epic';
+  }
+  if (lowercase.includes('monster') || lowercase.includes('frete') || lowercase.includes('desconto') || lowercase.includes('off') || lowercase.includes('raro') || lowercase.includes('10%') || lowercase.includes('20%')) {
+    return 'rare';
+  }
+  return 'common';
+};
 
 const mapToPremiumColor = (_color: string, index: number): string => {
   const mod = index % 3;
@@ -261,7 +274,11 @@ export const Roleta: React.FC = () => {
       try {
         const docSnap = await getDoc(doc(db, 'configs', 'roulette'));
         if (docSnap.exists() && docSnap.data().items) {
-          setItems(docSnap.data().items);
+          const loadedItems = docSnap.data().items.map((item: any) => ({
+            ...item,
+            rarity: item.rarity || getRarityForText(item.text)
+          }));
+          setItems(loadedItems);
         } else {
           setItems(DEFAULT_ITEMS);
         }
@@ -725,7 +742,7 @@ export const Roleta: React.FC = () => {
                             style={{ 
                               color: textColor, 
                               textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
-                              boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
+                              filter: rarityConfig.glow !== 'none' ? `drop-shadow(${rarityConfig.glow})` : undefined
                             }}
                           >
                             {displayContent}
