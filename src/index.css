@@ -56,14 +56,20 @@ body{
   z-index:10;
   width:min(430px,100%);
   margin:auto;
-  padding: 12px 8px 80px 8px; /* Narrower side margins */
+  padding-top: calc(12px + env(safe-area-inset-top, 24px));
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 80px;
 }
 
 @media (min-width: 768px) {
   .app {
     width: 100%;
     max-width: 960px;
-    padding: 24px 20px 100px 20px;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 100px;
   }
 }
 
@@ -1185,7 +1191,7 @@ body{
    PRODUCT DETAIL PAGE (HIGH CONVERSION CORE SYSTEM)
 ========================================================= */
 .product-detail-page {
-  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top, 24px));
   padding-bottom: 90px;
   background: #090705;
   color: #fff;
@@ -1199,7 +1205,7 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-top, 24px));
   background: rgba(9, 7, 5, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1207,7 +1213,10 @@ body{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding-top: env(safe-area-inset-top, 24px);
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
   z-index: 200;
 }
 
@@ -1876,12 +1885,17 @@ body{
 ========================================================= */
 
 .clube-page {
-  padding-top: calc(56px + env(safe-area-inset-top));
+  padding-top: calc(56px + env(safe-area-inset-top, 24px));
   padding-bottom: 96px;
   background: #090705;
   color: #fff;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.roulette-page-container {
+  padding-top: calc(56px + env(safe-area-inset-top, 24px)) !important;
+  padding-bottom: 96px !important;
 }
 
 .clube-topbar {
@@ -1891,13 +1905,13 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  height: calc(56px + env(safe-area-inset-top));
+  height: calc(56px + env(safe-area-inset-top, 24px));
   background: #090705;
   border-bottom: 1.2px solid rgba(212, 175, 55, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 24px);
   padding-left: 16px;
   padding-right: 16px;
   box-sizing: border-box;
