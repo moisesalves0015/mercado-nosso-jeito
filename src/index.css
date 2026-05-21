@@ -1109,7 +1109,7 @@ body{
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 100;
+  z-index: 110;
   border-top: 1.2px solid rgba(212, 175, 55, 0.18); /* Elegant gold top line */
   border-top-left-radius: 16px; /* High fidelity curved top-corners */
   border-top-right-radius: 16px;
@@ -2492,7 +2492,7 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99999 !important;
+  z-index: 100 !important;
   padding: 16px;
 }
 

@@ -101,6 +101,8 @@ export const Roleta: React.FC = () => {
 
   const [particles, setParticles] = useState<{ id: number; x: number; y: number }[]>([]);
   const [showJackpot, setShowJackpot] = useState(false);
+  const [isAnimatingEarn, setIsAnimatingEarn] = useState<number | null>(null);
+  const [popBadge, setPopBadge] = useState<boolean>(false);
 
   const [freeSpinsLeft, setFreeSpinsLeft] = useState<number>(() => {
     const saved = localStorage.getItem('free_spins_left_v2');
@@ -298,60 +300,42 @@ export const Roleta: React.FC = () => {
     }
   };
 
-  const triggerConfetti = (rarity: string) => {
-    const colors = {
-      common: ['#6B7280', '#D4AF37'],
-      rare: ['#3B82F6', '#60A5FA', '#FFFFFF'],
-      epic: ['#8B5CF6', '#A78BFA', '#C084FC', '#FFDF73'],
-      legendary: ['#F59E0B', '#FBBF24', '#FCD34D', '#FFDF73', '#E25C1D']
-    };
+  const handleEarnDiamonds = async (amount: number) => {
+    const startDiamonds = diamonds;
+    const targetDiamonds = Math.max(0, startDiamonds + amount);
+    let tempDiamonds = startDiamonds;
+    
+    setPopBadge(true);
+    
+    // Smooth count-up duration: 2.4s (2400ms) for enhanced readability
+    const durationMs = 2400;
+    const stepTimeMs = 60;
+    const totalSteps = durationMs / stepTimeMs;
+    const increment = Math.max(1, Math.round(amount / totalSteps));
+    
+    const counterInterval = setInterval(() => {
+      tempDiamonds += increment;
+      if (tempDiamonds >= targetDiamonds) {
+        tempDiamonds = targetDiamonds;
+        clearInterval(counterInterval);
+        setPopBadge(false);
+      }
+      setDiamonds(tempDiamonds);
+    }, stepTimeMs);
 
-    const selectedColors = colors[rarity as keyof typeof colors] || colors.common;
-    
-    // Stage 1: Giant bottom-center burst
-    confetti({
-      particleCount: rarity === 'legendary' ? 320 : 180,
-      spread: 100,
-      origin: { y: 0.6 },
-      colors: selectedColors,
-      scalar: 1.2
-    });
-    
-    // Stage 2: Left side golden/rarity fireworks cannon
-    setTimeout(() => {
-      confetti({
-        particleCount: rarity === 'legendary' ? 150 : 80,
-        angle: 60,
-        spread: 65,
-        origin: { x: 0, y: 0.75 },
-        colors: selectedColors,
-        scalar: 1.1
-      });
-    }, 180);
-    
-    // Stage 3: Right side golden/rarity fireworks cannon
-    setTimeout(() => {
-      confetti({
-        particleCount: rarity === 'legendary' ? 150 : 80,
-        angle: 120,
-        spread: 65,
-        origin: { x: 1, y: 0.75 },
-        colors: selectedColors,
-        scalar: 1.1
-      });
-    }, 320);
+    localStorage.setItem('user_diamonds', targetDiamonds.toString());
+    window.dispatchEvent(new Event('diamonds_updated'));
 
-    // Stage 4: Secondary center golden/rarity shimmer shower
-    setTimeout(() => {
-      confetti({
-        particleCount: rarity === 'legendary' ? 120 : 60,
-        spread: 120,
-        origin: { y: 0.55 },
-        colors: selectedColors,
-        scalar: 0.95
-      });
-    }, 450);
+    if (user) {
+      try {
+        await updateDoc(doc(db, 'users', user.uid), { diamonds: targetDiamonds });
+      } catch (e) {
+        console.error("Erro ao atualizar diamantes no Firestore:", e);
+      }
+    }
   };
+
+
 
   const spin = (isFree: boolean) => {
     if (spinning || items.length === 0) return;
@@ -406,7 +390,7 @@ export const Roleta: React.FC = () => {
         if (diamondMatch) {
           amountGained = Math.floor(parseInt(diamondMatch[1], 10) * multiplier);
           finalText = `${amountGained} 💎 ${multiplier > 1 ? `(x${multiplier} Bônus!)` : ''}`;
-          handleDiamondsUpdate(amountGained);
+          // Defer the points update until the user clicks Sensacional! to match daily check-in behavior
         }
         
         setCombo(prev => prev + 1);
@@ -417,7 +401,6 @@ export const Roleta: React.FC = () => {
         }
         
         playSound(rarity as any);
-        triggerConfetti(rarity);
         
         if (rarity === 'legendary') {
           setShowJackpot(true);
@@ -550,7 +533,7 @@ export const Roleta: React.FC = () => {
             {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
           </button>
  
-          <div className="clube-coins-badge">
+          <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
             <Gem size={12} fill="#FFDF73" color="#FFDF73" />
             <span>{diamonds} diamantes</span>
           </div>
@@ -558,260 +541,296 @@ export const Roleta: React.FC = () => {
       </header>
 
       {/* Streak and multiplier counters */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(9, 7, 5, 0.65)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-          <Flame size={13} color="#F59E0B" fill="#F59E0B" />
-          <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212, 175, 55, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.35)' }}>
-          <TrendingUp size={13} color="#D4AF37" />
-          <span style={{ fontSize: 11, color: '#FFDF73', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
-        </div>
+      {!result && (
+        <>
+          {/* Streak and multiplier counters */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(9, 7, 5, 0.65)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+              <Flame size={13} color="#F59E0B" fill="#F59E0B" />
+              <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212, 175, 55, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.35)' }}>
+              <TrendingUp size={13} color="#D4AF37" />
+              <span style={{ fontSize: 11, color: '#FFDF73', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
+            </div>
 
-        {combo >= 2 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(139, 92, 246, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.3)', animation: 'pulse 1.5s infinite' }}>
-            <Zap size={13} color="#8B5CF6" fill="#8B5CF6" />
-            <span style={{ fontSize: 11, color: '#A78BFA', fontWeight: 'bold' }}>COMBO x{combo}!</span>
+            {combo >= 2 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(139, 92, 246, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.3)', animation: 'pulse 1.5s infinite' }}>
+                <Zap size={13} color="#8B5CF6" fill="#8B5CF6" />
+                <span style={{ fontSize: 11, color: '#A78BFA', fontWeight: 'bold' }}>COMBO x{combo}!</span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* BODY */}
-      <div className="roulette-card-body" style={{ zIndex: 2 }}>
-        <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Roleta Premium
-        </h2>
-        <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginBottom: 20 }}>
-          Gire e multiplique seus prêmios do clube! 🎰
-        </p>
+          {/* BODY */}
+          <div className="roulette-card-body" style={{ zIndex: 2 }}>
+            <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Roleta Premium
+            </h2>
+            <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginBottom: 20 }}>
+              Gire e multiplique seus prêmios do clube! 🎰
+            </p>
 
-        {/* HTML/CSS Roulette Wheel Area */}
-        <div className="roulette-container" onClick={(e) => addParticles(e.clientX, e.clientY, 8)}>
-          <div className="roulette-wrapper" style={wrapperStyle}>
-            <div className="pin" style={{ boxShadow: '0 0 10px rgba(212,175,55,0.45)' }}></div>
-            <button 
-              type="button" 
-              className="btnStart"
-              onClick={() => spin(freeSpinsLeft > 0)}
-              disabled={spinning || items.length === 0}
-              style={{ background: 'radial-gradient(circle at 30% 30%, #D4AF37, #8B6914)', boxShadow: '0 0 20px rgba(212,175,55,0.45)' }}
-            >
-              {spinning ? (
-                <span style={{ fontSize: '9.5px', color: '#090705', fontWeight: 900, lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'center' }}>
-                  NOSSO<br/>CLUBE
-                </span>
-              ) : freeSpinsLeft > 0 ? (
-                <>
-                  <span style={{ fontSize: '8px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
-                  <span style={{ fontSize: '11px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
-                </>
+            {/* HTML/CSS Roulette Wheel Area */}
+            <div className="roulette-container" onClick={(e) => addParticles(e.clientX, e.clientY, 8)}>
+              <div className="roulette-wrapper" style={wrapperStyle}>
+                <div className="pin" style={{ boxShadow: '0 0 10px rgba(212,175,55,0.45)' }}></div>
+                <button 
+                  type="button" 
+                  className="btnStart"
+                  onClick={() => spin(freeSpinsLeft > 0)}
+                  disabled={spinning || items.length === 0}
+                  style={{ background: 'radial-gradient(circle at 30% 30%, #D4AF37, #8B6914)', boxShadow: '0 0 20px rgba(212,175,55,0.45)' }}
+                >
+                  {spinning ? (
+                    <span style={{ fontSize: '9.5px', color: '#090705', fontWeight: 900, lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'center' }}>
+                      NOSSO<br/>CLUBE
+                    </span>
+                  ) : freeSpinsLeft > 0 ? (
+                    <>
+                      <span style={{ fontSize: '8px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
+                      <span style={{ fontSize: '11px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
+                      <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>ROLETA</span>
+                    </>
+                  )}
+                </button>
+                <div className="circleWrap">
+                  <div 
+                    className={`rouleWrap ${spinning ? 'active' : ''}`}
+                    style={{ 
+                      transform: `rotate(${rotation}deg)`, 
+                      transition: spinning ? 'transform 10s cubic-bezier(0.15, 0.85, 0.2, 1)' : 'none' 
+                    }}
+                  >
+                    {items.map((item, i) => {
+                      const itemColor = mapToPremiumColor(item.color, i);
+                      const textColor = getTextColorForBackground(itemColor);
+                      const rarityConfig = RARITY_CONFIG[item.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
+
+                      const itemStyle = {
+                        '--idx': i + 1,
+                        '--bg-color': itemColor,
+                        transform: `rotate(calc(var(--deg) * ${i} + var(--deg) / 2))`
+                      } as React.CSSProperties;
+
+                      // Limpar emojis e encurtar textos de desconto
+                      let cleanText = item.text
+                        .replace(/de\s+desconto/gi, 'OFF')
+                        .replace(/desconto/gi, 'OFF')
+                        .replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
+                        .trim();
+
+                      const isDiamond = item.text.toLowerCase().includes('💎') || item.text.toLowerCase().includes('diamante');
+                      let displayContent: React.ReactNode;
+
+                      if (isDiamond) {
+                        const numMatch = item.text.match(/(\d+)/);
+                        const num = numMatch ? numMatch[1] : '';
+                        let remaining = cleanText
+                          .replace(num, '')
+                          .replace(/diamantes?/i, '')
+                          .replace(/\s+/g, ' ')
+                          .trim();
+
+                        const mainText = `+${num}${remaining ? ` ${remaining}` : ''}`;
+
+                        displayContent = (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                            {mainText.split(' ').map((word, wIdx) => (
+                              <strong 
+                                key={wIdx} 
+                                className="roulette-word-line"
+                                style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
+                              >
+                                {word}
+                              </strong>
+                            ))}
+                            <Gem size={13} color={textColor} style={{ marginTop: 2 }} />
+                          </div>
+                        );
+                      } else {
+                        displayContent = (
+                          <>
+                            {cleanText.split(' ').map((word, wIdx) => (
+                              <strong 
+                                key={wIdx} 
+                                className="roulette-word-line"
+                                style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
+                              >
+                                {word}
+                              </strong>
+                            ))}
+                          </>
+                        );
+                      }
+
+                      return (
+                        <div key={i} className="item" style={itemStyle}>
+                          <div 
+                            className="bx" 
+                            style={{ 
+                              color: textColor, 
+                              textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
+                              boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
+                            }}
+                          >
+                            {displayContent}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="roulette-shine-overlay" />
+                </div>
+                <div className="dotWrap">
+                  {items.map((_, i) => {
+                    const dotStyle = {
+                      '--idx': i + 1,
+                      transform: `rotate(calc(var(--deg) * ${i}))`
+                    } as React.CSSProperties;
+                    return <div key={i} style={dotStyle}></div>;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Controls */}
+            <div className="roulette-controls" style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300, margin: '24px auto 0' }}>
+              
+              {freeSpinsLeft > 0 ? (
+                <button 
+                  className="roulette-spin-btn free-spin animate-pulse"
+                  onClick={() => spin(true)}
+                  disabled={spinning || items.length === 0}
+                  style={{ flex: 1, background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', padding: '12px 8px', borderRadius: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  <Gift size={14} />
+                  <span>{freeSpinsLeft} Grátis</span>
+                </button>
               ) : (
-                <>
-                  <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
-                  <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>ROLETA</span>
-                </>
+                <button 
+                  className="roulette-spin-btn locked-spin"
+                  disabled={true}
+                  style={{
+                    flex: 1,
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02))',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3)',
+                    color: 'rgba(255, 255, 255, 0.55)',
+                    padding: '12px 8px',
+                    borderRadius: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Clock size={13} />
+                  <span style={{ fontSize: '10px' }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
+                </button>
               )}
-            </button>
-            <div className="circleWrap">
-              <div 
-                className={`rouleWrap ${spinning ? 'active' : ''}`}
+
+              <button 
+                className="roulette-spin-btn diamond-spin"
+                onClick={() => spin(false)}
+                disabled={spinning || items.length === 0 || diamonds < 30}
                 style={{ 
-                  transform: `rotate(${rotation}deg)`, 
-                  transition: spinning ? 'transform 10s cubic-bezier(0.15, 0.85, 0.2, 1)' : 'none' 
+                  flex: 1,
+                  background: diamonds < 30 ? 'rgba(255,255,255,0.02)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
+                  color: diamonds < 30 ? 'rgba(255,255,255,0.25)' : '#090705',
+                  border: diamonds < 30 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  padding: '12px 8px',
+                  borderRadius: 12,
+                  fontWeight: 900,
+                  cursor: diamonds < 30 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
                 }}
               >
-                {items.map((item, i) => {
-                  const itemColor = mapToPremiumColor(item.color, i);
-                  const textColor = getTextColorForBackground(itemColor);
-                  const rarityConfig = RARITY_CONFIG[item.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
+                <Coins size={14} />
+                <span>30 💎</span>
+              </button>
+            </div>
 
-                  const itemStyle = {
-                    '--idx': i + 1,
-                    '--bg-color': itemColor,
-                    transform: `rotate(calc(var(--deg) * ${i} + var(--deg) / 2))`
-                  } as React.CSSProperties;
+            {/* Reset Multiplier link button */}
+            {multiplier > 1 && (
+              <div style={{ textAlign: 'center', marginTop: 10 }}>
+                <button 
+                  onClick={resetMultiplier} 
+                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.45)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
+                >
+                  Resetar Bônus
+                </button>
+              </div>
+            )}
+          </div>
 
-                  // Limpar emojis e encurtar textos de desconto
-                  let cleanText = item.text
-                    .replace(/de\s+desconto/gi, 'OFF')
-                    .replace(/desconto/gi, 'OFF')
-                    .replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
-                    .trim();
-
-                  const isDiamond = item.text.toLowerCase().includes('💎') || item.text.toLowerCase().includes('diamante');
-                  let displayContent: React.ReactNode;
-
-                  if (isDiamond) {
-                    const numMatch = item.text.match(/(\d+)/);
-                    const num = numMatch ? numMatch[1] : '';
-                    let remaining = cleanText
-                      .replace(num, '')
-                      .replace(/diamantes?/i, '')
-                      .replace(/\s+/g, ' ')
-                      .trim();
-
-                    const mainText = `+${num}${remaining ? ` ${remaining}` : ''}`;
-
-                    displayContent = (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                        {mainText.split(' ').map((word, wIdx) => (
-                          <strong 
-                            key={wIdx} 
-                            className="roulette-word-line"
-                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
-                          >
-                            {word}
-                          </strong>
-                        ))}
-                        <Gem size={13} color={textColor} style={{ marginTop: 2 }} />
-                      </div>
-                    );
-                  } else {
-                    displayContent = (
-                      <>
-                        {cleanText.split(' ').map((word, wIdx) => (
-                          <strong 
-                            key={wIdx} 
-                            className="roulette-word-line"
-                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
-                          >
-                            {word}
-                          </strong>
-                        ))}
-                      </>
-                    );
-                  }
-
+          {/* HISTORY SECTION */}
+          <div className="clube-wallet-section" style={{ marginTop: 20, padding: '16px 20px 20px', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Award size={15} color="#D4AF37" />
+                <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: -0.2 }}>Últimos Prêmios</span>
+              </div>
+              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)' }}>({history.length}/50 giros)</span>
+            </div>
+            
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+                Gire a roleta para começar a ganhar! 🎰
+              </div>
+            ) : (
+              <div className="clube-ledger-history" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                {history.map((h, index) => {
+                  const config = RARITY_CONFIG[h.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
                   return (
-                    <div key={i} className="item" style={itemStyle}>
-                      <div 
-                        className="bx" 
-                        style={{ 
-                          color: textColor, 
-                          textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
-                          boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
-                        }}
-                      >
-                        {displayContent}
+                    <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 12 }}>{config.icon}</span>
+                        <span style={{ fontWeight: 700, color: h.won ? config.color : 'rgba(255,255,255,0.45)' }}>{h.text}</span>
                       </div>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5 }}>{h.date}</span>
                     </div>
                   );
                 })}
               </div>
-              <div className="roulette-shine-overlay" />
-            </div>
-            <div className="dotWrap">
-              {items.map((_, i) => {
-                const dotStyle = {
-                  '--idx': i + 1,
-                  transform: `rotate(calc(var(--deg) * ${i}))`
-                } as React.CSSProperties;
-                return <div key={i} style={dotStyle}></div>;
-              })}
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="roulette-controls" style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300, margin: '24px auto 0' }}>
-          
-          {freeSpinsLeft > 0 ? (
-            <button 
-              className="roulette-spin-btn free-spin animate-pulse"
-              onClick={() => spin(true)}
-              disabled={spinning || items.length === 0}
-              style={{ flex: 1, background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', padding: '12px 8px', borderRadius: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <Gift size={14} />
-              <span>{freeSpinsLeft} Grátis</span>
-            </button>
-          ) : (
-            <button 
-              className="roulette-spin-btn locked-spin"
-              disabled={true}
-              style={{
-                flex: 1,
-                background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02))',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3)',
-                color: 'rgba(255, 255, 255, 0.55)',
-                padding: '12px 8px',
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                justifyContent: 'center'
-              }}
-            >
-              <Clock size={13} />
-              <span style={{ fontSize: '10px' }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
-            </button>
-          )}
-
-          <button 
-            className="roulette-spin-btn diamond-spin"
-            onClick={() => spin(false)}
-            disabled={spinning || items.length === 0 || diamonds < 30}
-            style={{ 
-              flex: 1,
-              background: diamonds < 30 ? 'rgba(255,255,255,0.02)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
-              color: diamonds < 30 ? 'rgba(255,255,255,0.25)' : '#090705',
-              border: diamonds < 30 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-              padding: '12px 8px',
-              borderRadius: 12,
-              fontWeight: 900,
-              cursor: diamonds < 30 ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6
-            }}
-          >
-            <Coins size={14} />
-            <span>30 💎</span>
-          </button>
-        </div>
-
-        {/* Reset Multiplier link button */}
-        {multiplier > 1 && (
-          <div style={{ textAlign: 'center', marginTop: 10 }}>
-            <button 
-              onClick={resetMultiplier} 
-              style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.45)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
-            >
-              Resetar Bônus
-            </button>
-          </div>
-        )}
+        </>
+      )}
 
       {/* Prize won modal style Check-in */}
       {result && (
-        <div className="clube-modal-overlay" onClick={() => setResult(null)}>
-          {/* FLOATING FALLING DIAMONDS CASCADE */}
-          {result.amountGained && (
-            <div className="falling-diamonds-container">
-              {[...Array(35)].map((_, i) => (
-                <PremiumDiamondSVG 
-                  key={i} 
-                  className="falling-diamond" 
-                  size={Math.random() * 26 + 18}
-                  style={{
-                    left: `${Math.random() * 96 + 2}%`,
-                    animationDelay: `${Math.random() * 3.5}s`,
-                    animationDuration: `${Math.random() * 2.5 + 1.5}s`,
-                    filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.9))',
-                    color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF'
-                  }}
-                  fill={i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'}
-                />
-              ))}
-            </div>
-          )}
+        <div className="clube-modal-overlay">
+          {/* FLOATING FALLING DIAMONDS CASCADE - Unconditional, like daily checkin */}
+          <div className="falling-diamonds-container">
+            {[...Array(35)].map((_, i) => (
+              <PremiumDiamondSVG 
+                key={i} 
+                className="falling-diamond" 
+                size={Math.random() * 26 + 18}
+                style={{
+                  left: `${Math.random() * 96 + 2}%`,
+                  animationDelay: `${Math.random() * 3.5}s`,
+                  animationDuration: `${Math.random() * 2.5 + 1.5}s`,
+                  filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.9))',
+                  color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF'
+                }}
+                fill={i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'}
+              />
+            ))}
+          </div>
 
           <div className="clube-modal-content reward-modal-premium" onClick={(e) => e.stopPropagation()}>
             {result.amountGained ? (
@@ -866,15 +885,31 @@ export const Roleta: React.FC = () => {
                 boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)'
               }}
               onClick={() => {
-                // Instantly blow confetti when clicking Sensacional
-                confetti({ 
-                  particleCount: 80, 
-                  angle: 90, 
-                  spread: 55, 
-                  origin: { y: 0.85 },
-                  colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
-                });
-                setResult(null);
+                if (result.amountGained) {
+                  const amount = result.amountGained;
+                  
+                  // Trigger flying reward text animation
+                  setIsAnimatingEarn(amount);
+                  
+                  // Instantly blow confetti when clicking Sensacional
+                  confetti({ 
+                    particleCount: 80, 
+                    angle: 90, 
+                    spread: 55, 
+                    origin: { y: 0.85 },
+                    colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
+                  });
+                  
+                  setResult(null);
+                  
+                  // Defer points incrementation until flight animation hits the wallet (1500ms)
+                  setTimeout(() => {
+                    handleEarnDiamonds(amount);
+                    setIsAnimatingEarn(null);
+                  }, 1500);
+                } else {
+                  setResult(null);
+                }
               }}
             >
               Sensacional! 💎
@@ -882,39 +917,14 @@ export const Roleta: React.FC = () => {
           </div>
         </div>
       )}
-      </div>
 
-      {/* HISTORY SECTION */}
-      <div className="clube-wallet-section" style={{ marginTop: 20, padding: '16px 20px 20px', position: 'relative', zIndex: 2 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Award size={15} color="#D4AF37" />
-            <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: -0.2 }}>Últimos Prêmios</span>
-          </div>
-          <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)' }}>({history.length}/50 giros)</span>
+      {/* FLYING TEXT REWARD ABSOLUTE ELEMENT CONTAINER */}
+      {isAnimatingEarn !== null && (
+        <div className="flying-reward-text-animation">
+          <PremiumDiamondSVG size={18} fill="#FFDF73" color="#FFDF73" style={{ filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.75))' }} />
+          <span>+{isAnimatingEarn}</span>
         </div>
-        
-        {history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-            Gire a roleta para começar a ganhar! 🎰
-          </div>
-        ) : (
-          <div className="clube-ledger-history" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
-            {history.map((h, index) => {
-              const config = RARITY_CONFIG[h.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
-              return (
-                <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12 }}>{config.icon}</span>
-                    <span style={{ fontWeight: 700, color: h.won ? config.color : 'rgba(255,255,255,0.45)' }}>{h.text}</span>
-                  </div>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5 }}>{h.date}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      )}
 
       <style>{`
         @keyframes particleFade {
