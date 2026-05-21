@@ -2492,7 +2492,7 @@ body{
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000 !important;
+  z-index: 99999 !important;
   padding: 16px;
 }
 
@@ -3678,7 +3678,7 @@ body{
   inset: 0 !important;
   background: rgba(2, 2, 2, 0.94) !important;
   backdrop-filter: blur(20px) !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;

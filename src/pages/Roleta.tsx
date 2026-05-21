@@ -120,6 +120,21 @@ export const Roleta: React.FC = () => {
     localStorage.setItem('free_spins_left_v2', freeSpinsLeft.toString());
   }, [freeSpinsLeft]);
 
+  // Lock scrolling when reward result modal is open
+  useEffect(() => {
+    if (result) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [result]);
+
   // Sound effects helper
   const playSound = useCallback((type: 'spin' | 'win' | 'rare' | 'epic' | 'legendary' | 'lose') => {
     if (!soundEnabled) return;

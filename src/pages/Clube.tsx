@@ -238,6 +238,21 @@ export const Clube = () => {
     return () => clearInterval(interval);
   }, [isAdPlaying, adTimer]);
 
+  // Lock scrolling when success modal or ad theater overlay is open
+  useEffect(() => {
+    if (successModal || isAdPlaying) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [successModal, isAdPlaying]);
+
   const handleEarnCoins = (amount: number, description: string) => {
     // Progressive Count-Up Ticker Animation for Coins Balance
     const startCoins = coins;

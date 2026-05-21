@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -92,10 +93,21 @@ function AppContent() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
         <style>{`
           body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
