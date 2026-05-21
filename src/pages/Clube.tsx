@@ -175,54 +175,66 @@ export const Clube = () => {
 
   // Shimmering Gold Confetti explosion sequence (matching brand premium theme)
   useEffect(() => {
-    if (successModal && successModal.amountGained) {
+    if (successModal) {
       import('canvas-confetti').then((confettiModule) => {
         const confetti = confettiModule.default;
         const brandColors = ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF', '#FFF8DF'];
         
-        // Stage 1: Giant bottom-center golden burst (320 particles!)
+        // Stage 1: Left side golden fireworks cannon (180 particles, ticks: 300)
         confetti({
-          particleCount: 320,
-          spread: 100,
-          origin: { y: 0.6 },
+          particleCount: 180,
+          angle: 60,
+          spread: 75,
+          origin: { x: 0, y: 0.85 },
           colors: brandColors,
+          ticks: 300,
           scalar: 1.2
         });
         
-        // Stage 2: Left side golden fireworks cannon (150 particles)
-        setTimeout(() => {
-          confetti({
-            particleCount: 150,
-            angle: 60,
-            spread: 65,
-            origin: { x: 0, y: 0.75 },
-            colors: brandColors,
-            scalar: 1.1
-          });
-        }, 180);
-        
-        // Stage 3: Right side golden fireworks cannon (150 particles)
-        setTimeout(() => {
-          confetti({
-            particleCount: 150,
-            angle: 120,
-            spread: 65,
-            origin: { x: 1, y: 0.75 },
-            colors: brandColors,
-            scalar: 1.1
-          });
-        }, 320);
+        // Stage 2: Right side golden fireworks cannon (180 particles, ticks: 300)
+        confetti({
+          particleCount: 180,
+          angle: 120,
+          spread: 75,
+          origin: { x: 1, y: 0.85 },
+          colors: brandColors,
+          ticks: 300,
+          scalar: 1.2
+        });
 
-        // Stage 4: Secondary center golden shimmer shower (120 particles)
+        // Stage 3: Center burst (200 particles)
         setTimeout(() => {
           confetti({
-            particleCount: 120,
-            spread: 120,
-            origin: { y: 0.55 },
+            particleCount: 200,
+            spread: 90,
+            origin: { y: 0.6 },
             colors: brandColors,
-            scalar: 0.95
+            ticks: 280,
+            scalar: 1.15
           });
-        }, 450);
+        }, 150);
+
+        // Stage 4: Secondary double cannons
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            angle: 70,
+            spread: 60,
+            origin: { x: 0.1, y: 0.8 },
+            colors: brandColors,
+            ticks: 250,
+            scalar: 1.0
+          });
+          confetti({
+            particleCount: 100,
+            angle: 110,
+            spread: 60,
+            origin: { x: 0.9, y: 0.8 },
+            colors: brandColors,
+            ticks: 250,
+            scalar: 1.0
+          });
+        }, 300);
       });
     }
   }, [successModal]);

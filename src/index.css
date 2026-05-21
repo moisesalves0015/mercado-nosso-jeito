@@ -56,20 +56,14 @@ body{
   z-index:10;
   width:min(430px,100%);
   margin:auto;
-  padding-top: calc(12px + env(safe-area-inset-top, 24px));
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-bottom: 80px;
+  padding: 12px 8px 80px 8px; /* Narrower side margins */
 }
 
 @media (min-width: 768px) {
   .app {
     width: 100%;
     max-width: 960px;
-    padding-top: calc(24px + env(safe-area-inset-top, 0px));
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-bottom: 100px;
+    padding: 24px 20px 100px 20px;
   }
 }
 
@@ -1191,7 +1185,7 @@ body{
    PRODUCT DETAIL PAGE (HIGH CONVERSION CORE SYSTEM)
 ========================================================= */
 .product-detail-page {
-  padding-top: calc(56px + env(safe-area-inset-top, 24px));
+  padding-top: 56px;
   padding-bottom: 90px;
   background: #090705;
   color: #fff;
@@ -1205,7 +1199,7 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  height: calc(56px + env(safe-area-inset-top, 24px));
+  height: 56px;
   background: rgba(9, 7, 5, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1213,10 +1207,7 @@ body{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: env(safe-area-inset-top, 24px);
-  padding-left: 12px;
-  padding-right: 12px;
-  box-sizing: border-box;
+  padding: 0 12px;
   z-index: 200;
 }
 
@@ -1893,11 +1884,6 @@ body{
   overflow-x: hidden;
 }
 
-.roulette-page-container {
-  padding-top: calc(56px + env(safe-area-inset-top, 24px)) !important;
-  padding-bottom: 96px !important;
-}
-
 .clube-topbar {
   position: fixed;
   top: 0;
@@ -1919,8 +1905,13 @@ body{
 }
 
 @media (min-width: 768px) {
+  .clube-page {
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
   .clube-topbar {
     max-width: 960px;
+    height: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
 
@@ -4124,7 +4115,13 @@ body{
 .roulette-page-container {
   display: flex;
   flex-direction: column;
-  padding: calc(56px + env(safe-area-inset-top)) 14px 100px;
+  padding: calc(56px + env(safe-area-inset-top, 24px)) 14px 100px;
+}
+
+@media (min-width: 768px) {
+  .roulette-page-container {
+    padding: calc(56px + env(safe-area-inset-top, 0px)) 14px 100px;
+  }
 }
 
 .roulette-card-body {

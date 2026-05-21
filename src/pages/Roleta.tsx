@@ -4,6 +4,7 @@ import { Gem, ArrowLeft, Award, Clock, Coins, Zap, TrendingUp, Flame, Gift, Volu
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
+import confetti from 'canvas-confetti';
 
 interface RouletteItem {
   text: string;
@@ -134,69 +135,6 @@ export const Roleta: React.FC = () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     };
-  }, [result]);
-
-  // Shimmering Gold Confetti explosion sequence (matching brand premium theme and daily check-in)
-  useEffect(() => {
-    if (result && result.amountGained) {
-      let t1: any;
-      let t2: any;
-      let t3: any;
-      import('canvas-confetti').then((confettiModule) => {
-        const confetti = confettiModule.default;
-        const brandColors = ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF', '#FFF8DF'];
-        
-        // Stage 1: Giant bottom-center golden burst (320 particles!)
-        confetti({
-          particleCount: 320,
-          spread: 100,
-          origin: { y: 0.6 },
-          colors: brandColors,
-          scalar: 1.2
-        });
-        
-        // Stage 2: Left side golden fireworks cannon (150 particles)
-        t1 = setTimeout(() => {
-          confetti({
-            particleCount: 150,
-            angle: 60,
-            spread: 65,
-            origin: { x: 0, y: 0.75 },
-            colors: brandColors,
-            scalar: 1.1
-          });
-        }, 180);
-        
-        // Stage 3: Right side golden fireworks cannon (150 particles)
-        t2 = setTimeout(() => {
-          confetti({
-            particleCount: 150,
-            angle: 120,
-            spread: 65,
-            origin: { x: 1, y: 0.75 },
-            colors: brandColors,
-            scalar: 1.1
-          });
-        }, 320);
-
-        // Stage 4: Secondary center golden shimmer shower (120 particles)
-        t3 = setTimeout(() => {
-          confetti({
-            particleCount: 120,
-            spread: 120,
-            origin: { y: 0.55 },
-            colors: brandColors,
-            scalar: 0.95
-          });
-        }, 450);
-      });
-
-      return () => {
-        if (t1) clearTimeout(t1);
-        if (t2) clearTimeout(t2);
-        if (t3) clearTimeout(t3);
-      };
-    }
   }, [result]);
 
   // Sound effects helper
@@ -397,7 +335,53 @@ export const Roleta: React.FC = () => {
     }
   };
 
+  const triggerRewardConfetti = () => {
+    const brandColors = ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF', '#FFF8DF'];
+    
+    // Left cannon
+    confetti({
+      particleCount: 180,
+      angle: 60,
+      spread: 75,
+      origin: { x: 0, y: 0.85 },
+      colors: brandColors,
+      ticks: 300,
+      scalar: 1.2
+    });
+    
+    // Right cannon
+    confetti({
+      particleCount: 180,
+      angle: 120,
+      spread: 75,
+      origin: { x: 1, y: 0.85 },
+      colors: brandColors,
+      ticks: 300,
+      scalar: 1.2
+    });
 
+    // Staggered second blast
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        angle: 70,
+        spread: 60,
+        origin: { x: 0.1, y: 0.8 },
+        colors: brandColors,
+        ticks: 250,
+        scalar: 1.0
+      });
+      confetti({
+        particleCount: 100,
+        angle: 110,
+        spread: 60,
+        origin: { x: 0.9, y: 0.8 },
+        colors: brandColors,
+        ticks: 250,
+        scalar: 1.0
+      });
+    }, 200);
+  };
 
   const spin = (isFree: boolean) => {
     if (spinning || items.length === 0) return;
@@ -478,6 +462,9 @@ export const Roleta: React.FC = () => {
       setResult({ text: finalText, rarity, amountGained });
       setSpinning(false);
       
+      if (isWin) {
+        triggerRewardConfetti();
+      }
       addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
     }, 10200); // 10.2s matching the ease-out transition
   };
@@ -954,14 +941,12 @@ export const Roleta: React.FC = () => {
                   setIsAnimatingEarn(amount);
                   
                   // Instantly blow confetti when clicking Sensacional
-                  import('canvas-confetti').then((confettiModule) => {
-                    confettiModule.default({ 
-                      particleCount: 80, 
-                      angle: 90, 
-                      spread: 55, 
-                      origin: { y: 0.85 },
-                      colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
-                    });
+                  confetti({ 
+                    particleCount: 80, 
+                    angle: 90, 
+                    spread: 55, 
+                    origin: { y: 0.85 },
+                    colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
                   });
                   
                   setResult(null);
