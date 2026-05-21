@@ -20,6 +20,24 @@ interface SpinHistory {
   won: boolean;
 }
 
+const PremiumDiamondSVG = ({ size = 24, className = '', style = {}, fill = 'none', color = 'currentColor' }: { size?: number; className?: string; style?: React.CSSProperties; fill?: string; color?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    className={className} 
+    style={style}
+  >
+    <path d="M6 2L18 2L22 8L12 22L2 8L6 2Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" fill={fill} />
+    <path d="M6 2L12 8L18 2" stroke={color} strokeWidth="1" strokeLinejoin="round" />
+    <path d="M2 8H22" stroke={color} strokeWidth="1" strokeLinejoin="round" />
+    <path d="M12 8V22" stroke={color} strokeWidth="1" strokeLinejoin="round" />
+    <path d="M6 2L2 8L12 22" stroke={color} strokeWidth="1" strokeLinejoin="round" />
+    <path d="M18 2L22 8L12 22" stroke={color} strokeWidth="1" strokeLinejoin="round" />
+  </svg>
+);
+
 
 const RARITY_CONFIG = {
   common: { color: "#6B7280", glow: "none", points: 5, label: "COMUM", icon: "⭐" },
@@ -61,7 +79,7 @@ export const Roleta: React.FC = () => {
   const [items, setItems] = useState<RouletteItem[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<{ text: string; rarity: string } | null>(null);
+  const [result, setResult] = useState<{ text: string; rarity: string; amountGained?: number } | null>(null);
   
   const [history, setHistory] = useState<SpinHistory[]>(() => {
     const saved = localStorage.getItem('roulette_history_v2');
@@ -275,31 +293,49 @@ export const Roleta: React.FC = () => {
 
     const selectedColors = colors[rarity as keyof typeof colors] || colors.common;
     
+    // Stage 1: Giant bottom-center burst
     confetti({
-      particleCount: rarity === 'legendary' ? 220 : 120,
-      spread: rarity === 'legendary' ? 100 : 75,
+      particleCount: rarity === 'legendary' ? 320 : 180,
+      spread: 100,
       origin: { y: 0.6 },
       colors: selectedColors,
-      startVelocity: rarity === 'legendary' ? 25 : 18,
-      decay: 0.92
+      scalar: 1.2
     });
+    
+    // Stage 2: Left side golden/rarity fireworks cannon
+    setTimeout(() => {
+      confetti({
+        particleCount: rarity === 'legendary' ? 150 : 80,
+        angle: 60,
+        spread: 65,
+        origin: { x: 0, y: 0.75 },
+        colors: selectedColors,
+        scalar: 1.1
+      });
+    }, 180);
+    
+    // Stage 3: Right side golden/rarity fireworks cannon
+    setTimeout(() => {
+      confetti({
+        particleCount: rarity === 'legendary' ? 150 : 80,
+        angle: 120,
+        spread: 65,
+        origin: { x: 1, y: 0.75 },
+        colors: selectedColors,
+        scalar: 1.1
+      });
+    }, 320);
 
-    if (rarity === 'epic' || rarity === 'legendary') {
-      setTimeout(() => {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { x: 0.15, y: 0.65 },
-          colors: selectedColors
-        });
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { x: 0.85, y: 0.65 },
-          colors: selectedColors
-        });
-      }, 250);
-    }
+    // Stage 4: Secondary center golden/rarity shimmer shower
+    setTimeout(() => {
+      confetti({
+        particleCount: rarity === 'legendary' ? 120 : 60,
+        spread: 120,
+        origin: { y: 0.55 },
+        colors: selectedColors,
+        scalar: 0.95
+      });
+    }, 450);
   };
 
   const spin = (isFree: boolean) => {
@@ -342,6 +378,7 @@ export const Roleta: React.FC = () => {
       
       let finalText = wonItem.text;
       let isWin = true;
+      let amountGained: number | undefined;
       
       if (finalText.toLowerCase().includes("tente de novo") || finalText.includes("😢")) {
         isWin = false;
@@ -352,9 +389,9 @@ export const Roleta: React.FC = () => {
         // Tolerant regex matching both '💎' and 'Diamante/s'
         const diamondMatch = finalText.match(/(\d+)\s*(?:Diamante|Diamantes|💎)/i);
         if (diamondMatch) {
-          const amount = Math.floor(parseInt(diamondMatch[1], 10) * multiplier);
-          finalText = `${amount} 💎 ${multiplier > 1 ? `(x${multiplier} Bônus!)` : ''}`;
-          handleDiamondsUpdate(amount);
+          amountGained = Math.floor(parseInt(diamondMatch[1], 10) * multiplier);
+          finalText = `${amountGained} 💎 ${multiplier > 1 ? `(x${multiplier} Bônus!)` : ''}`;
+          handleDiamondsUpdate(amountGained);
         }
         
         setCombo(prev => prev + 1);
@@ -378,7 +415,7 @@ export const Roleta: React.FC = () => {
       setHistory(newHistory);
       localStorage.setItem('roulette_history_v2', JSON.stringify(newHistory));
       
-      setResult({ text: finalText, rarity });
+      setResult({ text: finalText, rarity, amountGained });
       setSpinning(false);
       
       addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
@@ -678,7 +715,21 @@ export const Roleta: React.FC = () => {
             <button 
               className="roulette-spin-btn locked-spin"
               disabled={true}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', padding: '12px 8px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'center', opacity: 0.85 }}
+              style={{
+                flex: 1,
+                background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02))',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3)',
+                color: 'rgba(255, 255, 255, 0.55)',
+                padding: '12px 8px',
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                justifyContent: 'center'
+              }}
             >
               <Clock size={13} />
               <span style={{ fontSize: '10px' }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
@@ -723,35 +774,99 @@ export const Roleta: React.FC = () => {
           </div>
         )}
 
-        {/* Prize won banner */}
-        {result && (
-          <div 
-            className="prize-won-announcement animate-pop" 
-            style={{ 
-              marginTop: 20, 
-              padding: '14px 18px', 
-              background: `linear-gradient(135deg, ${(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color}15 0%, rgba(0,0,0,0.5) 100%)`, 
-              border: `1px solid ${(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color}`, 
-              borderRadius: 16, 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              gap: 4 
-            }}
-          >
-            <span style={{ fontSize: 9.5, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              🎉 Prêmio {(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).label} Conquistado! 🎉
-            </span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color, textAlign: 'center' }}>
-              {result.text}
-            </span>
-            {result.text.includes("😢") ? (
-              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Mais sorte no próximo giro!</span>
+      {/* Prize won modal style Check-in */}
+      {result && (
+        <div className="clube-modal-overlay" onClick={() => setResult(null)}>
+          {/* FLOATING FALLING DIAMONDS CASCADE */}
+          {result.amountGained && (
+            <div className="falling-diamonds-container">
+              {[...Array(35)].map((_, i) => (
+                <PremiumDiamondSVG 
+                  key={i} 
+                  className="falling-diamond" 
+                  size={Math.random() * 26 + 18}
+                  style={{
+                    left: `${Math.random() * 96 + 2}%`,
+                    animationDelay: `${Math.random() * 3.5}s`,
+                    animationDuration: `${Math.random() * 2.5 + 1.5}s`,
+                    filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.9))',
+                    color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF'
+                  }}
+                  fill={i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="clube-modal-content reward-modal-premium" onClick={(e) => e.stopPropagation()}>
+            {result.amountGained ? (
+              <>
+                <div className="clube-modal-icon-box reward-icon-box animate-pop">
+                  <PremiumDiamondSVG size={32} fill="#FFDF73" color="#FFDF73" style={{ filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.85))' }} />
+                </div>
+
+                <div className="clube-modal-text">
+                  <span className="premium-congrats-tag">✨ RECOMPENSA INCRÍVEL ✨</span>
+                  <div className="reward-amount-display">
+                    <span className="reward-plus">+</span>
+                    <span className="reward-val-shimmer">{result.amountGained}</span>
+                    <span className="reward-unit">Diamantes</span>
+                  </div>
+                  <p className="reward-premium-desc">
+                    Parabéns! Seus diamantes foram creditados com sucesso na sua carteira do clube.
+                  </p>
+                </div>
+              </>
             ) : (
-              <span style={{ fontSize: 9.5, color: '#2ecc71', fontWeight: 800, marginTop: 2 }}>Prêmio adicionado à sua conta!</span>
+              <>
+                <div className="clube-modal-icon-box reward-icon-box animate-pop" style={{ borderColor: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color }}>
+                  <Award size={28} color={(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color} />
+                </div>
+
+                <div className="clube-modal-text">
+                  <span className="premium-congrats-tag" style={{ color: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color, borderColor: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color }}>
+                    ✨ PRÊMIO {(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).label} ✨
+                  </span>
+                  <h3 style={{ marginTop: 8, fontSize: 22, fontWeight: 900, color: '#fff', textAlign: 'center' }}>
+                    {result.text}
+                  </h3>
+                  <p className="reward-premium-desc">
+                    {result.text.includes("😢") ? "Mais sorte no próximo giro! Não desista." : "Parabéns! O seu prêmio foi adicionado à sua conta com sucesso."}
+                  </p>
+                </div>
+              </>
             )}
+
+            <button 
+              className="premium-btn-rainbow"
+              style={{
+                width: '100%',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#000',
+                fontWeight: 900,
+                cursor: 'pointer',
+                padding: '12px 0',
+                background: 'linear-gradient(135deg, #FFDF73 0%, #D4AF37 50%, #FFDF73 100%)',
+                boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)'
+              }}
+              onClick={() => {
+                // Instantly blow confetti when clicking Sensacional
+                confetti({ 
+                  particleCount: 80, 
+                  angle: 90, 
+                  spread: 55, 
+                  origin: { y: 0.85 },
+                  colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
+                });
+                setResult(null);
+              }}
+            >
+              Sensacional! 💎
+            </button>
           </div>
-        )}
+        </div>
+      )}
       </div>
 
       {/* HISTORY SECTION */}
