@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, ArrowLeft, Award, Clock, Coins } from 'lucide-react';
+import { Gem, ArrowLeft, Award, Clock, Coins, Zap, TrendingUp, Flame, Gift, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
@@ -9,26 +9,40 @@ import confetti from 'canvas-confetti';
 interface RouletteItem {
   text: string;
   color: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  multiplier?: number;
+}
+
+interface SpinHistory {
+  text: string;
+  date: string;
+  rarity: string;
+  won: boolean;
 }
 
 const PREMIUM_COLORS = [
-  "#D4AF37", // Dourado Ouro (Home)
-  "#1E150F", // Marrom Café Profundo (Home)
-  "#E25C1D", // Laranja Vibrante (Home)
-  "#5B21B6", // Roxo Premium (Home)
-  "#059669"  // Verde Esmeralda (Home)
+  "#D4AF37", "#1E150F", "#E25C1D", "#5B21B6", "#059669",
+  "#DC2626", "#7C3AED", "#EC4899", "#06B6D4", "#F59E0B"
 ];
 
+const RARITY_CONFIG = {
+  common: { color: "#6B7280", glow: "none", points: 5, label: "COMUM", icon: "⭐" },
+  rare: { color: "#3B82F6", glow: "0 0 10px #3B82F6", points: 15, label: "RARO", icon: "🌟" },
+  epic: { color: "#8B5CF6", glow: "0 0 15px #8B5CF6", points: 50, label: "ÉPICO", icon: "💫" },
+  legendary: { color: "#F59E0B", glow: "0 0 20px #F59E0B", points: 100, label: "LENDÁRIO", icon: "👑" }
+};
+
 const DEFAULT_ITEMS: RouletteItem[] = [
-  { text: "15 Diamantes 💎", color: "#D4AF37" },
-  { text: "Monster Gelado ⚡", color: "#E25C1D" },
-  { text: "Tente de Novo 😢", color: "#1E150F" },
-  { text: "Frete Grátis 🚚", color: "#059669" },
-  { text: "50 Diamantes 💎", color: "#D4AF37" },
-  { text: "10% de Desconto 🏷️", color: "#5B21B6" },
-  { text: "Cerveja Spaten 🍺", color: "#059669" },
-  { text: "100 Diamantes 💎", color: "#D4AF37" },
-  { text: "Tente de Novo 😢", color: "#1E150F" }
+  { text: "15 💎", color: "#D4AF37", rarity: "common", multiplier: 1 },
+  { text: "Monster Gelado ⚡", color: "#E25C1D", rarity: "rare", multiplier: 1.5 },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", multiplier: 0 },
+  { text: "Frete Grátis 🚚", color: "#059669", rarity: "rare", multiplier: 1.2 },
+  { text: "50 💎 + Bônus", color: "#D4AF37", rarity: "epic", multiplier: 2 },
+  { text: "20% OFF 🏷️", color: "#5B21B6", rarity: "rare", multiplier: 1.3 },
+  { text: "Cerveja Spaten 🍺", color: "#059669", rarity: "epic", multiplier: 1.8 },
+  { text: "100 💎 JACKPOT", color: "#F59E0B", rarity: "legendary", multiplier: 3 },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", multiplier: 0 },
+  { text: "Dobrar Prêmio 🔥", color: "#DC2626", rarity: "epic", multiplier: 2.5 }
 ];
 
 const mapToPremiumColor = (color: string, index: number): string => {
@@ -74,9 +88,10 @@ export const Roleta: React.FC = () => {
   const [items, setItems] = useState<RouletteItem[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<string | null>(null);
-  const [history, setHistory] = useState<Array<{ text: string; date: string }>>(() => {
-    const saved = localStorage.getItem('roulette_history');
+  const [result, setResult] = useState<{ text: string; rarity: string } | null>(null);
+  
+  const [history, setHistory] = useState<SpinHistory[]>(() => {
+    const saved = localStorage.getItem('roulette_history_v2');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -85,13 +100,130 @@ export const Roleta: React.FC = () => {
     return saved ? parseInt(saved, 10) : 320;
   });
 
-  const [lastFreeSpin, setLastFreeSpin] = useState<number>(() => {
-    const saved = localStorage.getItem('last_free_spin');
+  const [multiplier, setMultiplier] = useState<number>(1);
+  const [combo, setCombo] = useState<number>(0);
+  const [streak, setStreak] = useState<number>(0);
+  
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('roulette_sound') !== 'false';
+  });
+
+  const [particles, setParticles] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [showJackpot, setShowJackpot] = useState(false);
+
+  const [freeSpinsLeft, setFreeSpinsLeft] = useState<number>(() => {
+    const saved = localStorage.getItem('free_spins_left_v2');
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  const [isFreeSpinAvailable, setIsFreeSpinAvailable] = useState(false);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
+  const [lastFreeSpin, setLastFreeSpin] = useState<number>(() => {
+    const saved = localStorage.getItem('last_free_spin_v2');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const audioContext = useRef<AudioContext | null>(null);
+  const particleIdRef = useRef(0);
+
+  // Persist free spins left
+  useEffect(() => {
+    localStorage.setItem('free_spins_left_v2', freeSpinsLeft.toString());
+  }, [freeSpinsLeft]);
+
+  // Sound effects helper
+  const playSound = useCallback((type: 'spin' | 'win' | 'rare' | 'epic' | 'legendary' | 'lose') => {
+    if (!soundEnabled) return;
+    
+    try {
+      if (!audioContext.current) {
+        audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioContext.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      switch(type) {
+        case 'spin':
+          oscillator.frequency.value = 350;
+          gainNode.gain.value = 0.08;
+          oscillator.type = 'sine';
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.35);
+          break;
+        case 'win':
+          oscillator.frequency.value = 523.25; // C5
+          gainNode.gain.value = 0.15;
+          oscillator.type = 'sine';
+          setTimeout(() => {
+            if (oscillator && ctx.state !== 'closed') oscillator.frequency.value = 659.25; // E5
+          }, 110);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.6);
+          break;
+        case 'rare':
+          oscillator.frequency.value = 587.33; // D5
+          gainNode.gain.value = 0.18;
+          oscillator.type = 'triangle';
+          setTimeout(() => {
+            if (oscillator && ctx.state !== 'closed') oscillator.frequency.value = 783.99; // G5
+          }, 90);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+          break;
+        case 'epic':
+          oscillator.frequency.value = 659.25; // E5
+          gainNode.gain.value = 0.22;
+          oscillator.type = 'sawtooth';
+          setTimeout(() => {
+            if (oscillator && ctx.state !== 'closed') oscillator.frequency.value = 987.77; // B5
+          }, 100);
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.7);
+          break;
+        case 'legendary':
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            setTimeout(() => {
+              if (ctx.state === 'closed') return;
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = freq;
+              gain.gain.value = 0.15;
+              gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.4);
+            }, i * 120);
+          });
+          return;
+        case 'lose':
+          oscillator.frequency.value = 220;
+          gainNode.gain.value = 0.12;
+          oscillator.type = 'sawtooth';
+          gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.45);
+          break;
+      }
+      
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.7);
+    } catch (e) {
+      console.warn("AudioContext failed to start or play sound:", e);
+    }
+  }, [soundEnabled]);
+
+  // Click particles effect
+  const addParticles = useCallback((x: number, y: number, count: number = 20) => {
+    for (let i = 0; i < count; i++) {
+      const id = particleIdRef.current++;
+      setParticles(prev => [...prev, { id, x: x + (Math.random() - 0.5) * 120, y: y + (Math.random() - 0.5) * 120 }]);
+      setTimeout(() => {
+        setParticles(prev => prev.filter(p => p.id !== id));
+      }, 1000);
+    }
+  }, []);
 
   // Sync with Firestore diamonds if user is logged in
   useEffect(() => {
@@ -120,34 +252,33 @@ export const Roleta: React.FC = () => {
     const fetchConfig = async () => {
       try {
         const docSnap = await getDoc(doc(db, 'configs', 'roulette'));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-            setItems(data.items);
-          } else {
-            setItems(DEFAULT_ITEMS);
-          }
+        if (docSnap.exists() && docSnap.data().items) {
+          setItems(docSnap.data().items);
         } else {
           setItems(DEFAULT_ITEMS);
         }
       } catch (e) {
-        console.error("Erro ao ler configuração da roleta:", e);
+        console.error("Erro ao ler config do Firestore:", e);
         setItems(DEFAULT_ITEMS);
       }
     };
     fetchConfig();
   }, []);
 
-  // Check if free spin is available (24 hours rule)
+  // Check and update free spins left (3 per day)
   useEffect(() => {
     const now = Date.now();
     const diff = now - lastFreeSpin;
     const hours24 = 24 * 60 * 60 * 1000;
-    setIsFreeSpinAvailable(diff >= hours24);
+    if (diff >= hours24) {
+      setFreeSpinsLeft(3);
+      setLastFreeSpin(now);
+      localStorage.setItem('last_free_spin_v2', now.toString());
+    }
   }, [lastFreeSpin]);
 
-  const handleEarnDiamonds = async (amount: number) => {
-    const newTotal = diamonds + amount;
+  const handleDiamondsUpdate = async (amount: number) => {
+    const newTotal = Math.max(0, diamonds + amount);
     setDiamonds(newTotal);
     localStorage.setItem('user_diamonds', newTotal.toString());
     window.dispatchEvent(new Event('diamonds_updated'));
@@ -161,119 +292,143 @@ export const Roleta: React.FC = () => {
     }
   };
 
-  const handleDeductDiamonds = async (amount: number) => {
-    const newTotal = Math.max(0, diamonds - amount);
-    setDiamonds(newTotal);
-    localStorage.setItem('user_diamonds', newTotal.toString());
-    window.dispatchEvent(new Event('diamonds_updated'));
+  const triggerConfetti = (rarity: string) => {
+    const colors = {
+      common: ['#6B7280', '#D4AF37'],
+      rare: ['#3B82F6', '#60A5FA', '#FFFFFF'],
+      epic: ['#8B5CF6', '#A78BFA', '#C084FC', '#FFDF73'],
+      legendary: ['#F59E0B', '#FBBF24', '#FCD34D', '#FFDF73', '#E25C1D']
+    };
 
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { diamonds: newTotal });
-      } catch (e) {
-        console.error("Erro ao deduzir diamantes no Firestore:", e);
-      }
+    const selectedColors = colors[rarity as keyof typeof colors] || colors.common;
+    
+    confetti({
+      particleCount: rarity === 'legendary' ? 220 : 120,
+      spread: rarity === 'legendary' ? 100 : 75,
+      origin: { y: 0.6 },
+      colors: selectedColors,
+      startVelocity: rarity === 'legendary' ? 25 : 18,
+      decay: 0.92
+    });
+
+    if (rarity === 'epic' || rarity === 'legendary') {
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { x: 0.15, y: 0.65 },
+          colors: selectedColors
+        });
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { x: 0.85, y: 0.65 },
+          colors: selectedColors
+        });
+      }, 250);
     }
   };
 
   const spin = (isFree: boolean) => {
     if (spinning || items.length === 0) return;
-    if (!isFree && diamonds < 30) {
-      alert("Você precisa de pelo menos 30 diamantes 💎 para girar!");
+    if (!isFree && diamonds < 30 && freeSpinsLeft === 0) {
+      alert("💎 Você precisa de 30 diamantes ou usar um giro grátis!");
       return;
     }
 
     setSpinning(true);
     setResult(null);
+    playSound('spin');
 
-    // Pay for the spin
-    if (isFree) {
-      const now = Date.now();
-      setLastFreeSpin(now);
-      localStorage.setItem('last_free_spin', now.toString());
-      setIsFreeSpinAvailable(false);
-    } else {
-      handleDeductDiamonds(30);
+    if (isFree && freeSpinsLeft > 0) {
+      setFreeSpinsLeft(prev => prev - 1);
+    } else if (!isFree) {
+      handleDiamondsUpdate(-30);
     }
 
     const n = items.length;
-    const randomIndex = Math.floor(Math.random() * n);
-    setTargetIndex(randomIndex);
-
-    const degPerSlice = 360 / n;
-    // Calculate rotation to align the slice to the top pin (12 o'clock / 0 or 360 deg)
-    const stopRotation = 360 - (randomIndex + 1) * degPerSlice;
-    const nextRotation = rotation + (360 * 10) + stopRotation - (rotation % 360);
-    setRotation(nextRotation);
-  };
-
-  const handleTransitionEnd = () => {
-    if (targetIndex === null || !spinning) return;
-    setSpinning(false);
+    let randomIndex = Math.floor(Math.random() * n);
     
-    const wonItem = items[targetIndex];
-    setResult(wonItem.text);
-
-    // Add to local history
-    const dateStr = new Date().toLocaleString('pt-BR', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
-    const newHistory = [{ text: wonItem.text, date: dateStr }, ...history].slice(0, 30);
-    setHistory(newHistory);
-    localStorage.setItem('roulette_history', JSON.stringify(newHistory));
-
-    // Handle rewards processing
-    const diamondMatch = wonItem.text.match(/(\d+)\s+Diamante/i);
-    if (diamondMatch) {
-      const amount = parseInt(diamondMatch[1], 10);
-      handleEarnDiamonds(amount);
+    // Weighted rarity validation
+    const selectedRarity = items[randomIndex].rarity;
+    if (selectedRarity === 'legendary' && Math.random() > 0.08) {
+      randomIndex = Math.floor(Math.random() * n);
+    } else if (selectedRarity === 'epic' && Math.random() > 0.20) {
+      randomIndex = Math.floor(Math.random() * n);
     }
 
-    // Trigger rich multi-burst canvas confetti
-    const confettiColors = ['#FFDF73', '#D4AF37', '#E25C1D', '#5B21B6', '#FFFFFF'];
+    const degPerSlice = 360 / n;
+    // stop exact center of the winning slice
+    const stopRotation = 360 - (randomIndex + 0.5) * degPerSlice;
+    const nextRotation = rotation + (360 * 12) + stopRotation - (rotation % 360);
+    setRotation(nextRotation);
     
-    // Left burst
-    confetti({
-      particleCount: 80,
-      angle: 60,
-      spread: 60,
-      origin: { x: 0, y: 0.8 },
-      colors: confettiColors
-    });
-    
-    // Right burst
-    confetti({
-      particleCount: 80,
-      angle: 120,
-      spread: 60,
-      origin: { x: 1, y: 0.8 },
-      colors: confettiColors
-    });
-    
-    // Center splash
-    confetti({
-      particleCount: 100,
-      spread: 80,
-      origin: { y: 0.65 },
-      colors: confettiColors
-    });
+    setTimeout(() => {
+      const wonItem = items[randomIndex];
+      const rarity = wonItem.rarity || 'common';
+      
+      let finalText = wonItem.text;
+      let isWin = true;
+      
+      if (finalText.toLowerCase().includes("tente de novo") || finalText.includes("😢")) {
+        isWin = false;
+        setCombo(0);
+        setStreak(prev => Math.max(0, prev - 1));
+        playSound('lose');
+      } else {
+        // Tolerant regex matching both '💎' and 'Diamante/s'
+        const diamondMatch = finalText.match(/(\d+)\s*(?:Diamante|Diamantes|💎)/i);
+        if (diamondMatch) {
+          const amount = Math.floor(parseInt(diamondMatch[1], 10) * multiplier);
+          finalText = `${amount} 💎 ${multiplier > 1 ? `(x${multiplier} Bônus!)` : ''}`;
+          handleDiamondsUpdate(amount);
+        }
+        
+        setCombo(prev => prev + 1);
+        setStreak(prev => prev + 1);
+        
+        if (multiplier < 10 && combo >= 2) {
+          setMultiplier(prev => Math.min(10, prev + 0.5));
+        }
+        
+        playSound(rarity as any);
+        triggerConfetti(rarity);
+        
+        if (rarity === 'legendary') {
+          setShowJackpot(true);
+          setTimeout(() => setShowJackpot(false), 3000);
+        }
+      }
+      
+      const dateStr = new Date().toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const newHistory = [{ text: finalText, date: dateStr, rarity, won: isWin }, ...history].slice(0, 50);
+      setHistory(newHistory);
+      localStorage.setItem('roulette_history_v2', JSON.stringify(newHistory));
+      
+      setResult({ text: finalText, rarity });
+      setSpinning(false);
+      
+      addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
+    }, 10200); // 10.2s matching the ease-out transition
   };
 
-  // Helper to format remaining time for free spin
+  const resetMultiplier = () => {
+    setMultiplier(1);
+    setCombo(0);
+  };
+
   const getNextFreeSpinTimeLeft = () => {
     const diff = Date.now() - lastFreeSpin;
     const hours24 = 24 * 60 * 60 * 1000;
     const timeLeft = hours24 - diff;
-    if (timeLeft <= 0) return "Disponível";
+    if (timeLeft <= 0 || freeSpinsLeft > 0) return "Disponível";
     const hours = Math.floor(timeLeft / (60 * 60 * 1000));
     const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
     return `${hours}h ${minutes}m`;
   };
 
-  // Calculations for dynamic HTML/CSS roulette
   const n = items.length;
   const deg = n > 0 ? 360 / n : 360;
-  // radius = 160px for a 320px diameter wheel
   const itemWidth = n > 0 ? Math.tan(((deg / 2) * Math.PI) / 180) * 160 * 2 : 0;
   const bdWidth = itemWidth / 2;
 
@@ -284,76 +439,141 @@ export const Roleta: React.FC = () => {
     '--deg': `${deg}deg`,
   } as React.CSSProperties;
 
-  const rouleStyle = {
-    transform: `rotate(${rotation}deg)`,
-    transition: spinning ? 'transform 10s cubic-bezier(0.15, 0.85, 0.2, 1)' : 'none'
-  } as React.CSSProperties;
-
-  const handleCenterSpinClick = () => {
-    if (isFreeSpinAvailable) {
-      spin(true);
-    } else {
-      spin(false);
-    }
-  };
-
   return (
-    <main className="app roulette-page-container">
+    <main className="app roulette-page-container" style={{ background: 'linear-gradient(135deg, #090705 0%, #15100c 50%, #090705 100%)', minHeight: '100vh', position: 'relative' }}>
+      
+      {/* Dynamic particles render */}
+      {particles.map(particle => (
+        <div
+          key={particle.id}
+          style={{
+            position: 'fixed',
+            left: particle.x,
+            top: particle.y,
+            width: 5,
+            height: 5,
+            background: 'radial-gradient(circle, #FFDF73, #D4AF37)',
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            animation: 'particleFade 1s ease-out forwards'
+          }}
+        />
+      ))}
+
+      {/* Jackpot Award Announcement overlay */}
+      {showJackpot && (
+        <div className="jackpot-overlay" style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'linear-gradient(135deg, #F59E0B, #FFDF73)',
+          padding: '24px 44px',
+          borderRadius: 24,
+          zIndex: 10000,
+          animation: 'jackpotPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+          textAlign: 'center',
+          boxShadow: '0 0 60px rgba(245, 158, 11, 0.95)',
+          border: '3px solid #fff'
+        }}>
+          <span style={{ fontSize: 36, display: 'block', fontWeight: 900, color: '#090705' }}>🏆 JACKPOT! 🏆</span>
+          <span style={{ fontSize: 18, fontWeight: '900', color: '#090705', textTransform: 'uppercase', letterSpacing: 0.5 }}>Prêmio Lendário!</span>
+        </div>
+      )}
+
       {/* HEADER */}
-      <header className="clube-topbar" style={{ marginBottom: 12 }}>
+      <header className="clube-topbar" style={{ marginBottom: 12, padding: '12px 16px' }}>
         <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
           <ArrowLeft size={16} />
           <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
         </button>
         
-        <div className="clube-coins-badge">
-          <Gem size={12} fill="#FFDF73" color="#FFDF73" />
-          <span>{diamonds} diamantes</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button 
+            onClick={() => {
+              const nextVal = !soundEnabled;
+              setSoundEnabled(nextVal);
+              localStorage.setItem('roulette_sound', nextVal.toString());
+            }} 
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          >
+            {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
+          </button>
+
+          <div className="clube-coins-badge">
+            <Gem size={12} fill="#FFDF73" color="#FFDF73" />
+            <span>{diamonds} diamantes</span>
+          </div>
         </div>
       </header>
 
+      {/* Streak and multiplier counters */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(9, 7, 5, 0.65)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+          <Flame size={13} color="#F59E0B" fill="#F59E0B" />
+          <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212, 175, 55, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.35)' }}>
+          <TrendingUp size={13} color="#D4AF37" />
+          <span style={{ fontSize: 11, color: '#FFDF73', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
+        </div>
+
+        {combo >= 2 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(139, 92, 246, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.3)', animation: 'pulse 1.5s infinite' }}>
+            <Zap size={13} color="#8B5CF6" fill="#8B5CF6" />
+            <span style={{ fontSize: 11, color: '#A78BFA', fontWeight: 'bold' }}>COMBO x{combo}!</span>
+          </div>
+        )}
+      </div>
+
       {/* BODY */}
       <div className="roulette-card-body">
-        <h2 style={{ fontSize: '1.4em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Roleta da Sorte
+        <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Roleta Premium
         </h2>
         <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginBottom: 20 }}>
-          Gire e concorra a prêmios especiais do clube!
+          Gire e multiplique seus prêmios do clube! 🎰
         </p>
 
-        {/* New HTML/CSS Roulette Area */}
-        <div className="roulette-container">
+        {/* HTML/CSS Roulette Wheel Area */}
+        <div className="roulette-container" onClick={(e) => addParticles(e.clientX, e.clientY, 8)}>
           <div className="roulette-wrapper" style={wrapperStyle}>
-            <div className="pin"></div>
+            <div className="pin" style={{ background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }}></div>
             <button 
               type="button" 
               className="btnStart"
-              onClick={handleCenterSpinClick}
+              onClick={() => spin(freeSpinsLeft > 0)}
               disabled={spinning || items.length === 0}
+              style={{ background: 'radial-gradient(circle at 30% 30%, #D4AF37, #8B6914)', boxShadow: '0 0 20px rgba(212,175,55,0.45)' }}
             >
               {spinning ? (
-                <span style={{ fontSize: '10px' }}>GIRANDO</span>
-              ) : isFreeSpinAvailable ? (
+                <Sparkles size={20} className="animate-spin" style={{ color: '#090705' }} />
+              ) : freeSpinsLeft > 0 ? (
                 <>
-                  <span style={{ fontSize: '9px', color: '#ffca12', fontWeight: 800 }}>GRÁTIS</span>
-                  <span style={{ fontSize: '13px' }}>START</span>
+                  <span style={{ fontSize: '8.5px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
+                  <span style={{ fontSize: '12px', color: '#090705', fontWeight: 900 }}>GIRO</span>
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: '9px', fontWeight: 800 }}>JOGAR</span>
-                  <span style={{ fontSize: '13px' }}>START</span>
+                  <span style={{ fontSize: '8.5px', color: '#090705', fontWeight: 800 }}>JOGAR</span>
+                  <span style={{ fontSize: '12px', color: '#090705', fontWeight: 900 }}>SPIN</span>
                 </>
               )}
             </button>
             <div className="circleWrap">
               <div 
                 className={`rouleWrap ${spinning ? 'active' : ''}`}
-                style={rouleStyle}
-                onTransitionEnd={handleTransitionEnd}
+                style={{ 
+                  transform: `rotate(${rotation}deg)`, 
+                  transition: spinning ? 'transform 10s cubic-bezier(0.15, 0.85, 0.2, 1)' : 'none' 
+                }}
               >
                 {items.map((item, i) => {
                   const itemColor = mapToPremiumColor(item.color, i);
                   const textColor = getTextColorForBackground(itemColor);
+                  const rarityConfig = RARITY_CONFIG[item.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
 
                   const itemStyle = {
                     '--idx': i + 1,
@@ -372,22 +592,23 @@ export const Roleta: React.FC = () => {
                         className="bx" 
                         style={{ 
                           color: textColor, 
-                          textShadow: textColor === '#090705' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)' 
+                          textShadow: textColor === '#090705' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
+                          boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
                         }}
                       >
-                        <span className="txt" style={{ color: textColor === '#090705' ? 'rgba(9, 7, 5, 0.45)' : 'rgba(255, 255, 255, 0.45)' }}>
-                          PRÊMIO
+                        <span className="txt" style={{ color: textColor === '#090705' ? 'rgba(9, 7, 5, 0.45)' : 'rgba(255, 255, 255, 0.45)', fontSize: 7, fontWeight: 800 }}>
+                          {rarityConfig.label} {rarityConfig.icon}
                         </span>
                         {cleanText.split(' ').map((word, wIdx) => (
                           <strong 
                             key={wIdx} 
                             className="roulette-word-line"
-                            style={{ fontSize: items.length > 8 ? '0.72rem' : '0.86rem' }}
+                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem' }}
                           >
                             {word}
                           </strong>
                         ))}
-                        {emoji && <span className="img" style={{ fontSize: '1.05rem', marginTop: 4 }}>{emoji}</span>}
+                        {emoji && <span className="img" style={{ fontSize: '1.05rem', marginTop: 3 }}>{emoji}</span>}
                       </div>
                     </div>
                   );
@@ -406,27 +627,27 @@ export const Roleta: React.FC = () => {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="roulette-controls" style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, margin: '16px auto 0' }}>
+        {/* Action Controls */}
+        <div className="roulette-controls" style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300, margin: '24px auto 0' }}>
           
-          {isFreeSpinAvailable ? (
+          {freeSpinsLeft > 0 ? (
             <button 
               className="roulette-spin-btn free-spin animate-pulse"
               onClick={() => spin(true)}
               disabled={spinning || items.length === 0}
+              style={{ flex: 1, background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', padding: '12px 8px', borderRadius: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              <span>🎁 Giro Grátis Diário</span>
+              <Gift size={14} />
+              <span>{freeSpinsLeft} Grátis</span>
             </button>
           ) : (
             <button 
               className="roulette-spin-btn locked-spin"
               disabled={true}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', opacity: 0.85 }}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', padding: '12px 8px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'center', opacity: 0.85 }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-                <Clock size={13} />
-                <span>Giro Grátis em {getNextFreeSpinTimeLeft()}</span>
-              </div>
+              <Clock size={13} />
+              <span style={{ fontSize: '10px' }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
             </button>
           )}
 
@@ -434,51 +655,128 @@ export const Roleta: React.FC = () => {
             className="roulette-spin-btn diamond-spin"
             onClick={() => spin(false)}
             disabled={spinning || items.length === 0 || diamonds < 30}
-            style={diamonds < 30 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+            style={{ 
+              flex: 1,
+              background: diamonds < 30 ? 'rgba(255,255,255,0.02)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
+              color: diamonds < 30 ? 'rgba(255,255,255,0.25)' : '#090705',
+              border: diamonds < 30 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+              padding: '12px 8px',
+              borderRadius: 12,
+              fontWeight: 900,
+              cursor: diamonds < 30 ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-              <Coins size={14} />
-              <span>Girar por 30 💎</span>
-            </div>
+            <Coins size={14} />
+            <span>30 💎</span>
           </button>
         </div>
 
-        {/* Prize popup banner */}
+        {/* Reset Multiplier link button */}
+        {multiplier > 1 && (
+          <div style={{ textAlign: 'center', marginTop: 10 }}>
+            <button 
+              onClick={resetMultiplier} 
+              style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.45)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
+            >
+              Resetar Bônus
+            </button>
+          </div>
+        )}
+
+        {/* Prize won banner */}
         {result && (
-          <div className="prize-won-announcement animate-pop" style={{ marginTop: 20, padding: '14px 18px', background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(212,175,55,0.04) 100%)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Prêmio Conquistado!</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#FFDF73', textAlign: 'center' }}>{result}</span>
-            {result.includes("😢") && (
+          <div 
+            className="prize-won-announcement animate-pop" 
+            style={{ 
+              marginTop: 20, 
+              padding: '14px 18px', 
+              background: `linear-gradient(135deg, ${(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color}15 0%, rgba(0,0,0,0.5) 100%)`, 
+              border: `1px solid ${(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color}`, 
+              borderRadius: 16, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: 4 
+            }}
+          >
+            <span style={{ fontSize: 9.5, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              🎉 Prêmio {(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).label} Conquistado! 🎉
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color, textAlign: 'center' }}>
+              {result.text}
+            </span>
+            {result.text.includes("😢") ? (
               <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Mais sorte no próximo giro!</span>
-            )}
-            {!result.includes("😢") && (
+            ) : (
               <span style={{ fontSize: 9.5, color: '#2ecc71', fontWeight: 800, marginTop: 2 }}>Prêmio adicionado à sua conta!</span>
             )}
           </div>
         )}
       </div>
 
-      {/* HISTORY LEDGER */}
-      <div className="clube-wallet-section" style={{ marginTop: 16, padding: '16px 20px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-          <Award size={15} color="#D4AF37" />
-          <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: -0.2 }}>Seus Giros Recentes</span>
+      {/* HISTORY SECTION */}
+      <div className="clube-wallet-section" style={{ marginTop: 20, padding: '16px 20px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Award size={15} color="#D4AF37" />
+            <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: -0.2 }}>Últimos Prêmios</span>
+          </div>
+          <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)' }}>({history.length}/50 giros)</span>
         </div>
+        
         {history.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
-            Nenhum prêmio conquistado recentemente.
+            Gire a roleta para começar a ganhar! 🎰
           </div>
         ) : (
-          <div className="clube-ledger-history" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {history.map((h, index) => (
-              <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{h.text}</span>
-                <span style={{ color: 'rgba(255,255,255,0.35)' }}>{h.date}</span>
-              </div>
-            ))}
+          <div className="clube-ledger-history" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+            {history.map((h, index) => {
+              const config = RARITY_CONFIG[h.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
+              return (
+                <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>{config.icon}</span>
+                    <span style={{ fontWeight: 700, color: h.won ? config.color : 'rgba(255,255,255,0.45)' }}>{h.text}</span>
+                  </div>
+                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5 }}>{h.date}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes particleFade {
+          0% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0); }
+        }
+        @keyframes jackpotPop {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.15); }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.04); }
+        }
+        .animate-pulse {
+          animation: pulse 1.6s infinite ease-in-out;
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </main>
   );
 };
