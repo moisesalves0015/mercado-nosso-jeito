@@ -11,7 +11,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, Legend
 } from 'recharts';
-import { collection, getDocs, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ interface FirestoreClient {
   diamonds?: number; createdAt?: any;
 }
 
-type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics';
+type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta';
 
 // ─── CHART DATA (mock enriched) ─────────────────────────────────────────────
 const salesData = [
@@ -139,6 +139,12 @@ export const Admin: React.FC = () => {
   const [awardAmount, setAwardAmount] = useState('50');
   const [clientSearch, setClientSearch] = useState('');
 
+  // ── Roulette Admin States ──
+  const [rouletteItems, setRouletteItems] = useState<{ text: string; color: string }[]>([]);
+  const [newRouletteText, setNewRouletteText] = useState('');
+  const [savingRoulette, setSavingRoulette] = useState(false);
+  const [loadingRoulette, setLoadingRoulette] = useState(false);
+
   // ─── Load from localStorage ───────────────────────────────────────────────
   useEffect(() => {
     // Products
@@ -195,6 +201,7 @@ export const Admin: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'clientes') fetchClients();
+    if (activeTab === 'roleta') fetchRoulette();
   }, [activeTab]);
 
   // ─── Persist helpers ─────────────────────────────────────────────────────
@@ -278,6 +285,94 @@ export const Admin: React.FC = () => {
     } catch (e) { alert('Erro ao conceder diamantes.'); }
   };
 
+  // ─── Roulette Helpers & CRUD ──────────────────────────────────────────────
+  const DEFAULT_ROULETTE_ITEMS = [
+    { text: "15 Diamantes 💎", color: "#f87b8c" },
+    { text: "Monster Gelado ⚡", color: "#ffb366" },
+    { text: "Tente de Novo 😢", color: "#ffe066" },
+    { text: "Frete Grátis 🚚", color: "#7ee6c8" },
+    { text: "50 Diamantes 💎", color: "#7ecbff" },
+    { text: "10% de Desconto 🏷️", color: "#6fa8ff" },
+    { text: "Cerveja Spaten 🍺", color: "#a68cff" },
+    { text: "100 Diamantes 💎", color: "#ffb3c6" },
+    { text: "Tente de Novo 😢", color: "#ffd6a5" }
+  ];
+
+  const fetchRoulette = async () => {
+    setLoadingRoulette(true);
+    try {
+      const snap = await getDoc(doc(db, 'configs', 'roulette'));
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.items && Array.isArray(data.items)) {
+          setRouletteItems(data.items);
+        } else {
+          setRouletteItems(DEFAULT_ROULETTE_ITEMS);
+        }
+      } else {
+        setRouletteItems(DEFAULT_ROULETTE_ITEMS);
+      }
+    } catch (e) {
+      console.error("Erro ao carregar roleta:", e);
+      setRouletteItems(DEFAULT_ROULETTE_ITEMS);
+    } finally {
+      setLoadingRoulette(false);
+    }
+  };
+
+  const handleSaveRoulette = async () => {
+    if (rouletteItems.length < 2) {
+      alert("A roleta precisa ter no mínimo 2 itens para girar!");
+      return;
+    }
+    setSavingRoulette(true);
+    try {
+      await setDoc(doc(db, 'configs', 'roulette'), {
+        items: rouletteItems,
+        updatedAt: new Date().toISOString()
+      });
+      alert("Configuração da roleta salva no Firestore com sucesso! 🎉");
+    } catch (e: any) {
+      console.error("Erro ao salvar roleta:", e);
+      alert("Erro ao salvar: " + e.message);
+    } finally {
+      setSavingRoulette(false);
+    }
+  };
+
+  const handleAddRouletteItem = () => {
+    const text = newRouletteText.trim();
+    if (!text) return;
+    const h = Math.floor(Math.random() * 360);
+    const s = Math.floor(Math.random() * 18) + 72;
+    const l = Math.floor(Math.random() * 16) + 60;
+    const color = `hsl(${h}, ${s}%, ${l}%)`;
+    setRouletteItems([...rouletteItems, { text, color }]);
+    setNewRouletteText('');
+  };
+
+  const handleRemoveRouletteItem = (index: number) => {
+    setRouletteItems(rouletteItems.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateRouletteItemText = (index: number, newText: string) => {
+    setRouletteItems(rouletteItems.map((item, i) => i === index ? { ...item, text: newText } : item));
+  };
+
+  const handleUpdateRouletteItemColor = (index: number, newColor: string) => {
+    setRouletteItems(rouletteItems.map((item, i) => i === index ? { ...item, color: newColor } : item));
+  };
+
+  const moveRouletteItem = (index: number, direction: 'up' | 'down') => {
+    const nextIndex = direction === 'up' ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= rouletteItems.length) return;
+    const updated = [...rouletteItems];
+    const temp = updated[index];
+    updated[index] = updated[nextIndex];
+    updated[nextIndex] = temp;
+    setRouletteItems(updated);
+  };
+
   // ─── Computed Metrics ────────────────────────────────────────────────────
   const approvedOrders = orders.filter(o => o.status !== 'Pendente');
   const totalRevenue = approvedOrders.reduce((s, o) => s + o.total, 0);
@@ -305,6 +400,7 @@ export const Admin: React.FC = () => {
     { key: 'pedidos', label: 'Pedidos', icon: ShoppingBag, badge: pendingCount },
     { key: 'clientes', label: 'Clientes', icon: Users },
     { key: 'analytics', label: 'Analytics', icon: BarChart2 },
+    { key: 'roleta', label: 'Roleta', icon: RefreshCw },
   ];
 
   return (
@@ -710,6 +806,168 @@ export const Admin: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ══════════════════ TAB: ROLETA (ADMIN) ══════════════════ */}
+        {activeTab === 'roleta' && (
+          <div style={sectionCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RefreshCw size={15} color="#D4AF37" /> Configurar Roleta de Prêmios
+                </h3>
+                <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', margin: '4px 0 0' }}>Configure os prêmios da roleta do Nosso Clube. Salve para persistir no Firestore.</p>
+              </div>
+              
+              <button 
+                onClick={handleSaveRoulette} 
+                disabled={savingRoulette || loadingRoulette}
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37, #FFDF73)',
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '8px 18px',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                  fontFamily: 'Manrope, sans-serif'
+                }}
+              >
+                {savingRoulette ? 'Salvando...' : '💾 Salvar na Nuvem'}
+              </button>
+            </div>
+
+            {loadingRoulette ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
+                Carregando configuração da roleta...
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                
+                {/* Adicionar prêmio bar */}
+                <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}>
+                  <input 
+                    type="text" 
+                    value={newRouletteText} 
+                    onChange={e => setNewRouletteText(e.target.value)} 
+                    placeholder="Novo prêmio (Ex: 20 Diamantes 💎)" 
+                    style={{ ...inputStyle, flex: 1 }}
+                    onKeyDown={e => e.key === 'Enter' && handleAddRouletteItem()}
+                  />
+                  <button 
+                    onClick={handleAddRouletteItem}
+                    style={{
+                      background: 'rgba(212,175,55,0.15)',
+                      border: '1px solid rgba(212,175,55,0.3)',
+                      color: '#FFDF73',
+                      padding: '0 18px',
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 850,
+                      cursor: 'pointer',
+                      fontFamily: 'Manrope, sans-serif'
+                    }}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+
+                {/* Tabela de itens da roleta */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'grid', gridTemplateColumns: '1fr 140px 100px', padding: '0 12px' }}>
+                    <span>Texto do Prêmio</span>
+                    <span>Cor de Fundo</span>
+                    <span style={{ textAlign: 'right' }}>Ações</span>
+                  </div>
+
+                  {rouletteItems.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px 0', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12, color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                      Nenhum item na roleta. Adicione prêmios acima.
+                    </div>
+                  ) : (
+                    rouletteItems.map((item, index) => (
+                      <div 
+                        key={index}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 140px 100px',
+                          alignItems: 'center',
+                          gap: 12,
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          padding: '10px 12px',
+                          borderRadius: 12,
+                          transition: 'border-color 0.2s ease'
+                        }}
+                      >
+                        {/* Nome do prêmio */}
+                        <input 
+                          type="text" 
+                          value={item.text} 
+                          onChange={e => handleUpdateRouletteItemText(index, e.target.value)}
+                          style={{ ...inputStyle, height: '36px', background: 'transparent', border: 'none', padding: 0 }}
+                        />
+
+                        {/* Seletor de cores HSL */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: item.color, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                          <input 
+                            type="text" 
+                            value={item.color} 
+                            onChange={e => handleUpdateRouletteItemColor(index, e.target.value)}
+                            placeholder="#hex ou hsl"
+                            style={{ ...inputStyle, height: '32px', fontSize: 11, padding: '0 6px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}
+                          />
+                        </div>
+
+                        {/* Ações (cima, baixo, excluir) */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
+                          <button 
+                            onClick={() => moveRouletteItem(index, 'up')}
+                            disabled={index === 0}
+                            style={{
+                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'rgba(255,255,255,0.02)', color: index === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                              cursor: index === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
+                            }}
+                          >
+                            <ArrowUp size={11} />
+                          </button>
+                          <button 
+                            onClick={() => moveRouletteItem(index, 'down')}
+                            disabled={index === rouletteItems.length - 1}
+                            style={{
+                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'rgba(255,255,255,0.02)', color: index === rouletteItems.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                              cursor: index === rouletteItems.length - 1 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
+                            }}
+                          >
+                            <ArrowDown size={11} />
+                          </button>
+                          <button 
+                            onClick={() => handleRemoveRouletteItem(index)}
+                            style={{
+                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)',
+                              background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                              cursor: 'pointer', display: 'grid', placeItems: 'center'
+                            }}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
 
       {/* ══ ORDER DETAIL MODAL ══ */}

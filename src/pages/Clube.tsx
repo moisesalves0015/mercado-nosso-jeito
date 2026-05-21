@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Gem, 
   CheckCircle, 
@@ -68,6 +69,7 @@ const PremiumDiamondSVG = ({ size = 24, className = '', style = {}, fill = 'none
 );
 
 export const Clube = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [coins, setCoins] = useState<number>(() => {
     const saved = localStorage.getItem('user_diamonds');
@@ -435,6 +437,39 @@ export const Clube = () => {
           <div className="clube-progress-track">
             <div className="clube-progress-fill" style={{ width: `${vipProgress}%` }}></div>
           </div>
+        </div>
+      </div>
+
+      {/* NOVO BANNER/CARD DE ACESSO À ROLETA */}
+      <div 
+        onClick={() => navigate('/roleta')}
+        style={{
+          background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.06) 100%)',
+          border: '1.5px solid rgba(212,175,55,0.3)',
+          borderRadius: 20,
+          padding: '16px 20px',
+          margin: '0 0 20px',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 8px 24px rgba(212,175,55,0.1)',
+          transition: 'all 0.25s ease',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        className="clube-roulette-banner animate-pulse"
+      >
+        <div style={{ position: 'absolute', right: '-20px', top: '-10px', width: 100, height: 100, opacity: 0.15, background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+        
+        <div>
+          <span style={{ fontSize: 9.5, fontWeight: 900, color: '#FFDF73', textTransform: 'uppercase', letterSpacing: 1 }}>Novidade Exclusiva</span>
+          <h4 style={{ fontSize: 15, fontWeight: 900, color: '#fff', margin: '4px 0 2px', letterSpacing: -0.2 }}>Roleta da Sorte 🎰</h4>
+          <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', margin: 0 }}>Gire grátis diariamente ou use seus diamantes para ganhar!</p>
+        </div>
+
+        <div style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FFDF73 100%)', width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(212,175,55,0.35)', flexShrink: 0 }}>
+          <ArrowRight size={16} color="#000" strokeWidth={2.5} />
         </div>
       </div>
 
