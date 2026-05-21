@@ -159,12 +159,10 @@ export const Roleta: React.FC = () => {
     const randomIndex = Math.floor(Math.random() * n);
     setTargetIndex(randomIndex);
 
-    // Calculate rotation: 5 full spins + degrees to align slice center to pointer top (270 degrees)
     const degPerSlice = 360 / n;
-    const extraDegrees = 270 - (randomIndex * degPerSlice + degPerSlice / 2);
-    
-    // Add multiple spins and align
-    const nextRotation = rotation + (360 * 6) + extraDegrees - (rotation % 360);
+    // Calculate rotation to align the slice to the top pin (12 o'clock / 0 or 360 deg)
+    const stopRotation = 360 - (randomIndex + 1) * degPerSlice;
+    const nextRotation = rotation + (360 * 10) + stopRotation - (rotation % 360);
     setRotation(nextRotation);
   };
 
@@ -213,13 +211,32 @@ export const Roleta: React.FC = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  // SVG calculations for React rendering
-  const width = 320;
-  const height = 320;
-  const cx = width / 2;
-  const cy = height / 2;
-  const r = 140;
+  // Calculations for dynamic HTML/CSS roulette
   const n = items.length;
+  const deg = n > 0 ? 360 / n : 360;
+  // radius = 160px for a 320px diameter wheel
+  const itemWidth = n > 0 ? Math.tan(((deg / 2) * Math.PI) / 180) * 160 * 2 : 0;
+  const bdWidth = itemWidth / 2;
+
+  const wrapperStyle = {
+    '--len': n,
+    '--width': `${itemWidth}px`,
+    '--bdWidth': `${bdWidth}px`,
+    '--deg': `${deg}deg`,
+  } as React.CSSProperties;
+
+  const rouleStyle = {
+    transform: `rotate(${rotation}deg)`,
+    transition: spinning ? 'transform 10s cubic-bezier(0.15, 0.85, 0.2, 1)' : 'none'
+  } as React.CSSProperties;
+
+  const handleCenterSpinClick = () => {
+    if (isFreeSpinAvailable) {
+      spin(true);
+    } else {
+      spin(false);
+    }
+  };
 
   return (
     <main className="app roulette-page-container">
@@ -245,106 +262,70 @@ export const Roleta: React.FC = () => {
           Gire e concorra a prêmios especiais do clube!
         </p>
 
-        {/* Roulette SVG Area */}
-        <div className="roulette-area">
-          <div className="roulette-area-bg"></div>
-          
-          {/* Static outline ring */}
-          <svg className="roulette-outline animate-glow" width="320" height="320" viewBox="0 0 320 320">
-            <circle cx="160" cy="160" r="141" fill="none" stroke="#D4AF37" strokeWidth="2.5" style={{ filter: 'drop-shadow(0 0 8px rgba(212,175,55,0.4))' }} />
-            <circle cx="160" cy="160" r="144" fill="none" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="0.8" />
-          </svg>
+        {/* New HTML/CSS Roulette Area */}
+        <div className="roulette-container">
+          <div className="roulette-wrapper" style={wrapperStyle}>
+            <div className="pin"></div>
+            <button 
+              type="button" 
+              className="btnStart"
+              onClick={handleCenterSpinClick}
+              disabled={spinning || items.length === 0}
+            >
+              {spinning ? (
+                <span style={{ fontSize: '10px' }}>GIRANDO</span>
+              ) : isFreeSpinAvailable ? (
+                <>
+                  <span style={{ fontSize: '9px', color: '#ffca12', fontWeight: 800 }}>GRÁTIS</span>
+                  <span style={{ fontSize: '13px' }}>START</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '9px', fontWeight: 800 }}>JOGAR</span>
+                  <span style={{ fontSize: '13px' }}>START</span>
+                </>
+              )}
+            </button>
+            <div className="circleWrap">
+              <div 
+                className={`rouleWrap ${spinning ? 'active' : ''}`}
+                style={rouleStyle}
+                onTransitionEnd={handleTransitionEnd}
+              >
+                {items.map((item, i) => {
+                  const itemStyle = {
+                    '--idx': i + 1,
+                    '--bg-color': item.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+                    transform: `rotate(calc(var(--deg) * ${i + 1}))`
+                  } as React.CSSProperties;
 
-          {/* Golden pointer */}
-          <div className="pointer-wrap">
-            <svg width="34" height="28" viewBox="0 0 34 28">
-              <polygon points="0,0 34,0 17,28" fill="#D4AF37" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }} />
-              <polygon points="4,2 30,2 17,22" fill="#FFDF73" />
-            </svg>
+                  // Extract emoji to show in separate line
+                  const emojiMatch = item.text.match(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g);
+                  const emoji = emojiMatch ? emojiMatch[0] : '';
+                  const cleanText = item.text.replace(emoji, '').trim();
+
+                  return (
+                    <div key={i} className="item" style={itemStyle}>
+                      <div className="bx">
+                        <span className="txt">PRÊMIO</span>
+                        <strong style={{ fontSize: items.length > 8 ? '0.75rem' : '0.9rem' }}>{cleanText}</strong>
+                        {emoji && <span className="img" style={{ fontSize: '1rem', marginTop: 2 }}>{emoji}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="dotWrap">
+                {items.map((_, i) => {
+                  const dotStyle = {
+                    '--idx': i + 1,
+                    transform: `rotate(calc(var(--deg) * ${i + 1} - (var(--deg) / 2)))`
+                  } as React.CSSProperties;
+                  return <div key={i} style={dotStyle}></div>;
+                })}
+              </div>
+            </div>
           </div>
-
-          {/* Dynamic SVG Wheel */}
-          <svg 
-            id="roulette" 
-            className="roulette-svg" 
-            width="320" 
-            height="320" 
-            viewBox="0 0 320 320"
-            style={{
-              transform: `rotate(${rotation}deg)`,
-              transition: spinning ? 'transform 4.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none'
-            }}
-            onTransitionEnd={handleTransitionEnd}
-          >
-            {items.map((item, i) => {
-              const startAngle = (2 * Math.PI * i) / n - Math.PI / 2;
-              const endAngle = (2 * Math.PI * (i + 1)) / n - Math.PI / 2;
-              const x1 = cx + r * Math.cos(startAngle);
-              const y1 = cy + r * Math.sin(startAngle);
-              const x2 = cx + r * Math.cos(endAngle);
-              const y2 = cy + r * Math.sin(endAngle);
-              const largeArc = ((endAngle - startAngle + 2 * Math.PI) % (2 * Math.PI)) > Math.PI ? 1 : 0;
-              
-              const pathData = [
-                `M ${cx} ${cy}`,
-                `L ${x1} ${y1}`,
-                `A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`,
-                'Z'
-              ].join(' ');
-
-              const textAngle = (startAngle + endAngle) / 2;
-              const tx = cx + (r * 0.6) * Math.cos(textAngle);
-              const ty = cy + (r * 0.6) * Math.sin(textAngle);
-              const rotationAngle = (textAngle * 180) / Math.PI;
-
-              // Cap text length if too long
-              const capText = item.text.length > 18 ? item.text.substring(0, 16) + '..' : item.text;
-
-              return (
-                <g key={i}>
-                  {/* Slice */}
-                  <path 
-                    d={pathData} 
-                    fill={item.color} 
-                    stroke="rgba(9,7,5,0.7)" 
-                    strokeWidth="0.8" 
-                  />
-                  
-                  {/* Shadow/Backdrop of Text */}
-                  <text 
-                    x={tx} 
-                    y={ty + 0.8} 
-                    textAnchor="middle" 
-                    dominantBaseline="middle" 
-                    fontSize={n > 8 ? "9px" : "10px"} 
-                    fill="#000" 
-                    opacity="0.6"
-                    fontWeight="800"
-                    fontFamily="Manrope, sans-serif"
-                    transform={`rotate(${rotationAngle}, ${tx}, ${ty})`}
-                    style={{ filter: 'blur(1px)' }}
-                  >
-                    {capText}
-                  </text>
-
-                  {/* Main white text */}
-                  <text 
-                    x={tx} 
-                    y={ty} 
-                    textAnchor="middle" 
-                    dominantBaseline="middle" 
-                    fontSize={n > 8 ? "9px" : "10px"} 
-                    fill="#fff" 
-                    fontWeight="800"
-                    fontFamily="Manrope, sans-serif"
-                    transform={`rotate(${rotationAngle}, ${tx}, ${ty})`}
-                  >
-                    {capText}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
         </div>
 
         {/* Controls */}

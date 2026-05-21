@@ -4123,56 +4123,275 @@ body{
   overflow: hidden;
 }
 
-/* Roulette SVG area */
-.roulette-area {
-  position: relative;
-  width: 320px;
-  height: 320px;
-  margin: 10px auto 14px;
+/* Roulette Wrapper & Container */
+.roulette-container {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  margin: 16px auto 20px;
+  position: relative;
+  width: 100%;
 }
 
-.roulette-area-bg {
-  position: absolute;
-  width: 290px;
-  height: 290px;
+.roulette-wrapper {
+  --wrapSize: 320px;
+  --defaultClr: #ec702c;
+  --bdColor: #D4AF37; /* Gold border color for premium feel */
+  position: relative;
+  width: var(--wrapSize);
+  height: var(--wrapSize);
+}
+
+.roulette-wrapper .circleWrap {
+  width: 100%;
+  height: 100%;
+  border: 10px solid var(--bdColor);
+  border-radius: 50%; 
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 8px 32px rgba(0,0,0,0.6);
+  background: #111;
+}
+
+.roulette-wrapper .rouleWrap {
+  width: var(--wrapSize);
+  height: var(--wrapSize);
+  position: relative;
+  left: -10px;
+  top: -10px;
+  z-index: 10;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85);
-  z-index: 0;
-  pointer-events: none;
 }
 
-.roulette-outline {
+.roulette-wrapper .rouleWrap.active {
+  transform: var(--move);
+}
+
+/* center decoration underneath button */
+.roulette-wrapper .rouleWrap::after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px; 
+  height: 80px;
+  background-color: var(--defaultClr); 
+  border-radius: 50%;
+  z-index: 100;
+}
+
+.roulette-wrapper .item {
   position: absolute;
   left: 0;
   top: 0;
-  pointer-events: none;
-  z-index: 2;
+  right: 0;
+  width: var(--width);
+  height: 160px;
+  margin: 0 auto;
+  transform-origin: var(--bdWidth) 160px;
+  z-index: 10;
 }
 
-.pointer-wrap {
+.roulette-wrapper .item .bx {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: absolute;
-  top: 2px;
+  left: 0;
+  top: 18px;
+  width: 100%;
+  text-align: center;					
+  z-index: 12;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7);
+}
+
+.roulette-wrapper .item .bx span.txt {
+  display: block;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.roulette-wrapper .item .bx strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1.15;
+  max-width: 90%;
+  word-wrap: break-word;
+}
+
+.roulette-wrapper .item .bx span.img {
+  display: inline-block;
+  font-size: 1.1rem;
+}
+
+.roulette-wrapper .item::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 160px var(--bdWidth) 0;
+  border-color: var(--bg-color) transparent transparent;
+  position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
+  top: 0;
+}
+
+/* divisórias das fatias */
+.roulette-wrapper .item::after {
+  content: "";
+  display: block; 
+  width: 1px;
+  height: 160px;
+  background-color: rgba(255, 255, 255, 0.12);
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: rotate(calc(var(--deg) / 2)) translateX(-50%);
+  transform-origin: 0 100%;
+  z-index: 50;
+}
+
+.roulette-wrapper .dotWrap {
+  width: var(--wrapSize);
+  height: var(--wrapSize);
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 15;
   pointer-events: none;
 }
 
-.roulette-svg {
-  z-index: 1;
-  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+.roulette-wrapper .dotWrap > div {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  width: 6px; 
+  height: 160px; 
+  margin: 0 auto;
+  transform-origin: 3px 160px;
+  z-index: 10;
 }
 
-/* Spin button designs */
+.roulette-wrapper .dotWrap > div::after {
+  content: "";
+  display: block;
+  position: relative;
+  top: 2px;
+  width: 6px; 
+  height: 6px;
+  border-radius: 50%; 
+  background-color: #fff;
+  box-shadow: 0 0 6px #fff, 0 0 10px #ffca12;
+}
+
+/* PIN STYLING */
+.roulette-wrapper .pin {
+  --pinSize: 36px;
+  --pinClr: #E25C1D;
+  width: var(--pinSize);
+  height: var(--pinSize);
+  border-radius: 50%;
+  background-color: var(--pinClr);
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  transform: translateX(-50%);
+  z-index: 35;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.3);
+  pointer-events: none;
+}
+
+.roulette-wrapper .pin::before {
+  content: "";
+  display: block;
+  width: 0px;
+  height: 0px;
+  border-style: solid; 
+  border-color: var(--pinClr) transparent transparent;
+  border-width: 15px 12px 0;
+  position: absolute;
+  left: 50%;
+  top: 28px;
+  transform: translateX(-50%);
+}
+
+.roulette-wrapper .pin::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* START BUTTON */
+.roulette-wrapper .btnStart {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 84px;
+  height: 84px;
+  background: linear-gradient(135deg, #E25C1D, #ffca12);
+  border-radius: 50%;
+  z-index: 105;
+  border: 4.5px solid #fff;
+  cursor: pointer;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 850;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: -0.3px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), inset 0 1.5px 2px rgba(255,255,255,0.4);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.roulette-wrapper .btnStart:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.06);
+  background: linear-gradient(135deg, #ffca12, #E25C1D);
+  box-shadow: 0 6px 22px rgba(255, 202, 18, 0.45);
+}
+
+.roulette-wrapper .btnStart:active:not(:disabled) {
+  transform: translate(-50%, -50%) scale(0.94);
+}
+
+.roulette-wrapper .btnStart:disabled {
+  background: #2a2a2a !important;
+  color: rgba(255,255,255,0.3) !important;
+  border-color: #444 !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* Control Buttons (Lower Area) */
 .roulette-spin-btn {
   height: 46px;
   border-radius: 14px;
   border: none;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 13px;
   font-weight: 850;
   cursor: pointer;
@@ -4181,7 +4400,7 @@ body{
   align-items: center;
   justify-content: center;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .roulette-spin-btn:active {
@@ -4191,10 +4410,10 @@ body{
 .roulette-spin-btn.free-spin {
   background: linear-gradient(135deg, #2ecc71, #27ae60);
   box-shadow: 0 4px 16px rgba(46, 204, 113, 0.25);
-  border: 1px solid rgba(46, 204, 113, 0.3);
+  border: 1.5px solid rgba(46, 204, 113, 0.3);
 }
 
-.roulette-spin-btn.free-spin:hover {
+.roulette-spin-btn.free-spin:hover:not(:disabled) {
   background: linear-gradient(135deg, #27ae60, #2ecc71);
   box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
 }
@@ -4203,6 +4422,7 @@ body{
   background: linear-gradient(135deg, #D4AF37, #FFDF73);
   color: #000;
   box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
+  border: 1.5px solid rgba(212, 175, 55, 0.3);
 }
 
 .roulette-spin-btn.diamond-spin:hover:not(:disabled) {
@@ -4210,7 +4430,6 @@ body{
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
 }
 
-/* Pulse animation for active elements */
 @keyframes trigger-pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.03); }
