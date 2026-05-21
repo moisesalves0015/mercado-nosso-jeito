@@ -42,11 +42,17 @@ const DEFAULT_ITEMS: RouletteItem[] = [
 ];
 
 const mapToPremiumColor = (_color: string, index: number): string => {
-  return index % 2 === 0 ? "#D4AF37" : "#121212";
+  const mod = index % 3;
+  if (mod === 0) return "linear-gradient(to bottom, #FFDF73 0%, #D4AF37 55%, #AA8214 100%)";
+  if (mod === 1) return "linear-gradient(to bottom, #2C2C2C 0%, #151515 55%, #0A0A0A 100%)";
+  return "linear-gradient(to bottom, #B8841F 0%, #7C5810 55%, #442E05 100%)";
 };
 
-const getTextColorForBackground = (hexColor: string) => {
-  return hexColor === "#D4AF37" ? "#121212" : "#D4AF37";
+const getTextColorForBackground = (colorGradient: string) => {
+  if (colorGradient.includes("#FFDF73")) {
+    return "#121212";
+  }
+  return "#FFDF73";
 };
 
 export const Roleta: React.FC = () => {
@@ -407,8 +413,32 @@ export const Roleta: React.FC = () => {
   } as React.CSSProperties;
 
   return (
-    <main className="app roulette-page-container" style={{ background: 'linear-gradient(135deg, #090705 0%, #15100c 50%, #090705 100%)', minHeight: '100vh', position: 'relative' }}>
+    <main className="app roulette-page-container" style={{ backgroundColor: '#090705', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
       
+      {/* Supermarket blurred and darkened background image overlay */}
+      <div 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'url("/bg-supermercado.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(3.5px) brightness(0.24)',
+          opacity: 0.5,
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
+      />
+      <div 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.15) 0%, rgba(9, 7, 5, 0.95) 100%)',
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
+      />
+
       {/* Dynamic particles render */}
       {particles.map(particle => (
         <div
@@ -450,7 +480,7 @@ export const Roleta: React.FC = () => {
       )}
 
       {/* HEADER */}
-      <header className="clube-topbar" style={{ marginBottom: 12, padding: '12px 16px' }}>
+      <header className="clube-topbar" style={{ marginBottom: 12, padding: '12px 16px', position: 'relative', zIndex: 2 }}>
         <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
           <ArrowLeft size={16} />
           <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
@@ -467,7 +497,7 @@ export const Roleta: React.FC = () => {
           >
             {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
           </button>
-
+ 
           <div className="clube-coins-badge">
             <Gem size={12} fill="#FFDF73" color="#FFDF73" />
             <span>{diamonds} diamantes</span>
@@ -476,7 +506,7 @@ export const Roleta: React.FC = () => {
       </header>
 
       {/* Streak and multiplier counters */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(9, 7, 5, 0.65)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
           <Flame size={13} color="#F59E0B" fill="#F59E0B" />
           <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
@@ -496,7 +526,7 @@ export const Roleta: React.FC = () => {
       </div>
 
       {/* BODY */}
-      <div className="roulette-card-body">
+      <div className="roulette-card-body" style={{ zIndex: 2 }}>
         <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Roleta Premium
         </h2>
@@ -617,6 +647,7 @@ export const Roleta: React.FC = () => {
                   );
                 })}
               </div>
+              <div className="roulette-shine-overlay" />
             </div>
             <div className="dotWrap">
               {items.map((_, i) => {
@@ -724,7 +755,7 @@ export const Roleta: React.FC = () => {
       </div>
 
       {/* HISTORY SECTION */}
-      <div className="clube-wallet-section" style={{ marginTop: 20, padding: '16px 20px 20px' }}>
+      <div className="clube-wallet-section" style={{ marginTop: 20, padding: '16px 20px 20px', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Award size={15} color="#D4AF37" />
