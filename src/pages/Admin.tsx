@@ -140,8 +140,9 @@ export const Admin: React.FC = () => {
   const [clientSearch, setClientSearch] = useState('');
 
   // ── Roulette Admin States ──
-  const [rouletteItems, setRouletteItems] = useState<{ text: string; color: string }[]>([]);
+  const [rouletteItems, setRouletteItems] = useState<{ text: string; color: string; probability?: number }[]>([]);
   const [newRouletteText, setNewRouletteText] = useState('');
+  const [newRouletteProbability, setNewRouletteProbability] = useState('10');
   const [savingRoulette, setSavingRoulette] = useState(false);
   const [loadingRoulette, setLoadingRoulette] = useState(false);
 
@@ -287,15 +288,15 @@ export const Admin: React.FC = () => {
 
   // ─── Roulette Helpers & CRUD ──────────────────────────────────────────────
   const DEFAULT_ROULETTE_ITEMS = [
-    { text: "15 Diamantes 💎", color: "#D4AF37" },
-    { text: "Monster Gelado ⚡", color: "#E25C1D" },
-    { text: "Tente de Novo 😢", color: "#1E150F" },
-    { text: "Frete Grátis 🚚", color: "#059669" },
-    { text: "50 Diamantes 💎", color: "#D4AF37" },
-    { text: "10% de Desconto 🏷️", color: "#5B21B6" },
-    { text: "Cerveja Spaten 🍺", color: "#059669" },
-    { text: "100 Diamantes 💎", color: "#D4AF37" },
-    { text: "Tente de Novo 😢", color: "#1E150F" }
+    { text: "15 Diamantes 💎", color: "#D4AF37", probability: 20 },
+    { text: "Monster Gelado ⚡", color: "#E25C1D", probability: 10 },
+    { text: "Tente de Novo 😢", color: "#1E150F", probability: 15 },
+    { text: "Frete Grátis 🚚", color: "#059669", probability: 10 },
+    { text: "50 Diamantes 💎", color: "#D4AF37", probability: 5 },
+    { text: "10% de Desconto 🏷️", color: "#5B21B6", probability: 15 },
+    { text: "Cerveja Spaten 🍺", color: "#059669", probability: 5 },
+    { text: "100 Diamantes 💎", color: "#D4AF37", probability: 2 },
+    { text: "Tente de Novo 😢", color: "#1E150F", probability: 18 }
   ];
 
   const fetchRoulette = async () => {
@@ -343,10 +344,12 @@ export const Admin: React.FC = () => {
   const handleAddRouletteItem = () => {
     const text = newRouletteText.trim();
     if (!text) return;
+    const prob = parseFloat(newRouletteProbability) || 0;
     const premiumColors = ["#D4AF37", "#1E150F", "#E25C1D", "#5B21B6", "#059669"];
     const color = premiumColors[rouletteItems.length % premiumColors.length];
-    setRouletteItems([...rouletteItems, { text, color }]);
+    setRouletteItems([...rouletteItems, { text, color, probability: prob }]);
     setNewRouletteText('');
+    setNewRouletteProbability('10');
   };
 
   const handleRemoveRouletteItem = (index: number) => {
@@ -359,6 +362,11 @@ export const Admin: React.FC = () => {
 
   const handleUpdateRouletteItemColor = (index: number, newColor: string) => {
     setRouletteItems(rouletteItems.map((item, i) => i === index ? { ...item, color: newColor } : item));
+  };
+
+  const handleUpdateRouletteItemProbability = (index: number, newProb: string) => {
+    const prob = parseFloat(newProb);
+    setRouletteItems(rouletteItems.map((item, i) => i === index ? { ...item, probability: isNaN(prob) ? 0 : prob } : item));
   };
 
   const moveRouletteItem = (index: number, direction: 'up' | 'down') => {
@@ -847,15 +855,49 @@ export const Admin: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 
                 {/* Adicionar prêmio bar */}
-                <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}>
+                <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 10, borderRadius: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                   <input 
                     type="text" 
                     value={newRouletteText} 
                     onChange={e => setNewRouletteText(e.target.value)} 
                     placeholder="Novo prêmio (Ex: 20 Diamantes 💎)" 
-                    style={{ ...inputStyle, flex: 1 }}
+                    style={{ ...inputStyle, flex: 1, minWidth: 200 }}
                     onKeyDown={e => e.key === 'Enter' && handleAddRouletteItem()}
                   />
+                  
+                  {/* Select de produtos */}
+                  <select
+                    value=""
+                    onChange={e => {
+                      if (e.target.value) {
+                        setNewRouletteText(e.target.value);
+                      }
+                    }}
+                    style={{ ...inputStyle, width: '200px', cursor: 'pointer' }}
+                  >
+                    <option value="" style={{ background: '#0f172a' }}>Vincular Produto...</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.title} style={{ background: '#0f172a' }}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 140 }}>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>Probabilidade:</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="100"
+                      value={newRouletteProbability} 
+                      onChange={e => setNewRouletteProbability(e.target.value)} 
+                      placeholder="%" 
+                      style={{ ...inputStyle, width: '60px', textAlign: 'center' }}
+                      onKeyDown={e => e.key === 'Enter' && handleAddRouletteItem()}
+                    />
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>%</span>
+                  </div>
+
                   <button 
                     onClick={handleAddRouletteItem}
                     style={{
@@ -863,6 +905,7 @@ export const Admin: React.FC = () => {
                       border: '1px solid rgba(212,175,55,0.3)',
                       color: '#FFDF73',
                       padding: '0 18px',
+                      height: 40,
                       borderRadius: 10,
                       fontSize: 12,
                       fontWeight: 850,
@@ -876,9 +919,10 @@ export const Admin: React.FC = () => {
 
                 {/* Tabela de itens da roleta */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'grid', gridTemplateColumns: '1fr 140px 100px', padding: '0 12px' }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'grid', gridTemplateColumns: '1fr 140px 100px 110px', padding: '0 12px' }}>
                     <span>Texto do Prêmio</span>
                     <span>Cor de Fundo</span>
+                    <span>Probabilidade (%)</span>
                     <span style={{ textAlign: 'right' }}>Ações</span>
                   </div>
 
@@ -887,78 +931,117 @@ export const Admin: React.FC = () => {
                       Nenhum item na roleta. Adicione prêmios acima.
                     </div>
                   ) : (
-                    rouletteItems.map((item, index) => (
-                      <div 
-                        key={index}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 140px 100px',
-                          alignItems: 'center',
-                          gap: 12,
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.06)',
-                          padding: '10px 12px',
-                          borderRadius: 12,
-                          transition: 'border-color 0.2s ease'
-                        }}
-                      >
-                        {/* Nome do prêmio */}
-                        <input 
-                          type="text" 
-                          value={item.text} 
-                          onChange={e => handleUpdateRouletteItemText(index, e.target.value)}
-                          style={{ ...inputStyle, height: '36px', background: 'transparent', border: 'none', padding: 0 }}
-                        />
-
-                        {/* Seletor de cores HSL */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: item.color, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                    <>
+                      {rouletteItems.map((item, index) => (
+                        <div 
+                          key={index}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 140px 100px 110px',
+                            alignItems: 'center',
+                            gap: 12,
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            padding: '10px 12px',
+                            borderRadius: 12,
+                            transition: 'border-color 0.2s ease'
+                          }}
+                        >
+                          {/* Nome do prêmio */}
                           <input 
                             type="text" 
-                            value={item.color} 
-                            onChange={e => handleUpdateRouletteItemColor(index, e.target.value)}
-                            placeholder="#hex ou hsl"
-                            style={{ ...inputStyle, height: '32px', fontSize: 11, padding: '0 6px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            value={item.text} 
+                            onChange={e => handleUpdateRouletteItemText(index, e.target.value)}
+                            style={{ ...inputStyle, height: '36px', background: 'transparent', border: 'none', padding: 0 }}
                           />
-                        </div>
 
-                        {/* Ações (cima, baixo, excluir) */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
-                          <button 
-                            onClick={() => moveRouletteItem(index, 'up')}
-                            disabled={index === 0}
-                            style={{
-                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
-                              background: 'rgba(255,255,255,0.02)', color: index === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
-                              cursor: index === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
-                            }}
-                          >
-                            <ArrowUp size={11} />
-                          </button>
-                          <button 
-                            onClick={() => moveRouletteItem(index, 'down')}
-                            disabled={index === rouletteItems.length - 1}
-                            style={{
-                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
-                              background: 'rgba(255,255,255,0.02)', color: index === rouletteItems.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
-                              cursor: index === rouletteItems.length - 1 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
-                            }}
-                          >
-                            <ArrowDown size={11} />
-                          </button>
-                          <button 
-                            onClick={() => handleRemoveRouletteItem(index)}
-                            style={{
-                              width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)',
-                              background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                              cursor: 'pointer', display: 'grid', placeItems: 'center'
-                            }}
-                          >
-                            <Trash2 size={11} />
-                          </button>
+                          {/* Seletor de cores HSL */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: item.color, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                            <input 
+                              type="text" 
+                              value={item.color} 
+                              onChange={e => handleUpdateRouletteItemColor(index, e.target.value)}
+                              placeholder="#hex ou hsl"
+                              style={{ ...inputStyle, height: '32px', fontSize: 11, padding: '0 6px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}
+                            />
+                          </div>
+
+                          {/* Probabilidade */}
+                          <input 
+                            type="number" 
+                            min="0"
+                            max="100"
+                            value={item.probability !== undefined ? item.probability : ''} 
+                            onChange={e => handleUpdateRouletteItemProbability(index, e.target.value)}
+                            placeholder="0"
+                            style={{ ...inputStyle, height: '32px', fontSize: 12, padding: '0 6px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}
+                          />
+
+                          {/* Ações (cima, baixo, excluir) */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
+                            <button 
+                              onClick={() => moveRouletteItem(index, 'up')}
+                              disabled={index === 0}
+                              style={{
+                                width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                                background: 'rgba(255,255,255,0.02)', color: index === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                                cursor: index === 0 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
+                              }}
+                            >
+                              <ArrowUp size={11} />
+                            </button>
+                            <button 
+                              onClick={() => moveRouletteItem(index, 'down')}
+                              disabled={index === rouletteItems.length - 1}
+                              style={{
+                                width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                                background: 'rgba(255,255,255,0.02)', color: index === rouletteItems.length - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.6)',
+                                cursor: index === rouletteItems.length - 1 ? 'default' : 'pointer', display: 'grid', placeItems: 'center'
+                              }}
+                            >
+                              <ArrowDown size={11} />
+                            </button>
+                            <button 
+                              onClick={() => handleRemoveRouletteItem(index)}
+                              style={{
+                                width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(239,68,68,0.2)',
+                                background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                                cursor: 'pointer', display: 'grid', placeItems: 'center'
+                              }}
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
                         </div>
+                      ))}
+                      
+                      {/* Totalizador de probabilidades */}
+                      <div 
+                        style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          background: 'rgba(255,255,255,0.02)', 
+                          padding: '12px 16px', 
+                          borderRadius: 12, 
+                          border: '1px solid rgba(255,255,255,0.05)', 
+                          marginTop: 10 
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>Soma das Probabilidades:</span>
+                        <span 
+                          style={{ 
+                            fontSize: 13, 
+                            fontWeight: 900, 
+                            color: rouletteItems.reduce((acc, item) => acc + (item.probability || 0), 0) === 100 ? '#10B981' : '#F59E0B' 
+                          }}
+                        >
+                          {rouletteItems.reduce((acc, item) => acc + (item.probability || 0), 0)}% 
+                          {rouletteItems.reduce((acc, item) => acc + (item.probability || 0), 0) !== 100 && ' ⚠️ (Recomendado: 100%)'}
+                        </span>
                       </div>
-                    ))
+                    </>
                   )}
                 </div>
               </div>

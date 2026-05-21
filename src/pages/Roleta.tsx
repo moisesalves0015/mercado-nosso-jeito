@@ -11,6 +11,7 @@ interface RouletteItem {
   color: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   multiplier?: number;
+  probability?: number;
 }
 
 interface SpinHistory {
@@ -47,15 +48,15 @@ const RARITY_CONFIG = {
 };
 
 const DEFAULT_ITEMS: RouletteItem[] = [
-  { text: "15 Diamantes 💎", color: "#D4AF37", rarity: "common" },
-  { text: "Monster Gelado ⚡", color: "#E25C1D", rarity: "rare" },
-  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common" },
-  { text: "Frete Grátis 🚚", color: "#059669", rarity: "rare" },
-  { text: "50 Diamantes 💎", color: "#D4AF37", rarity: "epic" },
-  { text: "10% de Desconto 🏷️", color: "#5B21B6", rarity: "rare" },
-  { text: "Cerveja Spaten 🍺", color: "#059669", rarity: "epic" },
-  { text: "100 Diamantes 💎", color: "#D4AF37", rarity: "legendary" },
-  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common" }
+  { text: "15 Diamantes 💎", color: "#D4AF37", rarity: "common", probability: 20 },
+  { text: "Monster Gelado ⚡", color: "#E25C1D", rarity: "rare", probability: 10 },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", probability: 15 },
+  { text: "Frete Grátis 🚚", color: "#059669", rarity: "rare", probability: 10 },
+  { text: "50 Diamantes 💎", color: "#D4AF37", rarity: "epic", probability: 5 },
+  { text: "10% de Desconto 🏷️", color: "#5B21B6", rarity: "rare", probability: 15 },
+  { text: "Cerveja Spaten 🍺", color: "#059669", rarity: "epic", probability: 5 },
+  { text: "100 Diamantes 💎", color: "#D4AF37", rarity: "legendary", probability: 2 },
+  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", probability: 18 }
 ];
 
 const getRarityForText = (text: string): 'common' | 'rare' | 'epic' | 'legendary' => {
@@ -418,14 +419,30 @@ export const Roleta: React.FC = () => {
     }
 
     const n = items.length;
-    let randomIndex = Math.floor(Math.random() * n);
+    let randomIndex = 0;
     
-    // Weighted rarity validation
-    const selectedRarity = items[randomIndex].rarity;
-    if (selectedRarity === 'legendary' && Math.random() > 0.08) {
+    // Calculate total probability of configured items
+    const totalProb = items.reduce((acc, item) => acc + (item.probability || 0), 0);
+    
+    if (totalProb > 0) {
+      const randomVal = Math.random() * totalProb;
+      let cumulative = 0;
+      for (let i = 0; i < n; i++) {
+        cumulative += items[i].probability || 0;
+        if (randomVal <= cumulative) {
+          randomIndex = i;
+          break;
+        }
+      }
+    } else {
       randomIndex = Math.floor(Math.random() * n);
-    } else if (selectedRarity === 'epic' && Math.random() > 0.20) {
-      randomIndex = Math.floor(Math.random() * n);
+      // Weighted rarity validation as fallback
+      const selectedRarity = items[randomIndex].rarity;
+      if (selectedRarity === 'legendary' && Math.random() > 0.08) {
+        randomIndex = Math.floor(Math.random() * n);
+      } else if (selectedRarity === 'epic' && Math.random() > 0.20) {
+        randomIndex = Math.floor(Math.random() * n);
+      }
     }
 
     const degPerSlice = 360 / n;
@@ -676,7 +693,6 @@ export const Roleta: React.FC = () => {
                     {items.map((item, i) => {
                       const itemColor = mapToPremiumColor(item.color, i);
                       const textColor = getTextColorForBackground(itemColor);
-                      const rarityConfig = RARITY_CONFIG[item.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
 
                       const itemStyle = {
                         '--idx': i + 1,
@@ -741,8 +757,7 @@ export const Roleta: React.FC = () => {
                             className="bx" 
                             style={{ 
                               color: textColor, 
-                              textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
-                              filter: rarityConfig.glow !== 'none' ? `drop-shadow(${rarityConfig.glow})` : undefined
+                              textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)'
                             }}
                           >
                             {displayContent}
