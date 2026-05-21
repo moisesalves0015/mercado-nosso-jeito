@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, ArrowLeft, Award, Clock, Coins, Zap, TrendingUp, Flame, Gift, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Gem, ArrowLeft, Award, Clock, Coins, Zap, TrendingUp, Flame, Gift, Volume2, VolumeX } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
@@ -34,15 +34,15 @@ const RARITY_CONFIG = {
 
 const DEFAULT_ITEMS: RouletteItem[] = [
   { text: "15 💎", color: "#D4AF37", rarity: "common", multiplier: 1 },
-  { text: "Monster Gelado ⚡", color: "#E25C1D", rarity: "rare", multiplier: 1.5 },
-  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", multiplier: 0 },
-  { text: "Frete Grátis 🚚", color: "#059669", rarity: "rare", multiplier: 1.2 },
+  { text: "Monster Gelado", color: "#E25C1D", rarity: "rare", multiplier: 1.5 },
+  { text: "Tente de Novo", color: "#1E150F", rarity: "common", multiplier: 0 },
+  { text: "Frete Grátis", color: "#059669", rarity: "rare", multiplier: 1.2 },
   { text: "50 💎 + Bônus", color: "#D4AF37", rarity: "epic", multiplier: 2 },
-  { text: "20% OFF 🏷️", color: "#5B21B6", rarity: "rare", multiplier: 1.3 },
-  { text: "Cerveja Spaten 🍺", color: "#059669", rarity: "epic", multiplier: 1.8 },
+  { text: "20% OFF", color: "#5B21B6", rarity: "rare", multiplier: 1.3 },
+  { text: "Cerveja Spaten", color: "#059669", rarity: "epic", multiplier: 1.8 },
   { text: "100 💎 JACKPOT", color: "#F59E0B", rarity: "legendary", multiplier: 3 },
-  { text: "Tente de Novo 😢", color: "#1E150F", rarity: "common", multiplier: 0 },
-  { text: "Dobrar Prêmio 🔥", color: "#DC2626", rarity: "epic", multiplier: 2.5 }
+  { text: "Tente de Novo", color: "#1E150F", rarity: "common", multiplier: 0 },
+  { text: "Dobrar Prêmio", color: "#DC2626", rarity: "epic", multiplier: 2.5 }
 ];
 
 const mapToPremiumColor = (color: string, index: number): string => {
@@ -549,16 +549,18 @@ export const Roleta: React.FC = () => {
               style={{ background: 'radial-gradient(circle at 30% 30%, #D4AF37, #8B6914)', boxShadow: '0 0 20px rgba(212,175,55,0.45)' }}
             >
               {spinning ? (
-                <Sparkles size={20} className="animate-spin" style={{ color: '#090705' }} />
+                <span style={{ fontSize: '9.5px', color: '#090705', fontWeight: 900, lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'center' }}>
+                  NOSSO<br/>CLUBE
+                </span>
               ) : freeSpinsLeft > 0 ? (
                 <>
-                  <span style={{ fontSize: '8.5px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
-                  <span style={{ fontSize: '12px', color: '#090705', fontWeight: 900 }}>GIRO</span>
+                  <span style={{ fontSize: '8px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
+                  <span style={{ fontSize: '11px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
                 </>
               ) : (
                 <>
-                  <span style={{ fontSize: '8.5px', color: '#090705', fontWeight: 800 }}>JOGAR</span>
-                  <span style={{ fontSize: '12px', color: '#090705', fontWeight: 900 }}>SPIN</span>
+                  <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
+                  <span style={{ fontSize: '10px', color: '#090705', fontWeight: 900 }}>ROLETA</span>
                 </>
               )}
             </button>
@@ -581,10 +583,52 @@ export const Roleta: React.FC = () => {
                     transform: `rotate(calc(var(--deg) * ${i + 1}))`
                   } as React.CSSProperties;
 
-                  // Extract emoji to show in separate line
-                  const emojiMatch = item.text.match(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g);
-                  const emoji = emojiMatch ? emojiMatch[0] : '';
-                  const cleanText = item.text.replace(emoji, '').trim();
+                  // Limpar emojis de todo o texto
+                  let cleanText = item.text.replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '').trim();
+
+                  const isDiamond = item.text.toLowerCase().includes('💎') || item.text.toLowerCase().includes('diamante');
+                  let displayContent: React.ReactNode;
+
+                  if (isDiamond) {
+                    const numMatch = item.text.match(/(\d+)/);
+                    const num = numMatch ? numMatch[1] : '';
+                    let remaining = cleanText
+                      .replace(num, '')
+                      .replace(/diamantes?/i, '')
+                      .replace(/\s+/g, ' ')
+                      .trim();
+
+                    const mainText = `+${num}${remaining ? ` ${remaining}` : ''}`;
+
+                    displayContent = (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        {mainText.split(' ').map((word, wIdx) => (
+                          <strong 
+                            key={wIdx} 
+                            className="roulette-word-line"
+                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
+                          >
+                            {word}
+                          </strong>
+                        ))}
+                        <Gem size={13} color={textColor} style={{ marginTop: 2 }} />
+                      </div>
+                    );
+                  } else {
+                    displayContent = (
+                      <>
+                        {cleanText.split(' ').map((word, wIdx) => (
+                          <strong 
+                            key={wIdx} 
+                            className="roulette-word-line"
+                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem', fontWeight: 900 }}
+                          >
+                            {word}
+                          </strong>
+                        ))}
+                      </>
+                    );
+                  }
 
                   return (
                     <div key={i} className="item" style={itemStyle}>
@@ -596,19 +640,7 @@ export const Roleta: React.FC = () => {
                           boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
                         }}
                       >
-                        <span className="txt" style={{ color: textColor === '#090705' ? 'rgba(9, 7, 5, 0.45)' : 'rgba(255, 255, 255, 0.45)', fontSize: 7, fontWeight: 800 }}>
-                          {rarityConfig.label} {rarityConfig.icon}
-                        </span>
-                        {cleanText.split(' ').map((word, wIdx) => (
-                          <strong 
-                            key={wIdx} 
-                            className="roulette-word-line"
-                            style={{ fontSize: items.length > 8 ? '0.70rem' : '0.84rem' }}
-                          >
-                            {word}
-                          </strong>
-                        ))}
-                        {emoji && <span className="img" style={{ fontSize: '1.05rem', marginTop: 3 }}>{emoji}</span>}
+                        {displayContent}
                       </div>
                     </div>
                   );
