@@ -4,28 +4,69 @@ import { Gem, ArrowLeft, Award, Clock, Coins } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
+import confetti from 'canvas-confetti';
 
 interface RouletteItem {
   text: string;
   color: string;
 }
 
-// Pastel soft colors matching template
-const DEFAULT_COLORS = [
-  "#f87b8c", "#ffb366", "#ffe066", "#7ee6c8", "#7ecbff", "#6fa8ff", "#a68cff", "#ffb3c6", "#ffd6a5", "#b7e4c7"
+const PREMIUM_COLORS = [
+  "#D4AF37", // Dourado Ouro (Home)
+  "#1E150F", // Marrom Café Profundo (Home)
+  "#E25C1D", // Laranja Vibrante (Home)
+  "#5B21B6", // Roxo Premium (Home)
+  "#059669"  // Verde Esmeralda (Home)
 ];
 
 const DEFAULT_ITEMS: RouletteItem[] = [
-  { text: "15 Diamantes 💎", color: DEFAULT_COLORS[0] },
-  { text: "Monster Gelado ⚡", color: DEFAULT_COLORS[1] },
-  { text: "Tente de Novo 😢", color: DEFAULT_COLORS[2] },
-  { text: "Frete Grátis 🚚", color: DEFAULT_COLORS[3] },
-  { text: "50 Diamantes 💎", color: DEFAULT_COLORS[4] },
-  { text: "10% de Desconto 🏷️", color: DEFAULT_COLORS[5] },
-  { text: "Cerveja Spaten 🍺", color: DEFAULT_COLORS[6] },
-  { text: "100 Diamantes 💎", color: DEFAULT_COLORS[7] },
-  { text: "Tente de Novo 😢", color: DEFAULT_COLORS[8] }
+  { text: "15 Diamantes 💎", color: "#D4AF37" },
+  { text: "Monster Gelado ⚡", color: "#E25C1D" },
+  { text: "Tente de Novo 😢", color: "#1E150F" },
+  { text: "Frete Grátis 🚚", color: "#059669" },
+  { text: "50 Diamantes 💎", color: "#D4AF37" },
+  { text: "10% de Desconto 🏷️", color: "#5B21B6" },
+  { text: "Cerveja Spaten 🍺", color: "#059669" },
+  { text: "100 Diamantes 💎", color: "#D4AF37" },
+  { text: "Tente de Novo 😢", color: "#1E150F" }
 ];
+
+const mapToPremiumColor = (color: string, index: number): string => {
+  if (!color) return PREMIUM_COLORS[index % PREMIUM_COLORS.length];
+  const c = color.toLowerCase();
+  const pastelMap: Record<string, string> = {
+    "#f87b8c": "#E25C1D",
+    "#ffb3c6": "#E25C1D",
+    "#ffb366": "#D4AF37",
+    "#ffe066": "#D4AF37",
+    "#ffd6a5": "#D4AF37",
+    "#7ee6c8": "#059669",
+    "#b7e4c7": "#059669",
+    "#7ecbff": "#5B21B6",
+    "#6fa8ff": "#5B21B6",
+    "#a68cff": "#5B21B6"
+  };
+  return pastelMap[c] || color;
+};
+
+const getTextColorForBackground = (hexColor: string) => {
+  if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
+  const hex = hexColor.replace('#', '');
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 3) {
+    r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+    g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+    b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+  } else if (hex.length >= 6) {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  } else {
+    return '#ffffff';
+  }
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? '#090705' : '#FFDF73';
+};
 
 export const Roleta: React.FC = () => {
   const { user } = useAuth();
@@ -188,15 +229,33 @@ export const Roleta: React.FC = () => {
       handleEarnDiamonds(amount);
     }
 
-    // Trigger canvas confetti
-    import('canvas-confetti').then((confettiModule) => {
-      const confetti = confettiModule.default;
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#FFDF73', '#D4AF37', '#7ecbff', '#FFFFFF', '#f87b8c']
-      });
+    // Trigger rich multi-burst canvas confetti
+    const confettiColors = ['#FFDF73', '#D4AF37', '#E25C1D', '#5B21B6', '#FFFFFF'];
+    
+    // Left burst
+    confetti({
+      particleCount: 80,
+      angle: 60,
+      spread: 60,
+      origin: { x: 0, y: 0.8 },
+      colors: confettiColors
+    });
+    
+    // Right burst
+    confetti({
+      particleCount: 80,
+      angle: 120,
+      spread: 60,
+      origin: { x: 1, y: 0.8 },
+      colors: confettiColors
+    });
+    
+    // Center splash
+    confetti({
+      particleCount: 100,
+      spread: 80,
+      origin: { y: 0.65 },
+      colors: confettiColors
     });
   };
 
@@ -293,9 +352,12 @@ export const Roleta: React.FC = () => {
                 onTransitionEnd={handleTransitionEnd}
               >
                 {items.map((item, i) => {
+                  const itemColor = mapToPremiumColor(item.color, i);
+                  const textColor = getTextColorForBackground(itemColor);
+
                   const itemStyle = {
                     '--idx': i + 1,
-                    '--bg-color': item.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+                    '--bg-color': itemColor,
                     transform: `rotate(calc(var(--deg) * ${i + 1}))`
                   } as React.CSSProperties;
 
@@ -306,10 +368,26 @@ export const Roleta: React.FC = () => {
 
                   return (
                     <div key={i} className="item" style={itemStyle}>
-                      <div className="bx">
-                        <span className="txt">PRÊMIO</span>
-                        <strong style={{ fontSize: items.length > 8 ? '0.75rem' : '0.9rem' }}>{cleanText}</strong>
-                        {emoji && <span className="img" style={{ fontSize: '1rem', marginTop: 2 }}>{emoji}</span>}
+                      <div 
+                        className="bx" 
+                        style={{ 
+                          color: textColor, 
+                          textShadow: textColor === '#090705' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)' 
+                        }}
+                      >
+                        <span className="txt" style={{ color: textColor === '#090705' ? 'rgba(9, 7, 5, 0.45)' : 'rgba(255, 255, 255, 0.45)' }}>
+                          PRÊMIO
+                        </span>
+                        {cleanText.split(' ').map((word, wIdx) => (
+                          <strong 
+                            key={wIdx} 
+                            className="roulette-word-line"
+                            style={{ fontSize: items.length > 8 ? '0.72rem' : '0.86rem' }}
+                          >
+                            {word}
+                          </strong>
+                        ))}
+                        {emoji && <span className="img" style={{ fontSize: '1.05rem', marginTop: 4 }}>{emoji}</span>}
                       </div>
                     </div>
                   );

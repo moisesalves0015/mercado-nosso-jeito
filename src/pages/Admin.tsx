@@ -287,15 +287,15 @@ export const Admin: React.FC = () => {
 
   // ─── Roulette Helpers & CRUD ──────────────────────────────────────────────
   const DEFAULT_ROULETTE_ITEMS = [
-    { text: "15 Diamantes 💎", color: "#f87b8c" },
-    { text: "Monster Gelado ⚡", color: "#ffb366" },
-    { text: "Tente de Novo 😢", color: "#ffe066" },
-    { text: "Frete Grátis 🚚", color: "#7ee6c8" },
-    { text: "50 Diamantes 💎", color: "#7ecbff" },
-    { text: "10% de Desconto 🏷️", color: "#6fa8ff" },
-    { text: "Cerveja Spaten 🍺", color: "#a68cff" },
-    { text: "100 Diamantes 💎", color: "#ffb3c6" },
-    { text: "Tente de Novo 😢", color: "#ffd6a5" }
+    { text: "15 Diamantes 💎", color: "#D4AF37" },
+    { text: "Monster Gelado ⚡", color: "#E25C1D" },
+    { text: "Tente de Novo 😢", color: "#1E150F" },
+    { text: "Frete Grátis 🚚", color: "#059669" },
+    { text: "50 Diamantes 💎", color: "#D4AF37" },
+    { text: "10% de Desconto 🏷️", color: "#5B21B6" },
+    { text: "Cerveja Spaten 🍺", color: "#059669" },
+    { text: "100 Diamantes 💎", color: "#D4AF37" },
+    { text: "Tente de Novo 😢", color: "#1E150F" }
   ];
 
   const fetchRoulette = async () => {
@@ -343,10 +343,8 @@ export const Admin: React.FC = () => {
   const handleAddRouletteItem = () => {
     const text = newRouletteText.trim();
     if (!text) return;
-    const h = Math.floor(Math.random() * 360);
-    const s = Math.floor(Math.random() * 18) + 72;
-    const l = Math.floor(Math.random() * 16) + 60;
-    const color = `hsl(${h}, ${s}%, ${l}%)`;
+    const premiumColors = ["#D4AF37", "#1E150F", "#E25C1D", "#5B21B6", "#059669"];
+    const color = premiumColors[rouletteItems.length % premiumColors.length];
     setRouletteItems([...rouletteItems, { text, color }]);
     setNewRouletteText('');
   };

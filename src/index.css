@@ -4200,36 +4200,34 @@ body{
   align-items: center;
   position: absolute;
   left: 0;
-  top: 18px;
+  top: 12px;
   width: 100%;
   text-align: center;					
   z-index: 12;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7);
+  font-family: 'Outfit', sans-serif;
 }
 
 .roulette-wrapper .item .bx span.txt {
   display: block;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   font-weight: 800;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   margin-bottom: 2px;
+  text-transform: uppercase;
 }
 
-.roulette-wrapper .item .bx strong {
+.roulette-wrapper .item .bx strong.roulette-word-line {
   display: block;
-  font-size: 0.85rem;
-  color: #fff;
-  font-weight: 800;
-  line-height: 1.15;
-  max-width: 90%;
-  word-wrap: break-word;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .roulette-wrapper .item .bx span.img {
   display: inline-block;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  margin-top: 4px;
 }
 
 .roulette-wrapper .item::before {
