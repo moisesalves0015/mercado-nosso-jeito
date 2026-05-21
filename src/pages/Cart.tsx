@@ -101,7 +101,7 @@ export function Cart() {
   return (
     <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 110 }}>
       {/* HEADER SECTION */}
-      <header className="clube-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <header className="clube-topbar">
         <button 
           onClick={() => navigate(-1)}
           style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 0 }}

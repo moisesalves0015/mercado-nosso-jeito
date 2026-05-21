@@ -744,6 +744,7 @@ body{
   display:flex;
   gap:4px; /* Space bem fino entre os produtos */
   overflow-x:auto;
+  overflow-y:hidden;
   scrollbar-width:none;
   padding-top: 14px; /* Reduced to bring cards closer to titles */
   padding-bottom: 4px;
@@ -1875,7 +1876,7 @@ body{
 ========================================================= */
 
 .clube-page {
-  padding-top: 56px;
+  padding-top: calc(56px + env(safe-area-inset-top));
   padding-bottom: 96px;
   background: #090705;
   color: #fff;
@@ -1890,15 +1891,16 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  height: 56px;
-  background: rgba(9, 7, 5, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  height: calc(56px + env(safe-area-inset-top));
+  background: #090705;
   border-bottom: 1.2px solid rgba(212, 175, 55, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
   z-index: 200;
 }
 
@@ -1962,7 +1964,7 @@ body{
 
 /* APPLE WALLET-STYLE HERO CARD */
 .clube-hero-card {
-  margin: 16px;
+  margin: 16px 0;
   padding: 20px;
   background: linear-gradient(135deg, rgba(30, 24, 18, 0.9) 0%, rgba(10, 8, 6, 0.95) 100%);
   border: 1.5px solid rgba(212, 175, 55, 0.3);
@@ -2053,7 +2055,7 @@ body{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0;
   margin: 16px 0 8px 0;
 }
 
@@ -2273,7 +2275,7 @@ body{
 
 /* VIRTUAL LEDGER & HISTORY */
 .clube-wallet-section {
-  margin: 16px;
+  margin: 16px 0;
   padding: 14px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2365,7 +2367,7 @@ body{
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  padding: 0 16px;
+  padding: 0;
 }
 
 @media (min-width: 768px) {
@@ -2867,7 +2869,7 @@ body{
   border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 14px 10px;
   border-radius: 16px;
-  margin: 12px 16px 20px 16px;
+  margin: 12px 0 20px 0;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
@@ -3159,7 +3161,7 @@ body{
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 16px 20px;
+  padding: 0 0 20px;
 }
 
 .clube-mission-row {
@@ -3378,7 +3380,7 @@ body{
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 16px !important;
-  padding: 0 16px 20px !important;
+  padding: 0 0 20px !important;
 }
 
 @media (min-width: 768px) {
@@ -4108,7 +4110,7 @@ body{
 .roulette-page-container {
   display: flex;
   flex-direction: column;
-  padding: 12px 14px 100px;
+  padding: calc(56px + env(safe-area-inset-top)) 14px 100px;
 }
 
 .roulette-card-body {
