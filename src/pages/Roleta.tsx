@@ -20,10 +20,6 @@ interface SpinHistory {
   won: boolean;
 }
 
-const PREMIUM_COLORS = [
-  "#D4AF37", "#1E150F", "#E25C1D", "#5B21B6", "#059669",
-  "#DC2626", "#7C3AED", "#EC4899", "#06B6D4", "#F59E0B"
-];
 
 const RARITY_CONFIG = {
   common: { color: "#6B7280", glow: "none", points: 5, label: "COMUM", icon: "⭐" },
@@ -45,41 +41,12 @@ const DEFAULT_ITEMS: RouletteItem[] = [
   { text: "Dobrar Prêmio", color: "#DC2626", rarity: "epic", multiplier: 2.5 }
 ];
 
-const mapToPremiumColor = (color: string, index: number): string => {
-  if (!color) return PREMIUM_COLORS[index % PREMIUM_COLORS.length];
-  const c = color.toLowerCase();
-  const pastelMap: Record<string, string> = {
-    "#f87b8c": "#E25C1D",
-    "#ffb3c6": "#E25C1D",
-    "#ffb366": "#D4AF37",
-    "#ffe066": "#D4AF37",
-    "#ffd6a5": "#D4AF37",
-    "#7ee6c8": "#059669",
-    "#b7e4c7": "#059669",
-    "#7ecbff": "#5B21B6",
-    "#6fa8ff": "#5B21B6",
-    "#a68cff": "#5B21B6"
-  };
-  return pastelMap[c] || color;
+const mapToPremiumColor = (_color: string, index: number): string => {
+  return index % 2 === 0 ? "#D4AF37" : "#121212";
 };
 
 const getTextColorForBackground = (hexColor: string) => {
-  if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
-  const hex = hexColor.replace('#', '');
-  let r = 0, g = 0, b = 0;
-  if (hex.length === 3) {
-    r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
-    g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
-    b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
-  } else if (hex.length >= 6) {
-    r = parseInt(hex.substring(0, 2), 16);
-    g = parseInt(hex.substring(2, 4), 16);
-    b = parseInt(hex.substring(4, 6), 16);
-  } else {
-    return '#ffffff';
-  }
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 128 ? '#090705' : '#FFDF73';
+  return hexColor === "#D4AF37" ? "#121212" : "#D4AF37";
 };
 
 export const Roleta: React.FC = () => {
@@ -540,7 +507,7 @@ export const Roleta: React.FC = () => {
         {/* HTML/CSS Roulette Wheel Area */}
         <div className="roulette-container" onClick={(e) => addParticles(e.clientX, e.clientY, 8)}>
           <div className="roulette-wrapper" style={wrapperStyle}>
-            <div className="pin" style={{ background: '#D4AF37', boxShadow: '0 0 10px #D4AF37' }}></div>
+            <div className="pin" style={{ boxShadow: '0 0 10px rgba(212,175,55,0.45)' }}></div>
             <button 
               type="button" 
               className="btnStart"
@@ -580,11 +547,15 @@ export const Roleta: React.FC = () => {
                   const itemStyle = {
                     '--idx': i + 1,
                     '--bg-color': itemColor,
-                    transform: `rotate(calc(var(--deg) * ${i + 1}))`
+                    transform: `rotate(calc(var(--deg) * ${i} + var(--deg) / 2))`
                   } as React.CSSProperties;
 
-                  // Limpar emojis de todo o texto
-                  let cleanText = item.text.replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '').trim();
+                  // Limpar emojis e encurtar textos de desconto
+                  let cleanText = item.text
+                    .replace(/de\s+desconto/gi, 'OFF')
+                    .replace(/desconto/gi, 'OFF')
+                    .replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
+                    .trim();
 
                   const isDiamond = item.text.toLowerCase().includes('💎') || item.text.toLowerCase().includes('diamante');
                   let displayContent: React.ReactNode;
@@ -636,7 +607,7 @@ export const Roleta: React.FC = () => {
                         className="bx" 
                         style={{ 
                           color: textColor, 
-                          textShadow: textColor === '#090705' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
+                          textShadow: textColor === '#121212' ? 'none' : '0 1px 2px rgba(0,0,0,0.85), 0 0 3px rgba(0,0,0,0.65)',
                           boxShadow: rarityConfig.glow !== 'none' ? rarityConfig.glow : undefined
                         }}
                       >
@@ -646,15 +617,15 @@ export const Roleta: React.FC = () => {
                   );
                 })}
               </div>
-              <div className="dotWrap">
-                {items.map((_, i) => {
-                  const dotStyle = {
-                    '--idx': i + 1,
-                    transform: `rotate(calc(var(--deg) * ${i + 1} - (var(--deg) / 2)))`
-                  } as React.CSSProperties;
-                  return <div key={i} style={dotStyle}></div>;
-                })}
-              </div>
+            </div>
+            <div className="dotWrap">
+              {items.map((_, i) => {
+                const dotStyle = {
+                  '--idx': i + 1,
+                  transform: `rotate(calc(var(--deg) * ${i}))`
+                } as React.CSSProperties;
+                return <div key={i} style={dotStyle}></div>;
+              })}
             </div>
           </div>
         </div>

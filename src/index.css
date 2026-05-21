@@ -4200,7 +4200,7 @@ body{
   align-items: center;
   position: absolute;
   left: 0;
-  top: 12px;
+  top: 68px;
   width: 100%;
   text-align: center;					
   z-index: 12;
@@ -4296,11 +4296,11 @@ body{
 /* PIN STYLING */
 .roulette-wrapper .pin {
   --pinSize: 36px;
-  --pinClr: #E25C1D;
+  --pinClr: #D4AF37;
   width: var(--pinSize);
   height: var(--pinSize);
   border-radius: 50%;
-  background-color: var(--pinClr);
+  background-color: #D4AF37 !important;
   position: absolute;
   left: 50%;
   top: -18px;
@@ -4316,7 +4316,7 @@ body{
   width: 0px;
   height: 0px;
   border-style: solid; 
-  border-color: var(--pinClr) transparent transparent;
+  border-color: #D4AF37 transparent transparent !important;
   border-width: 15px 12px 0;
   position: absolute;
   left: 50%;
