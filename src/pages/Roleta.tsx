@@ -45,11 +45,11 @@ const mapToPremiumColor = (_color: string, index: number): string => {
   const mod = index % 3;
   if (mod === 0) return "linear-gradient(to bottom, #FFDF73 0%, #D4AF37 55%, #AA8214 100%)";
   if (mod === 1) return "linear-gradient(to bottom, #2C2C2C 0%, #151515 55%, #0A0A0A 100%)";
-  return "linear-gradient(to bottom, #B8841F 0%, #7C5810 55%, #442E05 100%)";
+  return "linear-gradient(to bottom, #FFFFFF 0%, #D1D1D1 55%, #8E8E8E 100%)";
 };
 
 const getTextColorForBackground = (colorGradient: string) => {
-  if (colorGradient.includes("#FFDF73")) {
+  if (colorGradient.includes("#FFDF73") || colorGradient.includes("#FFFFFF")) {
     return "#121212";
   }
   return "#FFDF73";
@@ -415,7 +415,7 @@ export const Roleta: React.FC = () => {
   return (
     <main className="app roulette-page-container" style={{ backgroundColor: '#090705', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
       
-      {/* Supermarket blurred and darkened background image overlay */}
+      {/* Supermarket blurred and darkened background image overlay - exactly matching product details styling */}
       <div 
         style={{
           position: 'absolute',
@@ -423,8 +423,8 @@ export const Roleta: React.FC = () => {
           backgroundImage: 'url("/bg-supermercado.jpeg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(3.5px) brightness(0.24)',
-          opacity: 0.5,
+          filter: 'blur(1.5px) brightness(0.45)',
+          opacity: 1,
           pointerEvents: 'none',
           zIndex: 0
         }}
@@ -433,7 +433,7 @@ export const Roleta: React.FC = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.15) 0%, rgba(9, 7, 5, 0.95) 100%)',
+          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0) 40%, rgba(9, 7, 5, 1) 100%)',
           pointerEvents: 'none',
           zIndex: 0
         }}
