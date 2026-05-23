@@ -21,7 +21,7 @@ const DiamondIcon = ({ size = 10 }: { size?: number }) => (
   </svg>
 );
 
-export const ProductCard = ({
+export const PromoCard = ({
   title,
   price,
   image,
@@ -153,8 +153,8 @@ export const ProductCard = ({
   };
 
   useEffect(() => {
-    // Randomly decide if this card displays the club discount teaser
-    const lucky = Math.random() < 0.45;
+    // PromoCard should NOT have the SÓ NO CLUBE discount reduction
+    const lucky = false;
 
     if (!lucky) return;
 
@@ -305,25 +305,30 @@ export const ProductCard = ({
   };
 
   return (
-    <div className="product-card" ref={cardRef}>
+    <div className="product-card mega-oferta-wrapper" ref={cardRef}>
+      {badge && (
+        <div className={`badge-promo-top-left ${badge.includes('%') ? 'badge-square' : ''}`}>
+          {badge.includes('% OFF') ? (
+            <>
+              <span className="badge-percent">{badge.split(' ')[0]}</span>
+              <span className="badge-off">{badge.split(' ')[1]}</span>
+            </>
+          ) : (
+            badge
+          )}
+        </div>
+      )}
       <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
           <img src={image} alt={title} />
           
-          {/* Render diamond and/or promotional badges at the bottom-center of the image wrapper */}
-          {(diamondReward || badge) && (
+          {/* Render diamond area at the bottom-center of the image wrapper */}
+          {diamondReward && (
             <div className="badge-wrapper">
-              {badge && (
-                <div className="badge" style={{ bottom: diamondReward ? '20px' : '0' }}>
-                  {badge}
-                </div>
-              )}
-              {diamondReward && (
-                <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
-                  <DiamondIcon size={9} />
-                  <span>+{diamondReward}</span>
-                </div>
-              )}
+              <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
+                <DiamondIcon size={9} />
+                <span>+{diamondReward}</span>
+              </div>
             </div>
           )}
         </div>
@@ -364,3 +369,4 @@ export const ProductCard = ({
     </div>
   );
 };
+

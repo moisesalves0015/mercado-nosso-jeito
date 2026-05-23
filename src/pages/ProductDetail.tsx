@@ -664,20 +664,34 @@ export const ProductDetail = () => {
 
                 document.body.appendChild(flyer);
 
-                const targetX = window.innerWidth / 2;
-                const targetY = window.innerHeight - 56;
+                const wasEmpty = !document.querySelector('.floating-mini-cart');
+                addToCart({ id: product.id, title: product.title, price: finalPrice, image: product.image }, quantity);
 
-                flyer.getBoundingClientRect();
-
-                flyer.style.left = `${targetX - 18}px`;
-                flyer.style.top = `${targetY - 18}px`;
-                flyer.style.transform = 'scale(0.3) rotate(360deg)';
-                flyer.style.opacity = '0.3';
+                if (wasEmpty) {
+                  flyer.style.transform = 'scale(1.15)';
+                  flyer.style.boxShadow = '0 0 25px rgba(212,175,55,0.9)';
+                }
 
                 setTimeout(() => {
-                  flyer.remove();
-                  addToCart({ id: product.id, title: product.title, price: finalPrice, image: product.image }, quantity);
-                }, 900);
+                  let targetX = window.innerWidth / 2;
+                  let targetY = window.innerHeight - 56;
+
+                  const cartIcon = document.querySelector('.floating-mini-cart .lucide-shopping-bag') || document.querySelector('a[href="/orders"] .nav-icon');
+                  if (cartIcon) {
+                    const cartRect = cartIcon.getBoundingClientRect();
+                    targetX = cartRect.left + cartRect.width / 2;
+                    targetY = cartRect.top + cartRect.height / 2;
+                  }
+
+                  flyer.style.left = `${targetX - 18}px`;
+                  flyer.style.top = `${targetY - 18}px`;
+                  flyer.style.transform = 'scale(0.35) rotate(360deg)';
+                  flyer.style.opacity = '0.9';
+
+                  setTimeout(() => {
+                    flyer.remove();
+                  }, 900);
+                }, wasEmpty ? 650 : 50);
               }
             }}
           >

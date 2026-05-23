@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   Gem, 
@@ -96,7 +97,6 @@ export const Clube = () => {
     amountGained?: number;
     description?: string;
   } | null>(null);
-  const [isAnimatingEarn, setIsAnimatingEarn] = useState<number | null>(null);
   const [completedAds, setCompletedAds] = useState<string[]>([]);
 
   // Simulated points history ledgers
@@ -791,7 +791,7 @@ export const Clube = () => {
       </div>
 
       {/* SPONSOR VIDEO MODAL POPUP (FULL-SCREEN AD THEATER OVERLAY) */}
-      {isAdPlaying && activeAd && (() => {
+      {isAdPlaying && activeAd && createPortal((() => {
         const radius = 18;
         const circumference = 2 * Math.PI * radius; // ~113.097
         const progressOffset = circumference - (adTimer / activeAd.duration) * circumference;
@@ -939,10 +939,10 @@ export const Clube = () => {
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
       {/* SUCCESS MODAL POPUP */}
-      {successModal && (
+      {successModal && createPortal((
         <div className="clube-modal-overlay" onClick={() => setSuccessModal(null)}>
           {/* FLOATING FALLING DIAMONDS CASCADE (FULL VIEWPORT BACKGROUND EFFECT) */}
           {successModal.amountGained && (
@@ -1003,8 +1003,42 @@ export const Clube = () => {
                   const amount = successModal.amountGained;
                   const descText = successModal.description || 'Recompensa Creditada';
                   
-                  // Trigger flying reward text animation
-                  setIsAnimatingEarn(amount);
+                  const startEl = document.querySelector('.reward-icon-box');
+                  const targetEl = document.querySelector('.clube-coins-badge');
+                  
+                  if (startEl && targetEl) {
+                    const startRect = startEl.getBoundingClientRect();
+                    const targetRect = targetEl.getBoundingClientRect();
+                    
+                    const flyer = document.createElement('div');
+                    flyer.style.position = 'fixed';
+                    flyer.style.left = `${startRect.left + startRect.width / 2}px`;
+                    flyer.style.top = `${startRect.top + startRect.height / 2}px`;
+                    flyer.style.transform = 'translate(-50%, -50%)';
+                    flyer.style.zIndex = '99999';
+                    flyer.style.display = 'flex';
+                    flyer.style.alignItems = 'center';
+                    flyer.style.gap = '4px';
+                    flyer.style.fontSize = '18px';
+                    flyer.style.fontWeight = '900';
+                    flyer.style.color = '#FFDF73';
+                    flyer.style.textShadow = '0 0 6px rgba(212,175,55,0.75)';
+                    flyer.style.pointerEvents = 'none';
+                    flyer.style.transition = 'all 2.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                    
+                    flyer.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="filter: drop-shadow(0 0 6px rgba(212,175,55,0.75))"><path d="M6 2L18 2L22 8L12 22L2 8L6 2Z" stroke="#FFDF73" stroke-width="1.5" stroke-linejoin="round" fill="#FFDF73" /><path d="M6 2L12 8L18 2" stroke="#FFDF73" stroke-width="1" stroke-linejoin="round" /><path d="M2 8H22" stroke="#FFDF73" stroke-width="1" stroke-linejoin="round" /><path d="M12 8V22" stroke="#FFDF73" stroke-width="1" stroke-linejoin="round" /><path d="M6 2L2 8L12 22" stroke="#FFDF73" stroke-width="1" stroke-linejoin="round" /><path d="M18 2L22 8L12 22" stroke="#FFDF73" stroke-width="1" stroke-linejoin="round" /></svg><span>+${amount}</span>`;
+                    
+                    document.body.appendChild(flyer);
+                    
+                    flyer.getBoundingClientRect();
+                    
+                    flyer.style.left = `${targetRect.left + targetRect.width / 2}px`;
+                    flyer.style.top = `${targetRect.top + targetRect.height / 2}px`;
+                    flyer.style.transform = 'translate(-50%, -50%) scale(0.5)';
+                    flyer.style.opacity = '1';
+                    
+                    setTimeout(() => flyer.remove(), 2500);
+                  }
                   
                   // Explode secondary golden confetti cascade instantly
                   import('canvas-confetti').then((confettiModule) => {
@@ -1020,11 +1054,10 @@ export const Clube = () => {
                   // Close success modal instantly so user sees the background
                   setSuccessModal(null);
 
-                  // Defer points incrementation until flight animation hits the wallet (1500ms)
+                  // Defer points incrementation until flight animation hits the wallet
                   setTimeout(() => {
                     handleEarnCoins(amount, descText);
-                    setIsAnimatingEarn(null);
-                  }, 1500);
+                  }, 2500);
                 } else {
                   setSuccessModal(null);
                 }
@@ -1034,15 +1067,9 @@ export const Clube = () => {
             </button>
           </div>
         </div>
-      )}
+      ), document.body)}
 
-      {/* FLYING TEXT REWARD ABSOLUTE ELEMENT CONTAINER */}
-      {isAnimatingEarn !== null && (
-        <div className="flying-reward-text-animation">
-          <PremiumDiamondSVG size={18} fill="#FFDF73" color="#FFDF73" style={{ filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.75))' }} />
-          <span>+{isAnimatingEarn}</span>
-        </div>
-      )}
+
     </main>
   );
 };

@@ -11,7 +11,8 @@ export const BottomNav = () => {
   const isHiddenRoute = ['/login', '/register'].includes(location.pathname) || location.pathname.startsWith('/admin');
   if (isHiddenRoute) return null;
 
-  const showMiniCart = totalItems > 0 && location.pathname !== '/cart';
+  const hiddenMiniCartRoutes = ['/cart', '/clube', '/profile'];
+  const showMiniCart = totalItems > 0 && !hiddenMiniCartRoutes.includes(location.pathname);
   const freeShippingThreshold = 60;
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);
   const progressPercent = Math.min(100, (totalPrice / freeShippingThreshold) * 100);
@@ -70,7 +71,7 @@ export const BottomNav = () => {
                 justifyContent: 'center',
                 position: 'relative'
               }}>
-                <ShoppingBag size={14} color="#FFDF73" />
+                <ShoppingBag size={14} color="#FFDF73" className="lucide-shopping-bag" />
                 <span style={{
                   position: 'absolute',
                   top: '-4px',

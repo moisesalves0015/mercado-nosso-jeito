@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
+import { PromoCard } from '../components/PromoCard';
 import { Search, Croissant, Flame, Sparkles, Candy, Bike, Award, Lock, SlidersHorizontal, Cigarette, CupSoda, Headphones, MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
@@ -86,57 +87,58 @@ export const Home = () => {
         </Link>
       </div>
 
-      {/* CATEGORY ROW (REVERTED EXACTLY AS REQUESTED) */}
+      {/* CATEGORY ROW (3D REALISTIC ICONS) */}
       <div className="category-row">
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><CupSoda size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
             <span className="category-text">Bebidas</span>
           </div>
         </Link>
         <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Cigarette size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
             <span className="category-text">Tabacaria</span>
           </div>
         </Link>
         <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Headphones size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/eletronicos.png" alt="Eletrônicos" className="category-3d-icon" /></div>
             <span className="category-text">Eletrônicos</span>
           </div>
         </Link>
         <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Croissant size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
             <span className="category-text">Padaria</span>
           </div>
         </Link>
         <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Flame size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/ofertas.png" alt="Ofertas" className="category-3d-icon" /></div>
             <span className="category-text">Ofertas</span>
           </div>
         </Link>
         <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Sparkles size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
             <span className="category-text">Limpeza</span>
           </div>
         </Link>
         <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><Candy size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
             <span className="category-text">Doces</span>
           </div>
         </Link>
         <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><MoreHorizontal size={20} /></div>
+            <div className="category-icon-wrapper"><img src="/categories/mais.png" alt="Mais" className="category-3d-icon" /></div>
             <span className="category-text">Mais</span>
           </div>
         </Link>
       </div>
+
 
       {/* HERO PROMO BANNER (MOVED UP AND HIGHLY DETAILED) */}
       <Link to="/promotions" style={{textDecoration: 'none'}}>
@@ -240,13 +242,60 @@ export const Home = () => {
         </div>
       </div>
 
-      <Link to="/promotions" style={{ textDecoration: 'none', display: 'block', padding: 0, marginBottom: '24px' }}>
-        <img 
-          src={bannerFreteGratis} 
-          alt="Frete Grátis na sua primeira compra no app!" 
-          style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
-        />
-      </Link>
+      {/* SUPER PROMO SECTION (MEGA OFERTAS) */}
+      <div className="super-promo-container">
+        <h2 className="super-promo-title">MEGA OFERTAS</h2>
+        <div className="super-promo-subtitle">SÓ ESTA SEMANA</div>
+        
+        <div className="super-promo-scroll">
+          
+          <PromoCard
+            title="Energético Monster Energy 473ml"
+            price={7.90}
+            image="/monster_energy.webp"
+            badge="47% OFF"
+            badgeStyle="orange"
+            category="bebidas"
+          />
+
+          <PromoCard
+            title="Sabão Líquido Premium 3L"
+            price={27.90}
+            image="/lava_roupa.png"
+            badge="22% OFF"
+            badgeStyle="orange"
+            category="limpeza"
+          />
+
+          <PromoCard
+            title="Café Melitta Tradicional 500g"
+            price={16.18}
+            image="/cafe-novo.png"
+            badge="35% OFF"
+            badgeStyle="orange"
+            category="cafe"
+          />
+
+        </div>
+      </div>
+
+      {/* BANNERS LADO A LADO */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', width: '100%' }}>
+        <Link to="/promotions" style={{ textDecoration: 'none', flex: 1 }}>
+          <img 
+            src={bannerFreteGratis} 
+            alt="Frete Grátis na sua primeira compra no app!" 
+            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
+          />
+        </Link>
+        <Link to="/clube" style={{ textDecoration: 'none', flex: 1 }}>
+          <img 
+            src={bannerIndique} 
+            alt="Indique e Ganhe" 
+            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
+          />
+        </Link>
+      </div>
 
       <Section
         title="Bebidas"
@@ -320,14 +369,7 @@ export const Home = () => {
         />
       </Section>
 
-      {/* INDIQUE BANNER */}
-      <Link to="/clube" style={{ textDecoration: 'none', display: 'block', padding: 0, marginBottom: '24px' }}>
-        <img 
-          src={bannerIndique} 
-          alt="Indique e Ganhe" 
-          style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
-        />
-      </Link>
+
 
       {/* FOOTER */}
       <footer className="app-footer">
