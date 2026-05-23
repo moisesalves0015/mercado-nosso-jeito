@@ -26,7 +26,6 @@ export const PromoCard = ({
   price,
   image,
   badge,
-  badgeStyle = 'light',
   diamondReward,
   category,
 }: {
@@ -360,9 +359,7 @@ export const PromoCard = ({
                 ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
                 : formattedPrice}
             </div>
-            {animationState !== 'club-only' && (
-              <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd}>+</button>
-            )}
+            <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd}>+</button>
           </>
         )}
       </div>
