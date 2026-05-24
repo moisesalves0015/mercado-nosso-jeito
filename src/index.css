@@ -491,7 +491,7 @@ body{
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding: 4px 4px 6px 4px;
+  padding: 6px 4px 6px 4px;
   margin-top: 2px;
   margin-bottom: 0px;
   scrollbar-width: none;
