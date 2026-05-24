@@ -3,7 +3,7 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Search, Bike, Award, Lock, SlidersHorizontal } from 'lucide-react';
+import { Bike, Award, Lock, Search, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
@@ -21,6 +21,16 @@ interface Product {
 
 export const Home = () => {
   const [bebidas, setBebidas] = useState<Product[]>([]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const handleCategoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const maxScroll = target.scrollWidth - target.clientWidth;
+    if (maxScroll > 0) {
+      const percentage = (target.scrollLeft / maxScroll) * 100;
+      setScrollProgress(percentage);
+    }
+  };
 
   useEffect(() => {
     const loadProducts = () => {
@@ -72,25 +82,10 @@ export const Home = () => {
     <main className="app">
       <Topbar />
 
-      {/* SEARCH BAR WITH FILTER BUTTON INSIDE */}
-      <div className="search-container">
-        <Link to="/search" style={{textDecoration: 'none'}}>
-          <div className="search-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-              <Search size={16} color="rgba(255, 255, 255, 0.4)" />
-              <input type="text" placeholder="O que você procura hoje?" disabled style={{pointerEvents: 'none'}} />
-            </div>
-            <div className="search-filter-btn-inside" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', paddingLeft: '8px' }}>
-              <SlidersHorizontal size={14} color="#D4AF37" />
-            </div>
-          </div>
-        </Link>
-      </div>
-
       {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-      <div className="category-row">
+      <div className="category-row" onScroll={handleCategoryScroll}>
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
+          <div className="category-item active">
             <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
             <span className="category-text">Bebidas</span>
           </div>
@@ -115,6 +110,7 @@ export const Home = () => {
         </Link>
         <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
+            <div className="category-badge">124</div>
             <div className="category-icon-wrapper"><img src="/categories/ofertas.png" alt="Ofertas" className="category-3d-icon" /></div>
             <span className="category-text">Ofertas</span>
           </div>
@@ -139,6 +135,18 @@ export const Home = () => {
         </Link>
       </div>
 
+      {/* CATEGORY SCROLL INDICATOR */}
+      <div className="category-scroll-indicators">
+        <div className="category-scroll-track">
+          <div 
+            className="category-scroll-thumb" 
+            style={{ 
+              left: `${(scrollProgress / 100) * (80 - 24)}px` 
+            }}
+          />
+        </div>
+      </div>
+
 
       {/* HERO PROMO BANNER (MOVED UP AND HIGHLY DETAILED) */}
       <Link to="/promotions" style={{textDecoration: 'none'}}>
@@ -152,12 +160,6 @@ export const Home = () => {
             <p>Economize hoje em itens selecionados.</p>
             <button className="hero-btn">Ver ofertas</button>
           </div>
-          
-          <div className="hero-right">
-            <div className="hero-image-wrapper">
-              <img src="/basket_hero.png" alt="Cesta de Ofertas" className="hero-basket-img" />
-            </div>
-          </div>
 
           {/* SLIDER DOTS */}
           <div className="hero-dots">
@@ -168,6 +170,22 @@ export const Home = () => {
           </div>
         </div>
       </Link>
+
+      {/* SEARCH BAR (MOVED BELOW HERO) */}
+      <div className="search-container">
+        <Link to="/search" style={{ textDecoration: 'none', width: '100%' }}>
+          <div className="search-bar">
+            <div className="search-bar-input-side">
+              <Search size={18} color="rgba(255, 255, 255, 0.4)" />
+              <input type="text" placeholder="O que você precisa hoje?" disabled style={{ pointerEvents: 'none' }} />
+            </div>
+            <button className="search-ai-btn" type="button">
+              <Sparkles size={13} fill="#FFDF73" color="#FFDF73" style={{ marginRight: '4px' }} />
+              <span>Buscar com IA</span>
+            </button>
+          </div>
+        </Link>
+      </div>
 
       <Section
         title="Essenciais do Café"
