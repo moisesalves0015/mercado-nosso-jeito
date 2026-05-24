@@ -506,6 +506,7 @@ body{
   text-decoration: none;
   color: inherit;
   display: block;
+  position: relative;
 }
 .category-item {
   display: flex;
@@ -522,6 +523,7 @@ body{
   padding: 0 0 6px 0;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
   transition: all 0.25s ease;
 }
 .category-item:hover {

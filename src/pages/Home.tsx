@@ -109,8 +109,8 @@ export const Home = () => {
           </div>
         </Link>
         <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-badge">124</div>
           <div className="category-item">
-            <div className="category-badge">124</div>
             <div className="category-icon-wrapper"><img src="/categories/ofertas.png" alt="Ofertas" className="category-3d-icon" /></div>
             <span className="category-text">Ofertas</span>
           </div>
