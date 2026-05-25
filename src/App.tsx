@@ -17,6 +17,7 @@ import { Cart } from './pages/Cart';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Admin } from './pages/Admin';
+import { AdminProductDetail } from './pages/AdminProductDetail';
 import { Roleta } from './pages/Roleta';
 
 function AppContent() {
@@ -64,6 +65,11 @@ function AppContent() {
         <Route path="/admin" element={
           <ProtectedRoute adminOnly>
             <Admin />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/produto/:id" element={
+          <ProtectedRoute adminOnly>
+            <AdminProductDetail />
           </ProtectedRoute>
         } />
 

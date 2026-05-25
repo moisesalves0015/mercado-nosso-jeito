@@ -114,11 +114,33 @@ export const Home = () => {
   }, []);
 
   return (
-    <main className="app">
-      <Topbar />
+    <div style={{ width: '100%', overflowX: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%' }}>
+        
+        {/* The actual background image with its filter and position */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'url("/bg-supermercado.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 65%',
+          filter: 'brightness(0.5)', // Escurece apenas a imagem do fundo
+          zIndex: 0,
+        }} />
 
-      {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-      <div className="category-row" onScroll={handleCategoryScroll}>
+        {/* Gradient shadow to transition into the black background below */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.2) 0%, rgba(9, 7, 5, 0.7) 75%, #090705 100%)',
+          pointerEvents: 'none',
+          zIndex: 0
+        }} />
+        <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 15 }}>
+          <Topbar />
+
+          {/* CATEGORY ROW (3D REALISTIC ICONS) */}
+          <div className="category-row" onScroll={handleCategoryScroll}>
         <div className="category-intro-card">
           <span className="category-intro-line">Conheça</span>
           <span className="category-intro-line">nosso</span>
@@ -266,7 +288,10 @@ export const Home = () => {
           ))}
         </div>
       </div>
+        </div>
+      </div>
 
+      <main className="app" style={{ paddingTop: 0 }}>
       {/* SEARCH BAR (MOVED BELOW HERO) */}
       <div className="search-container">
         <Link to="/search" style={{ textDecoration: 'none', width: '100%' }}>
@@ -491,6 +516,7 @@ export const Home = () => {
         <p>O melhor do supermercado na palma da mão.</p>
         <p>Atendimento: (11) 99999-9999</p>
       </footer>
-    </main>
+      </main>
+    </div>
   );
 };

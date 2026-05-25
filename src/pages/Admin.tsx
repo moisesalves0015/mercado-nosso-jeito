@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Gem, ShoppingBag, Users, TrendingUp, Plus, Edit2, Trash2, Power,
   Store, Search, Filter, Award, X, Package, BarChart2, ChevronDown,
   CheckCircle, Clock, Truck, AlertCircle, Shield, Ban, RefreshCw,
-  Star, Zap, ArrowUp, ArrowDown, Eye, EyeOff, DollarSign, Upload,
-  ChevronRight, ChevronLeft, Percent, Target
+  Star, Zap, ArrowUp, ArrowDown, Eye, EyeOff, DollarSign,
+  Percent, Target
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts';
-import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
@@ -51,9 +51,6 @@ interface FirestoreClient {
   diamonds?: number; createdAt?: any;
 }
 type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro';
-type WizardStep = 1 | 2 | 3 | 4 | 5;
-type ImageMode = 'url' | 'upload' | 'gallery';
-
 // ─── VIP LEVELS ──────────────────────────────────────────────────────────────
 const getVipLevel = (diamonds: number = 0) => {
   if (diamonds >= 5000) return { label: 'Black', emoji: '⬛', color: '#e2e8f0', border: 'rgba(226,232,240,0.3)', bg: 'rgba(255,255,255,0.07)' };
@@ -73,11 +70,7 @@ const calcRealMargin = (price: number, costPrice: number, diamonds: number = 0):
   return ((price - costPrice - calcDiamondCost(diamonds)) / price) * 100;
 };
 
-const calcSuggestedPrice = (costPrice: number, diamonds: number = 0, targetPct: number = 35): number => {
-  if (!costPrice || costPrice <= 0) return 0;
-  const eff = costPrice + calcDiamondCost(diamonds);
-  return eff / (1 - targetPct / 100);
-};
+
 
 const getMarginStatus = (margin: number | null) => {
   if (margin === null) return null;
@@ -88,13 +81,6 @@ const getMarginStatus = (margin: number | null) => {
 };
 
 // ─── KNOWN IMAGES (quick gallery) ────────────────────────────────────────────
-const GALLERY_IMAGES = [
-  { src: '/heineken.png',        label: 'Heineken' },
-  { src: '/coca_cola_zero.png',  label: 'Coca-Cola Zero' },
-  { src: '/monster_energy.webp', label: 'Monster Energy' },
-  { src: '/spaten.webp',         label: 'Spaten' },
-];
-
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const salesData = [
   { day: 'Seg', vendas: 340, pedidos: 4 },{ day: 'Ter', vendas: 520, pedidos: 7 },
@@ -155,38 +141,7 @@ const StatCard = ({ label, value, sub, icon: Icon, iconColor, trend, gold }: any
   </div>
 );
 
-// ─── IMAGE COMPRESS ───────────────────────────────────────────────────────────
-const compressImage = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 420;
-        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('canvas')); return; }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
-// ─── WIZARD STEPS META ────────────────────────────────────────────────────────
-const WIZARD_META: { step: WizardStep; label: string; emoji: string }[] = [
-  { step: 1, label: 'Produto',  emoji: '📦' },
-  { step: 2, label: 'Preço',    emoji: '💰' },
-  { step: 3, label: 'Estoque',  emoji: '🎮' },
-  { step: 4, label: 'Promoção', emoji: '🎁' },
-  { step: 5, label: 'Resumo',   emoji: '✅' },
-];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
@@ -200,41 +155,6 @@ export const Admin: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchProduct, setSearchProduct] = useState('');
   const [filterCategory, setFilterCategory] = useState('Todos');
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [wizardStep, setWizardStep] = useState<WizardStep>(1);
-
-  // Step 1 — Produto
-  const [prodTitle, setProdTitle] = useState('');
-  const [prodDescription, setProdDescription] = useState('');
-  const [prodCategory, setProdCategory] = useState('Bebidas');
-  const [prodImage, setProdImage] = useState('');
-  const [prodTags, setProdTags] = useState('');
-  const [prodBadge, setProdBadge] = useState('');
-  const [prodBadgeStyle, setProdBadgeStyle] = useState<'orange' | 'light'>('orange');
-  const [imageMode, setImageMode] = useState<ImageMode>('url');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImg, setUploadingImg] = useState(false);
-
-  // Step 2 — Preço & Diamantes
-  const [prodCostPrice, setProdCostPrice] = useState('');
-  const [prodPrice, setProdPrice] = useState('');
-  const [prodDiamondReward, setProdDiamondReward] = useState('');
-  const [targetMargin, setTargetMargin] = useState('35');
-
-  // Step 3 — Estoque
-  const [prodStock, setProdStock] = useState('');
-  const [prodMinStock, setProdMinStock] = useState('');
-
-  // Step 4 — Promoção
-  const [prodPromoActive, setProdPromoActive] = useState(false);
-  const [prodPromoDiscount, setProdPromoDiscount] = useState('');
-  const [prodPromoExpiry, setProdPromoExpiry] = useState('');
-  const [prodComboProductId, setProdComboProductId] = useState('');
-  const [prodComboDiscount, setProdComboDiscount] = useState('');
-  const [prodMinQtyForDiscount, setProdMinQtyForDiscount] = useState('');
-  const [prodAvailableInRoulette, setProdAvailableInRoulette] = useState(false);
-
   // Financial simulator
   const [finSimUnits, setFinSimUnits] = useState('30');
 
@@ -258,41 +178,35 @@ export const Admin: React.FC = () => {
   const [savingRoulette, setSavingRoulette] = useState(false);
   const [loadingRoulette, setLoadingRoulette] = useState(false);
 
-  // ─── Load from localStorage ───────────────────────────────────────────────
+  // ─── Load from Firestore ───────────────────────────────────────────────
   useEffect(() => {
-    const storedProducts = localStorage.getItem('app-products');
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
-    } else {
-      const defaults: Product[] = [
-        { id: 'heineken-330ml', title: 'Cerveja Heineken Long Neck (330ml)', price: 7.90, costPrice: 4.80, image: '/heineken.png', category: 'Bebidas', badge: 'Trincando', badgeStyle: 'orange', diamondReward: 2, active: true, stock: 48, minStock: 10 },
-        { id: 'coca-cola-350ml', title: 'Refrigerante Coca-Cola Sem Açúcar Lata (350ml)', price: 4.50, costPrice: 2.70, image: '/coca_cola_zero.png', category: 'Bebidas', diamondReward: 1, active: true, stock: 120, minStock: 20 },
-        { id: 'monster-energy', title: 'Energético Monster Energy Tradicional (473ml)', price: 9.90, costPrice: 6.20, image: '/monster_energy.webp', category: 'Bebidas', badge: 'Mais Vendido', badgeStyle: 'orange', diamondReward: 3, active: true, stock: 32, minStock: 8 },
-        { id: 'spaten-350ml', title: 'Cerveja Spaten Puro Malte Lata (350ml)', price: 5.20, costPrice: 3.10, image: '/spaten.webp', category: 'Bebidas', diamondReward: 1, active: true, stock: 60, minStock: 15 },
-        { id: 'marlboro-gold', title: 'Cigarro Marlboro Gold Box (20un)', price: 13.50, costPrice: 8.90, image: 'https://images.unsplash.com/photo-1627140469085-fcd84814df2a?q=80&w=600', category: 'Tabacaria', badge: 'Mais Vendido', badgeStyle: 'orange', diamondReward: 2, active: true, stock: 85, minStock: 20 },
-        { id: 'ignite-v50', title: 'Vape Pod Ignite V50 Mentol (5000 Puffs)', price: 89.90, costPrice: 52.00, image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=600', category: 'Tabacaria', badge: 'Premium', badgeStyle: 'orange', diamondReward: 10, active: true, stock: 15, minStock: 3 },
-        { id: 'fone-bluetooth', title: 'Fone de Ouvido Bluetooth JBL Wave Flex', price: 289.90, costPrice: 180.00, image: 'https://images.unsplash.com/photo-1608156639585-b3a032ef9689?q=80&w=600', category: 'Eletrônicos', badge: 'Frete Grátis', badgeStyle: 'light', diamondReward: 40, active: true, stock: 8, minStock: 2 },
-        { id: 'carregador-turbo', title: 'Carregador de Tomada Turbo Anker 20W USB-C', price: 79.90, costPrice: 45.00, image: 'https://images.unsplash.com/photo-1618220179428-22790b461013?q=80&w=600', category: 'Eletrônicos', diamondReward: 8, active: true, stock: 22, minStock: 5 },
-      ];
-      localStorage.setItem('app-products', JSON.stringify(defaults));
-      setProducts(defaults);
-    }
+    const unsubP = onSnapshot(collection(db, 'products'), async (snap) => {
+      if (snap.empty) {
+        const stored = localStorage.getItem('app-products');
+        if (stored) {
+          const arr = JSON.parse(stored);
+          for (const p of arr) {
+            try { await setDoc(doc(db, 'products', p.id), p); } catch(e){}
+          }
+        }
+      }
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    });
 
-    const storedOrders = localStorage.getItem('app-orders');
-    if (storedOrders) {
-      setOrders(JSON.parse(storedOrders));
-    } else {
-      const now = Date.now();
-      const fmt = (ts: number) => new Date(ts).toLocaleDateString('pt-BR') + ' ' + new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      const defaults: Order[] = [
-        { id: 'ped-1002', clientName: 'Moisés Alves', clientEmail: 'moises@exemplo.com', items: [{ id: 'heineken-330ml', title: 'Cerveja Heineken Long Neck (330ml)', price: 7.90, quantity: 4 }, { id: 'monster-energy', title: 'Energético Monster Energy (473ml)', price: 9.90, quantity: 2 }], total: 51.40, status: 'Aprovado', createdAt: fmt(now - 7200000), address: 'Rua das Palmeiras, 105 - Centro, Blumenau - SC' },
-        { id: 'ped-1003', clientName: 'Ana Silva', clientEmail: 'ana@exemplo.com', items: [{ id: 'ignite-v50', title: 'Vape Pod Ignite V50 Mentol', price: 89.90, quantity: 1 }], total: 89.90, status: 'Pendente', createdAt: fmt(now - 600000), address: 'Av. Beira Rio, 450, Ap 402 - Centro, Blumenau - SC' },
-        { id: 'ped-1001', clientName: 'Carlos Souza', clientEmail: 'carlos@exemplo.com', items: [{ id: 'fone-bluetooth', title: 'Fone Bluetooth JBL Wave Flex', price: 289.90, quantity: 1 }, { id: 'coca-cola-350ml', title: 'Coca-Cola Zero Lata', price: 4.50, quantity: 3 }], total: 303.40, status: 'Entregue', createdAt: fmt(now - 86400000), address: 'Rua Joinville, 88 - Vila Nova, Blumenau - SC' },
-        { id: 'ped-1004', clientName: 'Beatriz Santos', clientEmail: 'bea@exemplo.com', items: [{ id: 'marlboro-gold', title: 'Cigarro Marlboro Gold Box', price: 13.50, quantity: 3 }], total: 40.50, status: 'Saiu para Entrega', createdAt: fmt(now - 3600000), address: 'Rua XV de Novembro, 200 - Centro, Blumenau - SC' },
-      ];
-      localStorage.setItem('app-orders', JSON.stringify(defaults));
-      setOrders(defaults);
-    }
+    const unsubO = onSnapshot(collection(db, 'orders'), async (snap) => {
+      if (snap.empty) {
+        const stored = localStorage.getItem('app-orders');
+        if (stored) {
+          const arr = JSON.parse(stored);
+          for (const o of arr) {
+            try { await setDoc(doc(db, 'orders', o.id), o); } catch(e){}
+          }
+        }
+      }
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    });
+
+    return () => { unsubP(); unsubO(); };
   }, []);
 
   const fetchClients = async () => {
@@ -331,113 +245,20 @@ export const Admin: React.FC = () => {
     if (activeTab === 'roleta') fetchRoulette();
   }, [activeTab]);
 
-  // ─── Persist ──────────────────────────────────────────────────────────────
-  const saveProducts = (p: Product[]) => {
-    localStorage.setItem('app-products', JSON.stringify(p));
-    setProducts(p);
-    window.dispatchEvent(new Event('app-products-updated'));
-  };
-  const saveOrders = (o: Order[]) => { localStorage.setItem('app-orders', JSON.stringify(o)); setOrders(o); };
   const handleLogout = async () => { try { await logout(); navigate('/login'); } catch (e) { console.error(e); } };
 
-  // ─── Image Upload ─────────────────────────────────────────────────────────
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingImg(true);
-    try {
-      const compressed = await compressImage(file);
-      setProdImage(compressed);
-    } catch { alert('Erro ao processar imagem.'); }
-    finally { setUploadingImg(false); }
-  };
-
-  // ─── Wizard helpers ───────────────────────────────────────────────────────
-  const resetWizard = () => {
-    setWizardStep(1);
-    setProdTitle(''); setProdDescription(''); setProdCategory('Bebidas');
-    setProdImage(''); setProdTags(''); setProdBadge(''); setProdBadgeStyle('orange');
-    setImageMode('url');
-    setProdCostPrice(''); setProdPrice(''); setProdDiamondReward(''); setTargetMargin('35');
-    setProdStock(''); setProdMinStock('');
-    setProdPromoActive(false); setProdPromoDiscount(''); setProdPromoExpiry('');
-    setProdComboProductId(''); setProdComboDiscount(''); setProdMinQtyForDiscount('');
-    setProdAvailableInRoulette(false);
-  };
-
-  const openAddModal = () => { setEditingProduct(null); resetWizard(); setIsProductModalOpen(true); };
-
-  const openEditModal = (p: Product) => {
-    setEditingProduct(p);
-    setWizardStep(1);
-    setProdTitle(p.title); setProdDescription(p.description || '');
-    setProdCategory(p.category); setProdImage(p.image); setProdTags(p.tags || '');
-    setProdBadge(p.badge || ''); setProdBadgeStyle(p.badgeStyle || 'orange');
-    setImageMode(p.image.startsWith('data:') ? 'upload' : 'url');
-    setProdCostPrice(p.costPrice?.toString() || ''); setProdPrice(p.price.toString());
-    setProdDiamondReward(p.diamondReward?.toString() || ''); setTargetMargin('35');
-    setProdStock(p.stock?.toString() || ''); setProdMinStock(p.minStock?.toString() || '');
-    setProdPromoActive(p.promoActive || false); setProdPromoDiscount(p.promoDiscount?.toString() || '');
-    setProdPromoExpiry(p.promoExpiry || ''); setProdComboProductId(p.comboProductId || '');
-    setProdComboDiscount(p.comboDiscount?.toString() || ''); setProdMinQtyForDiscount(p.minQtyForDiscount?.toString() || '');
-    setProdAvailableInRoulette(p.availableInRoulette || false);
-    setIsProductModalOpen(true);
-  };
-
-  const canAdvanceStep = (): { ok: boolean; msg?: string } => {
-    if (wizardStep === 1) {
-      if (!prodTitle.trim()) return { ok: false, msg: 'Nome do produto é obrigatório.' };
-      if (!prodImage.trim()) return { ok: false, msg: 'Imagem é obrigatória.' };
-      return { ok: true };
+  const handleDeleteProduct = async (id: string) => { 
+    if (window.confirm('Excluir produto?')) {
+      await deleteDoc(doc(db, 'products', id));
     }
-    if (wizardStep === 2) {
-      const price = parseFloat(prodPrice);
-      if (!prodPrice || isNaN(price) || price <= 0) return { ok: false, msg: 'Preço de venda inválido.' };
-      if (prodCostPrice) {
-        const cost = parseFloat(prodCostPrice);
-        const diamonds = parseInt(prodDiamondReward) || 0;
-        const margin = calcRealMargin(price, cost, diamonds);
-        if (margin !== null && margin < 0) return { ok: false, msg: '⛔ Margem negativa: o produto seria vendido com PREJUÍZO. Ajuste o preço.' };
-      }
-      return { ok: true };
-    }
-    return { ok: true };
   };
-
-  const handleSaveProduct = () => {
-    const price = parseFloat(prodPrice);
-    if (!prodTitle || !prodPrice || !prodImage || isNaN(price) || price <= 0) { alert('Preencha nome, imagem e preço.'); return; }
-    const costPrice = prodCostPrice ? parseFloat(prodCostPrice) : undefined;
-    const diamonds = prodDiamondReward ? parseInt(prodDiamondReward) : undefined;
-    if (costPrice && diamonds !== undefined) {
-      const margin = calcRealMargin(price, costPrice, diamonds);
-      if (margin !== null && margin < 0) { alert('⛔ Não é possível salvar um produto com prejuízo. Ajuste o preço.'); return; }
-    }
-    const data: Omit<Product, 'id'> = {
-      title: prodTitle, description: prodDescription || undefined, price, costPrice,
-      image: prodImage, category: prodCategory, badge: prodBadge || undefined, badgeStyle: prodBadgeStyle,
-      diamondReward: diamonds, active: editingProduct?.active ?? true,
-      stock: prodStock ? parseInt(prodStock) : undefined, minStock: prodMinStock ? parseInt(prodMinStock) : undefined,
-      tags: prodTags || undefined, promoActive: prodPromoActive,
-      promoDiscount: prodPromoDiscount ? parseFloat(prodPromoDiscount) : undefined,
-      promoExpiry: prodPromoExpiry || undefined, comboProductId: prodComboProductId || undefined,
-      comboDiscount: prodComboDiscount ? parseFloat(prodComboDiscount) : undefined,
-      availableInRoulette: prodAvailableInRoulette,
-      minQtyForDiscount: prodMinQtyForDiscount ? parseInt(prodMinQtyForDiscount) : undefined,
-    };
-    if (editingProduct) {
-      saveProducts(products.map(p => p.id === editingProduct.id ? { id: editingProduct.id, ...data } : p));
-    } else {
-      saveProducts([...products, { id: 'prod-' + Date.now(), ...data }]);
-    }
-    setIsProductModalOpen(false);
+  
+  const toggleProductActive = async (id: string, active: boolean) => {
+    await updateDoc(doc(db, 'products', id), { active: !active });
   };
-
-  const handleDeleteProduct = (id: string) => { if (window.confirm('Excluir produto?')) saveProducts(products.filter(p => p.id !== id)); };
-  const toggleProductActive = (id: string) => saveProducts(products.map(p => p.id === id ? { ...p, active: !p.active } : p));
-  const updateOrderStatus = (id: string, status: Order['status']) => {
-    const updated = orders.map(o => o.id === id ? { ...o, status } : o);
-    saveOrders(updated);
+  
+  const updateOrderStatus = async (id: string, status: Order['status']) => {
+    await updateDoc(doc(db, 'orders', id), { status });
     if (selectedOrder?.id === id) setSelectedOrder({ ...selectedOrder, status });
   };
 
@@ -515,15 +336,6 @@ export const Admin: React.FC = () => {
     margem: parseFloat(p.margin.toFixed(1)),
     fill: p.margin < 15 ? '#ef4444' : p.margin < 30 ? '#f59e0b' : '#10b981',
   }));
-
-  // Wizard live calcs
-  const wizPrice = parseFloat(prodPrice) || 0;
-  const wizCost = parseFloat(prodCostPrice) || 0;
-  const wizDiamonds = parseInt(prodDiamondReward) || 0;
-  const wizDiamondCost = calcDiamondCost(wizDiamonds);
-  const wizMargin = calcRealMargin(wizPrice, wizCost, wizDiamonds);
-  const wizMarginStatus = getMarginStatus(wizMargin);
-  const wizProfitUnit = wizPrice > 0 && wizCost > 0 ? wizPrice - wizCost - wizDiamondCost : 0;
 
   // ─── Styles ───────────────────────────────────────────────────────────────
   const inputStyle: React.CSSProperties = {
@@ -679,7 +491,7 @@ export const Admin: React.FC = () => {
                     {['Todos', 'Bebidas', 'Tabacaria', 'Eletrônicos', 'Limpeza', 'Alimentos'].map(c => <option key={c} value={c} style={{ background: '#0f172a' }}>{c}</option>)}
                   </select>
                 </div>
-                <button onClick={openAddModal} style={{ height: 40, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 10, color: '#000', fontWeight: 900, fontSize: 12, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>
+                <button onClick={() => navigate('/admin/produto/novo')} style={{ height: 40, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 10, color: '#000', fontWeight: 900, fontSize: 12, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>
                   <Plus size={14} /> Cadastrar
                 </button>
               </div>
@@ -728,13 +540,13 @@ export const Admin: React.FC = () => {
                         </td>
                         <td style={{ padding: '12px 14px', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{p.category}</td>
                         <td style={{ padding: '12px 14px' }}>
-                          <button onClick={() => toggleProductActive(p.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: p.active !== false ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${p.active !== false ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: 99, padding: '3px 10px', cursor: 'pointer', color: p.active !== false ? '#10b981' : '#ef4444', fontSize: 10, fontWeight: 900 }}>
+                          <button onClick={() => toggleProductActive(p.id, p.active !== false)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: p.active !== false ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${p.active !== false ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`, borderRadius: 99, padding: '3px 10px', cursor: 'pointer', color: p.active !== false ? '#10b981' : '#ef4444', fontSize: 10, fontWeight: 900 }}>
                             {p.active !== false ? <><Eye size={10} />Ativo</> : <><EyeOff size={10} />Inativo</>}
                           </button>
                         </td>
                         <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', gap: 6 }}>
-                            <button onClick={() => openEditModal(p)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', width: 30, height: 30, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFDF73', cursor: 'pointer' }}><Edit2 size={12} /></button>
+                            <button onClick={() => navigate('/admin/produto/' + p.id)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', width: 30, height: 30, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFDF73', cursor: 'pointer' }}><Edit2 size={12} /></button>
                             <button onClick={() => handleDeleteProduct(p.id)} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', width: 30, height: 30, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={12} /></button>
                           </div>
                         </td>
@@ -946,7 +758,7 @@ export const Admin: React.FC = () => {
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <span style={{ fontSize: 12, fontWeight: 900, color: ms.color }}>{margin!.toFixed(1)}%</span>
-                          <button onClick={() => openEditModal(p)} style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 900, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '2px 8px', color: '#ef4444', cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>Corrigir →</button>
+                          <button onClick={() => navigate('/admin/produto/' + p.id)} style={{ display: 'block', marginTop: 4, fontSize: 9, fontWeight: 900, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, padding: '2px 8px', color: '#ef4444', cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>Corrigir →</button>
                         </div>
                       </div>
                     );
@@ -1069,442 +881,6 @@ export const Admin: React.FC = () => {
         </div>
       )}
 
-      {/* ═══ MODAL: PRODUCT WIZARD ════════════════════════════════════════════ */}
-      {isProductModalOpen && (() => {
-        const advance = canAdvanceStep();
-        const isLast = wizardStep === 5;
-        const promoPrice = prodPromoDiscount ? wizPrice * (1 - parseFloat(prodPromoDiscount) / 100) : undefined;
-
-        return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 100, backdropFilter: 'blur(8px)' }}>
-            <div style={{ background: 'linear-gradient(180deg, rgba(10,15,35,0.99) 0%, rgba(5,10,25,0.99) 100%)', border: '1.5px solid rgba(212,175,55,0.25)', borderRadius: 24, width: '100%', maxWidth: 520, boxShadow: '0 24px 80px rgba(0,0,0,0.95)', position: 'relative', display: 'flex', flexDirection: 'column', maxHeight: '94vh' }}>
-              {/* Modal header */}
-              <div style={{ padding: '20px 24px 0', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', margin: 0 }}>
-                      {editingProduct ? '✏️ Editar Produto' : '🚀 Cadastrar Produto'}
-                    </h3>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>
-                      {WIZARD_META[wizardStep - 1].emoji} Etapa {wizardStep} de 5 — {WIZARD_META[wizardStep - 1].label}
-                    </span>
-                  </div>
-                  <button onClick={() => setIsProductModalOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', width: 32, height: 32, borderRadius: 8, color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={15} /></button>
-                </div>
-                {/* Step indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-                  {WIZARD_META.map((m, i) => (
-                    <React.Fragment key={m.step}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }} onClick={() => {
-                        if (m.step < wizardStep) setWizardStep(m.step);
-                      }}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: wizardStep === m.step ? 'linear-gradient(135deg,#D4AF37,#FFDF73)' : wizardStep > m.step ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `2px solid ${wizardStep === m.step ? '#FFDF73' : wizardStep > m.step ? '#10b981' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: wizardStep === m.step ? '#000' : wizardStep > m.step ? '#10b981' : 'rgba(255,255,255,0.4)', transition: 'all 0.3s ease' }}>
-                          {wizardStep > m.step ? '✓' : m.step}
-                        </div>
-                        <span style={{ fontSize: 8, fontWeight: 800, color: wizardStep === m.step ? '#FFDF73' : 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>{m.label}</span>
-                      </div>
-                      {i < WIZARD_META.length - 1 && <div style={{ flex: 1, height: 2, background: wizardStep > m.step ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)', margin: '0 4px', marginBottom: 16, borderRadius: 1 }} />}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-
-              {/* Modal body — scrollable */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
-
-                {/* ─── STEP 1: PRODUTO ──────────────────────────────────────────── */}
-                {wizardStep === 1 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
-                    <div>
-                      <label style={labelStyle}>Nome do Produto *</label>
-                      <input style={inputStyle} value={prodTitle} onChange={e => setProdTitle(e.target.value)} placeholder="Ex: Cerveja Heineken Long Neck (330ml)" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Descrição Curta</label>
-                      <textarea value={prodDescription} onChange={e => setProdDescription(e.target.value)} placeholder="Descrição opcional para o cliente..." style={{ ...inputStyle, height: 64, resize: 'vertical', paddingTop: 10, lineHeight: 1.5 }} />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <label style={labelStyle}>Categoria</label>
-                        <select value={prodCategory} onChange={e => setProdCategory(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                          {['Bebidas', 'Tabacaria', 'Eletrônicos', 'Limpeza', 'Alimentos'].map(c => <option key={c} value={c} style={{ background: '#0f172a' }}>{c}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Tags (busca)</label>
-                        <input style={inputStyle} value={prodTags} onChange={e => setProdTags(e.target.value)} placeholder="gelada, energético..." />
-                      </div>
-                    </div>
-
-                    {/* IMAGE UPGRADE */}
-                    <div>
-                      <label style={labelStyle}>Imagem do Produto *</label>
-                      {/* Mode tabs */}
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                        {([['url', '🔗 URL'], ['upload', '⬆️ Upload'], ['gallery', '🖼️ Galeria']] as [ImageMode, string][]).map(([mode, label]) => (
-                          <button key={mode} onClick={() => setImageMode(mode)} style={{ flex: 1, height: 32, border: `1px solid ${imageMode === mode ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, background: imageMode === mode ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)', color: imageMode === mode ? '#FFDF73' : 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>{label}</button>
-                        ))}
-                      </div>
-
-                      {imageMode === 'url' && (
-                        <input style={inputStyle} value={prodImage.startsWith('data:') ? '' : prodImage} onChange={e => setProdImage(e.target.value)} placeholder="https://... ou /nome-arquivo.png" />
-                      )}
-
-                      {imageMode === 'upload' && (
-                        <div>
-                          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImg} style={{ width: '100%', height: 44, background: 'rgba(212,175,55,0.08)', border: '2px dashed rgba(212,175,55,0.35)', borderRadius: 10, color: '#FFDF73', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Manrope, sans-serif' }}>
-                            <Upload size={15} />{uploadingImg ? 'Processando...' : 'Selecionar Arquivo'}
-                          </button>
-                          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '6px 0 0', textAlign: 'center' }}>JPG, PNG, WebP — comprimido automaticamente para até 420px</p>
-                        </div>
-                      )}
-
-                      {imageMode === 'gallery' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                          {GALLERY_IMAGES.map(img => (
-                            <button key={img.src} onClick={() => setProdImage(img.src)} style={{ background: prodImage === img.src ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.03)', border: `1.5px solid ${prodImage === img.src ? 'rgba(212,175,55,0.6)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: 8, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                              <img src={img.src} alt={img.label} style={{ width: 36, height: 36, objectFit: 'contain' }} />
-                              <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{img.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Preview */}
-                      {prodImage && (
-                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10 }}>
-                          <img src={prodImage} alt="preview" style={{ width: 56, height: 56, objectFit: 'contain', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                          <div>
-                            <div style={{ fontSize: 11, fontWeight: 800, color: '#10b981' }}>✅ Pré-visualização</div>
-                            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prodImage.startsWith('data:') ? '(arquivo enviado)' : prodImage}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <label style={labelStyle}>Selo (badge)</label>
-                        <input style={inputStyle} value={prodBadge} onChange={e => setProdBadge(e.target.value)} placeholder="Ex: Mais Vendido" />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Cor do Selo</label>
-                        <select value={prodBadgeStyle} onChange={e => setProdBadgeStyle(e.target.value as any)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                          <option value="orange" style={{ background: '#0f172a' }}>Laranja (Destaque)</option>
-                          <option value="light" style={{ background: '#0f172a' }}>Claro (Suave)</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── STEP 2: PREÇO & DIAMANTES ──────────────────────────────── */}
-                {wizardStep === 2 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
-                    {/* Info box */}
-                    <div style={{ background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
-                      💎 <strong style={{ color: '#818cf8' }}>Regra dos Diamantes:</strong> 1 diamante = R$0,01. O custo dos diamantes é <em>descontado da sua margem de lucro</em>. Defina o valor de venda já incluindo este custo.
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <label style={labelStyle}>Preço de Custo (R$)</label>
-                        <input style={inputStyle} type="number" step="0.01" min="0" value={prodCostPrice} onChange={e => setProdCostPrice(e.target.value)} placeholder="0,00" />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Recompensa 💎</label>
-                        <input style={inputStyle} type="number" min="0" value={prodDiamondReward} onChange={e => setProdDiamondReward(e.target.value)} placeholder="Ex: 5" />
-                        {wizDiamonds > 0 && <div style={{ fontSize: 9, color: '#818cf8', fontWeight: 800, marginTop: 4 }}>= R${calcDiamondCost(wizDiamonds).toFixed(2)} embutido no preço</div>}
-                      </div>
-                    </div>
-
-                    {/* Auto-suggest */}
-                    {wizCost > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 12px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>Margem alvo:</span>
-                        <input type="number" value={targetMargin} onChange={e => setTargetMargin(e.target.value)} style={{ ...inputStyle, width: 60, height: 34, textAlign: 'center', fontSize: 12 }} />
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>%</span>
-                        <button onClick={() => setProdPrice(calcSuggestedPrice(wizCost, wizDiamonds, parseFloat(targetMargin) || 35).toFixed(2))} style={{ height: 34, padding: '0 14px', background: 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1))', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 8, color: '#FFDF73', fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Zap size={12} /> Auto-sugerir preço
-                        </button>
-                      </div>
-                    )}
-
-                    <div>
-                      <label style={labelStyle}>Preço de Venda (R$) *</label>
-                      <input style={{ ...inputStyle, fontSize: 18, fontWeight: 900, height: 50, color: '#FFDF73' }} type="number" step="0.01" min="0" value={prodPrice} onChange={e => setProdPrice(e.target.value)} placeholder="0,00" />
-                    </div>
-
-                    {/* Margin breakdown */}
-                    {wizPrice > 0 && wizCost > 0 && (
-                      <div style={{ background: wizMarginStatus ? wizMarginStatus.bg : 'rgba(255,255,255,0.02)', border: `1.5px solid ${wizMarginStatus ? wizMarginStatus.border : 'rgba(255,255,255,0.08)'}`, borderRadius: 14, padding: 14 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                          <span style={{ fontSize: 12, fontWeight: 900, color: '#fff' }}>📊 Análise de Margem</span>
-                          {wizMarginStatus && <span style={{ fontSize: 13, fontWeight: 900, color: wizMarginStatus.color, padding: '3px 12px', borderRadius: 99, background: `${wizMarginStatus.color}22`, border: `1px solid ${wizMarginStatus.border}` }}>{wizMarginStatus.label}</span>}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {[
-                            ['Preço de venda', `R$ ${wizPrice.toFixed(2)}`, '#fff'],
-                            ['(-) Custo do produto', `R$ ${wizCost.toFixed(2)}`, '#ef4444'],
-                            ['(-) Custo diamantes', `R$ ${wizDiamondCost.toFixed(2)} (${wizDiamonds}💎 × R$0,01)`, '#818cf8'],
-                            ['= Lucro por unidade', `R$ ${wizProfitUnit.toFixed(2)}`, wizProfitUnit >= 0 ? '#10b981' : '#ef4444'],
-                          ].map(([label, value, color]) => (
-                            <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
-                              <span style={{ color: 'rgba(255,255,255,0.55)' }}>{label}</span>
-                              <span style={{ color: color as string }}>{value}</span>
-                            </div>
-                          ))}
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 900 }}>
-                            <span style={{ color: 'rgba(255,255,255,0.7)' }}>Margem Real</span>
-                            <span style={{ color: wizMarginStatus?.color || '#fff' }}>{wizMargin !== null ? `${wizMargin.toFixed(1)}%` : '—'}</span>
-                          </div>
-                        </div>
-                        {wizMarginStatus && wizMargin! < 0 && (
-                          <div style={{ marginTop: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#ef4444', fontWeight: 800 }}>
-                            ⛔ ATENÇÃO: Você está vendendo com PREJUÍZO. Aumente o preço de venda antes de avançar.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ─── STEP 3: ESTOQUE & GAMIFICAÇÃO ─────────────────────────── */}
-                {wizardStep === 3 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
-                    <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 10, padding: '10px 14px', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-                      🎮 <strong style={{ color: '#10b981' }}>Gamificação:</strong> Os diamantes conquistados motivam os clientes a comprarem mais. O custo já foi contabilizado no preço de venda.
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <div>
-                        <label style={labelStyle}>Estoque Inicial (un)</label>
-                        <input style={inputStyle} type="number" min="0" value={prodStock} onChange={e => setProdStock(e.target.value)} placeholder="0" />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Estoque Mínimo (alerta)</label>
-                        <input style={inputStyle} type="number" min="0" value={prodMinStock} onChange={e => setProdMinStock(e.target.value)} placeholder="5" />
-                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>Alerta ⚠️ quando estoque ≤ este valor</div>
-                      </div>
-                    </div>
-
-                    {/* Diamond summary */}
-                    <div style={{ background: 'rgba(129,140,248,0.08)', border: '1px solid rgba(129,140,248,0.2)', borderRadius: 14, padding: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 900, color: '#818cf8', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><Gem size={14} /> Resumo de Gamificação</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                          <span style={{ color: 'rgba(255,255,255,0.6)' }}>💎 por compra</span>
-                          <span style={{ fontWeight: 900, color: '#fff' }}>{wizDiamonds || 0} diamantes</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                          <span style={{ color: 'rgba(255,255,255,0.6)' }}>Valor para o cliente</span>
-                          <span style={{ fontWeight: 900, color: '#10b981' }}>R$ {calcDiamondCost(wizDiamonds).toFixed(2)}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                          <span style={{ color: 'rgba(255,255,255,0.6)' }}>% de cashback</span>
-                          <span style={{ fontWeight: 900, color: '#818cf8' }}>{wizPrice > 0 ? ((calcDiamondCost(wizDiamonds) / wizPrice) * 100).toFixed(1) : '0'}%</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Simulation */}
-                    {prodStock && (
-                      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 14 }}>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: '#fff', marginBottom: 8 }}>📦 Projeção de Estoque</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>
-                          <span>Receita bruta total:</span>
-                          <span style={{ fontWeight: 900, color: '#FFDF73' }}>R$ {(wizPrice * parseInt(prodStock || '0')).toFixed(2)}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>
-                          <span>Lucro potencial total:</span>
-                          <span style={{ fontWeight: 900, color: '#10b981' }}>R$ {(wizProfitUnit * parseInt(prodStock || '0')).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ─── STEP 4: PROMOÇÃO ───────────────────────────────────────── */}
-                {wizardStep === 4 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
-                    {/* Promo toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: prodPromoActive ? 'rgba(236,72,153,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${prodPromoActive ? 'rgba(236,72,153,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.3s ease' }} onClick={() => setProdPromoActive(!prodPromoActive)}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>🎁 Ativar Promoção</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Desconto especial por tempo limitado</div>
-                      </div>
-                      <div style={{ width: 44, height: 24, borderRadius: 12, background: prodPromoActive ? '#ec4899' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'all 0.3s ease', flexShrink: 0 }}>
-                        <div style={{ position: 'absolute', top: 3, left: prodPromoActive ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'all 0.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }} />
-                      </div>
-                    </div>
-
-                    {prodPromoActive && (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                          <div>
-                            <label style={labelStyle}>Desconto (%)</label>
-                            <input style={inputStyle} type="number" min="0" max="99" value={prodPromoDiscount} onChange={e => setProdPromoDiscount(e.target.value)} placeholder="Ex: 15" />
-                            {prodPromoDiscount && wizPrice > 0 && <div style={{ fontSize: 9, color: '#ec4899', fontWeight: 800, marginTop: 4 }}>Preço promocional: R${(wizPrice * (1 - parseFloat(prodPromoDiscount) / 100)).toFixed(2)}</div>}
-                          </div>
-                          <div>
-                            <label style={labelStyle}>Validade (data/hora)</label>
-                            <input style={inputStyle} type="datetime-local" value={prodPromoExpiry} onChange={e => setProdPromoExpiry(e.target.value)} />
-                          </div>
-                        </div>
-                        <div>
-                          <label style={labelStyle}>Qtd mínima para desconto</label>
-                          <input style={inputStyle} type="number" min="1" value={prodMinQtyForDiscount} onChange={e => setProdMinQtyForDiscount(e.target.value)} placeholder="Ex: 2 (compre 2 e ganhe desconto)" />
-                        </div>
-                      </>
-                    )}
-
-                    {/* Combo */}
-                    <div>
-                      <label style={labelStyle}>Produto Combo (opcional)</label>
-                      <select value={prodComboProductId} onChange={e => setProdComboProductId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                        <option value="" style={{ background: '#0f172a' }}>Nenhum combo</option>
-                        {products.filter(p => !editingProduct || p.id !== editingProduct.id).map(p => <option key={p.id} value={p.id} style={{ background: '#0f172a' }}>{p.title}</option>)}
-                      </select>
-                      {prodComboProductId && (
-                        <div style={{ marginTop: 8 }}>
-                          <label style={labelStyle}>Desconto combo (%)</label>
-                          <input style={inputStyle} type="number" min="0" max="99" value={prodComboDiscount} onChange={e => setProdComboDiscount(e.target.value)} placeholder="Ex: 10" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Roulette toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: prodAvailableInRoulette ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${prodAvailableInRoulette ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.3s ease' }} onClick={() => setProdAvailableInRoulette(!prodAvailableInRoulette)}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>🎰 Disponível na Roleta</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Este produto poderá ser premiado na Roleta da Sorte</div>
-                      </div>
-                      <div style={{ width: 44, height: 24, borderRadius: 12, background: prodAvailableInRoulette ? '#D4AF37' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'all 0.3s ease', flexShrink: 0 }}>
-                        <div style={{ position: 'absolute', top: 3, left: prodAvailableInRoulette ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'all 0.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── STEP 5: RESUMO ──────────────────────────────────────────── */}
-                {wizardStep === 5 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 8 }}>
-                    {/* Product card preview */}
-                    <div>
-                      <label style={labelStyle}>Pré-visualização do Produto</label>
-                      <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 16, display: 'flex', gap: 14, alignItems: 'center' }}>
-                        {prodImage ? <img src={prodImage} alt={prodTitle} style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }} /> : <div style={{ width: 64, height: 64, borderRadius: 12, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Package size={24} color="rgba(255,255,255,0.2)" /></div>}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-                            {prodBadge && <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}>{prodBadge}</span>}
-                            {prodPromoActive && prodPromoDiscount && <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: 'rgba(236,72,153,0.15)', color: '#ec4899', border: '1px solid rgba(236,72,153,0.25)' }}>-{prodPromoDiscount}%</span>}
-                            {prodAvailableInRoulette && <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>🎰 Roleta</span>}
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{prodTitle || 'Nome do produto'}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                            {prodPromoActive && prodPromoDiscount && promoPrice ? (
-                              <>
-                                <span style={{ fontSize: 15, fontWeight: 900, color: '#FFDF73' }}>R$ {promoPrice.toFixed(2)}</span>
-                                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>R$ {wizPrice.toFixed(2)}</span>
-                              </>
-                            ) : (
-                              <span style={{ fontSize: 15, fontWeight: 900, color: '#FFDF73' }}>R$ {wizPrice > 0 ? wizPrice.toFixed(2) : '—'}</span>
-                            )}
-                            {wizDiamonds > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: '#10b981' }}>+{wizDiamonds}💎</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Financial summary */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 900, color: '#fff', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><DollarSign size={14} color="#D4AF37" /> Análise Financeira</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {[
-                          ['Preço de venda', wizPrice > 0 ? `R$ ${wizPrice.toFixed(2)}` : '—', '#fff'],
-                          ['Preço de custo', wizCost > 0 ? `R$ ${wizCost.toFixed(2)}` : 'Não informado', 'rgba(255,255,255,0.5)'],
-                          ['Custo em diamantes', wizDiamonds > 0 ? `R$ ${wizDiamondCost.toFixed(2)} (${wizDiamonds} × R$0,01)` : 'R$ 0,00', '#818cf8'],
-                          ['Lucro por unidade', wizCost > 0 ? `R$ ${wizProfitUnit.toFixed(2)}` : '—', wizProfitUnit > 0 ? '#10b981' : '#ef4444'],
-                        ].map(([label, value, color]) => (
-                          <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
-                            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{label}</span>
-                            <span style={{ color: color as string }}>{value}</span>
-                          </div>
-                        ))}
-                        {wizMargin !== null && (
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <span style={{ fontSize: 12, fontWeight: 900, color: '#fff' }}>Margem Real</span>
-                            <span style={{ fontSize: 14, fontWeight: 900, color: wizMarginStatus?.color || '#fff', padding: '2px 12px', borderRadius: 99, background: wizMarginStatus?.bg }}>{wizMargin.toFixed(1)}% {wizMarginStatus?.label.split(' ')[0]}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Other info */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 12 }}>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>Categoria</div>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', marginTop: 4 }}>{prodCategory}</div>
-                      </div>
-                      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 12 }}>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>Estoque</div>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', marginTop: 4 }}>{prodStock || '—'} un {prodMinStock && `(mín. ${prodMinStock})`}</div>
-                      </div>
-                    </div>
-
-                    {prodPromoActive && (
-                      <div style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 10, padding: 12 }}>
-                        <div style={{ fontSize: 11, fontWeight: 900, color: '#ec4899' }}>🎁 Promoção Ativa</div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
-                          {prodPromoDiscount && `Desconto: ${prodPromoDiscount}%`}
-                          {prodPromoExpiry && ` | Até: ${new Date(prodPromoExpiry).toLocaleDateString('pt-BR')}`}
-                        </div>
-                      </div>
-                    )}
-
-                    {wizMarginStatus && wizMargin !== null && wizMargin < 0 && (
-                      <div style={{ background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 12, padding: 14, textAlign: 'center' }}>
-                        <div style={{ fontSize: 14, fontWeight: 900, color: '#ef4444' }}>⛔ IMPOSSÍVEL SALVAR</div>
-                        <div style={{ fontSize: 11, color: 'rgba(239,68,68,0.8)', marginTop: 4 }}>Margem negativa detectada. Volte à Etapa 2 e corrija o preço de venda.</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Modal footer */}
-              <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center' }}>
-                {wizardStep > 1 && (
-                  <button onClick={() => setWizardStep((wizardStep - 1) as WizardStep)} style={{ height: 44, padding: '0 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Manrope, sans-serif' }}>
-                    <ChevronLeft size={15} /> Voltar
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                {!isLast ? (
-                  <button
-                    onClick={() => {
-                      const { ok, msg } = canAdvanceStep();
-                      if (!ok) { alert(msg); return; }
-                      setWizardStep((wizardStep + 1) as WizardStep);
-                    }}
-                    style={{ height: 44, padding: '0 24px', background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 12, color: '#000', fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Manrope, sans-serif', opacity: advance.ok ? 1 : 0.6 }}
-                  >
-                    Próximo <ChevronRight size={15} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSaveProduct}
-                    disabled={wizMargin !== null && wizMargin < 0}
-                    style={{ height: 44, padding: '0 28px', background: wizMargin !== null && wizMargin < 0 ? 'rgba(239,68,68,0.3)' : 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 12, color: wizMargin !== null && wizMargin < 0 ? '#ef4444' : '#000', fontSize: 14, fontWeight: 900, cursor: wizMargin !== null && wizMargin < 0 ? 'not-allowed' : 'pointer', fontFamily: 'Manrope, sans-serif' }}
-                  >
-                    {editingProduct ? '✅ Salvar Alterações' : '🚀 Cadastrar Produto'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ═══ MODAL: AWARD DIAMONDS ════════════════════════════════════════════ */}
       {isAwardModalOpen && selectedClient && (
