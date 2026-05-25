@@ -36,7 +36,7 @@ export const Home = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3);
-    }, 4500);
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -189,7 +189,7 @@ export const Home = () => {
                 <span className="hero-badge-icon">🍻</span>
                 <span>BEBIDAS GELADAS</span>
               </div>
-              <h2>Cervejas e Refris <br />no <span className="highlight-gold">grau! 🧊</span></h2>
+              <h2>Cervejas e Refris <br />no <span className="highlight-blue">grau! 🧊</span></h2>
               <p>Para comemorar ou relaxar no fim de semana.</p>
               <button className="hero-btn gold-shiny-btn">
                 Ver bebidas <span className="btn-arrow">→</span>
@@ -200,12 +200,8 @@ export const Home = () => {
           {/* Slide 3: Tabacaria */}
           <Link to="/tabacaria" className="hero-slide" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
             <div className="hero-left">
-              <div className="hero-badge">
-                <span className="hero-badge-icon">🚬</span>
-                <span>TABACARIA PREMIUM</span>
-              </div>
-              <h2>O melhor da <br />nossa <span className="highlight-gold">tabacaria! ✨</span></h2>
-              <p>Variedade em sedas, isqueiros e importados.</p>
+              <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! ❤️</span></h2>
+              <p>Variedade de sedas, <br />isqueiros e importados.</p>
               <button className="hero-btn gold-shiny-btn">
                 Ver tabacaria <span className="btn-arrow">→</span>
               </button>

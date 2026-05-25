@@ -821,6 +821,14 @@ body{
   color: #FFDF73;
 }
 
+.highlight-blue {
+  color: #38BDF8;
+}
+
+.highlight-red {
+  color: #EF4444;
+}
+
 .gold-shiny-btn {
   background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
   background-size: 200% auto !important;
