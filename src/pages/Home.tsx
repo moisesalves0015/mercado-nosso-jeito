@@ -24,12 +24,39 @@ export const Home = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
   const handleCategoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const maxScroll = target.scrollWidth - target.clientWidth;
     if (maxScroll > 0) {
       const percentage = (target.scrollLeft / maxScroll) * 100;
       setScrollProgress(percentage);
+    }
+  };
+
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      setCurrentSlide((prev) => (prev + 1) % 3);
+    } else if (isRightSwipe) {
+      setCurrentSlide((prev) => (prev - 1 + 3) % 3);
     }
   };
 
@@ -96,7 +123,16 @@ export const Home = () => {
           <span className="category-intro-line">Conheça</span>
           <span className="category-intro-line">nosso</span>
           <span className="category-intro-line highlighted">mercado</span>
-          <span className="category-intro-line highlighted">→</span>
+          <div className="category-intro-slider">
+            <div className="category-intro-track">
+              <span className="mini-gold-card"></span>
+              <span className="mini-gold-card"></span>
+              <span className="mini-gold-card"></span>
+              <span className="mini-gold-card"></span>
+              <span className="mini-gold-card"></span>
+              <span className="mini-gold-card"></span>
+            </div>
+          </div>
         </div>
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
@@ -163,7 +199,12 @@ export const Home = () => {
 
 
       {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
-      <div className="hero-banner">
+      <div 
+        className="hero-banner"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div 
           className="hero-slider-track" 
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -199,8 +240,9 @@ export const Home = () => {
           </Link>
 
           {/* Slide 3: Tabacaria */}
-          <Link to="/tabacaria" className="hero-slide" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
-            <div className="hero-left">
+          <Link to="/tabacaria" className="hero-slide hero-slide-tabacaria" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
+            <div className="hero-left hero-left-lowered">
+              <div className="tabacaria-age-badge">18</div>
               <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! ❤️</span></h2>
               <p>Variedade de sedas, <br />isqueiros e importados.</p>
               <button className="hero-btn gold-shiny-btn">
