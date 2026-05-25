@@ -3,7 +3,7 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Search, Sparkles } from 'lucide-react';
+import { Bike, Award, Lock, Search, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
@@ -84,8 +84,13 @@ export const Home = () => {
 
       {/* CATEGORY ROW (3D REALISTIC ICONS) */}
       <div className="category-row" onScroll={handleCategoryScroll}>
+        <div className="category-intro-card">
+          <span className="category-intro-emoji">✨</span>
+          <span className="category-intro-title">Conheça nosso</span>
+          <span className="category-intro-subtitle">Mercado →</span>
+        </div>
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item active">
+          <div className="category-item">
             <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
             <span className="category-text">Bebidas</span>
           </div>
@@ -182,8 +187,8 @@ export const Home = () => {
               <input type="text" placeholder="O que você precisa hoje?" disabled style={{ pointerEvents: 'none' }} />
             </div>
             <button className="search-ai-btn" type="button">
-              <Sparkles size={13} fill="#FFDF73" color="#FFDF73" style={{ marginRight: '4px' }} />
-              <span>Buscar com IA</span>
+              <Package size={13} fill="#FFDF73" color="#FFDF73" style={{ marginRight: '4px' }} />
+              <span>Buscar por Combos</span>
             </button>
           </div>
         </Link>
