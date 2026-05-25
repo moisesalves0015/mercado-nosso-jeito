@@ -22,6 +22,7 @@ interface Product {
 export const Home = () => {
   const [bebidas, setBebidas] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleCategoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -31,6 +32,13 @@ export const Home = () => {
       setScrollProgress(percentage);
     }
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const loadProducts = () => {
@@ -153,30 +161,73 @@ export const Home = () => {
       </div>
 
 
-      {/* HERO PROMO BANNER (MOVED UP AND HIGHLY DETAILED) */}
-      <Link to="/promotions" style={{textDecoration: 'none'}}>
-        <div className="hero-banner">
-          <div className="hero-left">
-            <div className="hero-badge">
-              <span className="hero-badge-icon">🔥</span>
-              <span>OFERTA DO DIA</span>
+      {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
+      <div className="hero-banner">
+        <div 
+          className="hero-slider-track" 
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+        >
+          {/* Slide 1: Ofertas */}
+          <Link to="/promotions" className="hero-slide" style={{ backgroundImage: `url('/hero_background.png')` }}>
+            <div className="hero-left">
+              <div className="hero-badge">
+                <span className="hero-badge-icon">🔥</span>
+                <span>OFERTA DO DIA</span>
+              </div>
+              <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
+              <p>Economize hoje em itens selecionados.</p>
+              <button className="hero-btn gold-shiny-btn">
+                Ver ofertas <span className="btn-arrow">→</span>
+              </button>
             </div>
-            <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
-            <p>Economize hoje em itens selecionados.</p>
-            <button className="hero-btn gold-shiny-btn">
-              Ver ofertas <span className="btn-arrow">→</span>
-            </button>
-          </div>
+          </Link>
 
-          {/* SLIDER DOTS */}
-          <div className="hero-dots">
-            <span className="dot active"></span>
-            <span className="dot"></span>
-            <span className="dot"></span>
-            <span className="dot"></span>
-          </div>
+          {/* Slide 2: Bebidas */}
+          <Link to="/bebidas" className="hero-slide" style={{ backgroundImage: `url('/hero_bebidas.png')` }}>
+            <div className="hero-left">
+              <div className="hero-badge">
+                <span className="hero-badge-icon">🍻</span>
+                <span>BEBIDAS GELADAS</span>
+              </div>
+              <h2>Cervejas e Refris <br />no <span className="highlight-gold">grau! 🧊</span></h2>
+              <p>Para comemorar ou relaxar no fim de semana.</p>
+              <button className="hero-btn gold-shiny-btn">
+                Ver bebidas <span className="btn-arrow">→</span>
+              </button>
+            </div>
+          </Link>
+
+          {/* Slide 3: Tabacaria */}
+          <Link to="/tabacaria" className="hero-slide" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
+            <div className="hero-left">
+              <div className="hero-badge">
+                <span className="hero-badge-icon">🚬</span>
+                <span>TABACARIA PREMIUM</span>
+              </div>
+              <h2>O melhor da <br />nossa <span className="highlight-gold">tabacaria! ✨</span></h2>
+              <p>Variedade em sedas, isqueiros e importados.</p>
+              <button className="hero-btn gold-shiny-btn">
+                Ver tabacaria <span className="btn-arrow">→</span>
+              </button>
+            </div>
+          </Link>
         </div>
-      </Link>
+
+        {/* SLIDER DOTS */}
+        <div className="hero-dots">
+          {[0, 1, 2].map((idx) => (
+            <span 
+              key={idx} 
+              className={`dot ${currentSlide === idx ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setCurrentSlide(idx);
+              }}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* SEARCH BAR (MOVED BELOW HERO) */}
       <div className="search-container">
