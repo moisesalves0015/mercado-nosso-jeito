@@ -753,6 +753,41 @@ body{
   background: rgba(255, 255, 255, 0.1);
 }
 
+.highlight-gold {
+  color: #FFDF73;
+}
+
+.gold-shiny-btn {
+  background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
+  background-size: 200% auto !important;
+  border: none !important;
+  color: #000000 !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  padding: 7px 16px !important;
+  border-radius: 99px !important;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+  animation: megaGoldShine 3s linear infinite !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.gold-shiny-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.btn-arrow {
+  font-size: 12px;
+  font-weight: 900;
+  transition: transform 0.2s ease;
+}
+
+.gold-shiny-btn:hover .btn-arrow {
+  transform: translateX(2px);
+}
+
 .hero-dots {
   position: absolute;
   bottom: 8px;

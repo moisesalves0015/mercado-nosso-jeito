@@ -156,9 +156,11 @@ export const Home = () => {
               <span className="hero-badge-icon">🔥</span>
               <span>OFERTA DO DIA</span>
             </div>
-            <h2>Descontos que você vai amar!</h2>
+            <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
             <p>Economize hoje em itens selecionados.</p>
-            <button className="hero-btn">Ver ofertas</button>
+            <button className="hero-btn gold-shiny-btn">
+              Ver ofertas <span className="btn-arrow">→</span>
+            </button>
           </div>
 
           {/* SLIDER DOTS */}
