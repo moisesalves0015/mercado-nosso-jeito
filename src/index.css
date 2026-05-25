@@ -502,51 +502,41 @@ body{
 }
 
 .category-intro-card {
-  flex: 0 0 94px;
+  flex: 0 0 62px;
+  width: 62px;
   height: 86px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, #000000 100%);
+  background: #000000;
   border: 1.2px solid rgba(212, 175, 55, 0.45);
   border-radius: 12px;
   box-sizing: border-box;
-  padding: 6px 4px;
-  gap: 2px;
+  padding: 6px 2px;
+  gap: 1px;
   cursor: default;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-  position: relative;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+  position: sticky;
+  left: 0;
+  z-index: 15;
 }
 
-.category-intro-emoji {
-  font-size: 20px;
-  line-height: 1;
-  margin-bottom: 2px;
-  animation: floating-emoji 3s ease-in-out infinite;
-}
-
-@keyframes floating-emoji {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-.category-intro-title {
-  font-size: 9px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+.category-intro-line {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  line-height: 1.1;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
   text-align: center;
+  white-space: nowrap;
 }
 
-.category-intro-subtitle {
-  font-size: 11px;
-  font-weight: 800;
+.category-intro-line.highlighted {
   color: #FFDF73;
-  line-height: 1.1;
-  text-align: center;
+  font-weight: 850;
+  font-size: 9px;
 }
 
 .category-row > a {

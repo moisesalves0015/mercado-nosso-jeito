@@ -93,9 +93,10 @@ export const Home = () => {
       {/* CATEGORY ROW (3D REALISTIC ICONS) */}
       <div className="category-row" onScroll={handleCategoryScroll}>
         <div className="category-intro-card">
-          <span className="category-intro-emoji">✨</span>
-          <span className="category-intro-title">Conheça nosso</span>
-          <span className="category-intro-subtitle">Mercado →</span>
+          <span className="category-intro-line">Conheça</span>
+          <span className="category-intro-line">nosso</span>
+          <span className="category-intro-line highlighted">mercado</span>
+          <span className="category-intro-line highlighted">→</span>
         </div>
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
@@ -190,7 +191,7 @@ export const Home = () => {
                 <span>BEBIDAS GELADAS</span>
               </div>
               <h2>Cervejas e Refris <br />no <span className="highlight-blue">grau! 🧊</span></h2>
-              <p>Para comemorar ou relaxar no fim de semana.</p>
+              <p>Para comemorar <br />ou relaxar no fim de semana.</p>
               <button className="hero-btn gold-shiny-btn">
                 Ver bebidas <span className="btn-arrow">→</span>
               </button>
