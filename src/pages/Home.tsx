@@ -242,8 +242,7 @@ export const Home = () => {
           {/* Slide 3: Tabacaria */}
           <Link to="/tabacaria" className="hero-slide hero-slide-tabacaria" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
             <div className="hero-left hero-left-lowered">
-              <div className="tabacaria-age-badge">18</div>
-              <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! ❤️</span></h2>
+              <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! 🔞</span></h2>
               <p>Variedade de sedas, <br />isqueiros e importados.</p>
               <button className="hero-btn gold-shiny-btn">
                 Ver tabacaria <span className="btn-arrow">→</span>

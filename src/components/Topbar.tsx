@@ -57,12 +57,18 @@ export const Topbar = () => {
       </div>
 
       {/* LINE 2: LOGO WITH EMPHASIS (BELOW ROW 1) */}
-      <div className="topbar-logo-row">
+      <div className="topbar-logo-row" style={{ position: 'relative' }}>
         <div className="logo">
           <div className="logo-text">
             <h1 className="logo-main">mercado do</h1>
             <span className="logo-sub">nosso jeito</span>
           </div>
+        </div>
+
+        {/* STATUS PLACARD: ABERTO */}
+        <div className="topbar-status-badge">
+          <span className="status-dot"></span>
+          <span>Aberto</span>
         </div>
       </div>
     </div>

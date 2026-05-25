@@ -158,6 +158,39 @@ body{
   margin-top: -2px;
   margin-bottom: 2px;
 }
+
+.topbar-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 99px;
+  padding: 3px 8px;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #2ecc71;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: absolute;
+  right: 4px;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.1);
+  pointer-events: none;
+}
+
+.status-dot {
+  width: 4.5px;
+  height: 4.5px;
+  background: #2ecc71;
+  border-radius: 50%;
+  animation: pulse-dot-anim 2s infinite;
+}
+
+@keyframes pulse-dot-anim {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
 .logo {
   display: flex;
   align-items: center;
@@ -194,6 +227,7 @@ body{
   margin-top: 1px !important;
   display: inline-block !important;
   animation: megaGoldShine 3s linear infinite !important;
+  padding: 0 6px !important; /* Prevents first cursive letter 'n' from clipping */
 }
 
 /* GOLD LEVEL BADGE */
@@ -491,7 +525,7 @@ body{
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding: 6px 4px 6px 4px;
+  padding: 6px 4px 6px 0px;
   margin-top: 2px;
   margin-bottom: 0px;
   scrollbar-width: none;
