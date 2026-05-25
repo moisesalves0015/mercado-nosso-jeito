@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Read securely from environment variables, or use default client-side config as fallback in production deploys (Vercel)
 const firebaseConfig = {
@@ -19,6 +20,9 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Firebase Storage (for profile photos)
+export const storage = getStorage(app);
 
 // Analytics helper - safe for server/non-browser environments
 export const analytics = typeof window !== "undefined"

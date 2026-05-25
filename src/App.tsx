@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
 import { Home } from './pages/Home';
@@ -16,6 +17,7 @@ import { Eletronicos } from './pages/Eletronicos';
 import { Cart } from './pages/Cart';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Admin } from './pages/Admin';
 import { AdminProductDetail } from './pages/AdminProductDetail';
 import { Roleta } from './pages/Roleta';
@@ -48,6 +50,7 @@ function AppContent() {
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         
         {/* Protected Client Routes */}
         <Route path="/orders" element={
@@ -112,16 +115,18 @@ function ScrollToTop() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
-        <style>{`
-          body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
-            font-family: 'Manrope', 'Outfit', sans-serif !important;
-          }
-        `}</style>
-        <AppContent />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
+          <style>{`
+            body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
+              font-family: 'Manrope', 'Outfit', sans-serif !important;
+            }
+          `}</style>
+          <AppContent />
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }
