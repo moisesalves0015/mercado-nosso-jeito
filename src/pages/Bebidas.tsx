@@ -116,7 +116,9 @@ export const Bebidas = () => {
       {/* FROSTY AD BANNER */}
       <div className="promo-banner" style={{ 
         margin: '16px 0', 
-        background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', 
+        backgroundImage: 'linear-gradient(135deg, rgba(2, 132, 199, 0.2) 0%, rgba(3, 105, 161, 0.4) 100%), url(\'/banner_estupidamente_geladas.png\')', 
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         border: '1px solid rgba(14, 165, 233, 0.3)',
         boxShadow: '0 8px 30px rgba(14, 165, 233, 0.15)',
         display: 'flex',
