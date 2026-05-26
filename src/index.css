@@ -5158,12 +5158,12 @@ body{
 ========================================================= */
 .super-promo-container {
   background: linear-gradient(135deg, #1A1410, #0E0B09);
-  padding: 12px 0px;
+  padding: 12px 0px 4px 0px; /* Reduzido padding-bottom para economizar espaço do rodapé */
   border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 16px;
   width: 100%;
   margin-top: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 12px; /* Reduzido de 24px para 12px */
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -5239,7 +5239,7 @@ body{
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 0px 16px 22px 16px; /* Aumentado de 8px para 22px para evitar corte do botão na base */
+  padding: 0px 16px 16px 16px; /* Reduzido de 22px para 16px */
   position: relative;
   z-index: 2;
   scroll-snap-type: x mandatory;
@@ -5303,7 +5303,7 @@ body{
 /* Linha flexbox para colocar foto e preço lado a lado */
 .mega-oferta-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Alinha no topo */
   justify-content: space-between;
   width: 100%;
   gap: 2px;
@@ -5315,31 +5315,33 @@ body{
   flex-shrink: 0; /* Impede a coluna da foto de encolher */
   display: flex;
   justify-content: flex-end;
-  align-items: center;
+  align-items: flex-start; /* Alinha no topo */
 }
 
 .mega-oferta-price-col {
   flex: 1; /* Ocupa todo o espaço restante do card na lateral */
   display: flex;
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start; /* Alinha no topo */
   min-width: 0;
 }
 
 .mega-oferta-wrapper .product-image-wrapper {
   position: relative;
-  width: 84px; /* Tamanho original restaurado para desktop */
-  height: 84px; /* Tamanho original restaurado para desktop */
+  width: 86px; /* Tamanho aumentado */
+  height: 86px; /* Tamanho aumentado */
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin: -10px auto 4px auto; /* Sobe a imagem ultrapassando o topo, centralizada */
+  align-self: flex-end !important; /* Alinhado à direita */
+  margin: -14px -10px 4px auto; /* Sobe ultrapassando o topo, puxa para a direita */
 }
 
 @media (max-width: 480px) {
   .mega-oferta-wrapper .product-image-wrapper {
-    width: 76px; /* Foto aumentada no mobile aproveitando a maior largura do card */
-    height: 76px;
+    width: 78px; /* Foto aumentada no mobile */
+    height: 78px;
+    margin: -12px -8px 4px auto; /* Sobe ultrapassando o topo no mobile, puxa para a direita */
   }
 }
 
@@ -5401,10 +5403,15 @@ body{
 /* Preço em destaque em fonte Granesta e piscando/pulsando escala */
 .mega-oferta-price-highlight {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important; /* Centralizado abaixo da imagem */
-  line-height: 0.9 !important;
-  margin: 2px 0 !important;
+  flex-direction: row !important; /* Lado a lado */
+  align-items: baseline !important; /* Alinha a linha de base de R$ e valor */
+  align-self: flex-start !important; /* Alinhado à esquerda do card */
+  margin-left: 6px !important;
+  margin-top: 6px !important;
+  margin-bottom: 2px !important;
+  gap: 4px !important; /* Distância entre R$ e valor */
+  line-height: 1.35 !important; /* Altura de linha generosa para evitar qualquer corte da fonte cursiva */
+  overflow: visible !important;
 }
 
 .mega-price-currency {
@@ -5412,22 +5419,24 @@ body{
   font-size: 13px !important;
   font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
   color: #FFDF73 !important;
-  padding-left: 0 !important; /* Sem offset para manter centralizado */
-  margin-bottom: 2px !important; /* Afastado um pouco do valor */
+  padding-left: 2px !important; /* Evita corte do R */
+  margin-bottom: 0 !important; /* Alinhamento baseline cuida disso */
   background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
-  display: block !important;
-  text-align: center !important;
+  display: inline-block !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
 }
 
 .mega-price-amount {
   font-family: 'Granesta', cursive !important;
   font-size: 28px !important; /* Aumentado */
   font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
-  display: block !important;
-  text-align: center !important;
+  display: inline-block !important;
+  text-align: left !important;
+  line-height: 1.25 !important; /* Altura de linha segura para a Granesta */
   background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
   background-size: 200% auto !important;
   -webkit-background-clip: text !important;
@@ -5438,10 +5447,14 @@ body{
 }
 
 @media (max-width: 480px) {
+  .mega-oferta-price-highlight {
+    margin-left: 4px !important;
+    margin-top: 4px !important;
+    gap: 2px !important;
+  }
   .mega-price-currency {
     font-size: 11px !important;
-    padding-left: 0 !important;
-    margin-bottom: 2px !important;
+    padding-left: 1px !important;
   }
   .mega-price-amount {
     font-size: 22px !important; /* Aumentado de 20px */
