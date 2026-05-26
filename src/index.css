@@ -5239,7 +5239,7 @@ body{
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 0px 16px 8px 16px;
+  padding: 0px 16px 22px 16px; /* Aumentado de 8px para 22px para evitar corte do botão na base */
   position: relative;
   z-index: 2;
   scroll-snap-type: x mandatory;
@@ -5258,76 +5258,106 @@ body{
 
 .mega-oferta-wrapper.product-card {
   width: 100%;
-  max-width: 140px; /* Elegant and solid default size for grids */
-  max-height: 190px;
+  max-width: 140px; /* Largura padrão desktop restaurada */
+  height: 175px; /* Altura ajustada para dar espaço vertical */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); /* Category style background glass */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Category style border */
-  backdrop-filter: blur(12px);
-  border-radius: 6px; /* Tight border-radius */
+  /* Borda estática em degradê dourado/âmbar usando a paleta de cores do projeto */
+  border: 2px solid transparent;
+  background: linear-gradient(rgba(9, 7, 5, 0.95), rgba(9, 7, 5, 0.95)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
+  border-radius: 6px;
   padding: 8px 6px;
-  margin-top: 4px; /* Extremely pulled closer to title */
-  padding-bottom: 8px;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3); /* Integrated category shadows */
-  overflow: visible; /* Allow badge to bleed outside the card */
+  margin-top: 12px;
+  padding-bottom: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  overflow: visible; /* Permite o botão na base e a badge superior vazarem */
+  z-index: 1;
 }
 
-/* Maintain exact mobile styling for horizontal scroll lists */
-.products .mega-oferta-wrapper.product-card {
-  width: calc((100% - 16px) / 4.25); /* Exactly 4 full cards plus a portion of the 5th card on screen */
-  max-width: 104px; /* Increased slightly to match 4.25 distribution beautifully */
-  max-height: 180px;
-  padding: 4px;
-  margin-top: 4px;
-  padding-bottom: 8px;
+@keyframes price-pulse-scale {
+  0% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
+/* Estilo responsivo mobile para listas horizontais */
+@media (max-width: 480px) {
+  .mega-oferta-wrapper.product-card {
+    width: 130px; /* Largura ampliada para acomodar foto e preço lado a lado no mobile */
+    max-width: 130px;
+    height: 165px; /* Altura confortável */
+    padding: 6px 4px;
+    margin-top: 12px;
+    padding-bottom: 10px;
+  }
+}
+
+/* Linha flexbox para colocar foto e preço lado a lado */
+.mega-oferta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 2px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
+.mega-oferta-photo-col {
+  flex-shrink: 0; /* Impede a coluna da foto de encolher */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.mega-oferta-price-col {
+  flex: 1; /* Ocupa todo o espaço restante do card na lateral */
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  min-width: 0;
 }
 
 .mega-oferta-wrapper .product-image-wrapper {
-  margin-top: -12px; /* Floats image exactly 12px outside the card */
+  position: relative;
+  width: 84px; /* Tamanho original restaurado para desktop */
+  height: 84px; /* Tamanho original restaurado para desktop */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
 }
 
-/* =========================================================
-   IMAGE CONTAINER
-========================================================= */
-
-.mega-oferta-wrapper .product-image-wrapper{
-  position:relative;
-  width:84px; /* Decreased width */
-  height:84px; /* Decreased height */
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  margin-bottom: 8px; /* Move photo closer to title (was 14px) */
+@media (max-width: 480px) {
+  .mega-oferta-wrapper .product-image-wrapper {
+    width: 76px; /* Foto aumentada no mobile aproveitando a maior largura do card */
+    height: 76px;
+  }
 }
 
-.mega-oferta-wrapper .product-image-wrapper img{
-  object-fit:contain;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+.mega-oferta-wrapper .product-image-wrapper img {
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.4));
   transition: transform 0.3s ease;
-}
-
-/* Wide products styling */
-.mega-oferta-wrapper .product-image-wrapper.wide-product img {
   max-width: 100%;
   max-height: 100%;
+}
+
+.mega-oferta-wrapper .product-image-wrapper.wide-product img {
   transform: scale(1.05);
 }
 
-/* Tall products (bottles, cans) scaled moderately to avoid getting gigantic or cut off */
 .mega-oferta-wrapper .product-image-wrapper.tall-product img {
-  max-width: 100%;
-  max-height: 100%;
-  transform: scale(1.1); /* Moderate scale for tall items */
+  transform: scale(1.1);
 }
 
-/* =========================================================
-   BADGE
-========================================================= */
-
+/* Selo vermelho original de porcentagem off restaurado */
 .mega-oferta-wrapper .badge-promo-top-left {
   position: absolute;
   top: -6px;
@@ -5364,6 +5394,181 @@ body{
 .mega-oferta-wrapper .badge-off {
   font-size: 8px;
   font-weight: 800;
+}
+
+/* Preço em destaque em fonte Granesta e piscando/pulsando escala */
+.mega-oferta-price-highlight {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  line-height: 0.9 !important;
+  margin: 0 !important;
+}
+
+.mega-price-currency {
+  font-family: 'Granesta', cursive !important;
+  font-size: 13px !important;
+  font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
+  color: #FFDF73 !important;
+  padding-left: 5px !important; /* Evita o corte da letra R */
+  margin-bottom: -4px !important;
+  background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  display: block !important;
+  text-align: left !important;
+}
+
+.mega-price-amount {
+  font-family: 'Granesta', cursive !important;
+  font-size: 26px !important;
+  font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
+  display: block !important;
+  text-align: left !important;
+  background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
+  background-size: 200% auto !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  animation: megaGoldShine 3s linear infinite, price-pulse-scale 1.5s ease-in-out infinite alternate !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 480px) {
+  .mega-price-currency {
+    font-size: 11px !important;
+    padding-left: 3px !important;
+  }
+  .mega-price-amount {
+    font-size: 20px !important;
+  }
+}
+
+.mega-oferta-wrapper .product-title {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: white;
+  text-align: center;
+  width: 100%;
+  max-height: 26.4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-top: auto; /* Empurra o título para a base inferior do card */
+  margin-bottom: 12px; /* Margem de segurança para evitar sobrepor o botão absoluto */
+}
+
+@media (max-width: 480px) {
+  .mega-oferta-wrapper .product-title {
+    font-size: 9.5px;
+    max-height: 23px;
+    margin-bottom: 8px; /* Ajuste mais compacto no mobile */
+  }
+}
+
+/* Botões de quantidade/compra posicionados de forma absoluta na base (50% dentro/fora) */
+.mega-oferta-wrapper .mega-oferta-action-container {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.mega-oferta-wrapper .mega-add-btn {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.8);
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  color: #090705;
+  font-size: 15px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.mega-oferta-wrapper .mega-add-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
+}
+
+.mega-oferta-wrapper .quantity-control-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #090705;
+  border: 1px solid rgba(212, 175, 55, 0.8);
+  border-radius: 99px;
+  padding: 1px 5px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  height: 23px;
+  transition: all 0.2s ease;
+}
+
+.mega-oferta-wrapper .quantity-control-pill .minus-btn,
+.mega-oferta-wrapper .quantity-control-pill .add-btn {
+  background: none;
+  border: none;
+  color: #FFDF73;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mega-oferta-wrapper .quantity-control-pill .current-quantity {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 10px;
+  text-align: center;
+}
+
+.mega-oferta-wrapper .club-only-pill {
+  background: #090705;
+  border: 1px solid #2ecc71;
+  border-radius: 99px;
+  padding: 1px 7px;
+  color: #2ecc71;
+  font-size: 7.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mega-oferta-wrapper .diamond-particle-yellow {
+  transition: transform 3.5s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 3.5s cubic-bezier(0.1, 0.8, 0.3, 1);
+  opacity: 1;
+}
+
+.mega-oferta-wrapper .deduction-floater {
+  font-family: inherit;
+  pointer-events: none;
+  transition: transform 3.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 3.5s cubic-bezier(0.25, 1, 0.5, 1);
+  opacity: 1;
 }
 
 /* =========================================================
@@ -5517,26 +5722,7 @@ body{
   transition: all 0.25s ease;
 }
 
-/* =========================================================
-   TITLE
-========================================================= */
 
-.mega-oferta-wrapper .product-title{
-  font-size:11px;
-  line-height:1.2;
-  font-weight:500;
-  color:white;
-  text-align: center;
-  width: 100%;
-  max-height: 26.4px; /* Constrain max height */
-  overflow: hidden;
-  text-overflow: ellipsis; /* Ensure ellipsis */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  margin-bottom: 2px; /* Moved closer to price (was 6px) */
-}
 
 /* =========================================================
    PRICE PILL
@@ -5704,3 +5890,46 @@ body{
 }
 
 
+
+/* =========================================================
+   ADMIN PRODUCT INTELLIGENCE HUB — UTILITY CLASSES
+========================================================= */
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+/* Scrollbar hidden for tab nav rows */
+.admin-tab-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Flag chip hover effect */
+.flag-chip {
+  transition: all 0.2s ease;
+}
+.flag-chip:hover {
+  transform: translateY(-1px);
+}
+
+/* Scenario card glow on hover */
+.scenario-card:hover {
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+}
+
+/* Stock health bar transition */
+.stock-health-bar {
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Admin product tab active state */
+.admin-product-tab-active {
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* Insight card pulse for danger */
+@keyframes insightPulse {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+  50% { border-color: rgba(239, 68, 68, 0.7); }
+}

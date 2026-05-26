@@ -317,50 +317,53 @@ export const PromoCard = ({
           )}
         </div>
       )}
-      <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
-          <img src={image} alt={title} />
-          
-          {/* Render diamond area at the bottom-center of the image wrapper */}
-          {diamondReward && (
-            <div className="badge-wrapper">
-              <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
-                <DiamondIcon size={9} />
-                <span>+{diamondReward}</span>
-              </div>
+      <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Top row: Photo on left, Price on right */}
+        <div className="mega-oferta-row">
+          <div className="mega-oferta-photo-col">
+            <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
+              <img src={image} alt={title} />
+              
+              {/* Render diamond area inside image wrapper */}
+              {diamondReward && (
+                <div className="badge-wrapper">
+                  <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
+                    <DiamondIcon size={9} />
+                    <span>+{diamondReward}</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+          <div className="mega-oferta-price-col">
+            <div className="mega-oferta-price-highlight">
+              {animationState === 'reducing' || animationState === 'reduced-flash'
+                ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
+                : formattedPrice}
+            </div>
+          </div>
         </div>
 
+        {/* Product title below photo and price */}
         <div className="product-title">{title}</div>
       </Link>
 
-      <div className={`price-pill ${
-        animationState === 'club-only' || animationState === 'reduced-flash' ? 'green-pill-active' : ''
-      } ${animationState === 'club-only' ? 'club-only-active' : ''}`} ref={pricePillRef}>
+      {/* Add/Quantity Button aligned to the base (hanging 50% out) */}
+      <div className="mega-oferta-action-container" ref={pricePillRef}>
         {animationState === 'club-only' ? (
-          <div className="club-only-flash">SÓ NO CLUBE!</div>
+          <div className="club-only-pill" onClick={handleAdd}>
+            <span>SÓ NO CLUBE!</span>
+          </div>
         ) : currentQuantity > 0 ? (
-          <div className="quantity-control-wrapper">
+          <div className="quantity-control-pill">
              <button className="minus-btn" onClick={handleMinus}>-</button>
              <span className="current-quantity">{currentQuantity}</span>
              <button className="add-btn" onClick={handlePlus}>+</button>
           </div>
         ) : (
-          <>
-            <div className={`product-price ${
-              animationState === 'reducing' 
-                ? 'reducing-active' 
-                : animationState === 'reduced-flash' 
-                  ? 'reduced-flash-active' 
-                  : ''
-            }`}>
-              {animationState === 'reducing' || animationState === 'reduced-flash'
-                ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
-                : formattedPrice}
-            </div>
-            <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd}>+</button>
-          </>
+          <button className="mega-add-btn" onClick={handleAdd} type="button">
+            +
+          </button>
         )}
       </div>
     </div>
