@@ -791,6 +791,85 @@ body{
 }
 
 /* =========================================================
+   PERIOD SELECTOR BUTTONS
+========================================================= */
+.period-buttons-row {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 0;
+  margin-bottom: 12px;
+  margin-top: 12px;
+}
+
+.period-button {
+  flex: 1;
+  min-width: 0;
+  min-height: 50px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease-in-out;
+  outline: none;
+  font-family: inherit;
+  text-align: left;
+}
+
+.period-button:hover {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.period-button.active {
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.04));
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.period-button-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.period-button-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.period-button.active .period-button-title {
+  color: #FFDF73;
+}
+
+.period-button-subtitle {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+}
+
+.period-button.active .period-button-subtitle {
+  color: rgba(212, 175, 55, 0.85);
+}
+
+/* =========================================================
    HERO PROMO BANNER (PREMIUM STYLED BANNER)
 ========================================================= */
 .hero-banner {
@@ -5586,4 +5665,42 @@ body{
   color: #fff !important;
   box-shadow: 0 2px 6px rgba(46, 204, 113, 0.4);
 }
+
+/* Responsive design for period selector buttons on mobile */
+@media (max-width: 480px) {
+  .period-button {
+    gap: 4px;
+    padding: 5px;
+  }
+  .period-button-title {
+    font-size: 9.5px;
+  }
+  .period-button-subtitle {
+    font-size: 7.5px;
+  }
+}
+
+@media (max-width: 400px) {
+  .period-button {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 2px;
+    text-align: center;
+  }
+  .period-button .info-card-icon-wrapper {
+    margin: 0 auto;
+  }
+  .period-button-text {
+    align-items: center;
+    text-align: center;
+  }
+  .period-button-subtitle {
+    display: none; /* Hide subtitle to fit all 5 buttons on smallest screens */
+  }
+  .period-button-title {
+    font-size: 9px;
+  }
+}
+
 

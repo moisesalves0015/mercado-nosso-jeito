@@ -3,7 +3,7 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Search, Package } from 'lucide-react';
+import { Bike, Award, Lock, Search, Package, Coffee, Utensils, Cookie, Moon, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
@@ -19,10 +19,74 @@ interface Product {
   diamondReward?: number;
 }
 
+type Period = 'morning' | 'lunch' | 'afternoon' | 'night' | 'dawn';
+
+const periodTitles: Record<Period, string> = {
+  morning: 'Essenciais do Café da Manhã',
+  lunch: 'Sugestões para o Almoço',
+  afternoon: 'Lanches da Tarde',
+  night: 'Destaques para o Jantar',
+  dawn: 'Essenciais da Madrugada',
+};
+
+const periodProducts: Record<Period, Product[]> = {
+  morning: [
+    { id: 'paodequeijo-novo', title: "Pão de Queijo Tradicional (1kg)", price: 32.90, image: "/paodequeijo-novo.webp", category: "cafe", diamondReward: 18 },
+    { id: 'iogurte-novo', title: "Iogurte Grego Danone (4x)", price: 18.90, image: "/iogurte-novo.webp", category: "cafe", diamondReward: 12 },
+    { id: 'granola-novo', title: "Granola Mel Barano (500g)", price: 24.90, image: "/granola-novo.png", category: "cafe" },
+    { id: 'ovos-novo', title: "Ovo Branco Médio (12un)", price: 15.90, image: "/ovos-novo.png", category: "cafe" },
+    { id: 'cafe-novo', title: "Café Melitta Tradicional (500g)", price: 19.90, image: "/cafe-novo.png", category: "cafe", diamondReward: 15 },
+  ],
+  lunch: [
+    { id: 'peito_de_peru', title: "Peito de Peru Fatiado Sadia (100g)", price: 7.49, image: "/peito_de_peru.webp", category: "alimentos" },
+    { id: 'queijo_minas', title: "Queijo Minas Frescal Itambé (300g)", price: 19.90, image: "/queijo_minas.png", category: "alimentos", badge: "Promocional", badgeStyle: "orange" },
+    { id: 'manteiga_itambe', title: "Manteiga Itambé Extra Sal (200g)", price: 11.90, image: "/manteiga_itambe.png", category: "alimentos" },
+    { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
+    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
+  ],
+  afternoon: [
+    { id: 'pao_de_forma', title: "Pão Pullman Forma Integral (500g)", price: 12.90, image: "/pao_de_forma.png", category: "alimentos", badge: "Melhor Preço", badgeStyle: "orange" },
+    { id: 'manteiga_itambe', title: "Manteiga Itambé Extra Sal (200g)", price: 11.90, image: "/manteiga_itambe.png", category: "alimentos" },
+    { id: 'cha_leao', title: "Chá Matte Natural Leão (100g)", price: 8.90, image: "/Cha-Matte-Natural-100g-Leao.png", category: "cafe" },
+    { id: 'iogurte-novo', title: "Iogurte Grego Danone (4x)", price: 18.90, image: "/iogurte-novo.webp", category: "cafe", diamondReward: 12 },
+    { id: 'suco_laranja', title: "Suco de Laranja Integral Do Bem (1L)", price: 12.90, image: "/suco_do_bem_laranja_integral.png", category: "cafe" },
+  ],
+  night: [
+    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
+    { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "/spaten.webp", category: "Bebidas", diamondReward: 1 },
+    { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
+    { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
+    { id: 'peito_de_peru', title: "Peito de Peru Fatiado Sadia (100g)", price: 7.49, image: "/peito_de_peru.webp", category: "alimentos" },
+  ],
+  dawn: [
+    { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
+    { id: 'cafe_pilao', title: "Café Pilão Torrado e Moído (500g)", price: 21.90, image: "/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png", category: "cafe" },
+    { id: 'lava_roupa', title: "Sabão Líquido Premium (3L)", price: 19.90, image: "/lava_roupa.png", category: "limpeza" },
+    { id: 'pano_multiuso', title: "Multiuso Fresh Ultra", price: 12.90, image: "/pano_multiuso.webp", category: "limpeza", badge: "Melhor Preço", badgeStyle: "orange" },
+    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
+  ],
+};
+
 export const Home = () => {
   const [bebidas, setBebidas] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [activePeriod, setActivePeriod] = useState<Period>('morning');
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) {
+      setActivePeriod('morning');
+    } else if (hour >= 12 && hour < 14) {
+      setActivePeriod('lunch');
+    } else if (hour >= 14 && hour < 18) {
+      setActivePeriod('afternoon');
+    } else if (hour >= 18 && hour < 24) {
+      setActivePeriod('night');
+    } else {
+      setActivePeriod('dawn');
+    }
+  }, []);
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
@@ -308,44 +372,87 @@ export const Home = () => {
         </Link>
       </div>
 
+      {/* PERIOD SELECTOR BUTTONS */}
+      <div className="period-buttons-row">
+        <button
+          className={`period-button ${activePeriod === 'morning' ? 'active' : ''}`}
+          onClick={() => setActivePeriod('morning')}
+          type="button"
+        >
+          <div className="info-card-icon-wrapper">
+            <Coffee size={18} color="#D4AF37" />
+          </div>
+          <div className="period-button-text">
+            <span className="period-button-title">Manhã</span>
+            <span className="period-button-subtitle">Café da manhã</span>
+          </div>
+        </button>
+
+        <button
+          className={`period-button ${activePeriod === 'lunch' ? 'active' : ''}`}
+          onClick={() => setActivePeriod('lunch')}
+          type="button"
+        >
+          <div className="info-card-icon-wrapper">
+            <Utensils size={18} color="#D4AF37" />
+          </div>
+          <div className="period-button-text">
+            <span className="period-button-title">Almoço</span>
+            <span className="period-button-subtitle">Refeições</span>
+          </div>
+        </button>
+
+        <button
+          className={`period-button ${activePeriod === 'afternoon' ? 'active' : ''}`}
+          onClick={() => setActivePeriod('afternoon')}
+          type="button"
+        >
+          <div className="info-card-icon-wrapper">
+            <Cookie size={18} color="#D4AF37" />
+          </div>
+          <div className="period-button-text">
+            <span className="period-button-title">Tarde</span>
+            <span className="period-button-subtitle">Lanches</span>
+          </div>
+        </button>
+
+        <button
+          className={`period-button ${activePeriod === 'night' ? 'active' : ''}`}
+          onClick={() => setActivePeriod('night')}
+          type="button"
+        >
+          <div className="info-card-icon-wrapper">
+            <Moon size={18} color="#D4AF37" />
+          </div>
+          <div className="period-button-text">
+            <span className="period-button-title">Noite</span>
+            <span className="period-button-subtitle">Jantar</span>
+          </div>
+        </button>
+
+        <button
+          className={`period-button ${activePeriod === 'dawn' ? 'active' : ''}`}
+          onClick={() => setActivePeriod('dawn')}
+          type="button"
+        >
+          <div className="info-card-icon-wrapper">
+            <Sparkles size={18} color="#D4AF37" />
+          </div>
+          <div className="period-button-text">
+            <span className="period-button-title">Madrugada</span>
+            <span className="period-button-subtitle">Essenciais</span>
+          </div>
+        </button>
+      </div>
+
       <Section
-        title="Essenciais do Café"
+        title={periodTitles[activePeriod]}
         theme="hero"
         linkText="Ver tudo >"
       >
-        <ProductCard
-          title="Pão de Queijo Tradicional (1kg)"
-          price="R$ 32,90"
-          image="/paodequeijo-novo.webp"
-          diamondReward={18}
-          category="cafe"
-        />
-        <ProductCard
-          title="Iogurte Grego Danone (4x)"
-          price="R$ 18,90"
-          image="/iogurte-novo.webp"
-          diamondReward={12}
-          category="cafe"
-        />
-        <ProductCard
-          title="Granola Mel Barano (500g)"
-          price="R$ 24,90"
-          image="/granola-novo.png"
-          category="cafe"
-        />
-        <ProductCard
-          title="Ovo Branco Médio (12un)"
-          price="R$ 15,90"
-          image="/ovos-novo.png"
-          category="cafe"
-        />
-        <ProductCard
-          title="Café Melitta Tradicional (500g)"
-          price="R$ 19,90"
-          image="/cafe-novo.png"
-          diamondReward={15}
-          category="cafe"
-        />
+        {periodProducts[activePeriod].map((product) => (
+          <ProductCard key={product.id} {...product} />
+        ))}
       </Section>
 
       {/* INFO CARDS ROW */}
