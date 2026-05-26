@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
+import { useAuth } from '../hooks/useAuth';
+import { createOrder } from '../hooks/useOrders';
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, CheckCircle, Tag } from 'lucide-react';
 import { useState } from 'react';
 import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
@@ -7,9 +9,11 @@ import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
 export function Cart() {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { user } = useAuth();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
-  const [successOrder, setSuccessOrder] = useState<any>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [successOrder, setSuccessOrder] = useState<{ orderId: string; itemsCount: number; total: number } | null>(null);
 
   // Recommended related items
   const recommendations = [
@@ -42,32 +46,53 @@ export function Cart() {
     }
   };
 
-  const handleCheckout = () => {
-    if (cartItems.length === 0) return;
-    
-    // Stage orders ledger mock history persistence
+  const handleCheckout = async () => {
+    if (cartItems.length === 0 || checkoutLoading) return;
+    setCheckoutLoading(true);
+
     const finalAmount = totalPrice - discount;
-    const orderNumber = Math.floor(Math.random() * 9000) + 1000;
-    
-    // Trigger canvas confetti explosion
+
+    // Fire confetti regardless of auth state
     import('canvas-confetti').then((confettiModule) => {
-      confettiModule.default({ 
-        particleCount: 100, 
-        angle: 90, 
-        spread: 60, 
+      confettiModule.default({
+        particleCount: 100,
+        angle: 90,
+        spread: 60,
         origin: { y: 0.8 },
-        colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
+        colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
       });
     });
 
-    setSuccessOrder({
-      orderId: `#MJ-${orderNumber}`,
-      itemsCount: totalItems,
-      total: finalAmount
-    });
-    
-    // Clear global cart state
+    let orderNumber = `#MJ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Persist to Firestore only for authenticated users
+    if (user?.uid) {
+      try {
+        orderNumber = await createOrder({
+          uid: user.uid,
+          items: cartItems.map((item) => ({
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image ?? '',
+          })),
+          subtotal: totalPrice,
+          discount,
+          deliveryFee: 0,
+          total: finalAmount,
+          coupon: couponCode.trim() || undefined,
+          paymentMethod: 'Cartão / Pix',
+        });
+      } catch (err) {
+        console.error('Erro ao salvar pedido no Firestore:', err);
+        // Fall through — still show success UI
+      }
+    }
+
+    setSuccessOrder({ orderId: orderNumber, itemsCount: totalItems, total: finalAmount });
     clearCart();
+    setCheckoutLoading(false);
   };
 
   if (successOrder) {
@@ -245,12 +270,13 @@ export function Cart() {
               <span style={{ color: '#FFDF73' }}>R$ {(totalPrice - discount).toFixed(2)}</span>
             </div>
 
-            <button 
+            <button
               className="premium-btn-rainbow"
-              style={{ width: '100%', marginTop: 10, padding: '12px 0', borderRadius: 8, fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}
+              style={{ width: '100%', marginTop: 10, padding: '12px 0', borderRadius: 8, fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, opacity: checkoutLoading ? 0.7 : 1 }}
               onClick={handleCheckout}
+              disabled={checkoutLoading}
             >
-              Concluir Compra 💳
+              {checkoutLoading ? 'Processando...' : 'Concluir Compra 💳'}
             </button>
           </div>
         </div>
