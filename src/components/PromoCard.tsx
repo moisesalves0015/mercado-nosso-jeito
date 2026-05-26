@@ -46,9 +46,6 @@ export const PromoCard = ({
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 
-  const formattedPrice = typeof price === 'number' 
-    ? `R$ ${price.toFixed(2).replace('.', ',')}` 
-    : price;
 
   const numericPrice = typeof price === 'number' 
     ? price 
@@ -317,31 +314,28 @@ export const PromoCard = ({
           )}
         </div>
       )}
-      <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Top row: Photo on left, Price on right */}
-        <div className="mega-oferta-row">
-          <div className="mega-oferta-photo-col">
-            <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
-              <img src={image} alt={title} />
-              
-              {/* Render diamond area inside image wrapper */}
-              {diamondReward && (
-                <div className="badge-wrapper">
-                  <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
-                    <DiamondIcon size={9} />
-                    <span>+{diamondReward}</span>
-                  </div>
-                </div>
-              )}
+      <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+        <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
+          <img src={image} alt={title} />
+          
+          {/* Render diamond area inside image wrapper */}
+          {diamondReward && (
+            <div className="badge-wrapper">
+              <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
+                <DiamondIcon size={9} />
+                <span>+{diamondReward}</span>
+              </div>
             </div>
-          </div>
-          <div className="mega-oferta-price-col">
-            <div className="mega-oferta-price-highlight">
-              {animationState === 'reducing' || animationState === 'reduced-flash'
-                ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
-                : formattedPrice}
-            </div>
-          </div>
+          )}
+        </div>
+
+        <div className="mega-oferta-price-highlight">
+          <span className="mega-price-currency">R$</span>
+          <span className="mega-price-amount">
+            {animationState === 'reducing' || animationState === 'reduced-flash'
+              ? currentPrice.toFixed(2).replace('.', ',')
+              : numericPrice.toFixed(2).replace('.', ',')}
+          </span>
         </div>
 
         {/* Product title below photo and price */}

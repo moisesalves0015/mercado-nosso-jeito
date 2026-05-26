@@ -5258,8 +5258,8 @@ body{
 
 .mega-oferta-wrapper.product-card {
   width: 100%;
-  max-width: 140px; /* Largura padrão desktop restaurada */
-  height: 175px; /* Altura ajustada para dar espaço vertical */
+  max-width: 120px; /* Reduzido em 15% (de 140px para 120px) */
+  height: 170px; /* Ajustado proporcionalmente */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -5277,21 +5277,23 @@ body{
   z-index: 1;
 }
 
-@keyframes price-pulse-scale {
+@keyframes mega-price-flash {
   0% {
-    transform: scale(0.96);
+    transform: scale(0.95);
+    opacity: 0.8;
   }
   100% {
-    transform: scale(1.08);
+    transform: scale(1.12);
+    opacity: 1;
   }
 }
 
 /* Estilo responsivo mobile para listas horizontais */
 @media (max-width: 480px) {
   .mega-oferta-wrapper.product-card {
-    width: 130px; /* Largura ampliada para acomodar foto e preço lado a lado no mobile */
-    max-width: 130px;
-    height: 165px; /* Altura confortável */
+    width: 110px; /* Reduzido em 15% (de 130px para 110px) */
+    max-width: 110px;
+    height: 160px; /* Ajustado proporcionalmente */
     padding: 6px 4px;
     margin-top: 12px;
     padding-bottom: 10px;
@@ -5331,7 +5333,7 @@ body{
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin: 0;
+  margin: -10px auto 4px auto; /* Sobe a imagem ultrapassando o topo, centralizada */
 }
 
 @media (max-width: 480px) {
@@ -5400,9 +5402,9 @@ body{
 .mega-oferta-price-highlight {
   display: flex !important;
   flex-direction: column !important;
-  align-items: flex-start !important;
+  align-items: center !important; /* Centralizado abaixo da imagem */
   line-height: 0.9 !important;
-  margin: 0 !important;
+  margin: 2px 0 !important;
 }
 
 .mega-price-currency {
@@ -5410,38 +5412,39 @@ body{
   font-size: 13px !important;
   font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
   color: #FFDF73 !important;
-  padding-left: 5px !important; /* Evita o corte da letra R */
-  margin-bottom: -4px !important;
+  padding-left: 0 !important; /* Sem offset para manter centralizado */
+  margin-bottom: 2px !important; /* Afastado um pouco do valor */
   background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
   display: block !important;
-  text-align: left !important;
+  text-align: center !important;
 }
 
 .mega-price-amount {
   font-family: 'Granesta', cursive !important;
-  font-size: 26px !important;
+  font-size: 28px !important; /* Aumentado */
   font-weight: normal !important; /* Sem negrito artificial para preservar a caligrafia */
   display: block !important;
-  text-align: left !important;
+  text-align: center !important;
   background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
   background-size: 200% auto !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
-  animation: megaGoldShine 3s linear infinite, price-pulse-scale 1.5s ease-in-out infinite alternate !important;
+  animation: megaGoldShine 3s linear infinite, mega-price-flash 0.6s ease-in-out infinite alternate !important; /* Piscando mais rápido e maior */
   white-space: nowrap !important;
 }
 
 @media (max-width: 480px) {
   .mega-price-currency {
     font-size: 11px !important;
-    padding-left: 3px !important;
+    padding-left: 0 !important;
+    margin-bottom: 2px !important;
   }
   .mega-price-amount {
-    font-size: 20px !important;
+    font-size: 22px !important; /* Aumentado de 20px */
   }
 }
 
@@ -5460,14 +5463,14 @@ body{
   line-clamp: 2;
   -webkit-box-orient: vertical;
   margin-top: auto; /* Empurra o título para a base inferior do card */
-  margin-bottom: 12px; /* Margem de segurança para evitar sobrepor o botão absoluto */
+  margin-bottom: 4px; /* Mais próximo do botão */
 }
 
 @media (max-width: 480px) {
   .mega-oferta-wrapper .product-title {
     font-size: 9.5px;
     max-height: 23px;
-    margin-bottom: 8px; /* Ajuste mais compacto no mobile */
+    margin-bottom: 2px; /* Mais próximo do botão no mobile */
   }
 }
 
