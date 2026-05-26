@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   ShoppingBag, Clock, Truck, CheckCircle2, XCircle, ChefHat,
   Search, SlidersHorizontal, X, ChevronDown, ChevronUp,
-  Package, TrendingUp, Star, ReceiptText, RefreshCw, ArrowLeft,
+  Package, TrendingUp, Star, ReceiptText, ArrowLeft,
   AlertCircle, CircleDot,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
 import {
   useOrders,
   STATUS_CONFIG,
@@ -18,39 +19,50 @@ import {
 } from '../hooks/useOrders';
 
 // ──────────────────────────────────────────────────────────────
+// Design tokens — same as Profile.tsx
+// ──────────────────────────────────────────────────────────────
+const card = {
+  background: 'rgba(9,7,5,0.58)',
+  backdropFilter: 'blur(28px)',
+  WebkitBackdropFilter: 'blur(28px)',
+  border: '1px solid rgba(212,175,55,0.18)',
+  borderRadius: '18px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
+};
+
+// ──────────────────────────────────────────────────────────────
 // Status icon mapping
 // ──────────────────────────────────────────────────────────────
 const STATUS_ICONS: Record<OrderStatus, React.ReactNode> = {
-  pending:    <Clock size={12} />,
-  confirmed:  <CheckCircle2 size={12} />,
-  preparing:  <ChefHat size={12} />,
-  delivering: <Truck size={12} />,
-  delivered:  <CheckCircle2 size={12} />,
-  cancelled:  <XCircle size={12} />,
+  pending:    <Clock size={11} />,
+  confirmed:  <CheckCircle2 size={11} />,
+  preparing:  <ChefHat size={11} />,
+  delivering: <Truck size={11} />,
+  delivered:  <CheckCircle2 size={11} />,
+  cancelled:  <XCircle size={11} />,
 };
 
-const ACTIVE_PULSE: OrderStatus[] = ['pending', 'preparing', 'delivering'];
+const PULSE_STATUSES: OrderStatus[] = ['pending', 'preparing', 'delivering'];
 
 // ──────────────────────────────────────────────────────────────
 // StatusBadge
 // ──────────────────────────────────────────────────────────────
 const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
   const cfg = STATUS_CONFIG[status];
-  const pulse = ACTIVE_PULSE.includes(status);
+  const pulse = PULSE_STATUSES.includes(status);
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       background: cfg.bg, border: `1px solid ${cfg.border}`,
-      borderRadius: 20, padding: '3px 10px',
-      fontSize: 11, fontWeight: 700, color: cfg.color,
-      whiteSpace: 'nowrap',
+      borderRadius: 99, padding: '4px 10px',
+      fontSize: 10.5, fontWeight: 800, color: cfg.color,
+      whiteSpace: 'nowrap', letterSpacing: '0.2px',
     }}>
       {pulse && (
         <span style={{
           width: 6, height: 6, borderRadius: '50%',
           background: cfg.color,
-          boxShadow: `0 0 0 0 ${cfg.color}`,
-          animation: 'ordersPulse 1.8s ease-in-out infinite',
+          animation: 'ordPulse 1.8s ease-in-out infinite',
           flexShrink: 0,
         }} />
       )}
@@ -61,68 +73,45 @@ const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
 };
 
 // ──────────────────────────────────────────────────────────────
-// MetricCard
+// Metric Card (same card token as Profile)
 // ──────────────────────────────────────────────────────────────
-interface MetricCardProps {
-  icon: React.ReactNode;
-  iconColor: string;
-  iconBg: string;
-  label: string;
-  value: string;
-  sub?: string;
-}
-const MetricCard: React.FC<MetricCardProps> = ({ icon, iconColor, iconBg, label, value, sub }) => (
-  <div style={{
-    background: 'rgba(255,255,255,0.04)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 16,
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    animation: 'ordersSlideUp 0.4s ease both',
-  }}>
+const MetricCard: React.FC<{
+  icon: React.ReactNode; iconColor: string; iconBg: string;
+  label: string; value: string; sub?: string;
+}> = ({ icon, iconColor, iconBg, label, value, sub }) => (
+  <div style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
     <div style={{
-      width: 36, height: 36, borderRadius: 10,
-      background: iconBg,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: iconColor, flexShrink: 0,
+      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+      background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: iconColor,
     }}>
       {icon}
     </div>
-    <div>
-      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 2 }}>{label}</div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: 'rgba(212,175,55,0.6)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{sub}</div>}
     </div>
   </div>
 );
 
 // ──────────────────────────────────────────────────────────────
-// SkeletonCard
+// Skeleton
 // ──────────────────────────────────────────────────────────────
 const SkeletonCard: React.FC = () => (
-  <div style={{
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 16, padding: '16px',
-    display: 'flex', flexDirection: 'column', gap: 12,
-    animation: 'ordersShimmer 1.5s ease-in-out infinite',
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ height: 14, width: 90, borderRadius: 8, background: 'rgba(255,255,255,0.08)' }} />
-      <div style={{ height: 22, width: 110, borderRadius: 20, background: 'rgba(255,255,255,0.08)' }} />
+  <div style={{ ...card, padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ width: 80, height: 13, borderRadius: 8, background: 'rgba(212,175,55,0.1)', animation: 'ordShimmer 1.4s ease-in-out infinite' }} />
+      <div style={{ width: 110, height: 22, borderRadius: 99, background: 'rgba(212,175,55,0.08)', animation: 'ordShimmer 1.4s ease-in-out infinite 0.1s' }} />
     </div>
-    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
     <div style={{ display: 'flex', gap: 8 }}>
-      {[40, 40, 40].map((_, i) => (
-        <div key={i} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.08)' }} />
+      {[0, 1, 2].map((i) => (
+        <div key={i} style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.06)', animation: `ordShimmer 1.4s ease-in-out infinite ${i * 0.12}s` }} />
       ))}
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <div style={{ height: 13, width: 60, borderRadius: 6, background: 'rgba(255,255,255,0.08)' }} />
-      <div style={{ height: 13, width: 80, borderRadius: 6, background: 'rgba(255,255,255,0.08)' }} />
+      <div style={{ width: 70, height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ width: 80, height: 12, borderRadius: 6, background: 'rgba(212,175,55,0.08)' }} />
     </div>
   </div>
 );
@@ -134,13 +123,13 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
   if (order.status === 'cancelled') {
     const ev = order.timeline.find((t) => t.status === 'cancelled');
     return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '4px 0' }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <XCircle size={14} color="#EF4444" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <XCircle size={13} color="#EF4444" />
         </div>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>Pedido cancelado</div>
-          {ev?.timestamp && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{relativeTime(ev.timestamp)}</div>}
+          {ev?.timestamp && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{relativeTime(ev.timestamp)}</div>}
         </div>
       </div>
     );
@@ -148,7 +137,7 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
 
   const currentIdx = TIMELINE_STEPS.indexOf(order.status);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {TIMELINE_STEPS.map((step, i) => {
         const done = i <= currentIdx;
         const active = i === currentIdx;
@@ -156,39 +145,37 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
         const ev = order.timeline.find((t) => t.status === step);
         const isLast = i === TIMELINE_STEPS.length - 1;
         return (
-          <div key={step} style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-            {/* Connector + circle */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0 }}>
+          <div key={step} style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }}>
               <div style={{
-                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                background: done ? cfg.bg : 'rgba(255,255,255,0.04)',
-                border: `1.5px solid ${done ? cfg.border : 'rgba(255,255,255,0.1)'}`,
+                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                background: done ? cfg.bg : 'rgba(255,255,255,0.03)',
+                border: `1.5px solid ${done ? cfg.border : 'rgba(255,255,255,0.08)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: done ? cfg.color : 'rgba(255,255,255,0.2)',
-                boxShadow: active ? `0 0 10px ${cfg.color}44` : 'none',
+                color: done ? cfg.color : 'rgba(255,255,255,0.15)',
+                boxShadow: active ? `0 0 8px ${cfg.color}44` : 'none',
               }}>
-                {done ? <span style={{ fontSize: 8 }}>{STATUS_ICONS[step]}</span> : <CircleDot size={8} />}
+                {done ? <span style={{ fontSize: 7.5 }}>{STATUS_ICONS[step]}</span> : <CircleDot size={7} />}
               </div>
               {!isLast && (
                 <div style={{
-                  width: 1.5, flex: 1, minHeight: 20,
-                  background: done ? `linear-gradient(to bottom, ${cfg.color}60, ${STATUS_CONFIG[TIMELINE_STEPS[i + 1] as OrderStatus]?.color ?? '#fff'}30)` : 'rgba(255,255,255,0.06)',
+                  width: 1.5, flex: 1, minHeight: 16,
+                  background: done ? `${cfg.color}50` : 'rgba(255,255,255,0.05)',
                   margin: '2px 0',
                 }} />
               )}
             </div>
-            {/* Content */}
-            <div style={{ paddingBottom: isLast ? 0 : 14, flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: done ? 700 : 500, color: done ? cfg.color : 'rgba(255,255,255,0.25)' }}>
+            <div style={{ paddingBottom: isLast ? 0 : 12, flex: 1 }}>
+              <div style={{ fontSize: 11.5, fontWeight: done ? 700 : 500, color: done ? cfg.color : 'rgba(255,255,255,0.2)', lineHeight: 1.2 }}>
                 {cfg.label}
               </div>
               {ev?.timestamp && (
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
                   {ev.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · {relativeTime(ev.timestamp)}
                 </div>
               )}
               {active && !ev?.timestamp && (
-                <div style={{ fontSize: 10, color: cfg.color, marginTop: 1, fontWeight: 600 }}>Em andamento...</div>
+                <div style={{ fontSize: 10, color: cfg.color, marginTop: 1, fontWeight: 700 }}>Em andamento...</div>
               )}
             </div>
           </div>
@@ -199,39 +186,31 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
 };
 
 // ──────────────────────────────────────────────────────────────
-// OrderCard
+// Order Card
 // ──────────────────────────────────────────────────────────────
-const OrderCard: React.FC<{ order: Order; isNew: boolean }> = ({ order, isNew }) => {
+const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, highlight }) => {
   const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[order.status];
-  const visibleItems = order.items.slice(0, 3);
-  const extraCount = order.items.length - 3;
+  const visible = order.items.slice(0, 3);
+  const extra = order.items.length - 3;
 
   return (
     <div style={{
-      background: isNew ? 'rgba(212,175,55,0.06)' : 'rgba(255,255,255,0.04)',
-      backdropFilter: 'blur(12px)',
-      border: `1px solid ${isNew ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.07)'}`,
-      borderRadius: 16,
+      ...card,
+      border: `1px solid ${highlight ? 'rgba(212,175,55,0.4)' : 'rgba(212,175,55,0.18)'}`,
       overflow: 'hidden',
       transition: 'border-color 0.3s ease',
-      animation: 'ordersSlideUp 0.35s ease both',
     }}>
-      {/* Card header — always visible */}
+      {/* ── Header row (always visible) ── */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        style={{
-          width: '100%', background: 'none', border: 'none',
-          cursor: 'pointer', textAlign: 'left',
-          padding: '14px 16px',
-          display: 'flex', flexDirection: 'column', gap: 10,
-        }}
+        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '16px 16px 14px' }}
       >
-        {/* Top row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+        {/* Order number + status */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#D4AF37' }}>{order.orderNumber}</div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: '#D4AF37', letterSpacing: '0.3px' }}>{order.orderNumber}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
               {order.createdAt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
               {' · '}{relativeTime(order.createdAt)}
             </div>
@@ -239,118 +218,107 @@ const OrderCard: React.FC<{ order: Order; isNew: boolean }> = ({ order, isNew })
           <StatusBadge status={order.status} />
         </div>
 
-        {/* Product thumbnails */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: -6 }}>
-            {visibleItems.map((item, i) => (
+        {/* Product image stack */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <div style={{ display: 'flex' }}>
+            {visible.map((item, i) => (
               <div key={item.id} style={{
-                width: 38, height: 38, borderRadius: 9,
+                width: 40, height: 40, borderRadius: 10,
                 background: '#fff',
-                border: '2px solid rgba(255,255,255,0.06)',
-                overflow: 'hidden',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginLeft: i > 0 ? -8 : 0,
-                zIndex: visibleItems.length - i,
-                flexShrink: 0,
+                border: '2px solid rgba(212,175,55,0.15)',
+                overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginLeft: i > 0 ? -10 : 0,
+                zIndex: visible.length - i, flexShrink: 0,
+                position: 'relative',
               }}>
                 {item.image ? (
-                  <img src={item.image} alt={item.title} style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
-                ) : (
-                  <Package size={16} color="#090705" />
-                )}
+                  <img src={item.image} alt={item.title} style={{ width: '82%', height: '82%', objectFit: 'contain' }} />
+                ) : <Package size={14} color="#090705" />}
               </div>
             ))}
-            {extraCount > 0 && (
+            {extra > 0 && (
               <div style={{
-                width: 38, height: 38, borderRadius: 9,
-                background: 'rgba(255,255,255,0.07)',
-                border: '2px solid rgba(255,255,255,0.06)',
+                width: 40, height: 40, borderRadius: 10,
+                background: 'rgba(212,175,55,0.08)', border: '1.5px solid rgba(212,175,55,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginLeft: -8, zIndex: 0, flexShrink: 0,
-                fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)',
-              }}>
-                +{extraCount}
-              </div>
+                marginLeft: -10, zIndex: 0, flexShrink: 0, position: 'relative',
+                fontSize: 10, fontWeight: 800, color: '#D4AF37',
+              }}>+{extra}</div>
             )}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {order.items.map((i) => i.title.split(' ').slice(0, 2).join(' ')).join(', ')}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+              {order.paymentMethod}
             </div>
           </div>
         </div>
 
-        {/* Bottom row */}
+        {/* Footer row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-            {order.items.length} {order.items.length === 1 ? 'item' : 'itens'} · {order.paymentMethod}
+          <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+            {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 900, color: '#fff' }}>{formatCurrency(order.total)}</span>
-            {expanded ? <ChevronUp size={14} color={cfg.color} /> : <ChevronDown size={14} color="rgba(255,255,255,0.3)" />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{formatCurrency(order.total)}</span>
+            <div style={{
+              width: 24, height: 24, borderRadius: '50%',
+              background: expanded ? cfg.bg : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${expanded ? cfg.border : 'rgba(255,255,255,0.08)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: expanded ? cfg.color : 'rgba(255,255,255,0.35)',
+            }}>
+              {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </div>
           </div>
         </div>
       </button>
 
-      {/* Expandable detail section */}
+      {/* ── Expanded detail ── */}
       {expanded && (
-        <div style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          animation: 'ordersExpand 0.25s ease both',
-          overflow: 'hidden',
-        }}>
-          <div style={{ padding: '16px' }}>
-            {/* Two columns: items + timeline */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, marginBottom: 16 }}>
+        <div style={{ borderTop: '1px solid rgba(212,175,55,0.1)', padding: '14px 16px 16px' }}>
 
-              {/* Items list */}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>
-                  Itens do pedido
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {order.items.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                        {item.image ? (
-                          <img src={item.image} alt={item.title} style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
-                        ) : <Package size={14} color="#090705" />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>{item.quantity}x · {formatCurrency(item.price)}</div>
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#FFDF73', flexShrink: 0 }}>{formatCurrency(item.price * item.quantity)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div style={{ minWidth: 150 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>
-                  Status
-                </div>
-                <Timeline order={order} />
-              </div>
+          {/* Items list */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.6)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+              Itens do pedido
             </div>
-
-            {/* Financial summary */}
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12, padding: '12px 14px',
-              display: 'flex', flexDirection: 'column', gap: 6,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>Resumo financeiro</div>
-              <Row label="Subtotal" value={formatCurrency(order.subtotal)} />
-              {order.discount > 0 && <Row label={`Desconto${order.coupon ? ` (${order.coupon})` : ''}`} value={`-${formatCurrency(order.discount)}`} color="#10B981" />}
-              <Row label="Taxa de entrega" value={order.deliveryFee === 0 ? 'Grátis' : formatCurrency(order.deliveryFee)} color={order.deliveryFee === 0 ? '#10B981' : undefined} />
-              <div style={{ borderTop: '1px dashed rgba(255,255,255,0.08)', marginTop: 4, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>Total</span>
-                <span style={{ fontSize: 13, fontWeight: 900, color: '#FFDF73' }}>{formatCurrency(order.total)}</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {order.items.map((item) => (
+                <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                    {item.image ? <img src={item.image} alt={item.title} style={{ width: '82%', height: '82%', objectFit: 'contain' }} /> : <Package size={13} color="#090705" />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{item.quantity}x · {formatCurrency(item.price)}</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#FFDF73', flexShrink: 0 }}>{formatCurrency(item.price * item.quantity)}</div>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* Financial summary */}
+          <div style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 12, padding: '11px 13px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.5)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 2 }}>Resumo</div>
+            <SumRow label="Subtotal" value={formatCurrency(order.subtotal)} />
+            {order.discount > 0 && <SumRow label={`Desconto${order.coupon ? ` (${order.coupon})` : ''}`} value={`-${formatCurrency(order.discount)}`} color="#10B981" />}
+            <SumRow label="Entrega" value={order.deliveryFee === 0 ? 'Grátis' : formatCurrency(order.deliveryFee)} color={order.deliveryFee === 0 ? '#10B981' : undefined} />
+            <div style={{ borderTop: '1px dashed rgba(212,175,55,0.15)', paddingTop: 8, marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>Total</span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: '#FFDF73' }}>{formatCurrency(order.total)}</span>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.6)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+              Histórico
+            </div>
+            <Timeline order={order} />
           </div>
         </div>
       )}
@@ -358,50 +326,12 @@ const OrderCard: React.FC<{ order: Order; isNew: boolean }> = ({ order, isNew })
   );
 };
 
-// Small inline row component for financial summary
-const Row: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-    <span style={{ color: 'rgba(255,255,255,0.5)' }}>{label}</span>
-    <span style={{ color: color ?? 'rgba(255,255,255,0.8)', fontWeight: 600 }}>{value}</span>
+const SumRow: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
+    <span style={{ color: 'rgba(255,255,255,0.4)' }}>{label}</span>
+    <span style={{ color: color ?? 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{value}</span>
   </div>
 );
-
-// ──────────────────────────────────────────────────────────────
-// Empty State
-// ──────────────────────────────────────────────────────────────
-const EmptyState: React.FC<{ filtered: boolean; onClear: () => void }> = ({ filtered, onClear }) => {
-  const navigate = useNavigate();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px', textAlign: 'center', gap: 16 }}>
-      <div style={{
-        width: 72, height: 72, borderRadius: 20,
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <ShoppingBag size={30} color="rgba(255,255,255,0.2)" />
-      </div>
-      <div>
-        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: 0 }}>
-          {filtered ? 'Nenhum pedido encontrado' : 'Você ainda não fez pedidos'}
-        </h3>
-        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '6px 0 0', maxWidth: 240 }}>
-          {filtered
-            ? 'Tente remover os filtros ou buscar por outro termo.'
-            : 'Que tal explorar nossos produtos e fazer seu primeiro pedido?'}
-        </p>
-      </div>
-      {filtered ? (
-        <button onClick={onClear} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#fff', fontSize: 12, fontWeight: 700, padding: '8px 16px', cursor: 'pointer' }}>
-          <X size={14} /> Limpar filtros
-        </button>
-      ) : (
-        <button onClick={() => navigate('/')} style={{ background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', border: 'none', borderRadius: 10, color: '#090705', fontSize: 12, fontWeight: 900, padding: '10px 20px', cursor: 'pointer' }}>
-          Fazer meu primeiro pedido 🛍️
-        </button>
-      )}
-    </div>
-  );
-};
 
 // ──────────────────────────────────────────────────────────────
 // Filter chip
@@ -410,27 +340,65 @@ const FilterChip: React.FC<{ status: OrderStatus; active: boolean; count: number
   const cfg = STATUS_CONFIG[status];
   return (
     <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 5,
+      display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
       background: active ? cfg.bg : 'rgba(255,255,255,0.04)',
-      border: `1px solid ${active ? cfg.border : 'rgba(255,255,255,0.08)'}`,
-      borderRadius: 20, padding: '5px 12px',
-      fontSize: 11, fontWeight: 700,
-      color: active ? cfg.color : 'rgba(255,255,255,0.45)',
-      cursor: 'pointer', flexShrink: 0,
-      transition: 'all 0.18s ease',
+      border: `1px solid ${active ? cfg.border : 'rgba(255,255,255,0.07)'}`,
+      borderRadius: 99, padding: '5px 11px',
+      fontSize: 10.5, fontWeight: 700,
+      color: active ? cfg.color : 'rgba(255,255,255,0.4)',
+      cursor: 'pointer', transition: 'all 0.15s ease',
     }}>
       {cfg.label}
       <span style={{
-        background: active ? cfg.color : 'rgba(255,255,255,0.1)',
-        color: active ? '#000' : 'rgba(255,255,255,0.5)',
-        borderRadius: 10, padding: '1px 6px', fontSize: 9.5, fontWeight: 900,
+        background: active ? cfg.color : 'rgba(255,255,255,0.08)',
+        color: active ? '#090705' : 'rgba(255,255,255,0.35)',
+        borderRadius: 99, padding: '0 5px', fontSize: 9, fontWeight: 900,
+        lineHeight: '15px', display: 'inline-block',
       }}>{count}</span>
     </button>
   );
 };
 
 // ──────────────────────────────────────────────────────────────
-// Main Page — Orders
+// Empty State
+// ──────────────────────────────────────────────────────────────
+const EmptyState: React.FC<{ filtered: boolean; onClear: () => void }> = ({ filtered, onClear }) => {
+  const navigate = useNavigate();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 24px', textAlign: 'center', gap: 16 }}>
+      <div style={{
+        width: 64, height: 64, borderRadius: 18,
+        background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <ShoppingBag size={26} color="rgba(212,175,55,0.4)" />
+      </div>
+      <div>
+        <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', margin: 0 }}>
+          {filtered ? 'Nenhum resultado' : 'Nenhum pedido ainda'}
+        </h3>
+        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '6px 0 0', maxWidth: 220, lineHeight: 1.5 }}>
+          {filtered ? 'Tente remover os filtros.' : 'Faça seu primeiro pedido e ele aparecerá aqui.'}
+        </p>
+      </div>
+      {filtered ? (
+        <button onClick={onClear} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 700, padding: '8px 16px', cursor: 'pointer' }}>
+          <X size={13} /> Limpar filtros
+        </button>
+      ) : (
+        <button
+          onClick={() => navigate('/')}
+          style={{ background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 12, color: '#090705', fontSize: 12, fontWeight: 900, padding: '10px 22px', cursor: 'pointer', boxShadow: '0 4px 16px rgba(212,175,55,0.3)' }}
+        >
+          Explorar produtos 🛍️
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────
+// Main — Orders Page
 // ──────────────────────────────────────────────────────────────
 export const Orders: React.FC = () => {
   const navigate = useNavigate();
@@ -442,20 +410,20 @@ export const Orders: React.FC = () => {
   const [sort, setSort] = useState<'recent' | 'oldest' | 'highest'>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Track newest order IDs to highlight them
-  const newestIds = useMemo(() => {
-    const threshold = Date.now() - 5 * 60 * 1000; // 5 min
-    return new Set(orders.filter((o) => o.createdAt.getTime() > threshold).map((o) => o.id));
+  // Highlight orders placed in the last 5 min
+  const highlightIds = useMemo(() => {
+    const cut = Date.now() - 5 * 60 * 1000;
+    return new Set(orders.filter((o) => o.createdAt.getTime() > cut).map((o) => o.id));
   }, [orders]);
 
-  // Status counts for filter chips
-  const statusCounts = useMemo(() => {
-    const counts: Partial<Record<OrderStatus, number>> = {};
-    orders.forEach((o) => { counts[o.status] = (counts[o.status] ?? 0) + 1; });
-    return counts;
+  // Status counts for chips
+  const counts = useMemo(() => {
+    const m: Partial<Record<OrderStatus, number>> = {};
+    orders.forEach((o) => { m[o.status] = (m[o.status] ?? 0) + 1; });
+    return m;
   }, [orders]);
 
-  // Filtered + sorted orders
+  // Filtered + sorted list
   const filtered = useMemo(() => {
     let list = [...orders];
     if (activeFilters.length > 0) list = list.filter((o) => activeFilters.includes(o.status));
@@ -471,225 +439,184 @@ export const Orders: React.FC = () => {
     return list;
   }, [orders, activeFilters, search, sort]);
 
-  const toggleFilter = (s: OrderStatus) =>
-    setActiveFilters((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-
+  const toggle = (s: OrderStatus) =>
+    setActiveFilters((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]);
   const clearFilters = () => { setSearch(''); setActiveFilters([]); };
-  const hasFilters = search.trim() || activeFilters.length > 0;
+  const hasFilters = !!search.trim() || activeFilters.length > 0;
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      paddingBottom: 100,
-      fontFamily: "'Manrope', 'Outfit', sans-serif",
-    }}>
-      {/* ── Topbar ── */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(9,7,5,0.92)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '12px 16px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
-            <ArrowLeft size={16} />
+    <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
+      {/* Supermarket background — same as Profile/Login */}
+      <AuthBackground />
+      <AuthStyles />
+
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: '110px' }}>
+
+        {/* ── Topbar — same pattern as Profile ──────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 16px 12px',
+          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          background: 'rgba(9,7,5,0.4)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          position: 'sticky', top: 0, zIndex: 20,
+        }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '50%', width: 38, height: 38,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={17} />
           </button>
-          <div>
-            <h1 style={{ fontSize: 16, fontWeight: 900, color: '#fff', margin: 0, lineHeight: 1 }}>Meus Pedidos</h1>
-            {metrics.total > 0 && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{metrics.total} {metrics.total === 1 ? 'pedido' : 'pedidos'} no total</div>}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {metrics.active > 0 && (
-            <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 800, color: '#F59E0B' }}>
-              {metrics.active} ativo{metrics.active > 1 ? 's' : ''}
-            </span>
-          )}
+
+          <MercadoLogo size="sm" />
+
+          {/* Filter toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
             style={{
-              background: showFilters ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 10, padding: '6px 12px',
-              fontSize: 11, fontWeight: 700, color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+              background: showFilters ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 10, width: 38, height: 38,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+              flexShrink: 0,
             }}
           >
-            <SlidersHorizontal size={13} /> Filtros
+            <SlidersHorizontal size={15} />
+            {hasFilters && (
+              <span style={{
+                position: 'absolute', top: 8, right: 8,
+                width: 7, height: 7, borderRadius: '50%',
+                background: '#D4AF37', border: '1.5px solid #090705',
+              }} />
+            )}
           </button>
+        </div>
+
+        {/* ── Page title ──────────────────────────── */}
+        <div style={{ padding: '18px 16px 4px' }}>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Meus Pedidos</h1>
+          {metrics.total > 0 && (
+            <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>
+              {metrics.total} pedido{metrics.total !== 1 ? 's' : ''} · {metrics.active > 0 ? `${metrics.active} em andamento` : 'Nenhum em andamento'}
+            </p>
+          )}
+        </div>
+
+        <div style={{ padding: '12px 16px 0', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* ── Metric cards (2-col grid) ── */}
+          {!loading && metrics.total > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <MetricCard icon={<ReceiptText size={18} />} iconColor="#D4AF37" iconBg="rgba(212,175,55,0.1)" label="Total" value={String(metrics.total)} />
+              <MetricCard icon={<Clock size={18} />} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)" label="Ativos" value={String(metrics.active)} sub={metrics.active > 0 ? 'Em andamento' : 'Todos concluídos'} />
+              <MetricCard icon={<TrendingUp size={18} />} iconColor="#10B981" iconBg="rgba(16,185,129,0.1)" label="Total gasto" value={formatCurrency(metrics.totalSpent)} />
+              <MetricCard icon={<Star size={18} />} iconColor="#8B5CF6" iconBg="rgba(139,92,246,0.1)" label="Ticket médio" value={formatCurrency(metrics.avgTicket)} />
+            </div>
+          )}
+
+          {/* ── Filter Panel ── */}
+          {showFilters && (
+            <div style={{ ...card, padding: '14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <Search size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212,175,55,0.5)', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar pedido ou produto..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(212,175,55,0.15)',
+                    borderRadius: 11, padding: '9px 34px',
+                    fontSize: 12, color: '#fff', outline: 'none',
+                    fontFamily: 'inherit', boxSizing: 'border-box',
+                  }}
+                />
+                {search && (
+                  <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', padding: 2 }}>
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Status chips */}
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+                {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((s) => (
+                  <FilterChip key={s} status={s} active={activeFilters.includes(s)} count={counts[s] ?? 0} onClick={() => toggle(s)} />
+                ))}
+              </div>
+
+              {/* Sort row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ordenar:</span>
+                {([['recent', 'Recente'], ['oldest', 'Antigo'], ['highest', 'Maior valor']] as const).map(([k, l]) => (
+                  <button key={k} onClick={() => setSort(k)} style={{
+                    background: sort === k ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${sort === k ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                    borderRadius: 8, padding: '4px 10px',
+                    fontSize: 10.5, fontWeight: sort === k ? 800 : 500,
+                    color: sort === k ? '#D4AF37' : 'rgba(255,255,255,0.35)',
+                    cursor: 'pointer',
+                  }}>{l}</button>
+                ))}
+                {hasFilters && (
+                  <button onClick={clearFilters} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '4px 10px', fontSize: 10.5, fontWeight: 700, color: '#EF4444', cursor: 'pointer' }}>
+                    <X size={11} /> Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Error ── */}
+          {error && (
+            <div style={{ ...card, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <AlertCircle size={15} color="#EF4444" />
+              <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>{error}</span>
+            </div>
+          )}
+
+          {/* ── Skeleton ── */}
+          {loading && [1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+
+          {/* ── List ── */}
+          {!loading && !error && (
+            <>
+              {hasFilters && filtered.length > 0 && (
+                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+                  {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+                </div>
+              )}
+              {filtered.length === 0
+                ? <EmptyState filtered={hasFilters} onClear={clearFilters} />
+                : filtered.map((o) => <OrderCard key={o.id} order={o} highlight={highlightIds.has(o.id)} />)
+              }
+            </>
+          )}
         </div>
       </div>
 
-      <div style={{ padding: '16px 16px 0' }}>
-        {/* ── Metrics Dashboard ── */}
-        {!loading && metrics.total > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 20 }}>
-            <MetricCard
-              icon={<ReceiptText size={18} />}
-              iconColor="#D4AF37"
-              iconBg="rgba(212,175,55,0.12)"
-              label="Total de pedidos"
-              value={String(metrics.total)}
-            />
-            <MetricCard
-              icon={<Clock size={18} />}
-              iconColor="#F59E0B"
-              iconBg="rgba(245,158,11,0.12)"
-              label="Pedidos ativos"
-              value={String(metrics.active)}
-              sub={metrics.active > 0 ? 'Em andamento agora' : 'Nenhum em andamento'}
-            />
-            <MetricCard
-              icon={<TrendingUp size={18} />}
-              iconColor="#10B981"
-              iconBg="rgba(16,185,129,0.12)"
-              label="Total investido"
-              value={formatCurrency(metrics.totalSpent)}
-            />
-            <MetricCard
-              icon={<Star size={18} />}
-              iconColor="#8B5CF6"
-              iconBg="rgba(139,92,246,0.12)"
-              label="Ticket médio"
-              value={formatCurrency(metrics.avgTicket)}
-              sub={metrics.lastOrderAt ? `Último: ${relativeTime(metrics.lastOrderAt)}` : undefined}
-            />
-          </div>
-        )}
-
-        {/* ── Filter Panel ── */}
-        {showFilters && (
-          <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 14, padding: '14px',
-            marginBottom: 14,
-            animation: 'ordersSlideUp 0.2s ease both',
-          }}>
-            {/* Search */}
-            <div style={{ position: 'relative', marginBottom: 12 }}>
-              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
-              <input
-                type="text"
-                placeholder="Buscar por ID ou produto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  width: '100%', background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 10, padding: '9px 12px 9px 34px',
-                  fontSize: 12, color: '#fff', outline: 'none',
-                  fontFamily: "'Manrope', 'Outfit', sans-serif",
-                }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex' }}>
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* Status chips */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-              {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((s) => (
-                <FilterChip
-                  key={s}
-                  status={s}
-                  active={activeFilters.includes(s)}
-                  count={statusCounts[s] ?? 0}
-                  onClick={() => toggleFilter(s)}
-                />
-              ))}
-            </div>
-
-            {/* Sort + clear */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>Ordenar:</span>
-              {[
-                { key: 'recent', label: 'Mais recente' },
-                { key: 'oldest', label: 'Mais antigo' },
-                { key: 'highest', label: 'Maior valor' },
-              ].map(({ key, label }) => (
-                <button key={key} onClick={() => setSort(key as typeof sort)} style={{
-                  background: sort === key ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${sort === key ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 8, padding: '4px 10px',
-                  fontSize: 11, fontWeight: sort === key ? 700 : 500,
-                  color: sort === key ? '#D4AF37' : 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer',
-                }}>
-                  {label}
-                </button>
-              ))}
-              {hasFilters && (
-                <button onClick={clearFilters} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#EF4444', cursor: 'pointer' }}>
-                  <X size={11} /> Limpar
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Error state ── */}
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
-            <AlertCircle size={16} color="#EF4444" />
-            <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>{error}</span>
-            <button style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}><RefreshCw size={14} /></button>
-          </div>
-        )}
-
-        {/* ── Skeleton Loading ── */}
-        {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
-          </div>
-        )}
-
-        {/* ── Orders List ── */}
-        {!loading && !error && (
-          <>
-            {hasFilters && (
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontWeight: 600 }}>
-                {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'} encontrado{filtered.length !== 1 ? 's' : ''}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filtered.length === 0 ? (
-                <EmptyState filtered={!!hasFilters} onClear={clearFilters} />
-              ) : (
-                filtered.map((order) => (
-                  <OrderCard key={order.id} order={order} isNew={newestIds.has(order.id)} />
-                ))
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Global Styles ── */}
+      {/* Keyframes */}
       <style>{`
-        @keyframes ordersPulse {
+        @keyframes ordPulse {
           0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
-          70%  { box-shadow: 0 0 0 5px transparent; opacity: 0.6; }
+          70%  { box-shadow: 0 0 0 5px transparent; }
           100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
         }
-        @keyframes ordersSlideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes ordersExpand {
-          from { opacity: 0; max-height: 0; }
-          to   { opacity: 1; max-height: 1000px; }
-        }
-        @keyframes ordersShimmer {
-          0%, 100% { opacity: 0.6; }
+        @keyframes ordShimmer {
+          0%, 100% { opacity: 0.5; }
           50%       { opacity: 1; }
         }
-        input::placeholder { color: rgba(255,255,255,0.25); }
+        input[placeholder]::placeholder { color: rgba(255,255,255,0.2); }
       `}</style>
-    </main>
+    </div>
   );
 };
