@@ -295,22 +295,36 @@ export const AdminProductDetail: React.FC = () => {
     }
 
     setSaving(true);
-    const data = {
-      title, description, category, image, tags, badge, badgeStyle,
+
+    // Build raw data — then strip undefined to satisfy Firestore
+    const rawData: Record<string, any> = {
+      title,
+      description,
+      category,
+      image,
+      tags,
+      badge,
+      badgeStyle,
       price: pPrice,
-      costPrice: pCost,
-      diamondReward: pDiamonds,
-      stock: stock ? parseInt(stock) : undefined,
-      minStock: minStock ? parseInt(minStock) : undefined,
+      costPrice: pCost || null,
+      diamondReward: pDiamonds || null,
+      stock: stock ? parseInt(stock) : null,
+      minStock: minStock ? parseInt(minStock) : null,
       promoActive,
-      promoDiscount: promoDiscount ? parseFloat(promoDiscount) : undefined,
-      promoExpiry: promoExpiry || undefined,
+      promoDiscount: promoDiscount ? parseFloat(promoDiscount) : null,
+      promoExpiry: promoExpiry || null,
       availableInRoulette,
       active,
       flags,
       stockHistory,
       updatedAt: new Date().toISOString(),
     };
+
+    // Remove null/undefined so Firestore doesn't complain
+    const data = Object.fromEntries(
+      Object.entries(rawData).filter(([, v]) => v !== undefined && v !== null)
+    );
+
 
     try {
       if (isNew) {
