@@ -3,7 +3,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -163,16 +162,21 @@ export function useOrders(uid: string | null) {
     setLoading(true);
     setError(null);
 
+    // Simple single-field query — no composite index needed.
+    // We sort client-side to avoid requiring a Firestore composite index
+    // on (uid ASC, createdAt DESC) which would need manual creation.
     const q = query(
       collection(db, 'orders'),
       where('uid', '==', uid),
-      orderBy('createdAt', 'desc'),
     );
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const list: Order[] = snap.docs.map((d) => rawToOrder(d.id, d.data() as Record<string, unknown>));
+        const list: Order[] = snap.docs
+          .map((d) => rawToOrder(d.id, d.data() as Record<string, unknown>))
+          // Sort by createdAt desc (most recent first) on the client
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         setOrders(list);
         setLoading(false);
       },
@@ -210,11 +214,14 @@ export function useOrders(uid: string | null) {
 export async function createOrder(payload: CreateOrderPayload): Promise<string> {
   const orderNumber = `#MJ-${Math.floor(1000 + Math.random() * 9000)}`;
   const now = serverTimestamp();
+  // NOTE: serverTimestamp() is NOT allowed inside arrays in Firestore.
+  // Use Timestamp.now() (client-side timestamp) for timeline events inside arrays.
+  const timelineNow = Timestamp.now();
 
-  const timeline: Omit<TimelineEvent, 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> } = {
-    status: 'pending',
+  const timeline = {
+    status: 'pending' as OrderStatus,
     label: TIMELINE_LABELS.pending,
-    timestamp: now,
+    timestamp: timelineNow,   // ← Timestamp.now(), not serverTimestamp()
     actor: 'Sistema',
   };
 
@@ -230,9 +237,9 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
     coupon: payload.coupon ?? null,
     paymentMethod: payload.paymentMethod ?? 'Não informado',
     notes: payload.notes ?? null,
-    createdAt: now,
+    createdAt: now,           // serverTimestamp() OK at top-level fields
     updatedAt: now,
-    timeline: [timeline],
+    timeline: [timeline],     // Timestamp.now() inside array
   });
 
   return orderNumber;
