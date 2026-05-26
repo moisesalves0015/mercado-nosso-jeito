@@ -8,6 +8,23 @@ import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 
+// Custom SVG backgrounds and button assets
+import buscaCombosImg from '../assets/botoes/buscacombos.svg';
+import manhaBg from '../assets/bkgs/manha.svg';
+import almocoBg from '../assets/bkgs/almoço.svg';
+import tardeBg from '../assets/bkgs/tarde.svg';
+import noiteBg from '../assets/bkgs/noite.svg';
+import madrugadaBg from '../assets/bkgs/madrugada.svg';
+
+const periodBgs: Record<Period, string> = {
+  morning: manhaBg,
+  lunch: almocoBg,
+  afternoon: tardeBg,
+  night: noiteBg,
+  dawn: madrugadaBg,
+};
+
+
 interface Product {
   id: string;
   title: string;
@@ -365,8 +382,7 @@ export const Home = () => {
               <input type="text" placeholder="O que você precisa hoje?" disabled style={{ pointerEvents: 'none' }} />
             </div>
             <button className="search-ai-btn" type="button">
-              <Package size={13} fill="#FFDF73" color="#FFDF73" style={{ marginRight: '4px' }} />
-              <span>Buscar por Combos</span>
+              <img src={buscaCombosImg} alt="Buscar por Combos" style={{ height: '100%', display: 'block', borderRadius: '0' }} />
             </button>
           </div>
         </Link>
@@ -377,11 +393,9 @@ export const Home = () => {
         <button
           className={`period-button ${activePeriod === 'morning' ? 'active' : ''}`}
           onClick={() => setActivePeriod('morning')}
+          style={{ backgroundImage: `url(${periodBgs.morning})` }}
           type="button"
         >
-          <div className="info-card-icon-wrapper">
-            <Coffee size={18} color="#D4AF37" />
-          </div>
           <div className="period-button-text">
             <span className="period-button-title">Manhã</span>
             <span className="period-button-subtitle">Café da manhã</span>
@@ -391,11 +405,9 @@ export const Home = () => {
         <button
           className={`period-button ${activePeriod === 'lunch' ? 'active' : ''}`}
           onClick={() => setActivePeriod('lunch')}
+          style={{ backgroundImage: `url(${periodBgs.lunch})` }}
           type="button"
         >
-          <div className="info-card-icon-wrapper">
-            <Utensils size={18} color="#D4AF37" />
-          </div>
           <div className="period-button-text">
             <span className="period-button-title">Almoço</span>
             <span className="period-button-subtitle">Refeições</span>
@@ -405,11 +417,9 @@ export const Home = () => {
         <button
           className={`period-button ${activePeriod === 'afternoon' ? 'active' : ''}`}
           onClick={() => setActivePeriod('afternoon')}
+          style={{ backgroundImage: `url(${periodBgs.afternoon})` }}
           type="button"
         >
-          <div className="info-card-icon-wrapper">
-            <Cookie size={18} color="#D4AF37" />
-          </div>
           <div className="period-button-text">
             <span className="period-button-title">Tarde</span>
             <span className="period-button-subtitle">Lanches</span>
@@ -419,11 +429,9 @@ export const Home = () => {
         <button
           className={`period-button ${activePeriod === 'night' ? 'active' : ''}`}
           onClick={() => setActivePeriod('night')}
+          style={{ backgroundImage: `url(${periodBgs.night})` }}
           type="button"
         >
-          <div className="info-card-icon-wrapper">
-            <Moon size={18} color="#D4AF37" />
-          </div>
           <div className="period-button-text">
             <span className="period-button-title">Noite</span>
             <span className="period-button-subtitle">Jantar</span>
@@ -433,17 +441,16 @@ export const Home = () => {
         <button
           className={`period-button ${activePeriod === 'dawn' ? 'active' : ''}`}
           onClick={() => setActivePeriod('dawn')}
+          style={{ backgroundImage: `url(${periodBgs.dawn})` }}
           type="button"
         >
-          <div className="info-card-icon-wrapper">
-            <Sparkles size={18} color="#D4AF37" />
-          </div>
           <div className="period-button-text">
             <span className="period-button-title">Madrugada</span>
             <span className="period-button-subtitle">Essenciais</span>
           </div>
         </button>
       </div>
+
 
       <Section
         title={periodTitles[activePeriod]}

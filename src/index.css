@@ -499,23 +499,22 @@ body{
 .search-ai-btn {
   display: flex;
   align-items: center;
-  background: rgba(255, 223, 115, 0.08);
-  border: 1px solid rgba(255, 223, 115, 0.3);
-  border-radius: 10px;
-  padding: 6px 12px;
-  color: #FFDF73;
-  font-size: 11.5px;
-  font-weight: 750;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important; /* Retira a borda arredondada pois a imagem tem nativa */
+  padding: 0 !important;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease;
   white-space: nowrap;
-  height: 100%;
-  box-shadow: 0 0 10px rgba(255, 223, 115, 0.05);
+  height: 36px !important; /* Altura exata permitida dentro da search-bar */
+  box-shadow: none !important;
+  outline: none;
 }
 .search-ai-btn:hover {
-  background: rgba(255, 223, 115, 0.15);
-  border-color: #FFDF73;
-  box-shadow: 0 0 12px rgba(255, 223, 115, 0.25);
+  background: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: scale(1.03); /* Efeito sutil de zoom ao passar o mouse */
 }
 
 /* =========================================================
@@ -806,15 +805,13 @@ body{
   flex: 1;
   min-width: 0;
   min-height: 50px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  padding: 6px;
+  padding: 4px 6px; /* Padding reduzido para os botões */
   display: flex;
   align-items: center;
-  gap: 6px;
   cursor: pointer;
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease-in-out;
@@ -824,14 +821,15 @@ body{
 }
 
 .period-button:hover {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  /* Efeito de overlay sutil por cima do background-image */
+  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.08), 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 .period-button.active {
-  background: linear-gradient(145deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.04));
-  border-color: rgba(212, 175, 55, 0.6);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  border-color: rgba(212, 175, 55, 0.9);
+  /* Efeito de overlay dourado sutil mantendo o background-image visível */
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.4), inset 0 0 0 1000px rgba(212, 175, 55, 0.15);
 }
 
 .period-button-text {
@@ -5871,8 +5869,7 @@ body{
 /* Responsive design for period selector buttons on mobile */
 @media (max-width: 480px) {
   .period-button {
-    gap: 4px;
-    padding: 5px;
+    padding: 3px 4px; /* Padding reduzido no mobile */
   }
   .period-button-title {
     font-size: 9.5px;
@@ -5884,21 +5881,16 @@ body{
 
 @media (max-width: 400px) {
   .period-button {
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    padding: 6px 2px;
-    text-align: center;
-  }
-  .period-button .info-card-icon-wrapper {
-    margin: 0 auto;
+    gap: 0px;
+    padding: 3px 2px;
+    text-align: left;
   }
   .period-button-text {
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
   .period-button-subtitle {
-    display: none; /* Hide subtitle to fit all 5 buttons on smallest screens */
+    display: none; /* Oculta o subtítulo para caber todos os 5 botões em telas pequenas */
   }
   .period-button-title {
     font-size: 9px;
