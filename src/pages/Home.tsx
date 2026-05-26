@@ -3,7 +3,7 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Search, Package, Coffee, Utensils, Cookie, Moon, Sparkles } from 'lucide-react';
+import { Bike, Award, Lock, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
