@@ -290,6 +290,46 @@ export const Home = () => {
             <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
           </div>
         </Link>
+        <Link to="/search?q=sorvetes" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/sorvetes.png" alt="Sorvetes" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=utilidades" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/utilidades.png" alt="Utilidades" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=churrasco" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/churrasco.png" alt="Churrasco" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=adega" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/adega.png" alt="Adega" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=bomboniere" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/bomboniere.png" alt="Bomboniere" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=higiene" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/higiene.png" alt="Higiene" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=fitness" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/fitness.png" alt="Fitness" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=combos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/combos.png" alt="Combos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
       </div>
 
       {/* CATEGORY SCROLL INDICATOR */}

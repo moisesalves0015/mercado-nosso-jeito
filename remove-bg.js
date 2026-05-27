@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function processImages() {
-  const categories = ['bebidas.png', 'eletronicos.png', 'padaria.png', 'promocoes.png', 'limpeza.png', 'doces.png', 'tabacaria.png', 'congelados.png', 'petshop.png', 'beleza.png', 'biscoitos.png', 'salgadinhos.png'];
+  const categories = ['combos.png'];
   for (const file of categories) {
     const inputPath = path.join(__dirname, 'public', 'categories', file);
     if (!fs.existsSync(inputPath)) {
