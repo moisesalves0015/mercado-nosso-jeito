@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
+import { MercadoLogo } from './Login';
 
 interface Product {
   id: string;
@@ -44,15 +45,42 @@ export const Eletronicos = () => {
 
   return (
     <main className="app eletronicos-page">
-      {/* HIGH-TECH ELETRONICOS HEADER */}
-      <div className="topbar" style={{ justifyContent: 'flex-start', gap: '16px', borderBottom: '1px solid rgba(168, 85, 247, 0.2)', paddingBottom: '12px' }}>
-        <Link to="/" className="circle-btn" style={{ background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', borderRadius: '50%', textDecoration: 'none' }}>
-          <ArrowLeft size={22} color="#A855F7" />
+      {/* ── TOP BAR ──────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '18px 16px 14px',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        background: 'rgba(9,7,5,0.3)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+      }}>
+        <Link
+          to="/"
+          style={{
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '50%',
+            width: '38px', height: '38px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+          }}
+        >
+          <ArrowLeft size={18} />
         </Link>
-        <div>
-          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 900, margin: 0 }}>Eletrônicos & Acessórios</h2>
-          <span style={{ color: '#A855F7', fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Emergência & Conveniência</span>
-        </div>
+
+        <MercadoLogo size="sm" />
+
+        <div style={{ width: '38px' }} />
+      </div>
+
+      {/* ── Page title ──────────────────────────── */}
+      <div style={{ padding: '18px 16px 4px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Eletrônicos & Acessórios</h1>
+        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>EMERGÊNCIA & CONVENIÊNCIA</p>
       </div>
 
       {/* TECH NEON EXPRESS BANNER */}

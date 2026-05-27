@@ -1,17 +1,49 @@
 import { Search as SearchIcon, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
+import { MercadoLogo } from './Login';
 
 export const Search = () => {
   return (
     <main className="app search-page">
-      <div className="topbar" style={{ justifyContent: 'flex-start', gap: '16px' }}>
-        <Link to="/" className="circle-btn">
-          <ArrowLeft size={24} color="#E7BC79" />
+      {/* ── TOP BAR ──────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '18px 16px 14px',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        background: 'rgba(9,7,5,0.3)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+      }}>
+        <Link
+          to="/"
+          style={{
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '50%',
+            width: '38px', height: '38px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+          }}
+        >
+          <ArrowLeft size={18} />
         </Link>
-        <div className="search-bar" style={{ flex: 1, marginBottom: 0 }}>
+
+        <MercadoLogo size="sm" />
+
+        <div style={{ width: '38px' }} />
+      </div>
+
+      {/* ── Page title & Search ──────────────────────────── */}
+      <div style={{ padding: '18px 16px 4px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: '0 0 12px 0', letterSpacing: '-0.3px' }}>Buscar Produtos</h1>
+        <div className="search-bar" style={{ marginBottom: 0 }}>
           <SearchIcon size={18} color="#E7BC79" />
-          <input type="text" placeholder="Buscar no mercado..." autoFocus />
+          <input type="text" placeholder="O que você está procurando?" autoFocus />
         </div>
       </div>
 

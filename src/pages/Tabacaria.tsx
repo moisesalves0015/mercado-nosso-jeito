@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
+import { MercadoLogo } from './Login';
 
 interface Product {
   id: string;
@@ -44,15 +45,42 @@ export const Tabacaria = () => {
 
   return (
     <main className="app tabacaria-page">
-      {/* PREMIUM HEADER WITH BACK BUTTON */}
-      <div className="topbar" style={{ justifyContent: 'flex-start', gap: '16px', borderBottom: '1px solid rgba(212, 175, 55, 0.2)', paddingBottom: '12px' }}>
-        <Link to="/" className="circle-btn" style={{ background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.25)' }}>
-          <ArrowLeft size={22} color="#D4AF37" />
+      {/* ── TOP BAR ──────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '18px 16px 14px',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        background: 'rgba(9,7,5,0.3)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+      }}>
+        <Link
+          to="/"
+          style={{
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '50%',
+            width: '38px', height: '38px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+          }}
+        >
+          <ArrowLeft size={18} />
         </Link>
-        <div>
-          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 900, margin: 0 }}>Tabacaria Premium</h2>
-          <span style={{ color: '#D4AF37', fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Conveniência 24 Horas</span>
-        </div>
+
+        <MercadoLogo size="sm" />
+
+        <div style={{ width: '38px' }} />
+      </div>
+
+      {/* ── Page title ──────────────────────────── */}
+      <div style={{ padding: '18px 16px 4px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Tabacaria Premium</h1>
+        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>CONVENIÊNCIA 24 HORAS</p>
       </div>
 
       {/* SMOKY GOLD BANNER */}

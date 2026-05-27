@@ -5,6 +5,7 @@ import { createOrder } from '../hooks/useOrders';
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, CheckCircle, Tag } from 'lucide-react';
 import { useState } from 'react';
 import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
+import { MercadoLogo } from './Login';
 
 export function Cart() {
   const navigate = useNavigate();
@@ -125,17 +126,42 @@ export function Cart() {
 
   return (
     <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 110 }}>
-      {/* HEADER SECTION */}
-      <header className="clube-topbar">
-        <button 
+      {/* ── TOP BAR ──────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '18px 16px 14px',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        background: 'rgba(9,7,5,0.3)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 20,
+      }}>
+        <button
           onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 0 }}
+          style={{
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '50%',
+            width: '38px', height: '38px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+          }}
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </button>
-        <h2 style={{ fontSize: 15, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0, color: '#fff' }}>Meu Carrinho</h2>
-        <div style={{ width: 20 }}></div>
-      </header>
+
+        <MercadoLogo size="sm" />
+
+        <div style={{ width: '38px' }} />
+      </div>
+
+      {/* ── Page title ──────────────────────────── */}
+      <div style={{ padding: '18px 16px 4px' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Meu Carrinho</h1>
+      </div>
 
       {cartItems.length === 0 ? (
         <div style={{ padding: '80px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
