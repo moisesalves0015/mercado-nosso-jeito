@@ -499,22 +499,47 @@ body{
 .search-ai-btn {
   display: flex;
   align-items: center;
-  background: none !important;
-  border: none !important;
-  border-radius: 0 !important; /* Retira a borda arredondada pois a imagem tem nativa */
-  padding: 0 !important;
+  justify-content: flex-start;
+  padding: 0 12px 0 10px !important;
+  background-image: url('/buscacombos_bg.png') !important;
+  background-size: cover !important;
+  background-position: right center !important;
+  background-repeat: no-repeat !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 10px !important;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  white-space: nowrap;
-  height: 36px !important; /* Altura exata permitida dentro da search-bar */
-  box-shadow: none !important;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  height: 36px !important;
+  width: 150px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
   outline: none;
+  position: relative;
+  overflow: hidden;
+}
+.search-ai-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0) 100%);
+  border-radius: 10px;
+  z-index: 1;
 }
 .search-ai-btn:hover {
-  background: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  transform: scale(1.03); /* Efeito sutil de zoom ao passar o mouse */
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+.search-ai-text {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  z-index: 2;
+  position: relative;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  line-height: 1.1;
+  text-align: left;
 }
 
 /* =========================================================

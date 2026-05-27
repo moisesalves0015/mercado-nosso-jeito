@@ -10,7 +10,6 @@ import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 
 // Custom SVG backgrounds and button assets
-import buscaCombosImg from '../assets/botoes/buscacombos.svg';
 import manhaBg from '../assets/bkgs/manha.svg';
 import almocoBg from '../assets/bkgs/almoço.svg';
 import tardeBg from '../assets/bkgs/tarde.svg';
@@ -426,7 +425,7 @@ export const Home = () => {
               <input type="text" placeholder="O que você precisa hoje?" disabled style={{ pointerEvents: 'none' }} />
             </div>
             <button className="search-ai-btn" type="button">
-              <img src={buscaCombosImg} alt="Buscar por Combos" style={{ height: '100%', display: 'block', borderRadius: '0' }} />
+              <span className="search-ai-text">Buscar<br/>por combos</span>
             </button>
           </div>
         </Link>
@@ -505,9 +504,20 @@ export const Home = () => {
           ? homeConfig.periodConfig[activePeriod].productIds
               .map(id => allProducts.find(p => p.id === id) as Product)
               .filter(Boolean)
-          : periodProducts[activePeriod]).map((product) => (
-          <ProductCard key={product.id} {...product} />
-        ))}
+          : periodProducts[activePeriod]).map((product) => {
+            
+            // Map the active period to a background gradient for the cards
+            let gradient = '';
+            switch(activePeriod) {
+              case 'morning': gradient = 'linear-gradient(135deg, rgba(255,183,94,0.15) 0%, rgba(237,143,3,0.05) 100%)'; break;
+              case 'lunch': gradient = 'linear-gradient(135deg, rgba(255,107,107,0.15) 0%, rgba(200,30,30,0.05) 100%)'; break;
+              case 'afternoon': gradient = 'linear-gradient(135deg, rgba(74,144,226,0.15) 0%, rgba(0,85,255,0.05) 100%)'; break;
+              case 'night': gradient = 'linear-gradient(135deg, rgba(155,89,182,0.15) 0%, rgba(142,68,173,0.05) 100%)'; break;
+              case 'dawn': gradient = 'linear-gradient(135deg, rgba(52,73,94,0.2) 0%, rgba(44,62,80,0.05) 100%)'; break;
+            }
+
+            return <ProductCard key={product.id} {...product} bgGradient={gradient} />;
+        })}
       </Section>
 
       {/* INFO CARDS ROW */}

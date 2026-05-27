@@ -28,6 +28,7 @@ export const ProductCard = ({
   badge,
   diamondReward,
   category,
+  bgGradient,
 }: {
   title: string;
   price: number | string;
@@ -36,6 +37,7 @@ export const ProductCard = ({
   badgeStyle?: 'light' | 'orange';
   diamondReward?: number;
   category?: string;
+  bgGradient?: string;
 }) => {
   const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
 
@@ -304,7 +306,7 @@ export const ProductCard = ({
   };
 
   return (
-    <div className="product-card" ref={cardRef}>
+    <div className="product-card" ref={cardRef} style={bgGradient ? { background: bgGradient } : {}}>
       <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
           <img src={image} alt={title} />
