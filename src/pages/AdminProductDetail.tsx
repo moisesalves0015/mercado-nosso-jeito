@@ -7,8 +7,9 @@ import {
   Image as ImageIcon, Shield, AlertCircle, BarChart2,
   TrendingUp, Tag, Zap, Star, Flame, ShoppingBag,
   Clock, Box, ArrowUp, ArrowDown, RefreshCw, CheckCircle, Info,
-  Percent, Activity
+  Percent, Activity, Layers
 } from 'lucide-react';
+import { useHomeConfig } from '../hooks/useHomeConfig';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -145,6 +146,9 @@ export const AdminProductDetail: React.FC = () => {
     totalOrders: 0, totalQty: 0, totalRevenue: 0, chartData: []
   });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  // ── Home Config ──
+  const homeConfig = useHomeConfig();
 
   // ─── Load Product ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1038,6 +1042,54 @@ export const AdminProductDetail: React.FC = () => {
                     <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 900, background: 'rgba(129,140,248,0.1)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.2)', padding: '2px 8px', borderRadius: 99 }}>{combo.tag}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Vitrines e Listas */}
+            <div style={sectionCard}>
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Layers size={15} color="#818cf8" /> Vitrines & Listas
+              </h3>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>Gerencie em quais vitrines da home este produto aparece.</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                {homeConfig.loading ? (
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Carregando vitrines...</span>
+                ) : homeConfig.vitrines.length === 0 ? (
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Nenhuma vitrine configurada.</span>
+                ) : (
+                  homeConfig.vitrines.map(v => {
+                    const isInVitrine = v.productIds.includes(id || '');
+                    return (
+                      <div key={v.id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 14px', borderRadius: 10,
+                        background: isInVitrine ? 'rgba(129,140,248,0.1)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${isInVitrine ? 'rgba(129,140,248,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }} onClick={async () => {
+                        if (!id) return;
+                        const ref = doc(db, 'home-config', 'data', 'vitrines', v.id);
+                        const newIds = isInVitrine ? v.productIds.filter(pid => pid !== id) : [...v.productIds, id];
+                        try {
+                          await setDoc(ref, { productIds: newIds }, { merge: true });
+                        } catch(e) { alert('Erro ao atualizar vitrine'); }
+                      }}>
+                        <div>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: isInVitrine ? '#818cf8' : '#fff', display: 'block' }}>{v.title}</span>
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{v.theme}</span>
+                        </div>
+                        <div style={{
+                          width: 20, height: 20, borderRadius: 6,
+                          background: isInVitrine ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {isInVitrine && <CheckCircle size={12} color="#fff" />}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

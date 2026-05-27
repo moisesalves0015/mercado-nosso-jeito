@@ -5,6 +5,7 @@ import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
 import { Bike, Award, Lock, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useHomeConfig } from '../hooks/useHomeConfig';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 
@@ -85,10 +86,12 @@ const periodProducts: Record<Period, Product[]> = {
 };
 
 export const Home = () => {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [bebidas, setBebidas] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activePeriod, setActivePeriod] = useState<Period>('morning');
+  const homeConfig = useHomeConfig();
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -176,6 +179,7 @@ export const Home = () => {
         if (updated) {
           localStorage.setItem('app-products', JSON.stringify(allProds));
         }
+        setAllProducts(allProds);
         setBebidas(allProds.filter(p => p.category === 'Bebidas'));
       } else {
         // Fallback default drinks
@@ -221,69 +225,69 @@ export const Home = () => {
           <Topbar />
 
           {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-          <div className="category-row" onScroll={handleCategoryScroll}>
-        <div className="category-intro-card">
-          <span className="category-intro-line">Conheça</span>
-          <span className="category-intro-line">nosso</span>
-          <span className="category-intro-line highlighted">mercado</span>
-          <div className="category-intro-slider">
-            <div className="category-intro-track">
-              <span className="mini-gold-card"></span>
-              <span className="mini-gold-card"></span>
-              <span className="mini-gold-card"></span>
-              <span className="mini-gold-card"></span>
-              <span className="mini-gold-card"></span>
-              <span className="mini-gold-card"></span>
-            </div>
+          <div className="section-header" style={{ padding: '0 16px', marginBottom: '4px', marginTop: '12px' }}>
+            <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
           </div>
-        </div>
+          <div className="category-row" onScroll={handleCategoryScroll}>
+
+        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/promocoes.png" alt="Ofertas" className="category-3d-icon" /></div>
+          </div>
+        </Link>
         <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
             <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
-            <span className="category-text">Bebidas</span>
           </div>
         </Link>
-        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link to="/search?q=padaria" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
-            <span className="category-text">Tabacaria</span>
+            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=congelados" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/congelados.png" alt="Congelados" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=petshop" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/petshop.png" alt="Pet Shop" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=salgadinhos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/salgadinhos.png" alt="Salgadinhos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=doces" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=biscoitos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/biscoitos.png" alt="Biscoitos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=beleza" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/beleza.png" alt="Beleza" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=limpeza" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
           </div>
         </Link>
         <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
             <div className="category-icon-wrapper"><img src="/categories/eletronicos.png" alt="Eletrônicos" className="category-3d-icon" /></div>
-            <span className="category-text">Eletrônicos</span>
           </div>
         </Link>
-        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
-            <span className="category-text">Padaria</span>
-          </div>
-        </Link>
-        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-badge">124</div>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/ofertas.png" alt="Ofertas" className="category-3d-icon" /></div>
-            <span className="category-text">Ofertas</span>
-          </div>
-        </Link>
-        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
-            <span className="category-text">Limpeza</span>
-          </div>
-        </Link>
-        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
-            <span className="category-text">Doces</span>
-          </div>
-        </Link>
-        <Link to="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/mais.png" alt="Mais" className="category-3d-icon" /></div>
-            <span className="category-text">Mais</span>
+            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
           </div>
         </Link>
       </div>
@@ -453,11 +457,15 @@ export const Home = () => {
 
 
       <Section
-        title={periodTitles[activePeriod]}
+        title={homeConfig.periodConfig[activePeriod]?.title || periodTitles[activePeriod]}
         theme="hero"
         linkText="Ver tudo >"
       >
-        {periodProducts[activePeriod].map((product) => (
+        {(homeConfig.periodConfig[activePeriod]?.productIds?.length > 0
+          ? homeConfig.periodConfig[activePeriod].productIds
+              .map(id => allProducts.find(p => p.id === id) as Product)
+              .filter(Boolean)
+          : periodProducts[activePeriod]).map((product) => (
           <ProductCard key={product.id} {...product} />
         ))}
       </Section>
@@ -501,34 +509,52 @@ export const Home = () => {
         <div className="super-promo-subtitle">SÓ ESTA SEMANA</div>
         
         <div className="super-promo-scroll">
-          
-          <PromoCard
-            title="Energético Monster Energy 473ml"
-            price={7.90}
-            image="/monster_energy.webp"
-            badge="47% OFF"
-            badgeStyle="orange"
-            category="bebidas"
-          />
+          {homeConfig.megaOfertas.length > 0 ? (
+            homeConfig.megaOfertas.map(mo => {
+              const p = allProducts.find(prod => prod.id === mo.productId);
+              if (!p) return null;
+              return (
+                <PromoCard
+                  key={mo.id}
+                  title={p.title}
+                  price={p.price}
+                  image={p.image}
+                  badge={mo.badge}
+                  badgeStyle={mo.badgeStyle}
+                  category={p.category}
+                />
+              );
+            })
+          ) : (
+            <>
+              <PromoCard
+                title="Energético Monster Energy 473ml"
+                price={7.90}
+                image="/monster_energy.webp"
+                badge="47% OFF"
+                badgeStyle="orange"
+                category="bebidas"
+              />
 
-          <PromoCard
-            title="Sabão Líquido Premium 3L"
-            price={27.90}
-            image="/lava_roupa.png"
-            badge="22% OFF"
-            badgeStyle="orange"
-            category="limpeza"
-          />
+              <PromoCard
+                title="Sabão Líquido Premium 3L"
+                price={27.90}
+                image="/lava_roupa.png"
+                badge="22% OFF"
+                badgeStyle="orange"
+                category="limpeza"
+              />
 
-          <PromoCard
-            title="Café Melitta Tradicional 500g"
-            price={16.18}
-            image="/cafe-novo.png"
-            badge="35% OFF"
-            badgeStyle="orange"
-            category="cafe"
-          />
-
+              <PromoCard
+                title="Café Melitta Tradicional 500g"
+                price={16.18}
+                image="/cafe-novo.png"
+                badge="35% OFF"
+                badgeStyle="orange"
+                category="cafe"
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -550,77 +576,101 @@ export const Home = () => {
         </Link>
       </div>
 
-      <Section
-        title="Bebidas"
-        subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]}
-        linkText="Ver tudo >"
-        theme="purple"
-      >
-        {bebidas.map(product => (
-          <ProductCard key={product.id} {...product} />
-        ))}
-        {bebidas.length === 0 && (
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
-        )}
-      </Section>
+      {homeConfig.vitrines.filter(v => v.active).sort((a, b) => a.order - b.order).map(vitrine => {
+        const prods = vitrine.productIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean) as Product[];
+        return (
+          <Section
+            key={vitrine.id}
+            title={vitrine.title}
+            subtitle={vitrine.subtitle}
+            linkText="Ver tudo >"
+            theme={vitrine.theme}
+          >
+            {prods.map(product => (
+              <ProductCard key={product.id} {...product} />
+            ))}
+            {prods.length === 0 && (
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto cadastrado nesta vitrine.</span>
+            )}
+          </Section>
+        );
+      })}
 
-      <Section
-        title="Alimentos"
-        subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]}
-        linkText="Ver tudo >"
-        theme="orange"
-      >
-        <ProductCard
-          title="Pão Pullman Forma Integral (500g)"
-          price="R$ 12,90"
-          image="/pao_de_forma.png"
-          badge="Melhor Preço"
-          badgeStyle="orange"
-          category="alimentos"
-        />
-        <ProductCard
-          title="Queijo Minas Frescal Itambé (300g)"
-          price="R$ 19,90"
-          image="/queijo_minas.png"
-          badge="Promocional"
-          badgeStyle="orange"
-          category="alimentos"
-        />
-        <ProductCard
-          title="Peito de Peru Fatiado Sadia (100g)"
-          price="R$ 7,49"
-          image="/peito_de_peru.webp"
-          category="alimentos"
-        />
-        <ProductCard
-          title="Manteiga Itambé Extra Sal (200g)"
-          price="R$ 11,90"
-          image="/manteiga_itambe.png"
-          category="alimentos"
-        />
-      </Section>
+      {homeConfig.vitrines.length === 0 && (
+        <>
+          <Section
+            title="Bebidas"
+            subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]}
+            linkText="Ver tudo >"
+            theme="purple"
+          >
+            {bebidas.map(product => (
+              <ProductCard key={product.id} {...product} />
+            ))}
+            {bebidas.length === 0 && (
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
+            )}
+          </Section>
 
-      <Section
-        title="Limpeza"
-        subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]}
-        linkText="Ver tudo >"
-        theme="green"
-      >
-        <ProductCard
-          title="Sabão Líquido Premium"
-          price="R$ 19,90"
-          image="/lava_roupa.png"
-          category="limpeza"
-        />
-        <ProductCard
-          title="Multiuso Fresh Ultra"
-          price="R$ 12,90"
-          image="/pano_multiuso.webp"
-          badge="Melhor Preço"
-          badgeStyle="orange"
-          category="limpeza"
-        />
-      </Section>
+          <Section
+            title="Alimentos"
+            subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]}
+            linkText="Ver tudo >"
+            theme="orange"
+          >
+            <ProductCard
+              title="Pão Pullman Forma Integral (500g)"
+              price="R$ 12,90"
+              image="/pao_de_forma.png"
+              badge="Melhor Preço"
+              badgeStyle="orange"
+              category="alimentos"
+            />
+            <ProductCard
+              title="Queijo Minas Frescal Itambé (300g)"
+              price="R$ 19,90"
+              image="/queijo_minas.png"
+              badge="Promocional"
+              badgeStyle="orange"
+              category="alimentos"
+            />
+            <ProductCard
+              title="Peito de Peru Fatiado Sadia (100g)"
+              price="R$ 7,49"
+              image="/peito_de_peru.webp"
+              category="alimentos"
+            />
+            <ProductCard
+              title="Manteiga Itambé Extra Sal (200g)"
+              price="R$ 11,90"
+              image="/manteiga_itambe.png"
+              category="alimentos"
+            />
+          </Section>
+
+          <Section
+            title="Limpeza"
+            subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]}
+            linkText="Ver tudo >"
+            theme="green"
+          >
+            <ProductCard
+              title="Sabão Líquido Premium"
+              price="R$ 19,90"
+              image="/lava_roupa.png"
+              category="limpeza"
+            />
+            <ProductCard
+              title="Multiuso Fresh Ultra"
+              price="R$ 12,90"
+              image="/pano_multiuso.webp"
+              badge="Melhor Preço"
+              badgeStyle="orange"
+              category="limpeza"
+            />
+          </Section>
+        </>
+      )}
 
 
 

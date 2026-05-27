@@ -6,7 +6,7 @@ import {
   Store, Search, Filter, Award, X, Package, BarChart2, ChevronDown,
   CheckCircle, Clock, Truck, AlertCircle, Shield, Ban, RefreshCw,
   Star, Zap, ArrowUp, ArrowDown, Eye, EyeOff, DollarSign,
-  Percent, Target
+  Percent, Target, Layers
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { AdminMarketing } from '../components/AdminMarketing';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
 interface Product {
@@ -50,7 +51,7 @@ interface FirestoreClient {
   id: string; name: string; email: string; role: string;
   diamonds?: number; createdAt?: any;
 }
-type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro';
+type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing';
 // ─── VIP LEVELS ──────────────────────────────────────────────────────────────
 const getVipLevel = (diamonds: number = 0) => {
   if (diamonds >= 5000) return { label: 'Black', emoji: '⬛', color: '#e2e8f0', border: 'rgba(226,232,240,0.3)', bg: 'rgba(255,255,255,0.07)' };
@@ -354,6 +355,7 @@ export const Admin: React.FC = () => {
     { key: 'clientes',   label: 'Clientes',   icon: Users },
     { key: 'analytics',  label: 'Analytics',  icon: BarChart2 },
     { key: 'financeiro', label: 'Financeiro', icon: DollarSign },
+    { key: 'marketing',  label: 'Marketing',  icon: Layers },
     { key: 'roleta',     label: 'Roleta',     icon: RefreshCw },
   ];
 
@@ -842,6 +844,9 @@ export const Admin: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* ══ TAB: MARKETING ════════════════════════════════════════════════ */}
+        {activeTab === 'marketing' && <AdminMarketing />}
       </main>
 
       {/* ═══ MODAL: ORDER DETAIL ══════════════════════════════════════════════ */}
