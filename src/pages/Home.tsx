@@ -10,11 +10,11 @@ import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 
 // Custom SVG backgrounds and button assets
-import manhaBg from '../assets/bkgs/manha.svg';
-import almocoBg from '../assets/bkgs/almoço.svg';
-import tardeBg from '../assets/bkgs/tarde.svg';
-import noiteBg from '../assets/bkgs/noite.svg';
-import madrugadaBg from '../assets/bkgs/madrugada.svg';
+import manhaBg from '../assets/bkgs/manha.png';
+import almocoBg from '../assets/bkgs/almoço.png';
+import tardeBg from '../assets/bkgs/tarde.png';
+import noiteBg from '../assets/bkgs/noite.png';
+import madrugadaBg from '../assets/bkgs/madrugada.png';
 
 const periodBgs: Record<Period, string> = {
   morning: manhaBg,
@@ -495,30 +495,33 @@ export const Home = () => {
       </div>
 
 
-      <Section
-        title={homeConfig.periodConfig[activePeriod]?.title || periodTitles[activePeriod]}
-        theme="hero"
-        linkText="Ver tudo >"
+      <div
+        style={{
+          backgroundImage: `url(${periodBgs[activePeriod]})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'no-repeat',
+          borderRadius: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          paddingTop: '4px',
+          paddingBottom: '4px',
+          marginBottom: '16px',
+        }}
       >
-        {(homeConfig.periodConfig[activePeriod]?.productIds?.length > 0
-          ? homeConfig.periodConfig[activePeriod].productIds
-              .map(id => allProducts.find(p => p.id === id) as Product)
-              .filter(Boolean)
-          : periodProducts[activePeriod]).map((product) => {
-            
-            // Map the active period to a background image for the cards
-            let bgImage = '';
-            switch(activePeriod) {
-              case 'morning': bgImage = periodBgs.morning; break;
-              case 'lunch': bgImage = periodBgs.lunch; break;
-              case 'afternoon': bgImage = periodBgs.afternoon; break;
-              case 'night': bgImage = periodBgs.night; break;
-              case 'dawn': bgImage = periodBgs.dawn; break;
-            }
-
-            return <ProductCard key={product.id} {...product} bgImage={bgImage} />;
-        })}
-      </Section>
+        <Section
+          title={homeConfig.periodConfig[activePeriod]?.title || periodTitles[activePeriod]}
+          theme="hero"
+          linkText="Ver tudo >"
+        >
+          {(homeConfig.periodConfig[activePeriod]?.productIds?.length > 0
+            ? homeConfig.periodConfig[activePeriod].productIds
+                .map(id => allProducts.find(p => p.id === id) as Product)
+                .filter(Boolean)
+            : periodProducts[activePeriod]).map((product) => (
+              <ProductCard key={product.id} {...product} glassEffect={true} />
+          ))}
+        </Section>
+      </div>
 
       {/* INFO CARDS ROW */}
       <div className="info-cards-row">
