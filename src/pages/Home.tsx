@@ -506,17 +506,17 @@ export const Home = () => {
               .filter(Boolean)
           : periodProducts[activePeriod]).map((product) => {
             
-            // Map the active period to a background gradient for the cards
-            let gradient = '';
+            // Map the active period to a background image for the cards
+            let bgImage = '';
             switch(activePeriod) {
-              case 'morning': gradient = 'linear-gradient(135deg, rgba(255,183,94,0.15) 0%, rgba(237,143,3,0.05) 100%)'; break;
-              case 'lunch': gradient = 'linear-gradient(135deg, rgba(255,107,107,0.15) 0%, rgba(200,30,30,0.05) 100%)'; break;
-              case 'afternoon': gradient = 'linear-gradient(135deg, rgba(74,144,226,0.15) 0%, rgba(0,85,255,0.05) 100%)'; break;
-              case 'night': gradient = 'linear-gradient(135deg, rgba(155,89,182,0.15) 0%, rgba(142,68,173,0.05) 100%)'; break;
-              case 'dawn': gradient = 'linear-gradient(135deg, rgba(52,73,94,0.2) 0%, rgba(44,62,80,0.05) 100%)'; break;
+              case 'morning': bgImage = periodBgs.morning; break;
+              case 'lunch': bgImage = periodBgs.lunch; break;
+              case 'afternoon': bgImage = periodBgs.afternoon; break;
+              case 'night': bgImage = periodBgs.night; break;
+              case 'dawn': bgImage = periodBgs.dawn; break;
             }
 
-            return <ProductCard key={product.id} {...product} bgGradient={gradient} />;
+            return <ProductCard key={product.id} {...product} bgImage={bgImage} />;
         })}
       </Section>
 
