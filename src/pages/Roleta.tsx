@@ -550,7 +550,7 @@ export const Roleta: React.FC = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0) 40%, rgba(9, 7, 5, 1) 100%)',
+          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.40) 40%, rgba(9, 7, 5, 1) 100%)',
           pointerEvents: 'none',
           zIndex: 0
         }}

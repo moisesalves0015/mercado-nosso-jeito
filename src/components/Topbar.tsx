@@ -25,7 +25,7 @@ export const Topbar = () => {
 
   return (
     <div className="topbar">
-      {/* LINE 1: LOCATION + GOLD LEVEL */}
+      {/* LINE 1: LOCATION + STATUS & GOLD LEVEL */}
       <div className="topbar-header-row">
         {/* ADDRESS / LOCATION */}
         <div className="topbar-location">
@@ -41,34 +41,37 @@ export const Topbar = () => {
           </div>
         </div>
 
-        {/* GOLD LEVEL BADGE */}
-        <Link to="/clube" style={{ textDecoration: 'none' }}>
-          <div className="gold-level-badge">
-            <Shield size={15} fill="#FFDF73" color="#FFDF73" className="gold-badge-shield" />
-            <div className="gold-badge-info">
-              <span className="gold-badge-title">NÍVEL OURO</span>
-              <span className="gold-badge-points">
-                {(5004617 + coins).toLocaleString('pt-BR')} pts 
-                <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
-              </span>
-            </div>
+        {/* RIGHT ALIGNED HEADER ACTIONS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* STATUS PLACARD: ABERTO */}
+          <div className="topbar-status-badge">
+            <span className="status-dot"></span>
+            <span>Aberto</span>
           </div>
-        </Link>
+
+          {/* GOLD LEVEL BADGE */}
+          <Link to="/clube" style={{ textDecoration: 'none' }}>
+            <div className="gold-level-badge">
+              <Shield size={15} fill="#FFDF73" color="#FFDF73" className="gold-badge-shield" />
+              <div className="gold-badge-info">
+                <span className="gold-badge-title">NÍVEL OURO</span>
+                <span className="gold-badge-points">
+                  {(5004617 + coins).toLocaleString('pt-BR')} pts 
+                  <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
+                </span>
+              </div>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* LINE 2: LOGO WITH EMPHASIS (BELOW ROW 1) */}
-      <div className="topbar-logo-row" style={{ position: 'relative' }}>
+      <div className="topbar-logo-row">
         <div className="logo">
           <div className="logo-text">
             <h1 className="logo-main">mercado do</h1>
             <span className="logo-sub">nosso jeito</span>
           </div>
-        </div>
-
-        {/* STATUS PLACARD: ABERTO */}
-        <div className="topbar-status-badge">
-          <span className="status-dot"></span>
-          <span>Aberto</span>
         </div>
       </div>
     </div>

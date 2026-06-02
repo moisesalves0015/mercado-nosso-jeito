@@ -199,33 +199,45 @@ export const Home = () => {
 
   return (
     <div style={{ width: '100%', overflowX: 'hidden' }}>
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
         
-        {/* The actual background image with its filter and position */}
+        {/* Background container clipped at the base */}
         <div style={{
           position: 'absolute',
-          inset: 0,
-          backgroundImage: 'url("/bg-supermercado.jpeg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 65%',
-          filter: 'brightness(0.5)', // Escurece apenas a imagem do fundo
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '214px',
+          overflow: 'hidden',
           zIndex: 0,
-        }} />
+        }}>
+          {/* The actual background image with its filter and position */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url("/bg-supermercado-new.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 50%',
+            filter: 'brightness(0.5) blur(1px)', // Escurece e embaça de forma extremamente sutil
+          }} />
 
-        {/* Gradient shadow to transition into the black background below */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.2) 0%, rgba(9, 7, 5, 0.7) 75%, #090705 100%)',
-          pointerEvents: 'none',
-          zIndex: 0
-        }} />
+          {/* Gradient shadow to transition into the black background below */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.1) 0%, rgba(9, 7, 5, 0.65) 60%, #090705 100%)',
+            pointerEvents: 'none',
+          }} />
+        </div>
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 15 }}>
           <Topbar />
 
           {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-          <div className="section-header" style={{ padding: '0 16px', marginBottom: '4px', marginTop: '12px' }}>
-            <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
+          <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
+            <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
+            <Link to="/search" className="glass-ver-todas-btn">
+              Ver todas <span style={{ color: '#FFDF73' }}>&gt;</span>
+            </Link>
           </div>
           <div className="category-row" onScroll={handleCategoryScroll}>
 
