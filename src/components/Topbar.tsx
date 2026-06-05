@@ -83,13 +83,13 @@ export const Topbar = () => {
             Bebidas
             {location.pathname === '/bebidas' && <span className="active-line"></span>}
           </Link>
-          <Link to="/clube" className={`topbar-nav-link ${location.pathname === '/clube' ? 'active' : ''}`}>
-            Clube
-            {location.pathname === '/clube' && <span className="active-line"></span>}
+          <Link to="/search?q=padaria" className={`topbar-nav-link ${location.pathname === '/search' && location.search.includes('padaria') ? 'active' : ''}`}>
+            Padaria
+            {location.pathname === '/search' && location.search.includes('padaria') && <span className="active-line"></span>}
           </Link>
-          <Link to="/pedidos" className={`topbar-nav-link ${location.pathname === '/pedidos' ? 'active' : ''}`}>
-            Pedidos
-            {location.pathname === '/pedidos' && <span className="active-line"></span>}
+          <Link to="/tabacaria" className={`topbar-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`}>
+            Tabacaria
+            {location.pathname === '/tabacaria' && <span className="active-line"></span>}
           </Link>
         </div>
         
