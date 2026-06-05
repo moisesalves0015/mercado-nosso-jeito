@@ -3,7 +3,7 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Search } from 'lucide-react';
+import { Bike, Award, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useHomeConfig } from '../hooks/useHomeConfig';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
@@ -200,37 +200,94 @@ export const Home = () => {
   return (
     <div style={{ width: '100%', overflowX: 'hidden' }}>
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
-        
         {/* Background container clipped at the base */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '214px',
-          overflow: 'hidden',
-          zIndex: 0,
-        }}>
-          {/* The actual background image with its filter and position */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'url("/bg-supermercado-new.png")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 50%',
-            filter: 'brightness(0.5) blur(1px)', // Escurece e embaça de forma extremamente sutil
-          }} />
 
-          {/* Gradient shadow to transition into the black background below */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.1) 0%, rgba(9, 7, 5, 0.65) 60%, #090705 100%)',
-            pointerEvents: 'none',
-          }} />
-        </div>
+
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 15 }}>
           <Topbar />
+
+          {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
+          <div 
+            className="hero-banner"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div 
+              className="hero-slider-track" 
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {/* Slide 1: Ofertas */}
+              <Link to="/promotions" className="hero-slide" style={{ backgroundImage: `url('/hero_background.png')` }}>
+                <div className="hero-left">
+                  <div className="hero-badge">
+                    <span className="hero-badge-icon">🔥</span>
+                    <span>OFERTA DO DIA</span>
+                  </div>
+                  <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
+                  <p>Economize hoje em itens selecionados.</p>
+                  <button className="hero-btn gold-shiny-btn">
+                    Ver ofertas <span className="btn-arrow">→</span>
+                  </button>
+                </div>
+              </Link>
+
+              {/* Slide 2: Bebidas */}
+              <Link to="/bebidas" className="hero-slide" style={{ backgroundImage: `url('/hero_bebidas.png')` }}>
+                <div className="hero-left">
+                  <div className="hero-badge">
+                    <span className="hero-badge-icon">🍻</span>
+                    <span>BEBIDAS GELADAS</span>
+                  </div>
+                  <h2>Cervejas e Refris <br />no <span className="highlight-blue">grau! 🧊</span></h2>
+                  <p>Para comemorar <br />ou relaxar no fim de semana.</p>
+                  <button className="hero-btn gold-shiny-btn">
+                    Ver bebidas <span className="btn-arrow">→</span>
+                  </button>
+                </div>
+              </Link>
+
+              {/* Slide 3: Tabacaria */}
+              <Link to="/tabacaria" className="hero-slide hero-slide-tabacaria" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
+                <div className="hero-left hero-left-lowered">
+                  <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! 🔞</span></h2>
+                  <p>Variedade de sedas, <br />isqueiros e importados.</p>
+                  <button className="hero-btn gold-shiny-btn">
+                    Ver tabacaria <span className="btn-arrow">→</span>
+                  </button>
+                </div>
+              </Link>
+            </div>
+
+            {/* SLIDER DOTS */}
+            <div className="hero-dots">
+              {[0, 1, 2].map((idx) => (
+                <span 
+                  key={idx} 
+                  className={`dot ${currentSlide === idx ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentSlide(idx);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* LOGO WITH BACKGROUND CONTAINER */}
+      <div className="home-logo-bg-section">
+        <div className="logo">
+          <div className="logo-text">
+            <h1 className="logo-main">mercado do</h1>
+            <span className="logo-sub">nosso jeito</span>
+          </div>
+        </div>
+      </div>
+
+      <main className="app" style={{ paddingTop: 0 }}>
 
           {/* CATEGORY ROW (3D REALISTIC ICONS) */}
           <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
@@ -355,93 +412,6 @@ export const Home = () => {
         </div>
       </div>
 
-
-      {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
-      <div 
-        className="hero-banner"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div 
-          className="hero-slider-track" 
-          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-        >
-          {/* Slide 1: Ofertas */}
-          <Link to="/promotions" className="hero-slide" style={{ backgroundImage: `url('/hero_background.png')` }}>
-            <div className="hero-left">
-              <div className="hero-badge">
-                <span className="hero-badge-icon">🔥</span>
-                <span>OFERTA DO DIA</span>
-              </div>
-              <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
-              <p>Economize hoje em itens selecionados.</p>
-              <button className="hero-btn gold-shiny-btn">
-                Ver ofertas <span className="btn-arrow">→</span>
-              </button>
-            </div>
-          </Link>
-
-          {/* Slide 2: Bebidas */}
-          <Link to="/bebidas" className="hero-slide" style={{ backgroundImage: `url('/hero_bebidas.png')` }}>
-            <div className="hero-left">
-              <div className="hero-badge">
-                <span className="hero-badge-icon">🍻</span>
-                <span>BEBIDAS GELADAS</span>
-              </div>
-              <h2>Cervejas e Refris <br />no <span className="highlight-blue">grau! 🧊</span></h2>
-              <p>Para comemorar <br />ou relaxar no fim de semana.</p>
-              <button className="hero-btn gold-shiny-btn">
-                Ver bebidas <span className="btn-arrow">→</span>
-              </button>
-            </div>
-          </Link>
-
-          {/* Slide 3: Tabacaria */}
-          <Link to="/tabacaria" className="hero-slide hero-slide-tabacaria" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
-            <div className="hero-left hero-left-lowered">
-              <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! 🔞</span></h2>
-              <p>Variedade de sedas, <br />isqueiros e importados.</p>
-              <button className="hero-btn gold-shiny-btn">
-                Ver tabacaria <span className="btn-arrow">→</span>
-              </button>
-            </div>
-          </Link>
-        </div>
-
-        {/* SLIDER DOTS */}
-        <div className="hero-dots">
-          {[0, 1, 2].map((idx) => (
-            <span 
-              key={idx} 
-              className={`dot ${currentSlide === idx ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setCurrentSlide(idx);
-              }}
-            />
-          ))}
-        </div>
-      </div>
-        </div>
-      </div>
-
-      <main className="app" style={{ paddingTop: 0 }}>
-      {/* SEARCH BAR (MOVED BELOW HERO) */}
-      <div className="search-container">
-        <Link to="/search" style={{ textDecoration: 'none', width: '100%' }}>
-          <div className="search-bar">
-            <div className="search-bar-input-side">
-              <Search size={18} color="rgba(255, 255, 255, 0.4)" />
-              <input type="text" placeholder="O que você precisa hoje?" disabled style={{ pointerEvents: 'none' }} />
-            </div>
-            <button className="search-ai-btn" type="button">
-              <span className="search-ai-text">Buscar<br/>por combos</span>
-            </button>
-          </div>
-        </Link>
-      </div>
 
       {/* PERIOD SELECTOR BUTTONS */}
       <div className="period-buttons-row">

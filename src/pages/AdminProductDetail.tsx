@@ -64,13 +64,53 @@ const compressImage = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
+// ─── CRM Light Mode Theme ───────────────────────────────────────────────
+const crmTheme = {
+  bg: '#f8fafc',
+  cardBg: '#ffffff',
+  headerBg: 'rgba(255, 255, 255, 0.9)',
+  textPrimary: '#0f172a',
+  textSecondary: '#475569',
+  textMuted: '#94a3b8',
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  primary: '#4f46e5',
+  primaryLight: 'rgba(79, 70, 229, 0.08)',
+  success: '#10b981',
+  successLight: 'rgba(16, 185, 129, 0.08)',
+  warning: '#f59e0b',
+  warningLight: 'rgba(245, 158, 11, 0.08)',
+  danger: '#ef4444',
+  dangerLight: 'rgba(239, 68, 68, 0.08)',
+  accent: '#0ea5e9',
+  accentLight: 'rgba(14, 165, 233, 0.08)',
+  shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02)',
+  shadowSm: '0 1px 3px rgba(0, 0, 0, 0.05)',
+};
+
+const sectionCard: React.CSSProperties = {
+  background: crmTheme.cardBg,
+  border: `1px solid ${crmTheme.border}`,
+  borderRadius: 16,
+  padding: 20,
+  boxShadow: crmTheme.shadow,
+};
+
+const TABS = [
+  { key: 'dados', label: 'Dados Gerais', icon: Package },
+  { key: 'analytics', label: 'Desempenho', icon: BarChart2 },
+  { key: 'financeiro', label: 'Financeiro', icon: DollarSign },
+  { key: 'marketing', label: 'Marketing/Campanhas', icon: Target },
+  { key: 'estoque', label: 'Estoque', icon: Box },
+] as const;
+
 // ─── TOOLTIP FOR RECHARTS ─────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) return (
-    <div style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 10, padding: '10px 14px' }}>
-      <p style={{ color: '#FFDF73', fontWeight: 900, fontSize: 12, margin: '0 0 4px' }}>{label}</p>
+    <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 10, padding: '10px 14px', boxShadow: crmTheme.shadow }}>
+      <p style={{ color: crmTheme.textPrimary, fontWeight: 900, fontSize: 12, margin: '0 0 4px' }}>{label}</p>
       {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color || '#fff', fontSize: 11, margin: 0, fontWeight: 700 }}>
+        <p key={i} style={{ color: p.color || crmTheme.textPrimary, fontSize: 11, margin: 0, fontWeight: 700 }}>
           {p.name}: {typeof p.value === 'number' && p.name !== 'unidades' ? `R$ ${p.value.toFixed(2)}` : p.value}
         </p>
       ))}
@@ -81,26 +121,28 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // ─── SKELETON LOADER ──────────────────────────────────────────────────────────
 const Skeleton = ({ w = '100%', h = 20, radius = 8 }: { w?: string | number; h?: number; radius?: number }) => (
-  <div style={{ width: w, height: h, borderRadius: radius, background: 'rgba(255,255,255,0.05)', animation: 'skeletonPulse 1.5s ease-in-out infinite' }} />
+  <div style={{ width: w, height: h, borderRadius: radius, background: crmTheme.borderLight, animation: 'skeletonPulse 1.5s ease-in-out infinite' }} />
 );
 
 // ─── KPI CARD ─────────────────────────────────────────────────────────────────
 const KpiCard = ({ label, value, sub, icon: Icon, color, trend }: any) => (
   <div style={{
-    background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.07)',
+    background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`,
     borderRadius: 16, padding: '16px 14px', position: 'relative', overflow: 'hidden',
+    boxShadow: crmTheme.shadow,
   }}>
-    <div style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, borderRadius: 8, background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'absolute', top: 12, right: 12, width: 30, height: 30, borderRadius: 8, background: `${color}1A`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Icon size={14} color={color} />
     </div>
-    <span style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
-    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: '6px 0 4px', letterSpacing: -0.5 }}>{value}</div>
+    <span style={{ fontSize: 9.5, fontWeight: 800, color: crmTheme.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
+    <div style={{ fontSize: 22, fontWeight: 900, color: crmTheme.textPrimary, margin: '6px 0 4px', letterSpacing: -0.5 }}>{value}</div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      {trend !== undefined && (trend >= 0 ? <ArrowUp size={10} color="#10b981" /> : <ArrowDown size={10} color="#ef4444" />)}
-      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>{sub}</span>
+      {trend !== undefined && (trend >= 0 ? <ArrowUp size={10} color={crmTheme.success} /> : <ArrowDown size={10} color={crmTheme.danger} />)}
+      <span style={{ fontSize: 10, color: crmTheme.textMuted, fontWeight: 700 }}>{sub}</span>
     </div>
   </div>
 );
+
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export const AdminProductDetail: React.FC = () => {
@@ -408,86 +450,53 @@ export const AdminProductDetail: React.FC = () => {
 
     return insights;
   };
-
   // ─── Styles ────────────────────────────────────────────────────────────────
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: '44px', background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12,
-    padding: '0 14px', color: '#fff', fontSize: 14, outline: 'none',
+    width: '100%', height: '44px', background: crmTheme.cardBg,
+    border: `1px solid ${crmTheme.border}`, borderRadius: 12,
+    padding: '0 14px', color: crmTheme.textPrimary, fontSize: 14, outline: 'none',
     boxSizing: 'border-box', fontFamily: 'Manrope, sans-serif',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.5)',
+    fontSize: 11, fontWeight: 800, color: crmTheme.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 8,
   };
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.06)',
+    background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`,
     borderRadius: 20, padding: 24, display: 'flex', flexDirection: 'column', gap: 20,
+    boxShadow: crmTheme.shadow,
   };
-  const sectionCard: React.CSSProperties = {
-    background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 18, padding: '20px',
-  };
-
-  // ─── TABS CONFIG ───────────────────────────────────────────────────────────
-  const TABS = [
-    { key: 'dados' as const, label: 'Dados', icon: Package },
-    { key: 'analytics' as const, label: 'Analytics', icon: BarChart2 },
-    { key: 'financeiro' as const, label: 'Financeiro', icon: DollarSign },
-    { key: 'marketing' as const, label: 'Marketing', icon: Tag },
-    { key: 'estoque' as const, label: 'Estoque', icon: Box },
-  ];
-
-  // ─── SKELETON LOADER ───────────────────────────────────────────────────────
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617 0%, #0b0f19 60%, #020617 100%)', paddingBottom: 80 }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.05)' }} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <Skeleton w={160} h={16} />
-          <Skeleton w={100} h={10} />
-        </div>
-      </div>
-      <div style={{ maxWidth: 1000, margin: '30px auto', padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {TABS.map(t => <Skeleton key={t.key} w={90} h={36} radius={10} />)}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Skeleton h={180} radius={20} />
-            <Skeleton h={140} radius={20} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Skeleton h={220} radius={20} />
-            <Skeleton h={100} radius={20} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ─── RENDER ────────────────────────────────────────────────────────────────
   const activeFlags = ALL_FLAGS.filter(f => flags.includes(f.id));
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #020617 0%, #0b0f19 60%, #020617 100%)', paddingBottom: 100, fontFamily: 'Manrope, sans-serif' }}>
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: crmTheme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Manrope, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <RefreshCw size={36} color={crmTheme.primary} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+          <div style={{ fontSize: 14, fontWeight: 700, color: crmTheme.textSecondary }}>Carregando produto...</div>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Background glows */}
-      <div style={{ position: 'fixed', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)', top: '-10%', right: '-5%', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0 }} />
+  return (
+    <div style={{ minHeight: '100vh', background: crmTheme.bg, paddingBottom: 100, fontFamily: 'Manrope, sans-serif' }}>
+      {/* Background glow accents */}
+      <div style={{ position: 'fixed', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,70,229,0.02) 0%, transparent 70%)', top: '-10%', right: '-5%', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0 }} />
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(2,6,23,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, background: crmTheme.headerBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${crmTheme.border}`, boxShadow: crmTheme.shadowSm }}>
         {/* Main header row */}
         <div style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => navigate('/admin')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <button onClick={() => navigate('/admin')} style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, color: crmTheme.textPrimary, width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: crmTheme.shadowSm }}>
               <ArrowLeft size={16} />
             </button>
             <div>
-              <h1 style={{ color: '#fff', fontSize: 17, fontWeight: 900, margin: 0, letterSpacing: -0.3 }}>
+              <h1 style={{ color: crmTheme.textPrimary, fontSize: 17, fontWeight: 900, margin: 0, letterSpacing: -0.3 }}>
                 {isNew ? 'Novo Produto' : 'Central do Produto'}
               </h1>
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700 }}>
+              <span style={{ color: crmTheme.textSecondary, fontSize: 11, fontWeight: 700 }}>
                 {isNew ? 'Preencha os detalhes' : title || 'Carregando...'}
               </span>
             </div>
@@ -496,16 +505,16 @@ export const AdminProductDetail: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <div style={{
-                width: 36, height: 20, borderRadius: 99, background: active ? '#10b981' : 'rgba(255,255,255,0.1)',
+                width: 36, height: 20, borderRadius: 99, background: active ? crmTheme.success : '#cbd5e1',
                 position: 'relative', transition: 'background 0.25s',
               }}>
-                <div style={{ position: 'absolute', top: 2, left: active ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
+                <div style={{ position: 'absolute', top: 2, left: active ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
               </div>
               <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} style={{ display: 'none' }} />
-              <span style={{ color: active ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 800 }}>{active ? 'Ativo' : 'Pausado'}</span>
+              <span style={{ color: active ? crmTheme.success : crmTheme.textMuted, fontSize: 12, fontWeight: 800 }}>{active ? 'Ativo' : 'Pausado'}</span>
             </label>
 
-            <button onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 10, padding: '0 20px', height: 40, display: 'flex', alignItems: 'center', gap: 8, color: '#000', fontSize: 13, fontWeight: 900, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={handleSave} disabled={saving} style={{ background: crmTheme.primary, border: 'none', borderRadius: 10, padding: '0 20px', height: 40, display: 'flex', alignItems: 'center', gap: 8, color: '#fff', fontSize: 13, fontWeight: 900, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}>
               <Save size={15} /> {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
@@ -513,14 +522,14 @@ export const AdminProductDetail: React.FC = () => {
 
         {/* Status strip with active flags */}
         {!isNew && (title || activeFlags.length > 0) && (
-          <div style={{ padding: '8px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          <div style={{ padding: '8px 24px', borderTop: `1px solid ${crmTheme.border}`, display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
             {wizMargin !== null && (
-              <span style={{ fontSize: 10, fontWeight: 900, padding: '3px 10px', borderRadius: 99, background: `${marginColor}18`, color: marginColor, border: `1px solid ${marginColor}40`, whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, padding: '3px 10px', borderRadius: 99, background: wizMargin >= 15 ? crmTheme.successLight : crmTheme.dangerLight, color: marginColor, border: `1px solid ${marginColor}40`, whiteSpace: 'nowrap', flexShrink: 0 }}>
                 Margem: {wizMargin.toFixed(1)}%
               </span>
             )}
             {stockNum > 0 && (
-              <span style={{ fontSize: 10, fontWeight: 900, padding: '3px 10px', borderRadius: 99, background: `${stockStatus.color}18`, color: stockStatus.color, border: `1px solid ${stockStatus.color}40`, whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, padding: '3px 10px', borderRadius: 99, background: `${stockStatus.color}15`, color: stockStatus.color, border: `1px solid ${stockStatus.color}40`, whiteSpace: 'nowrap', flexShrink: 0 }}>
                 Estoque: {stockNum} un • {stockStatus.label}
               </span>
             )}
@@ -543,11 +552,11 @@ export const AdminProductDetail: React.FC = () => {
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
                 flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px',
-                background: isActive ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(15,23,42,0.6)',
-                border: isActive ? 'none' : '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10, color: isActive ? '#000' : 'rgba(255,255,255,0.55)',
+                background: isActive ? crmTheme.primary : crmTheme.cardBg,
+                border: isActive ? 'none' : `1px solid ${crmTheme.border}`,
+                borderRadius: 10, color: isActive ? '#fff' : crmTheme.textSecondary,
                 fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s ease', fontFamily: 'Manrope, sans-serif',
-                boxShadow: isActive ? '0 4px 12px rgba(212,175,55,0.3)' : 'none',
+                boxShadow: isActive ? '0 4px 12px rgba(79,70,229,0.2)' : crmTheme.shadowSm,
               }}>
                 <Icon size={13} />{tab.label}
               </button>
@@ -556,7 +565,7 @@ export const AdminProductDetail: React.FC = () => {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            TAB: DADOS (Original form — preserved exactly)
+            TAB: DADOS
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'dados' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, alignItems: 'start' }}>
@@ -565,8 +574,8 @@ export const AdminProductDetail: React.FC = () => {
 
               {/* Informações Básicas */}
               <div style={cardStyle}>
-                <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Package size={16} color="#D4AF37" /> Informações Básicas
+                <h2 style={{ color: crmTheme.textPrimary, fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Package size={16} color={crmTheme.primary} /> Informações Básicas
                 </h2>
                 <div>
                   <label style={labelStyle}>Nome do Produto *</label>
@@ -597,19 +606,19 @@ export const AdminProductDetail: React.FC = () => {
 
               {/* Mídia */}
               <div style={cardStyle}>
-                <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <ImageIcon size={16} color="#0ea5e9" /> Mídia do Produto
+                <h2 style={{ color: crmTheme.textPrimary, fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ImageIcon size={16} color={crmTheme.accent} /> Mídia do Produto
                 </h2>
                 <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
-                  <div style={{ width: 110, height: 110, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {image ? <img src={image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <ImageIcon color="rgba(255,255,255,0.2)" size={28} />}
+                  <div style={{ width: 110, height: 110, background: '#f8fafc', border: `1px dashed ${crmTheme.border}`, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {image ? <img src={image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> : <ImageIcon color={crmTheme.textMuted} size={28} />}
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <label style={labelStyle}>URL da Imagem</label>
                     <input type="text" value={image} onChange={e => setImage(e.target.value)} style={inputStyle} placeholder="https://..." />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 800 }}>OU</span>
-                      <label style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 800, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <span style={{ fontSize: 11, color: crmTheme.textMuted, fontWeight: 800 }}>OU</span>
+                      <label style={{ background: crmTheme.bg, padding: '8px 16px', borderRadius: 8, fontSize: 11, fontWeight: 800, color: crmTheme.textPrimary, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${crmTheme.border}` }}>
                         <ImageIcon size={13} /> {uploadingImg ? 'Comprimindo...' : 'Upload'}
                         <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                       </label>
@@ -620,8 +629,8 @@ export const AdminProductDetail: React.FC = () => {
 
               {/* Destaques e Promoções */}
               <div style={cardStyle}>
-                <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Target size={16} color="#ec4899" /> Destaques e Promoções
+                <h2 style={{ color: crmTheme.textPrimary, fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Target size={16} color={crmTheme.danger} /> Destaques e Promoções
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
@@ -636,11 +645,11 @@ export const AdminProductDetail: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.02)', padding: 14, borderRadius: 12, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <input type="checkbox" checked={availableInRoulette} onChange={e => setAvailableInRoulette(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#D4AF37' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, background: crmTheme.bg, padding: 14, borderRadius: 12, cursor: 'pointer', border: `1px solid ${crmTheme.border}` }}>
+                  <input type="checkbox" checked={availableInRoulette} onChange={e => setAvailableInRoulette(e.target.checked)} style={{ width: 16, height: 16, accentColor: crmTheme.primary }} />
                   <div>
-                    <span style={{ display: 'block', color: '#fff', fontSize: 13, fontWeight: 800 }}>Disponível na Roleta VIP</span>
-                    <span style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Usuários podem ganhar este item como prêmio</span>
+                    <span style={{ display: 'block', color: crmTheme.textPrimary, fontSize: 13, fontWeight: 800 }}>Disponível na Roleta VIP</span>
+                    <span style={{ display: 'block', color: crmTheme.textSecondary, fontSize: 11 }}>Usuários podem ganhar este item como prêmio</span>
                   </div>
                 </label>
               </div>
@@ -650,13 +659,13 @@ export const AdminProductDetail: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Precificação */}
-              <div style={{ ...cardStyle, border: '1px solid rgba(212,175,55,0.25)' }}>
-                <h2 style={{ color: '#FFDF73', fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ ...cardStyle, border: `1.5px solid ${crmTheme.border}` }}>
+                <h2 style={{ color: crmTheme.primary, fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <DollarSign size={16} /> Precificação
                 </h2>
                 <div>
                   <label style={labelStyle}>Preço de Venda (R$) *</label>
-                  <input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} style={{ ...inputStyle, fontSize: 20, fontWeight: 900, color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.05)' }} />
+                  <input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} style={{ ...inputStyle, fontSize: 20, fontWeight: 900, color: crmTheme.success, border: `1px solid ${crmTheme.success}`, background: crmTheme.successLight }} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
@@ -671,41 +680,41 @@ export const AdminProductDetail: React.FC = () => {
 
                 {/* Live Margin Simulator */}
                 {(wizCost > 0 || wizPrice > 0) && (
-                  <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 14, padding: 16, gap: 10, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ background: crmTheme.bg, borderRadius: 14, padding: 16, gap: 10, display: 'flex', flexDirection: 'column', border: `1px solid ${crmTheme.border}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 800 }}>Custo produto:</span>
-                      <span style={{ fontSize: 11, color: '#fff', fontWeight: 900 }}>R$ {wizCost.toFixed(2)}</span>
+                      <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 800 }}>Custo produto:</span>
+                      <span style={{ fontSize: 11, color: crmTheme.textPrimary, fontWeight: 900 }}>R$ {wizCost.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 800 }}>Custo em 💎:</span>
-                      <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 900 }}>R$ {calcDiamondCost(wizDiamonds).toFixed(2)}</span>
+                      <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 800 }}>Custo em 💎:</span>
+                      <span style={{ fontSize: 11, color: crmTheme.warning, fontWeight: 900 }}>R$ {calcDiamondCost(wizDiamonds).toFixed(2)}</span>
                     </div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                    <div style={{ height: 1, background: crmTheme.border }} />
                     {wizMargin !== null && (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div>
-                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, display: 'block', marginBottom: 3 }}>Margem Real</span>
+                            <span style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 800, display: 'block', marginBottom: 3 }}>Margem Real</span>
                             <span style={{ fontSize: 26, fontWeight: 900, color: marginColor }}>{wizMargin.toFixed(1)}%</span>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, display: 'block', marginBottom: 3 }}>Lucro/Unidade</span>
-                            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>R$ {wizProfit.toFixed(2)}</span>
+                            <span style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 800, display: 'block', marginBottom: 3 }}>Lucro/Unidade</span>
+                            <span style={{ fontSize: 18, fontWeight: 900, color: crmTheme.textPrimary }}>R$ {wizProfit.toFixed(2)}</span>
                           </div>
                         </div>
                         {/* Margin bar */}
-                        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                        <div style={{ background: crmTheme.border, borderRadius: 99, height: 6, overflow: 'hidden' }}>
                           <div style={{ width: `${Math.min(100, Math.max(0, wizMargin))}%`, height: '100%', background: marginColor, borderRadius: 99, transition: 'width 0.4s ease' }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>
-                          <span>0%</span><span style={{ color: '#ef4444' }}>15% mín</span><span style={{ color: '#10b981' }}>30% ideal</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: crmTheme.textSecondary, fontWeight: 700 }}>
+                          <span>0%</span><span style={{ color: crmTheme.danger }}>15% mín</span><span style={{ color: crmTheme.success }}>30% ideal</span>
                         </div>
                       </>
                     )}
                     {wizMargin !== null && wizMargin < 0 && (
-                      <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <AlertCircle size={14} color="#ef4444" />
-                        <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 800 }}>Prejuízo detectado! O salvamento será bloqueado.</span>
+                      <div style={{ background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <AlertCircle size={14} color={crmTheme.danger} />
+                        <span style={{ fontSize: 11, color: crmTheme.danger, fontWeight: 800 }}>Prejuízo detectado! O salvamento será bloqueado.</span>
                       </div>
                     )}
                   </div>
@@ -713,11 +722,11 @@ export const AdminProductDetail: React.FC = () => {
 
                 {/* Price suggestion */}
                 {wizCost > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.02)', padding: 12, borderRadius: 10, flexWrap: 'wrap', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 800 }}>Meta:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: crmTheme.bg, padding: 12, borderRadius: 10, flexWrap: 'wrap', border: `1px solid ${crmTheme.border}` }}>
+                    <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 800 }}>Meta:</span>
                     <input type="number" value={targetMargin} onChange={e => setTargetMargin(e.target.value)} style={{ ...inputStyle, width: 55, height: 30, padding: 0, textAlign: 'center', fontSize: 12 }} />
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>%</span>
-                    <button onClick={() => setPrice(calcSuggestedPrice(wizCost, wizDiamonds, parseFloat(targetMargin) || 35).toFixed(2))} style={{ height: 30, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 8, color: '#FFDF73', fontSize: 11, fontWeight: 900, cursor: 'pointer', padding: '0 12px', marginLeft: 'auto', fontFamily: 'Manrope, sans-serif' }}>
+                    <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>%</span>
+                    <button onClick={() => setPrice(calcSuggestedPrice(wizCost, wizDiamonds, parseFloat(targetMargin) || 35).toFixed(2))} style={{ height: 30, background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, borderRadius: 8, color: crmTheme.primary, fontSize: 11, fontWeight: 900, cursor: 'pointer', padding: '0 12px', marginLeft: 'auto', fontFamily: 'Manrope, sans-serif' }}>
                       Sugerir Preço
                     </button>
                   </div>
@@ -726,8 +735,8 @@ export const AdminProductDetail: React.FC = () => {
 
               {/* Estoque (quick) */}
               <div style={cardStyle}>
-                <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Shield size={16} color="#818cf8" /> Controle de Estoque
+                <h2 style={{ color: crmTheme.textPrimary, fontSize: 14, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Shield size={16} color={crmTheme.primary} /> Controle de Estoque
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
@@ -757,32 +766,32 @@ export const AdminProductDetail: React.FC = () => {
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-                <KpiCard label="Pedidos c/ este produto" value={ordersData.totalOrders} sub="Pedidos registrados" icon={ShoppingBag} color="#D4AF37" trend={ordersData.totalOrders > 0 ? 1 : 0} />
-                <KpiCard label="Unidades Vendidas" value={ordersData.totalQty} sub="Total acumulado" icon={Activity} color="#10b981" trend={ordersData.totalQty > 0 ? 1 : 0} />
-                <KpiCard label="Receita Gerada" value={`R$ ${ordersData.totalRevenue.toFixed(2)}`} sub="Faturamento real" icon={TrendingUp} color="#818cf8" trend={ordersData.totalRevenue > 0 ? 1 : 0} />
+                <KpiCard label="Pedidos c/ este produto" value={ordersData.totalOrders} sub="Pedidos registrados" icon={ShoppingBag} color={crmTheme.primary} trend={ordersData.totalOrders > 0 ? 1 : 0} />
+                <KpiCard label="Unidades Vendidas" value={ordersData.totalQty} sub="Total acumulado" icon={Activity} color={crmTheme.success} trend={ordersData.totalQty > 0 ? 1 : 0} />
+                <KpiCard label="Receita Gerada" value={`R$ ${ordersData.totalRevenue.toFixed(2)}`} sub="Faturamento real" icon={TrendingUp} color={crmTheme.accent} trend={ordersData.totalRevenue > 0 ? 1 : 0} />
                 <KpiCard label="Margem Atual" value={wizMargin !== null ? `${wizMargin.toFixed(1)}%` : '—'} sub={wizMargin !== null ? (wizMargin >= 30 ? '🟢 Saudável' : wizMargin >= 15 ? '🟡 Aceitável' : '🔴 Risco') : 'Sem custo cadastrado'} icon={Percent} color={marginColor} />
               </div>
             )}
 
             {/* Sales chart */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <BarChart2 size={15} color="#818cf8" /> Histórico de Vendas deste Produto
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <BarChart2 size={15} color={crmTheme.primary} /> Histórico de Vendas deste Produto
               </h3>
               {ordersData.chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={ordersData.chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} axisLine={false} tickLine={false} width={55} tickFormatter={v => `R$${v}`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={crmTheme.borderLight} />
+                    <XAxis dataKey="day" tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} width={55} tickFormatter={v => `R$${v}`} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="receita" fill="#D4AF37" radius={[6, 6, 0, 0]} name="receita" />
+                    <Bar dataKey="receita" fill={crmTheme.primary} radius={[6, 6, 0, 0]} name="receita" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ textAlign: 'center', padding: '36px 0', color: 'rgba(255,255,255,0.3)' }}>
-                  <BarChart2 size={36} color="rgba(255,255,255,0.1)" style={{ marginBottom: 10 }} />
-                  <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Sem histórico de vendas</div>
+                <div style={{ textAlign: 'center', padding: '36px 0', color: crmTheme.textMuted }}>
+                  <BarChart2 size={36} color={crmTheme.border} style={{ marginBottom: 10 }} />
+                  <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4, color: crmTheme.textSecondary }}>Sem histórico de vendas</div>
                   <div style={{ fontSize: 11 }}>Este produto ainda não aparece em pedidos registrados.</div>
                 </div>
               )}
@@ -790,22 +799,22 @@ export const AdminProductDetail: React.FC = () => {
 
             {/* Insights */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Zap size={15} color="#FFDF73" /> Insights Automáticos
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Zap size={15} color={crmTheme.warning} /> Insights Automáticos
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {generateInsights().map((ins, i) => {
                   const cfg = {
-                    success: { color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)', icon: CheckCircle },
-                    warning: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', icon: AlertCircle },
-                    danger:  { color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)',   icon: AlertCircle },
-                    info:    { color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.2)', icon: Info },
+                    success: { color: crmTheme.success, bg: crmTheme.successLight, border: crmTheme.success, icon: CheckCircle },
+                    warning: { color: crmTheme.warning, bg: crmTheme.warningLight, border: crmTheme.warning, icon: AlertCircle },
+                    danger:  { color: crmTheme.danger, bg: crmTheme.dangerLight, border: crmTheme.danger, icon: AlertCircle },
+                    info:    { color: crmTheme.primary, bg: crmTheme.primaryLight, border: crmTheme.primary, icon: Info },
                   }[ins.type];
                   const Icon = cfg.icon;
                   return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 12, background: cfg.bg, border: `1px solid ${cfg.border}` }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', borderRadius: 12, background: cfg.bg, border: `1px solid ${cfg.border}40` }}>
                       <Icon size={14} color={cfg.color} style={{ flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700, lineHeight: 1.5 }}>{ins.text}</span>
+                      <span style={{ fontSize: 12, color: crmTheme.textPrimary, fontWeight: 700, lineHeight: 1.5 }}>{ins.text}</span>
                     </div>
                   );
                 })}
@@ -821,28 +830,28 @@ export const AdminProductDetail: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {wizCost <= 0 && (
-              <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertCircle size={16} color="#f59e0b" />
-                <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 700 }}>Cadastre o preço de custo na aba Dados para desbloquear cenários e simulações financeiras completas.</span>
+              <div style={{ background: crmTheme.warningLight, border: `1px solid ${crmTheme.warning}`, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertCircle size={16} color={crmTheme.warning} />
+                <span style={{ fontSize: 12, color: crmTheme.warning, fontWeight: 700 }}>Cadastre o preço de custo na aba Dados para desbloquear cenários e simulações financeiras completas.</span>
               </div>
             )}
 
             {/* Volume scenarios */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <TrendingUp size={15} color="#10b981" /> Cenários de Volume de Vendas
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <TrendingUp size={15} color={crmTheme.success} /> Cenários de Volume de Vendas
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                 {scenarios.map(s => (
-                  <div key={s.units} style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 14, padding: '16px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>× {s.units} UNIDADES</div>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: '#FFDF73', marginBottom: 4 }}>R$ {s.revenue.toFixed(2)}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>Faturamento previsto</div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '10px 0' }} />
-                    <div style={{ fontSize: 16, fontWeight: 900, color: wizCost > 0 ? (s.profit >= 0 ? '#10b981' : '#ef4444') : 'rgba(255,255,255,0.3)' }}>
+                  <div key={s.units} style={{ background: crmTheme.successLight, border: `1px solid ${crmTheme.success}30`, borderRadius: 14, padding: '16px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: crmTheme.textSecondary, marginBottom: 8 }}>× {s.units} UNIDADES</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: crmTheme.primary, marginBottom: 4 }}>R$ {s.revenue.toFixed(2)}</div>
+                    <div style={{ fontSize: 11, color: crmTheme.textSecondary, marginBottom: 2 }}>Faturamento previsto</div>
+                    <div style={{ height: 1, background: crmTheme.border, margin: '10px 0' }} />
+                    <div style={{ fontSize: 16, fontWeight: 900, color: wizCost > 0 ? (s.profit >= 0 ? crmTheme.success : crmTheme.danger) : crmTheme.textMuted }}>
                       {wizCost > 0 ? `R$ ${s.profit.toFixed(2)}` : '—'}
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Lucro estimado</div>
+                    <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>Lucro estimado</div>
                     {s.margin !== null && (
                       <div style={{ fontSize: 10, fontWeight: 900, marginTop: 8, color: marginColor }}>Margem: {s.margin.toFixed(1)}%</div>
                     )}
@@ -853,33 +862,33 @@ export const AdminProductDetail: React.FC = () => {
 
             {/* Discount impact */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Percent size={15} color="#ec4899" /> Impacto de Descontos Promocionais
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Percent size={15} color={crmTheme.primary} /> Impacto de Descontos Promocionais
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
                 {discountScenarios.map(d => {
                   const dc = d.discMargin !== null
-                    ? (d.discMargin >= 30 ? '#10b981' : d.discMargin >= 15 ? '#f59e0b' : '#ef4444')
-                    : 'rgba(255,255,255,0.3)';
+                    ? (d.discMargin >= 30 ? crmTheme.success : d.discMargin >= 15 ? crmTheme.warning : crmTheme.danger)
+                    : crmTheme.textMuted;
                   return (
-                    <div key={d.disc} style={{ background: 'rgba(236,72,153,0.06)', border: '1px solid rgba(236,72,153,0.15)', borderRadius: 14, padding: '16px' }}>
+                    <div key={d.disc} style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 14, padding: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>DESCONTO DE {d.disc}%</span>
-                        <span style={{ fontSize: 10, fontWeight: 900, background: 'rgba(236,72,153,0.15)', color: '#ec4899', border: '1px solid rgba(236,72,153,0.3)', padding: '2px 8px', borderRadius: 99 }}>-{d.disc}%</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: crmTheme.textSecondary }}>DESCONTO DE {d.disc}%</span>
+                        <span style={{ fontSize: 10, fontWeight: 900, background: crmTheme.primaryLight, color: crmTheme.primary, border: `1px solid ${crmTheme.primary}40`, padding: '2px 8px', borderRadius: 99 }}>-{d.disc}%</span>
                       </div>
-                      <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', marginBottom: 2 }}>R$ {d.discountedPrice.toFixed(2)}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
-                        <s style={{ color: 'rgba(255,255,255,0.25)' }}>R$ {wizPrice.toFixed(2)}</s>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: crmTheme.textPrimary, marginBottom: 2 }}>R$ {d.discountedPrice.toFixed(2)}</div>
+                      <div style={{ fontSize: 11, color: crmTheme.textSecondary, marginBottom: 10 }}>
+                        <s style={{ color: crmTheme.textMuted }}>R$ {wizPrice.toFixed(2)}</s>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Lucro/un</div>
-                          <div style={{ fontSize: 14, fontWeight: 900, color: wizCost > 0 ? (d.discProfit >= 0 ? '#10b981' : '#ef4444') : 'rgba(255,255,255,0.3)' }}>
+                          <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>Lucro/un</div>
+                          <div style={{ fontSize: 14, fontWeight: 900, color: wizCost > 0 ? (d.discProfit >= 0 ? crmTheme.success : crmTheme.danger) : crmTheme.textMuted }}>
                             {wizCost > 0 ? `R$ ${d.discProfit.toFixed(2)}` : '—'}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>Margem</div>
+                          <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>Margem</div>
                           <div style={{ fontSize: 14, fontWeight: 900, color: dc }}>
                             {d.discMargin !== null ? `${d.discMargin.toFixed(1)}%` : '—'}
                           </div>
@@ -890,7 +899,7 @@ export const AdminProductDetail: React.FC = () => {
                 })}
               </div>
               {wizCost <= 0 && (
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', margin: '10px 0 0', fontStyle: 'italic' }}>
+                <p style={{ fontSize: 11, color: crmTheme.textMuted, margin: '10px 0 0', fontStyle: 'italic' }}>
                   * Cadastre o preço de custo para ver o lucro e a margem pós-desconto.
                 </p>
               )}
@@ -899,8 +908,8 @@ export const AdminProductDetail: React.FC = () => {
             {/* Margin health panel */}
             {wizMargin !== null && (
               <div style={sectionCard}>
-                <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Activity size={15} color="#818cf8" /> Saúde Financeira do Produto
+                <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Activity size={15} color={crmTheme.primary} /> Saúde Financeira do Produto
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
@@ -910,13 +919,13 @@ export const AdminProductDetail: React.FC = () => {
                   ].map(row => (
                     <div key={row.label}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 700 }}>{row.label}</span>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: row.current >= row.value ? '#10b981' : '#ef4444' }}>
+                        <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 700 }}>{row.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: row.current >= row.value ? crmTheme.success : crmTheme.danger }}>
                           {row.current >= row.value ? '✓ Atingida' : `Faltam ${(row.value - row.current).toFixed(1)}%`}
                         </span>
                       </div>
-                      <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(100, Math.max(0, (row.current / row.value) * 100))}%`, height: '100%', background: row.current >= row.value ? '#10b981' : '#ef4444', borderRadius: 99, transition: 'width 0.5s ease' }} />
+                      <div style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, Math.max(0, (row.current / row.value) * 100))}%`, height: '100%', background: row.current >= row.value ? crmTheme.success : crmTheme.danger, borderRadius: 99, transition: 'width 0.5s ease' }} />
                       </div>
                     </div>
                   ))}
@@ -926,18 +935,16 @@ export const AdminProductDetail: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            TAB: MARKETING
-        ══════════════════════════════════════════════════════════════════════ */}
+        {/* ══ TAB: MARKETING ════════════════════════════════════════════════ */}
         {activeTab === 'marketing' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Flags Grid */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Flame size={15} color="#ef4444" /> Flags Comerciais
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Flame size={15} color={crmTheme.danger} /> Flags Comerciais
               </h3>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 16px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '0 0 16px', lineHeight: 1.5 }}>
                 Selecione as flags que se aplicam a este produto. Elas alimentam listas dinâmicas da loja e melhoram a visibilidade.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
@@ -946,24 +953,24 @@ export const AdminProductDetail: React.FC = () => {
                   return (
                     <button key={flag.id} onClick={() => toggleFlag(flag.id)} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
-                      background: isOn ? flag.bg : 'rgba(255,255,255,0.02)',
-                      border: `1.5px solid ${isOn ? flag.border : 'rgba(255,255,255,0.07)'}`,
+                      background: isOn ? flag.bg : crmTheme.cardBg,
+                      border: `1.5px solid ${isOn ? flag.border : crmTheme.border}`,
                       borderRadius: 12, cursor: 'pointer', textAlign: 'left',
                       transition: 'all 0.2s ease', fontFamily: 'Manrope, sans-serif',
-                      boxShadow: isOn ? `0 4px 16px ${flag.bg}` : 'none',
+                      boxShadow: isOn ? crmTheme.shadowSm : 'none',
                     }}>
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{flag.emoji}</span>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: isOn ? flag.color : 'rgba(255,255,255,0.6)' }}>{flag.label}</div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: isOn ? flag.color + '99' : 'rgba(255,255,255,0.25)', marginTop: 2 }}>{isOn ? '● Ativa' : '○ Inativa'}</div>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: isOn ? flag.color : crmTheme.textSecondary }}>{flag.label}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: isOn ? flag.color : crmTheme.textMuted, marginTop: 2 }}>{isOn ? '● Ativa' : '○ Inativa'}</div>
                       </div>
                     </button>
                   );
                 })}
               </div>
               {flags.length > 0 && (
-                <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 12 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#FFDF73' }}>
+                <div style={{ marginTop: 14, padding: '10px 14px', background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}30`, borderRadius: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: crmTheme.primary }}>
                     {flags.length} {flags.length === 1 ? 'flag ativa' : 'flags ativas'} — Salve o produto para persistir as alterações.
                   </span>
                 </div>
@@ -972,15 +979,15 @@ export const AdminProductDetail: React.FC = () => {
 
             {/* Promo Panel */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Tag size={15} color="#ec4899" /> Configuração de Promoção
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Tag size={15} color={crmTheme.primary} /> Configuração de Promoção
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: promoActive ? 'rgba(236,72,153,0.08)' : 'rgba(255,255,255,0.02)', border: `1.5px solid ${promoActive ? 'rgba(236,72,153,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}>
-                  <input type="checkbox" checked={promoActive} onChange={e => setPromoActive(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#ec4899' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: promoActive ? crmTheme.primaryLight : crmTheme.bg, border: `1.5px solid ${promoActive ? crmTheme.primary : crmTheme.border}`, borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                  <input type="checkbox" checked={promoActive} onChange={e => setPromoActive(e.target.checked)} style={{ width: 16, height: 16, accentColor: crmTheme.primary }} />
                   <div>
-                    <span style={{ display: 'block', color: promoActive ? '#ec4899' : '#fff', fontSize: 13, fontWeight: 900 }}>Promoção Ativa</span>
-                    <span style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>Ativa o preço com desconto e exibe a badge de promoção</span>
+                    <span style={{ display: 'block', color: promoActive ? crmTheme.primary : crmTheme.textPrimary, fontSize: 13, fontWeight: 900 }}>Promoção Ativa</span>
+                    <span style={{ display: 'block', color: crmTheme.textSecondary, fontSize: 11, marginTop: 2 }}>Ativa o preço com desconto e exibe a badge de promoção</span>
                   </div>
                 </label>
 
@@ -998,15 +1005,15 @@ export const AdminProductDetail: React.FC = () => {
                 )}
 
                 {promoActive && promoDiscount && wizPrice > 0 && (
-                  <div style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.2)', borderRadius: 12, padding: '14px 16px' }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 800, marginBottom: 6 }}>PRÉ-VISUALIZAÇÃO DO PREÇO</div>
+                  <div style={{ background: crmTheme.successLight, border: `1px solid ${crmTheme.success}40`, borderRadius: 12, padding: '14px 16px' }}>
+                    <div style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 800, marginBottom: 6 }}>PRÉ-VISUALIZAÇÃO DO PREÇO</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: '#ec4899' }}>R$ {promoPrice.toFixed(2)}</span>
-                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>R$ {wizPrice.toFixed(2)}</span>
-                      <span style={{ fontSize: 10, fontWeight: 900, background: 'rgba(236,72,153,0.15)', color: '#ec4899', border: '1px solid rgba(236,72,153,0.3)', padding: '3px 8px', borderRadius: 99 }}>-{promoDiscount}%</span>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: crmTheme.success }}>R$ {promoPrice.toFixed(2)}</span>
+                      <span style={{ fontSize: 13, color: crmTheme.textMuted, textDecoration: 'line-through' }}>R$ {wizPrice.toFixed(2)}</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, background: crmTheme.successLight, color: crmTheme.success, border: `1px solid ${crmTheme.success}30`, padding: '3px 8px', borderRadius: 99 }}>-{promoDiscount}%</span>
                     </div>
                     {promoExpiry && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: crmTheme.textSecondary, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <Clock size={11} /> Válida até: {new Date(promoExpiry).toLocaleString('pt-BR')}
                       </div>
                     )}
@@ -1017,10 +1024,10 @@ export const AdminProductDetail: React.FC = () => {
 
             {/* Combos sugeridos */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Star size={15} color="#f59e0b" /> Combos Sugeridos por Categoria
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Star size={15} color={crmTheme.warning} /> Combos Sugeridos por Categoria
               </h3>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>Ideias de produtos complementares para aumentar o ticket médio.</p>
+              <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '0 0 14px' }}>Ideias de produtos complementares para aumentar o ticket médio.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(category === 'Bebidas' ? [
                   { a: '🍺 Cerveja', b: '🔥 Carvão', tag: 'Churrasco' },
@@ -1035,11 +1042,11 @@ export const AdminProductDetail: React.FC = () => {
                 ] : [
                   { a: '📦 Este produto', b: '🎁 Produto Complementar', tag: 'Sugestão Geral' },
                 ]).map((combo, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10 }}>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>{combo.a}</span>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>+</span>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>{combo.b}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 900, background: 'rgba(129,140,248,0.1)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.2)', padding: '2px 8px', borderRadius: 99 }}>{combo.tag}</span>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 10 }}>
+                    <span style={{ fontSize: 12, color: crmTheme.textPrimary, fontWeight: 700 }}>{combo.a}</span>
+                    <span style={{ fontSize: 10, color: crmTheme.textMuted }}>+</span>
+                    <span style={{ fontSize: 12, color: crmTheme.textPrimary, fontWeight: 700 }}>{combo.b}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 900, background: crmTheme.primaryLight, color: crmTheme.primary, border: `1px solid ${crmTheme.primary}30`, padding: '2px 8px', borderRadius: 99 }}>{combo.tag}</span>
                   </div>
                 ))}
               </div>
@@ -1047,16 +1054,16 @@ export const AdminProductDetail: React.FC = () => {
 
             {/* Vitrines e Listas */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Layers size={15} color="#818cf8" /> Vitrines & Listas
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Layers size={15} color={crmTheme.primary} /> Vitrines & Listas
               </h3>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '0 0 14px' }}>Gerencie em quais vitrines da home este produto aparece.</p>
+              <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '0 0 14px' }}>Gerencie em quais vitrines da home este produto aparece.</p>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
                 {homeConfig.loading ? (
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Carregando vitrines...</span>
+                  <span style={{ color: crmTheme.textMuted, fontSize: 12 }}>Carregando vitrines...</span>
                 ) : homeConfig.vitrines.length === 0 ? (
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Nenhuma vitrine configurada.</span>
+                  <span style={{ color: crmTheme.textMuted, fontSize: 12 }}>Nenhuma vitrine configurada.</span>
                 ) : (
                   homeConfig.vitrines.map(v => {
                     const isInVitrine = v.productIds.includes(id || '');
@@ -1064,8 +1071,8 @@ export const AdminProductDetail: React.FC = () => {
                       <div key={v.id} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '10px 14px', borderRadius: 10,
-                        background: isInVitrine ? 'rgba(129,140,248,0.1)' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${isInVitrine ? 'rgba(129,140,248,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                        background: isInVitrine ? crmTheme.primaryLight : crmTheme.bg,
+                        border: `1px solid ${isInVitrine ? crmTheme.primary : crmTheme.border}`,
                         cursor: 'pointer', transition: 'all 0.2s'
                       }} onClick={async () => {
                         if (!id) return;
@@ -1076,12 +1083,13 @@ export const AdminProductDetail: React.FC = () => {
                         } catch(e) { alert('Erro ao atualizar vitrine'); }
                       }}>
                         <div>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: isInVitrine ? '#818cf8' : '#fff', display: 'block' }}>{v.title}</span>
-                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{v.theme}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: isInVitrine ? crmTheme.primary : crmTheme.textPrimary, display: 'block' }}>{v.title}</span>
+                          <span style={{ fontSize: 10, color: crmTheme.textSecondary }}>{v.theme}</span>
                         </div>
                         <div style={{
                           width: 20, height: 20, borderRadius: 6,
-                          background: isInVitrine ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                          background: isInVitrine ? crmTheme.primary : crmTheme.bg,
+                          border: `1px solid ${crmTheme.border}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                           {isInVitrine && <CheckCircle size={12} color="#fff" />}
@@ -1095,16 +1103,14 @@ export const AdminProductDetail: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            TAB: ESTOQUE
-        ══════════════════════════════════════════════════════════════════════ */}
+        {/* ══ TAB: ESTOQUE ════════════════════════════════════════════════════ */}
         {activeTab === 'estoque' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Stock health panel */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               <KpiCard label="Estoque Atual" value={stockNum > 0 ? `${stockNum} un` : 'Sem dados'} sub={stockStatus.label} icon={Box} color={stockStatus.color} />
-              <KpiCard label="Estoque Mínimo" value={minStockNum > 0 ? `${minStockNum} un` : '—'} sub="Alerta configurado" icon={AlertCircle} color="#f59e0b" />
+              <KpiCard label="Estoque Mínimo" value={minStockNum > 0 ? `${minStockNum} un` : '—'} sub="Alerta configurado" icon={AlertCircle} color={crmTheme.warning} />
               <KpiCard label="Saúde do Estoque" value={`${stockPct}%`} sub={stockNum === 0 ? 'Zerado' : stockNum <= minStockNum ? 'Repor imediatamente' : 'Dentro do limite'} icon={Activity} color={stockStatus.color} />
               <KpiCard
                 label="Previsão de Ruptura"
@@ -1113,51 +1119,50 @@ export const AdminProductDetail: React.FC = () => {
                   : '—'}
                 sub={ordersData.totalOrders > 0 ? 'Com base nas vendas' : 'Sem histórico'}
                 icon={Clock}
-                color="#818cf8"
+                color={crmTheme.primary}
               />
             </div>
 
             {/* Visual health bar */}
             <div style={sectionCard}>
-              <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Activity size={15} color={stockStatus.color} /> Status Visual do Estoque
               </h3>
               <div style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>
+                  <span style={{ fontSize: 12, color: crmTheme.textSecondary, fontWeight: 700 }}>
                     {stockNum} unidades disponíveis
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 900, color: stockStatus.color }}>
                     {stockStatus.label}
                   </span>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 99, height: 12, overflow: 'hidden' }}>
+                <div style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 99, height: 12, overflow: 'hidden' }}>
                   <div style={{
                     width: `${stockPct}%`, height: '100%',
-                    background: stockPct > 60 ? '#10b981' : stockPct > 30 ? '#f59e0b' : '#ef4444',
+                    background: stockPct > 60 ? crmTheme.success : stockPct > 30 ? crmTheme.warning : crmTheme.danger,
                     borderRadius: 99, transition: 'width 0.5s ease',
-                    boxShadow: `0 0 8px ${stockPct > 60 ? 'rgba(16,185,129,0.4)' : stockPct > 30 ? 'rgba(245,158,11,0.4)' : 'rgba(239,68,68,0.4)'}`,
                   }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, color: crmTheme.textSecondary, fontWeight: 700 }}>
                   <span>0</span>
-                  {minStockNum > 0 && <span style={{ color: '#f59e0b' }}>Mín: {minStockNum}</span>}
+                  {minStockNum > 0 && <span style={{ color: crmTheme.warning }}>Mín: {minStockNum}</span>}
                   <span>Máx</span>
                 </div>
               </div>
 
               {stockNum <= minStockNum && minStockNum > 0 && stockNum > 0 && (
-                <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <AlertCircle size={14} color="#ef4444" />
-                  <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 800 }}>
+                <div style={{ background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle size={14} color={crmTheme.danger} />
+                  <span style={{ fontSize: 12, color: crmTheme.danger, fontWeight: 800 }}>
                     Estoque abaixo do mínimo. Repor {minStockNum - stockNum + 10} unidades recomendado.
                   </span>
                 </div>
               )}
               {stockNum === 0 && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <AlertCircle size={14} color="#ef4444" />
-                  <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 800 }}>⚠️ Estoque ZERADO. O produto pode estar indisponível para clientes.</span>
+                <div style={{ background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle size={14} color={crmTheme.danger} />
+                  <span style={{ fontSize: 12, color: crmTheme.danger, fontWeight: 800 }}>⚠️ Estoque ZERADO. O produto pode estar indisponível para clientes.</span>
                 </div>
               )}
             </div>
@@ -1165,8 +1170,8 @@ export const AdminProductDetail: React.FC = () => {
             {/* Quick adjustment */}
             {!isNew && (
               <div style={sectionCard}>
-                <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <RefreshCw size={15} color="#0ea5e9" /> Ajuste Rápido de Estoque
+                <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RefreshCw size={15} color={crmTheme.accent} /> Ajuste Rápido de Estoque
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
@@ -1183,17 +1188,17 @@ export const AdminProductDetail: React.FC = () => {
                     <button
                       onClick={() => { const v = parseInt(stockAdjustVal); if (!v || isNaN(v)) return; handleStockAdjust(Math.abs(v)); }}
                       disabled={savingStockAdj}
-                      style={{ flex: 1, height: 42, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, color: '#10b981', fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Manrope, sans-serif' }}>
+                      style={{ flex: 1, height: 42, background: crmTheme.successLight, border: `1px solid ${crmTheme.success}`, borderRadius: 10, color: crmTheme.success, fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Manrope, sans-serif' }}>
                       <ArrowUp size={14} /> Entrada
                     </button>
                     <button
                       onClick={() => { const v = parseInt(stockAdjustVal); if (!v || isNaN(v)) return; handleStockAdjust(-Math.abs(v)); }}
                       disabled={savingStockAdj}
-                      style={{ flex: 1, height: 42, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, color: '#ef4444', fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Manrope, sans-serif' }}>
+                      style={{ flex: 1, height: 42, background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, borderRadius: 10, color: crmTheme.danger, fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Manrope, sans-serif' }}>
                       <ArrowDown size={14} /> Saída
                     </button>
                   </div>
-                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+                  <p style={{ fontSize: 10, color: crmTheme.textSecondary, margin: 0 }}>
                     Estoque atual após ajuste será atualizado imediatamente no Firestore.
                   </p>
                 </div>

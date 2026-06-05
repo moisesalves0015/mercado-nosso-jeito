@@ -38,64 +38,93 @@ const THEME_OPTIONS: { value: VitrineConfig['theme']; label: string; color: stri
   { value: 'green',  label: 'Verde / Limpeza', color: '#10b981' },
 ];
 
+// ─── CRM Light Mode Theme ───────────────────────────────────────────────
+const crmTheme = {
+  bg: '#f8fafc',
+  cardBg: '#ffffff',
+  headerBg: 'rgba(255, 255, 255, 0.9)',
+  textPrimary: '#0f172a',
+  textSecondary: '#475569',
+  textMuted: '#94a3b8',
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  primary: '#4f46e5',
+  primaryLight: 'rgba(79, 70, 229, 0.08)',
+  success: '#10b981',
+  successLight: 'rgba(16, 185, 129, 0.08)',
+  warning: '#f59e0b',
+  warningLight: 'rgba(245, 158, 11, 0.08)',
+  danger: '#ef4444',
+  dangerLight: 'rgba(239, 68, 68, 0.08)',
+  accent: '#0ea5e9',
+  accentLight: 'rgba(14, 165, 233, 0.08)',
+  shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02)',
+  shadowSm: '0 1px 3px rgba(0, 0, 0, 0.05)',
+};
+
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 const card: React.CSSProperties = {
-  background: 'rgba(15,23,42,0.6)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  background: crmTheme.cardBg,
+  border: `1px solid ${crmTheme.border}`,
   borderRadius: 16,
   padding: 20,
+  boxShadow: crmTheme.shadow,
 };
 
 const inputSt: React.CSSProperties = {
   width: '100%', height: 40,
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: crmTheme.cardBg,
+  border: `1px solid ${crmTheme.border}`,
   borderRadius: 10, padding: '0 12px',
-  color: '#fff', fontSize: 13, outline: 'none',
+  color: crmTheme.textPrimary, fontSize: 13, outline: 'none',
   boxSizing: 'border-box', fontFamily: 'Manrope, sans-serif',
 };
 
 const labelSt: React.CSSProperties = {
-  fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.45)',
+  fontSize: 10, fontWeight: 800, color: crmTheme.textSecondary,
   textTransform: 'uppercase', letterSpacing: 0.5,
   display: 'block', marginBottom: 5,
 };
 
 const btnGold: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #D4AF37, #FFDF73)',
-  border: 'none', borderRadius: 10, color: '#000',
+  background: crmTheme.primary,
+  border: 'none', borderRadius: 10, color: '#fff',
   fontWeight: 900, fontSize: 12, padding: '0 16px', height: 38,
   display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
   fontFamily: 'Manrope, sans-serif', flexShrink: 0,
+  boxShadow: '0 4px 12px rgba(79,70,229,0.2)',
 };
 
 const btnGhost: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 8, color: 'rgba(255,255,255,0.7)',
+  background: crmTheme.cardBg,
+  border: `1px solid ${crmTheme.border}`,
+  borderRadius: 8, color: crmTheme.textSecondary,
   fontWeight: 800, fontSize: 11, padding: '0 12px', height: 32,
   display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
   fontFamily: 'Manrope, sans-serif',
+  boxShadow: crmTheme.shadowSm,
 };
 
-const btnIconSm = (color = 'rgba(255,255,255,0.5)'): React.CSSProperties => ({
-  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+const btnIconSm = (color = crmTheme.textSecondary): React.CSSProperties => ({
+  background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`,
   borderRadius: 7, width: 30, height: 30,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   color, cursor: 'pointer',
+  boxShadow: crmTheme.shadowSm,
 });
 
 const toggle = (active: boolean): React.CSSProperties => ({
   width: 38, height: 22, borderRadius: 99, border: 'none', cursor: 'pointer',
-  background: active ? 'linear-gradient(135deg,#D4AF37,#FFDF73)' : 'rgba(255,255,255,0.1)',
+  background: active ? crmTheme.success : '#cbd5e1',
   position: 'relative', transition: 'all 0.2s ease', flexShrink: 0,
 });
 
 const toggleKnob = (active: boolean): React.CSSProperties => ({
   position: 'absolute', top: 3, left: active ? 19 : 3,
   width: 16, height: 16, borderRadius: '50%',
-  background: active ? '#000' : 'rgba(255,255,255,0.4)',
+  background: '#fff',
   transition: 'all 0.2s ease',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
 });
 
 // ─── PRODUCT SEARCH PICKER ────────────────────────────────────────────────────
@@ -119,12 +148,12 @@ const ProductPicker: React.FC<{
           {selectedIds.map(id => {
             const p = products.find(x => x.id === id);
             return (
-              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 99, padding: '3px 8px 3px 5px' }}>
+              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: crmTheme.primaryLight, border: `1px solid ${crmTheme.border}`, borderRadius: 99, padding: '3px 8px 3px 5px' }}>
                 {p && <img src={p.image} alt="" style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4 }} />}
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#FFDF73', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: crmTheme.primary, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {p ? p.title.split(' ').slice(0, 3).join(' ') : id}
                 </span>
-                <button onClick={() => onRemove(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'flex', padding: 0 }}>
+                <button onClick={() => onRemove(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: crmTheme.danger, display: 'flex', padding: 0 }}>
                   <X size={11} />
                 </button>
               </div>
@@ -135,7 +164,7 @@ const ProductPicker: React.FC<{
 
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 6 }}>
-        <Search size={12} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        <Search size={12} color={crmTheme.textMuted} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
         <input
           type="text"
           placeholder="Buscar produto por nome..."
@@ -147,16 +176,16 @@ const ProductPicker: React.FC<{
 
       {q && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
-          {filtered.length === 0 && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: '6px 4px' }}>Nenhum produto encontrado.</span>}
+          {filtered.length === 0 && <span style={{ fontSize: 11, color: crmTheme.textMuted, padding: '6px 4px' }}>Nenhum produto encontrado.</span>}
           {filtered.map(p => (
             <button key={p.id} onClick={() => { onAdd(p.id); setQ(''); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
-              <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.03)', flexShrink: 0 }} />
+              style={{ display: 'flex', alignItems: 'center', gap: 10, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
+              <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />
               <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{p.category} · R$ {Number(p.price).toFixed(2)}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: crmTheme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600 }}>{p.category} · R$ {Number(p.price).toFixed(2)}</div>
               </div>
-              <Plus size={13} color="#D4AF37" />
+              <Plus size={13} color={crmTheme.primary} />
             </button>
           ))}
         </div>
@@ -218,8 +247,8 @@ const VitrineForm: React.FC<{
         <div>
           <label style={labelSt}>Tema / Cor</label>
           <select value={theme} onChange={e => setTheme(e.target.value as any)}
-            style={{ ...inputSt, background: 'rgba(255,255,255,0.04)', appearance: 'auto' }}>
-            {THEME_OPTIONS.map(t => <option key={t.value} value={t.value} style={{ background: '#0f172a' }}>{t.label}</option>)}
+            style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}>
+            {THEME_OPTIONS.map(t => <option key={t.value} value={t.value} style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>{t.label}</option>)}
           </select>
         </div>
         <div>
@@ -247,7 +276,7 @@ const VitrineForm: React.FC<{
         <button style={toggle(active)} onClick={() => setActive(!active)}>
           <div style={toggleKnob(active)} />
         </button>
-        <span style={{ fontSize: 12, fontWeight: 700, color: active ? '#FFDF73' : 'rgba(255,255,255,0.4)' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: active ? crmTheme.success : crmTheme.textMuted }}>
           {active ? 'Vitrine ativa' : 'Vitrine inativa'}
         </span>
       </div>
@@ -262,8 +291,8 @@ const VitrineForm: React.FC<{
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={onCancel} style={{ ...btnGhost, color: 'rgba(255,255,255,0.5)' }}>Cancelar</button>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
+        <button onClick={onCancel} style={btnGhost}>Cancelar</button>
         <button onClick={handleSubmit} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
           {saving ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={13} />}
           {saving ? 'Salvando...' : 'Salvar Vitrine'}
@@ -474,15 +503,15 @@ export const AdminMarketing: React.FC = () => {
       <button onClick={() => setActiveSubTab(id)} style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-        background: active ? 'rgba(212,175,55,0.12)' : 'transparent',
-        color: active ? '#D4AF37' : 'rgba(255,255,255,0.45)',
+        background: active ? crmTheme.primaryLight : 'transparent',
+        color: active ? crmTheme.primary : crmTheme.textSecondary,
         fontWeight: 800, fontSize: 12, fontFamily: 'Manrope, sans-serif',
         flexShrink: 0, position: 'relative',
-        borderBottom: active ? '2px solid #D4AF37' : '2px solid transparent',
+        borderBottom: active ? `2px solid ${crmTheme.primary}` : '2px solid transparent',
       }}>
         <Icon size={14} /> {label}
         {badge !== undefined && badge > 0 && (
-          <span style={{ background: '#D4AF37', color: '#000', fontSize: 9, fontWeight: 900, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{badge}</span>
+          <span style={{ background: crmTheme.primary, color: '#fff', fontSize: 9, fontWeight: 900, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{badge}</span>
         )}
       </button>
     );
@@ -496,7 +525,7 @@ export const AdminMarketing: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* ── Sub Tab Nav ── */}
-      <div style={{ display: 'flex', gap: 4, background: 'rgba(15,23,42,0.5)', padding: '8px 12px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+      <div style={{ display: 'flex', gap: 4, background: crmTheme.cardBg, padding: '8px 12px', borderRadius: 14, border: `1px solid ${crmTheme.border}`, overflowX: 'auto', scrollbarWidth: 'none', boxShadow: crmTheme.shadowSm }}>
         <SubTabBtn id="vitrines"    label="Vitrines"     icon={Layers}     badge={vitrines.length} />
         <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} />
         <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}       />
@@ -511,8 +540,8 @@ export const AdminMarketing: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ margin: 0, color: '#fff', fontSize: 16, fontWeight: 900 }}>Vitrines de Produtos</h3>
-              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Seções exibidas na Home, em tempo real</p>
+              <h3 style={{ margin: 0, color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>Vitrines de Produtos</h3>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: crmTheme.textSecondary }}>Seções exibidas na Home, em tempo real</p>
             </div>
             {!creatingVitrine && (
               <button onClick={() => { setCreatingVitrine(true); setEditingVitrineId(null); }} style={btnGold}>
@@ -523,10 +552,10 @@ export const AdminMarketing: React.FC = () => {
 
           {/* Create Form */}
           {creatingVitrine && (
-            <div style={{ ...card, border: '1px solid rgba(212,175,55,0.3)', background: 'rgba(212,175,55,0.04)' }}>
+            <div style={{ ...card, border: `1px solid ${crmTheme.primary}`, background: crmTheme.primaryLight }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <Plus size={15} color="#D4AF37" />
-                <h4 style={{ margin: 0, color: '#FFDF73', fontSize: 14, fontWeight: 900 }}>Nova Vitrine</h4>
+                <Plus size={15} color={crmTheme.primary} />
+                <h4 style={{ margin: 0, color: crmTheme.primary, fontSize: 14, fontWeight: 900 }}>Nova Vitrine</h4>
               </div>
               <VitrineForm
                 products={products}
@@ -540,8 +569,8 @@ export const AdminMarketing: React.FC = () => {
           {/* List */}
           {vitrines.length === 0 && !creatingVitrine && (
             <div style={{ ...card, textAlign: 'center', padding: '40px 20px' }}>
-              <Layers size={32} color="rgba(255,255,255,0.15)" style={{ marginBottom: 12 }} />
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>Nenhuma vitrine configurada.<br/>A Home usa dados de fallback (Bebidas, Alimentos, Limpeza).</p>
+              <Layers size={32} color={crmTheme.textMuted} style={{ marginBottom: 12 }} />
+              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhuma vitrine configurada.<br/>A Home usa dados de fallback (Bebidas, Alimentos, Limpeza).</p>
             </div>
           )}
 
@@ -549,29 +578,29 @@ export const AdminMarketing: React.FC = () => {
             const isEditing = editingVitrineId === v.id;
             const theme = THEME_OPTIONS.find(t => t.value === v.theme);
             return (
-              <div key={v.id} style={{ ...card, border: isEditing ? '1px solid rgba(212,175,55,0.4)' : '1px solid rgba(255,255,255,0.07)', transition: 'border 0.2s' }}>
+              <div key={v.id} style={{ ...card, border: isEditing ? `1px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}`, transition: 'border 0.2s' }}>
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: isEditing ? 16 : 0 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: theme?.color || '#666', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 900, color: '#fff' }}>{v.title}</span>
-                      <span style={{ fontSize: 9, fontWeight: 900, background: v.active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)', color: v.active ? '#10b981' : '#ef4444', border: `1px solid ${v.active ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`, padding: '2px 7px', borderRadius: 99 }}>
+                      <span style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary }}>{v.title}</span>
+                      <span style={{ fontSize: 9, fontWeight: 900, background: v.active ? crmTheme.successLight : crmTheme.dangerLight, color: v.active ? crmTheme.success : crmTheme.danger, border: `1px solid ${v.active ? crmTheme.success : crmTheme.danger}`, padding: '2px 7px', borderRadius: 99 }}>
                         {v.active ? 'ATIVA' : 'INATIVA'}
                       </span>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.35)' }}>Ordem {v.order} · {v.productIds.length} produtos</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: crmTheme.textMuted }}>Ordem {v.order} · {v.productIds.length} produtos</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 5 }}>
                     <button style={btnIconSm()} onClick={() => moveVitrine(index, 'up')} title="Mover para cima" disabled={index === 0}><ArrowUp size={12} /></button>
                     <button style={btnIconSm()} onClick={() => moveVitrine(index, 'down')} title="Mover para baixo" disabled={index === vitrines.length - 1}><ArrowDown size={12} /></button>
-                    <button style={btnIconSm(v.active ? '#10b981' : '#ef4444')} onClick={() => toggleVitrine(v)} title="Toggle ativo">
+                    <button style={btnIconSm(v.active ? crmTheme.success : crmTheme.danger)} onClick={() => toggleVitrine(v)} title="Toggle ativo">
                       {v.active ? <Eye size={12} /> : <EyeOff size={12} />}
                     </button>
-                    <button style={btnIconSm('#FFDF73')} onClick={() => { setEditingVitrineId(isEditing ? null : v.id); setCreatingVitrine(false); }} title="Editar">
+                    <button style={btnIconSm(crmTheme.primary)} onClick={() => { setEditingVitrineId(isEditing ? null : v.id); setCreatingVitrine(false); }} title="Editar">
                       {isEditing ? <ChevronUp size={12} /> : <Edit2 size={12} />}
                     </button>
-                    <button style={{ ...btnIconSm('#ef4444'), border: '1px solid rgba(239,68,68,0.2)' }} onClick={() => deleteVitrine(v.id)} title="Excluir">
+                    <button style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }} onClick={() => deleteVitrine(v.id)} title="Excluir">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -599,46 +628,46 @@ export const AdminMarketing: React.FC = () => {
       {activeSubTab === 'megaOfertas' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <h3 style={{ margin: '0 0 2px', color: '#fff', fontSize: 16, fontWeight: 900 }}>⚡ Mega Ofertas</h3>
-            <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Seção "MEGA OFERTAS — SÓ ESTA SEMANA" na Home</p>
+            <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>⚡ Mega Ofertas</h3>
+            <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>Seção "MEGA OFERTAS — SÓ ESTA SEMANA" na Home</p>
           </div>
 
           {/* Add form */}
-          <div style={{ ...card, border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.03)' }}>
-            <h4 style={{ margin: '0 0 12px', color: '#FFDF73', fontSize: 13, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ ...card, border: `1px solid ${crmTheme.primaryLight}`, background: crmTheme.primaryLight }}>
+            <h4 style={{ margin: '0 0 12px', color: crmTheme.primary, fontSize: 13, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Plus size={14} /> Adicionar produto às Mega Ofertas
             </h4>
             {/* Product search */}
             <div style={{ marginBottom: 10 }}>
               <label style={labelSt}>Buscar produto do catálogo</label>
               <div style={{ position: 'relative' }}>
-                <Search size={12} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <Search size={12} color={crmTheme.textMuted} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                 <input value={moSearch} onChange={e => setMoSearch(e.target.value)}
                   placeholder="Digite o nome do produto..." style={{ ...inputSt, paddingLeft: 30 }} />
               </div>
               {moSearch && (
                 <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto' }}>
-                  {moSearchFiltered.length === 0 && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', padding: 6 }}>Nenhum produto disponível.</span>}
+                  {moSearchFiltered.length === 0 && <span style={{ fontSize: 11, color: crmTheme.textMuted, padding: 6 }}>Nenhum produto disponível.</span>}
                   {moSearchFiltered.map(p => (
                     <button key={p.id} onClick={() => { setMoSelectedId(p.id); setMoSearch(''); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, background: moSelectedId === p.id ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${moSelectedId === p.id ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
-                      <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: 'rgba(255,255,255,0.03)' }} />
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, background: moSelectedId === p.id ? crmTheme.primaryLight : crmTheme.cardBg, border: `1px solid ${moSelectedId === p.id ? crmTheme.primary : crmTheme.border}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
+                      <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: '#fff', border: `1px solid ${crmTheme.border}` }} />
                       <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>R$ {Number(p.price).toFixed(2)} · {p.category}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: crmTheme.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
+                        <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>R$ {Number(p.price).toFixed(2)} · {p.category}</div>
                       </div>
-                      {moSelectedId === p.id ? <Check size={13} color="#D4AF37" /> : <Plus size={13} color="rgba(255,255,255,0.3)" />}
+                      {moSelectedId === p.id ? <Check size={13} color={crmTheme.primary} /> : <Plus size={13} color={crmTheme.textMuted} />}
                     </button>
                   ))}
                 </div>
               )}
               {moSelectedId && (
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 8, padding: '6px 10px' }}>
-                  <Check size={12} color="#D4AF37" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#FFDF73' }}>
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, borderRadius: 8, padding: '6px 10px' }}>
+                  <Check size={12} color={crmTheme.primary} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: crmTheme.primary }}>
                     {products.find(p => p.id === moSelectedId)?.title || moSelectedId}
                   </span>
-                  <button onClick={() => setMoSelectedId('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginLeft: 'auto', display: 'flex' }}><X size={12} /></button>
+                  <button onClick={() => setMoSelectedId('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: crmTheme.danger, marginLeft: 'auto', display: 'flex' }}><X size={12} /></button>
                 </div>
               )}
             </div>
@@ -651,9 +680,9 @@ export const AdminMarketing: React.FC = () => {
               <div>
                 <label style={labelSt}>Estilo do badge</label>
                 <select value={moBadgeStyle} onChange={e => setMoBadgeStyle(e.target.value as any)}
-                  style={{ ...inputSt, appearance: 'auto', background: 'rgba(255,255,255,0.04)' }}>
-                  <option value="orange" style={{ background: '#0f172a' }}>🟠 Orange</option>
-                  <option value="light" style={{ background: '#0f172a' }}>⬜ Light</option>
+                  style={{ ...inputSt, appearance: 'auto', background: crmTheme.cardBg }}>
+                  <option value="orange" style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>🟠 Orange</option>
+                  <option value="light" style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>⬜ Light</option>
                 </select>
               </div>
               <div>
@@ -670,8 +699,8 @@ export const AdminMarketing: React.FC = () => {
           {/* List */}
           {megaOfertas.length === 0 ? (
             <div style={{ ...card, textAlign: 'center', padding: '32px 20px' }}>
-              <Zap size={28} color="rgba(255,255,255,0.15)" style={{ marginBottom: 10 }} />
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>Nenhum produto nas Mega Ofertas.<br/>A Home usa 3 produtos de fallback.</p>
+              <Zap size={28} color={crmTheme.textMuted} style={{ marginBottom: 10 }} />
+              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhum produto nas Mega Ofertas.<br/>A Home usa 3 produtos de fallback.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -679,23 +708,23 @@ export const AdminMarketing: React.FC = () => {
                 const p = products.find(x => x.id === mo.productId);
                 return (
                   <div key={mo.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
-                    {p && <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }} />}
+                    {p && <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />}
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p ? p.title : mo.productId}
                       </div>
                       <div style={{ display: 'flex', gap: 6, marginTop: 3, alignItems: 'center' }}>
-                        {p && <span style={{ fontSize: 11, fontWeight: 900, color: '#FFDF73' }}>R$ {Number(p.price).toFixed(2)}</span>}
+                        {p && <span style={{ fontSize: 11, fontWeight: 900, color: crmTheme.primary }}>R$ {Number(p.price).toFixed(2)}</span>}
                         {mo.badge && (
-                          <span style={{ fontSize: 9, fontWeight: 900, background: mo.badgeStyle === 'orange' ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.1)', color: mo.badgeStyle === 'orange' ? '#f97316' : '#fff', border: `1px solid ${mo.badgeStyle === 'orange' ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.15)'}`, padding: '2px 7px', borderRadius: 99 }}>{mo.badge}</span>
+                          <span style={{ fontSize: 9, fontWeight: 900, background: mo.badgeStyle === 'orange' ? crmTheme.warningLight : crmTheme.primaryLight, color: mo.badgeStyle === 'orange' ? crmTheme.warning : crmTheme.primary, border: `1px solid ${mo.badgeStyle === 'orange' ? crmTheme.warning : crmTheme.primary}`, padding: '2px 7px', borderRadius: 99 }}>{mo.badge}</span>
                         )}
-                        {mo.validUntil && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>Até {new Date(mo.validUntil).toLocaleDateString('pt-BR')}</span>}
+                        {mo.validUntil && <span style={{ fontSize: 9, color: crmTheme.textMuted, fontWeight: 600 }}>Até {new Date(mo.validUntil).toLocaleDateString('pt-BR')}</span>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 5 }}>
                       <button style={btnIconSm()} onClick={() => moveMegaOferta(index, 'up')} disabled={index === 0}><ArrowUp size={12} /></button>
                       <button style={btnIconSm()} onClick={() => moveMegaOferta(index, 'down')} disabled={index === megaOfertas.length - 1}><ArrowDown size={12} /></button>
-                      <button style={{ ...btnIconSm('#ef4444'), border: '1px solid rgba(239,68,68,0.2)' }} onClick={() => deleteMegaOferta(mo.id)}><Trash2 size={12} /></button>
+                      <button style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }} onClick={() => deleteMegaOferta(mo.id)}><Trash2 size={12} /></button>
                     </div>
                   </div>
                 );
@@ -711,8 +740,8 @@ export const AdminMarketing: React.FC = () => {
       {activeSubTab === 'periodos' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <h3 style={{ margin: '0 0 2px', color: '#fff', fontSize: 16, fontWeight: 900 }}>🌅 Configuração de Períodos</h3>
-            <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Produtos exibidos em cada horário do dia na Home</p>
+            <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>🌅 Configuração de Períodos</h3>
+            <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>Produtos exibidos em cada horário do dia na Home</p>
           </div>
 
           {Object.entries(PERIOD_LABELS).map(([periodId, meta]) => {
@@ -723,30 +752,30 @@ export const AdminMarketing: React.FC = () => {
             const isAuto = cfg?.isAuto !== false;
 
             return (
-              <div key={periodId} style={{ ...card, border: isEditing ? '1px solid rgba(212,175,55,0.3)' : '1px solid rgba(255,255,255,0.07)', transition: 'border 0.2s' }}>
+              <div key={periodId} style={{ ...card, border: isEditing ? `1px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}`, transition: 'border 0.2s' }}>
                 {/* Period Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <PeriodIcon size={18} color="#D4AF37" />
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: crmTheme.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <PeriodIcon size={18} color={crmTheme.primary} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: '#fff' }}>{cfg?.title || meta.label}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{meta.sub} · {cfg?.productIds?.length || 0} produtos configurados</div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary }}>{cfg?.title || meta.label}</div>
+                    <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600 }}>{meta.sub} · {cfg?.productIds?.length || 0} produtos configurados</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                       <button style={toggle(active)} onClick={() => togglePeriodActive(periodId)}>
                         <div style={toggleKnob(active)} />
                       </button>
-                      <span style={{ fontSize: 8, fontWeight: 700, color: active ? '#10b981' : 'rgba(255,255,255,0.3)' }}>Ativo</span>
+                      <span style={{ fontSize: 8, fontWeight: 700, color: active ? crmTheme.success : crmTheme.textMuted }}>Ativo</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                       <button style={toggle(isAuto)} onClick={() => togglePeriodAuto(periodId)}>
                         <div style={toggleKnob(isAuto)} />
                       </button>
-                      <span style={{ fontSize: 8, fontWeight: 700, color: isAuto ? '#818cf8' : 'rgba(255,255,255,0.3)' }}>Auto</span>
+                      <span style={{ fontSize: 8, fontWeight: 700, color: isAuto ? crmTheme.accent : crmTheme.textMuted }}>Auto</span>
                     </div>
-                    <button style={btnIconSm('#FFDF73')} onClick={() => {
+                    <button style={btnIconSm(crmTheme.primary)} onClick={() => {
                       if (isEditing) { setEditingPeriod(null); }
                       else { setEditingPeriod(periodId); setPeriodDraft({ title: cfg?.title || meta.label }); }
                     }}>
@@ -758,7 +787,7 @@ export const AdminMarketing: React.FC = () => {
                 {/* Expanded edit */}
                 {isEditing && (
                   <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+                    <div style={{ height: 1, background: crmTheme.border }} />
                     <div>
                       <label style={labelSt}>Título da seção</label>
                       <input style={inputSt} value={periodDraft.title || ''} onChange={e => setPeriodDraft(p => ({ ...p, title: e.target.value }))} placeholder={meta.label} />
@@ -774,15 +803,15 @@ export const AdminMarketing: React.FC = () => {
                       />
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, background: 'rgba(129,140,248,0.06)', border: '1px solid rgba(129,140,248,0.15)', borderRadius: 10, padding: '10px 14px' }}>
-                      <AlertCircle size={14} color="#818cf8" style={{ flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600, lineHeight: 1.5 }}>
-                        <strong style={{ color: '#818cf8' }}>Modo Auto:</strong> quando ativado, o sistema pode mesclar os produtos configurados com os mais vendidos automaticamente. Desative para controle total.
+                    <div style={{ display: 'flex', gap: 8, background: crmTheme.accentLight, border: `1px solid ${crmTheme.accent}`, borderRadius: 10, padding: '10px 14px' }}>
+                      <AlertCircle size={14} color={crmTheme.accent} style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 600, lineHeight: 1.5 }}>
+                        <strong style={{ color: crmTheme.accent }}>Modo Auto:</strong> quando ativado, o sistema pode mesclar os produtos configurados com os mais vendidos automaticamente. Desative para controle total.
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <button onClick={() => setEditingPeriod(null)} style={{ ...btnGhost }}>Fechar</button>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
+                      <button onClick={() => setEditingPeriod(null)} style={btnGhost}>Fechar</button>
                       <button onClick={() => savePeriod(periodId)} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
                         {saving ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={12} />}
                         Salvar
@@ -803,8 +832,8 @@ export const AdminMarketing: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ margin: '0 0 2px', color: '#fff', fontSize: 16, fontWeight: 900 }}>🎯 Hero Banners</h3>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Carrossel no topo da Home (máx. 3 recomendado)</p>
+              <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>🎯 Hero Banners</h3>
+              <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>Carrossel no topo da Home (máx. 3 recomendado)</p>
             </div>
             {!creatingBanner && !editingBannerId && (
               <button onClick={() => { setCreatingBanner(true); setBannerDraft({ order: heroBanners.length }); }} style={btnGold}>
@@ -815,8 +844,8 @@ export const AdminMarketing: React.FC = () => {
 
           {/* Create / Edit Form */}
           {(creatingBanner || editingBannerId) && (
-            <div style={{ ...card, border: '1px solid rgba(212,175,55,0.3)', background: 'rgba(212,175,55,0.03)' }}>
-              <h4 style={{ margin: '0 0 16px', color: '#FFDF73', fontSize: 13, fontWeight: 900 }}>
+            <div style={{ ...card, border: `1px solid ${crmTheme.primary}`, background: crmTheme.primaryLight }}>
+              <h4 style={{ margin: '0 0 16px', color: crmTheme.primary, fontSize: 13, fontWeight: 900 }}>
                 {creatingBanner ? '+ Novo Banner' : '✏️ Editar Banner'}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -857,16 +886,16 @@ export const AdminMarketing: React.FC = () => {
 
                 {/* Preview thumbnail */}
                 {bannerDraft.image && (
-                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 10, padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
                     <img src={bannerDraft.image} alt="Preview" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{bannerDraft.title || 'Título do Banner'}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{bannerDraft.subtitle}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary }}>{bannerDraft.title || 'Título do Banner'}</div>
+                      <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>{bannerDraft.subtitle}</div>
                     </div>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
                   <button onClick={() => { setCreatingBanner(false); setEditingBannerId(null); setBannerDraft({}); }} style={btnGhost}>Cancelar</button>
                   <button onClick={saveBanner} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
                     {saving ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={13} />}
@@ -880,32 +909,32 @@ export const AdminMarketing: React.FC = () => {
           {/* Banner List */}
           {heroBanners.length === 0 && !creatingBanner && (
             <div style={{ ...card, textAlign: 'center', padding: '40px 20px' }}>
-              <Image size={32} color="rgba(255,255,255,0.15)" style={{ marginBottom: 12 }} />
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, margin: 0 }}>Nenhum banner configurado.<br/>A Home usa 3 banners padrão do código.</p>
+              <Image size={32} color={crmTheme.textMuted} style={{ marginBottom: 12 }} />
+              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhum banner configurado.<br/>A Home usa 3 banners padrão do código.</p>
             </div>
           )}
 
           {heroBanners.map((banner) => (
             <div key={banner.id} style={{ ...card, display: 'flex', gap: 12, alignItems: 'center', padding: '12px 14px' }}>
-              <div style={{ width: 70, height: 44, borderRadius: 8, overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 70, height: 44, borderRadius: 8, overflow: 'hidden', background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {banner.image ? (
                   <img src={banner.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : <Image size={18} color="rgba(255,255,255,0.2)" />}
+                ) : <Image size={18} color={crmTheme.textMuted} />}
               </div>
               <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{banner.title}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{banner.title}</div>
+                <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center' }}>
                   <Link2 size={9} /> {banner.link} · Ordem {banner.order}
-                  {banner.badgeText && <span style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>{banner.badgeText}</span>}
+                  {banner.badgeText && <span style={{ background: crmTheme.primaryLight, color: crmTheme.primary, padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>{banner.badgeText}</span>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 5 }}>
-                <button style={btnIconSm('#FFDF73')} onClick={() => {
+                <button style={btnIconSm(crmTheme.primary)} onClick={() => {
                   setEditingBannerId(banner.id);
                   setCreatingBanner(false);
                   setBannerDraft({ ...banner });
                 }}><Edit2 size={12} /></button>
-                <button style={{ ...btnIconSm('#ef4444'), border: '1px solid rgba(239,68,68,0.2)' }} onClick={() => deleteBanner(banner.id)}><Trash2 size={12} /></button>
+                <button style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }} onClick={() => deleteBanner(banner.id)}><Trash2 size={12} /></button>
               </div>
             </div>
           ))}
@@ -918,40 +947,40 @@ export const AdminMarketing: React.FC = () => {
       {activeSubTab === 'campanhas' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <h3 style={{ margin: '0 0 2px', color: '#fff', fontSize: 16, fontWeight: 900 }}>📣 Central de Campanhas</h3>
-            <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Gerencie campanhas temporárias e promoções segmentadas</p>
+            <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>📣 Central de Campanhas</h3>
+            <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>Gerencie campanhas temporárias e promoções segmentadas</p>
           </div>
 
-          <div style={{ ...card, background: 'linear-gradient(135deg, rgba(129,140,248,0.08) 0%, rgba(15,23,42,0.6) 100%)', border: '1px solid rgba(129,140,248,0.2)' }}>
+          <div style={{ ...card, background: `linear-gradient(135deg, ${crmTheme.primaryLight} 0%, ${crmTheme.cardBg} 100%)`, border: `1px solid ${crmTheme.primary}` }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(129,140,248,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Megaphone size={22} color="#818cf8" />
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: crmTheme.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Megaphone size={22} color={crmTheme.primary} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 6px', color: '#818cf8', fontSize: 15, fontWeight: 900 }}>Em Desenvolvimento</h4>
-                <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>O sistema de campanhas está sendo planejado com os seguintes recursos:</p>
+                <h4 style={{ margin: '0 0 6px', color: crmTheme.primary, fontSize: 15, fontWeight: 900 }}>Em Desenvolvimento</h4>
+                <p style={{ margin: 0, fontSize: 12, color: crmTheme.textSecondary, lineHeight: 1.6 }}>O sistema de campanhas está sendo planejado com os seguintes recursos:</p>
               </div>
             </div>
           </div>
 
           {[
-            { icon: Target, title: 'Campanhas por Segmento', desc: 'Crie promoções exclusivas para Clientes VIP, Bronze, Novos Clientes ou segmentos personalizados.', color: '#D4AF37' },
-            { icon: Clock, title: 'Campanhas com Agendamento', desc: 'Defina datas de início e fim. A campanha ativa e desativa automaticamente.', color: '#10b981' },
-            { icon: Zap, title: 'Promoções Flash', desc: 'Ofertas relâmpago com cronômetro visível na Home — cria urgência e aumenta conversão.', color: '#f97316' },
-            { icon: Star, title: 'Programa de Indicação', desc: 'Configure recompensas em diamantes para clientes que indicam amigos.', color: '#818cf8' },
-            { icon: Tag, title: 'Cupons e Códigos', desc: 'Gere cupons de desconto fixo ou percentual vinculados a campanhas específicas.', color: '#ec4899' },
+            { icon: Target, title: 'Campanhas por Segmento', desc: 'Crie promoções exclusivas para Clientes VIP, Bronze, Novos Clientes ou segmentos personalizados.', color: crmTheme.warning, colorLight: crmTheme.warningLight },
+            { icon: Clock, title: 'Campanhas com Agendamento', desc: 'Defina datas de início e fim. A campanha ativa e desativa automaticamente.', color: crmTheme.success, colorLight: crmTheme.successLight },
+            { icon: Zap, title: 'Promoções Flash', desc: 'Ofertas relâmpago com cronômetro visível na Home — cria urgência e aumenta conversão.', color: '#f97316', colorLight: 'rgba(249,115,22,0.08)' },
+            { icon: Star, title: 'Programa de Indicação', desc: 'Configure recompensas em diamantes para clientes que indicam amigos.', color: crmTheme.primary, colorLight: crmTheme.primaryLight },
+            { icon: Tag, title: 'Cupons e Códigos', desc: 'Gere cupons de desconto fixo ou percentual vinculados a campanhas específicas.', color: '#ec4899', colorLight: 'rgba(236,72,153,0.08)' },
           ].map((item, i) => {
             const ItemIcon = item.icon;
             return (
-              <div key={i} style={{ ...card, display: 'flex', gap: 12, alignItems: 'flex-start', opacity: 0.8 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${item.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div key={i} style={{ ...card, display: 'flex', gap: 12, alignItems: 'flex-start', opacity: 0.9 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: item.colorLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <ItemIcon size={17} color={item.color} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', marginBottom: 3 }}>{item.title}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600, lineHeight: 1.5 }}>{item.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, marginBottom: 3 }}>{item.title}</div>
+                  <div style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 600, lineHeight: 1.5 }}>{item.desc}</div>
                 </div>
-                <span style={{ flexShrink: 0, fontSize: 8, fontWeight: 900, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)', padding: '3px 8px', borderRadius: 99, marginLeft: 'auto' }}>EM BREVE</span>
+                <span style={{ flexShrink: 0, fontSize: 8, fontWeight: 900, background: crmTheme.bg, color: crmTheme.textMuted, border: `1px solid ${crmTheme.border}`, padding: '3px 8px', borderRadius: 99, marginLeft: 'auto' }}>EM BREVE</span>
               </div>
             );
           })}
