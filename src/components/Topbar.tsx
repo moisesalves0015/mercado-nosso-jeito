@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MapPin, ChevronRight, Heart, Search, Menu } from 'lucide-react';
+import { MapPin, ChevronRight, Heart, Menu } from 'lucide-react';
 
 export const Topbar = () => {
   const location = useLocation();
@@ -42,16 +42,10 @@ export const Topbar = () => {
           </div>
         </div>
 
-        {/* SEARCH BOX IN CENTER */}
-        <div className="topbar-search-container">
-          <input 
-            type="text" 
-            placeholder="Pesquisar no mercado" 
-            className="topbar-search-input" 
-          />
-          <button className="topbar-search-btn" title="Buscar">
-            <Search size={14} />
-          </button>
+        {/* LOGO COMPACT IN CENTER */}
+        <div className="logo-compact">
+          <h1 className="logo-main">mercado do</h1>
+          <span className="logo-sub">nosso jeito</span>
         </div>
 
         {/* GOLD LEVEL BADGE */}

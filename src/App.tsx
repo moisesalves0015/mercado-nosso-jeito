@@ -21,6 +21,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { Admin } from './pages/Admin';
 import { AdminProductDetail } from './pages/AdminProductDetail';
 import { Roleta } from './pages/Roleta';
+import { Categories } from './pages/Categories';
 
 function AppContent() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function AppContent() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/categories" element={<Categories />} />
         <Route path="/promotions" element={<Promotions />} />
         <Route path="/clube" element={<Clube />} />
         <Route path="/tabacaria" element={<Tabacaria />} />

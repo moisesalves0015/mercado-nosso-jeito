@@ -3,8 +3,8 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useHomeConfig } from '../hooks/useHomeConfig';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
@@ -85,6 +85,8 @@ const periodProducts: Record<Period, Product[]> = {
 };
 
 export const Home = () => {
+  const navigate = useNavigate();
+  const [searchVal, setSearchVal] = useState('');
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [bebidas, setBebidas] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -274,143 +276,84 @@ export const Home = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* LOGO WITH BACKGROUND CONTAINER */}
-      <div className="home-logo-bg-section">
-        <div className="logo">
-          <div className="logo-text">
-            <h1 className="logo-main">mercado do</h1>
-            <span className="logo-sub">nosso jeito</span>
+          {/* QUICK CATEGORIES (SINGLE ROW, NO SCROLL) - DIRECTLY BELOW HERO BANNER */}
+          <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '10px' }}>
+            <h2 style={{ margin: 0, fontSize: '11.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
           </div>
+          <div className="quick-categories-grid-no-scroll" style={{ marginBottom: '10px' }}>
+            <Link to="/promotions" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Flame size={24} />
+              </div>
+              <span className="quick-gold-label">Promoções</span>
+            </Link>
+
+            <Link to="/search?q=doces" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Candy size={24} />
+              </div>
+              <span className="quick-gold-label">Doces</span>
+            </Link>
+
+            <Link to="/search?q=biscoitos" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Cookie size={24} />
+              </div>
+              <span className="quick-gold-label">Biscoitos</span>
+            </Link>
+
+            <Link to="/search?q=higiene" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Droplet size={24} />
+              </div>
+              <span className="quick-gold-label">Higiene</span>
+            </Link>
+
+            <Link to="/search?q=limpeza" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Sparkles size={24} />
+              </div>
+              <span className="quick-gold-label">Limpeza</span>
+            </Link>
+
+            <Link to="/search?q=combos" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <Gift size={24} />
+              </div>
+              <span className="quick-gold-label">Combos</span>
+            </Link>
+
+            <Link to="/categories" className="quick-gold-card">
+              <div className="quick-gold-icon-container">
+                <LayoutGrid size={24} />
+              </div>
+              <span className="quick-gold-label">Ver todas</span>
+            </Link>
+          </div>
+
+          {/* SEARCH BAR THAT COMBINES WITH THE QUICK CATEGORY CARDS */}
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (searchVal.trim()) navigate(`/search?q=${encodeURIComponent(searchVal.trim())}`);
+          }} className="quick-search-wrapper">
+            <div className="quick-search-container">
+              <Search size={16} className="quick-search-icon" />
+              <input 
+                type="text" 
+                placeholder="O que você procura hoje? 🔎" 
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                className="quick-search-input"
+              />
+            </div>
+          </form>
         </div>
       </div>
 
       <main className="app" style={{ paddingTop: 0 }}>
 
-          {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-          <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
-            <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
-            <Link to="/search" className="glass-ver-todas-btn">
-              Ver todas <span style={{ color: '#FFDF73' }}>&gt;</span>
-            </Link>
-          </div>
-          <div className="category-row" onScroll={handleCategoryScroll}>
 
-        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/promocoes.png" alt="Ofertas" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=padaria" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=congelados" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/congelados.png" alt="Congelados" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=petshop" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/petshop.png" alt="Pet Shop" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=salgadinhos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/salgadinhos.png" alt="Salgadinhos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=doces" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=biscoitos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/biscoitos.png" alt="Biscoitos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=beleza" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/beleza.png" alt="Beleza" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=limpeza" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/eletronicos.png" alt="Eletrônicos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=sorvetes" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/sorvetes.png" alt="Sorvetes" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=utilidades" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/utilidades.png" alt="Utilidades" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=churrasco" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/churrasco.png" alt="Churrasco" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=adega" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/adega.png" alt="Adega" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=bomboniere" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/bomboniere.png" alt="Bomboniere" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=higiene" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/higiene.png" alt="Higiene" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=fitness" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/fitness.png" alt="Fitness" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=combos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/combos.png" alt="Combos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-      </div>
-
-      {/* CATEGORY SCROLL INDICATOR */}
-      <div className="category-scroll-indicators">
-        <div className="category-scroll-track">
-          <div 
-            className="category-scroll-thumb" 
-            style={{ 
-              left: `${(scrollProgress / 100) * (80 - 24)}px` 
-            }}
-          />
-        </div>
-      </div>
 
 
       {/* PERIOD SELECTOR BUTTONS */}
@@ -708,6 +651,129 @@ export const Home = () => {
       )}
 
 
+
+        {/* CATEGORY ROW (3D REALISTIC ICONS) */}
+        <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
+          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
+            <Link to="/categories" className="glass-ver-todas-btn">
+              Ver todas <span style={{ color: '#FFDF73' }}>&gt;</span>
+            </Link>
+          </div>
+          <div className="category-row" onScroll={handleCategoryScroll}>
+
+        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/promocoes.png" alt="Ofertas" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=padaria" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=congelados" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/congelados.png" alt="Congelados" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=petshop" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/petshop.png" alt="Pet Shop" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=salgadinhos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/salgadinhos.png" alt="Salgadinhos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=doces" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=biscoitos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/biscoitos.png" alt="Biscoitos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=beleza" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/beleza.png" alt="Beleza" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=limpeza" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/eletronicos.png" alt="Eletrônicos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=sorvetes" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/sorvetes.png" alt="Sorvetes" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=utilidades" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/utilidades.png" alt="Utilidades" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=churrasco" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/churrasco.png" alt="Churrasco" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=adega" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/adega.png" alt="Adega" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=bomboniere" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/bomboniere.png" alt="Bomboniere" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=higiene" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/higiene.png" alt="Higiene" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=fitness" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/fitness.png" alt="Fitness" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+        <Link to="/search?q=combos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="category-item">
+            <div className="category-icon-wrapper"><img src="/categories/combos.png" alt="Combos" className="category-3d-icon" /></div>
+          </div>
+        </Link>
+      </div>
+
+      {/* CATEGORY SCROLL INDICATOR */}
+      <div className="category-scroll-indicators">
+        <div className="category-scroll-track">
+          <div 
+            className="category-scroll-thumb" 
+            style={{ 
+              left: `${(scrollProgress / 100) * (80 - 24)}px` 
+            }}
+          />
+        </div>
+      </div>
 
       {/* FOOTER */}
       <footer className="app-footer">
