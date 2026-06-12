@@ -195,16 +195,18 @@ export const ProductCard = ({
       const discount = parseFloat((Math.random() * 1.0 + 2.0).toFixed(2)); // between 2.00 and 3.00
       const targetPrice = Math.max(0.5, numericPrice - discount);
       
-      const steps = 15;
-      const stepTime = 350; // total 5.25s (extremely slow, clear price ticks)
-      const decrement = discount / steps;
-      let current = numericPrice;
-      let stepCount = 0;
+      const startPriceCents = Math.round(numericPrice * 100);
+      const targetPriceCents = Math.round(targetPrice * 100);
+      const totalCentsToReduce = startPriceCents - targetPriceCents;
+      
+      const totalDuration = 3000; // 3 seconds total animation duration
+      const stepTime = Math.max(10, Math.round(totalDuration / totalCentsToReduce));
+      
+      let currentCents = startPriceCents;
 
       const countdown = setInterval(() => {
-        current -= decrement;
-        stepCount++;
-        if (stepCount >= steps || current <= targetPrice) {
+        currentCents -= 1; // Decrement cent-by-cent
+        if (currentCents <= targetPriceCents) {
           clearInterval(countdown);
           setCurrentPrice(targetPrice);
           
@@ -230,7 +232,7 @@ export const ProductCard = ({
             }, 8000);
           }, 7000);
         } else {
-          setCurrentPrice(current);
+          setCurrentPrice(currentCents / 100);
         }
       }, stepTime);
     };

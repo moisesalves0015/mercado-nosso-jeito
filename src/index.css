@@ -5307,9 +5307,11 @@ body{
    SUPER PROMO SECTION (MEGA OFERTAS)
 ========================================================= */
 .super-promo-container {
-  background: linear-gradient(135deg, #1A1410, #0E0B09);
+  border: 2px solid transparent;
+  background: linear-gradient(rgba(9, 7, 5, 0.95), rgba(9, 7, 5, 0.95)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
   padding: 12px 0px 4px 0px; /* Reduzido padding-bottom para economizar espaço do rodapé */
-  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 16px;
   width: 100%;
   margin-top: 16px;
@@ -5348,14 +5350,8 @@ body{
   line-height: 1.1 !important;
   font-family: 'Granesta', cursive !important;
   letter-spacing: 1px !important;
-  /* Same gold gradient as Roleta Premium */
-  background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
-  background-size: 200% auto !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-  /* Shining glow */
-  animation: megaGoldShine 3s linear infinite !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
   position: relative;
   z-index: 2;
   transform: rotate(-2deg);
@@ -5418,6 +5414,8 @@ body{
   /* Borda estática em degradê dourado/âmbar usando a paleta de cores do projeto */
   border: 2px solid transparent;
   background: linear-gradient(rgba(9, 7, 5, 0.95), rgba(9, 7, 5, 0.95)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
   border-radius: 6px;
   padding: 8px 6px;
   margin-top: 12px;
@@ -5555,13 +5553,14 @@ body{
   display: flex !important;
   flex-direction: row !important; /* Lado a lado */
   align-items: baseline !important; /* Alinha a linha de base de R$ e valor */
-  align-self: flex-start !important; /* Alinhado à esquerda do card */
+  justify-content: space-between !important; /* Afasta o R$ do valor, deixando R$ na esquerda e valor na direita */
+  align-self: stretch !important; /* Ocupa toda a largura do card */
   margin-left: 6px !important;
+  margin-right: 6px !important;
   margin-top: 6px !important;
   margin-bottom: 2px !important;
-  gap: 4px !important; /* Distância entre R$ e valor */
-  line-height: 1.35 !important; /* Altura de linha generosa para evitar qualquer corte da fonte cursiva */
   overflow: visible !important;
+  line-height: 1.35 !important; /* Altura de linha generosa para evitar qualquer corte da fonte cursiva */
 }
 
 .mega-price-currency {
@@ -5599,8 +5598,8 @@ body{
 @media (max-width: 480px) {
   .mega-oferta-price-highlight {
     margin-left: 4px !important;
+    margin-right: 4px !important;
     margin-top: 4px !important;
-    gap: 2px !important;
   }
   .mega-price-currency {
     font-size: 11px !important;
