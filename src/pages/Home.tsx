@@ -205,7 +205,7 @@ export const Home = () => {
         {/* Background container clipped at the base */}
 
 
-        <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 15 }}>
+        <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
           <Topbar />
 
           {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
@@ -341,7 +341,7 @@ export const Home = () => {
               <Search size={16} className="quick-search-icon" />
               <input 
                 type="text" 
-                placeholder="O que você procura hoje? 🔎" 
+                placeholder="O que você procura hoje?" 
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 className="quick-search-input"
@@ -353,8 +353,9 @@ export const Home = () => {
 
       <main className="app" style={{ paddingTop: 0 }}>
 
-
-
+      <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '2px' }}>
+        <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Os mais pedidos por horário</h2>
+      </div>
 
       {/* PERIOD SELECTOR BUTTONS */}
       <div className="period-buttons-row">
@@ -426,7 +427,7 @@ export const Home = () => {
           backgroundSize: 'cover',
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
-          borderRadius: '16px',
+          borderRadius: '6px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           paddingTop: '4px',
           paddingBottom: '4px',

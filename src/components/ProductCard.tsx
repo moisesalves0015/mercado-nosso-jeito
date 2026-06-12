@@ -70,6 +70,16 @@ export const ProductCard = ({
   const pricePillRef = useRef<HTMLDivElement>(null);
   const [animationState, setAnimationState] = useState<'normal' | 'reducing' | 'reduced-flash' | 'club-only'>('normal');
   const [currentPrice, setCurrentPrice] = useState<number>(numericPrice);
+  const [showDiamond, setShowDiamond] = useState(true);
+
+  useEffect(() => {
+    if (diamondReward && badge) {
+      const interval = setInterval(() => {
+        setShowDiamond((prev) => !prev);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [diamondReward, badge]);
 
   const currentQuantity = cartItems.find((item) => item.id === slug)?.quantity || 0;
 
@@ -315,12 +325,29 @@ export const ProductCard = ({
           {(diamondReward || badge) && (
             <div className="badge-wrapper">
               {badge && (
-                <div className="badge" style={{ bottom: diamondReward ? '20px' : '0' }}>
+                <div 
+                  className="badge" 
+                  style={{ 
+                    bottom: 0,
+                    opacity: diamondReward ? (showDiamond ? 0 : 1) : 1,
+                    visibility: diamondReward ? (showDiamond ? 'hidden' : 'visible') : 'visible',
+                    transition: 'opacity 0.4s ease, visibility 0.4s ease',
+                  }}
+                >
                   {badge}
                 </div>
               )}
               {diamondReward && (
-                <div className="badge diamond-badge" title={`Ganhe ${diamondReward} diamantes!`}>
+                <div 
+                  className="badge diamond-badge" 
+                  title={`Ganhe ${diamondReward} diamantes!`}
+                  style={{ 
+                    bottom: 0,
+                    opacity: badge ? (showDiamond ? 1 : 0) : 1,
+                    visibility: badge ? (showDiamond ? 'visible' : 'hidden') : 'visible',
+                    transition: 'opacity 0.4s ease, visibility 0.4s ease',
+                  }}
+                >
                   <DiamondIcon size={9} />
                   <span>+{diamondReward}</span>
                 </div>
