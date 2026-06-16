@@ -94,6 +94,110 @@ export const Home = () => {
   const [activePeriod, setActivePeriod] = useState<Period>('morning');
   const homeConfig = useHomeConfig();
 
+  const renderVitrines = (startIndex: number, count: number) => {
+    const activeVitrines = homeConfig.vitrines.filter(v => v.active).sort((a, b) => a.order - b.order);
+    
+    if (activeVitrines.length > 0) {
+      return activeVitrines.slice(startIndex, startIndex + count).map(vitrine => {
+        const prods = vitrine.productIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean) as Product[];
+        return (
+          <Section
+            key={vitrine.id}
+            title={vitrine.title}
+            subtitle={vitrine.subtitle}
+            linkText="Ver tudo >"
+            theme={vitrine.theme}
+          >
+            {prods.map(product => (
+              <ProductCard key={product.id} {...product} />
+            ))}
+            {prods.length === 0 && (
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto cadastrado nesta vitrine.</span>
+            )}
+          </Section>
+        );
+      });
+    } else {
+      const fallbackSections = [
+        <Section
+          key="fallback-bebidas"
+          title="Bebidas"
+          subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]}
+          linkText="Ver tudo >"
+          theme="purple"
+        >
+          {bebidas.map(product => (
+            <ProductCard key={product.id} {...product} />
+          ))}
+          {bebidas.length === 0 && (
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
+          )}
+        </Section>,
+        
+        <Section
+          key="fallback-alimentos"
+          title="Alimentos"
+          subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]}
+          linkText="Ver tudo >"
+          theme="orange"
+        >
+          <ProductCard
+            title="Pão Pullman Forma Integral (500g)"
+            price="R$ 12,90"
+            image="/pao_de_forma.png"
+            badge="Melhor Preço"
+            badgeStyle="orange"
+            category="alimentos"
+          />
+          <ProductCard
+            title="Queijo Minas Frescal Itambé (300g)"
+            price="R$ 19,90"
+            image="/queijo_minas.png"
+            badge="Promocional"
+            badgeStyle="orange"
+            category="alimentos"
+          />
+          <ProductCard
+            title="Peito de Peru Fatiado Sadia (100g)"
+            price="R$ 7,49"
+            image="/peito_de_peru.webp"
+            category="alimentos"
+          />
+          <ProductCard
+            title="Manteiga Itambé Extra Sal (200g)"
+            price="R$ 11,90"
+            image="/manteiga_itambe.png"
+            category="alimentos"
+          />
+        </Section>,
+
+        <Section
+          key="fallback-limpeza"
+          title="Limpeza"
+          subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]}
+          linkText="Ver tudo >"
+          theme="green"
+        >
+          <ProductCard
+            title="Sabão Líquido Premium"
+            price="R$ 19,90"
+            image="/lava_roupa.png"
+            category="limpeza"
+          />
+          <ProductCard
+            title="Multiuso Fresh Ultra"
+            price="R$ 12,90"
+            image="/pano_multiuso.webp"
+            badge="Melhor Preço"
+            badgeStyle="orange"
+            category="limpeza"
+          />
+        </Section>
+      ];
+      return fallbackSections.slice(startIndex, startIndex + count);
+    }
+  };
+
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 12) {
@@ -449,38 +553,8 @@ export const Home = () => {
         </Section>
       </div>
 
-      {/* INFO CARDS ROW */}
-      <div className="info-cards-row">
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Bike size={18} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Entrega rápida</h4>
-            <p>Receba em até 30 min na sua casa.</p>
-          </div>
-        </div>
-
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Award size={18} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Nosso Clube</h4>
-            <p>Ofertas exclusivas só para você!</p>
-          </div>
-        </div>
-
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Lock size={16} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Compras seguras</h4>
-            <p>Seus dados sempre protegidos.</p>
-          </div>
-        </div>
-      </div>
+      {/* 2 LISTAS DE CATEGORIAS DE PRODUTO (Grupo 1) */}
+      {renderVitrines(0, 2)}
 
       {/* SUPER PROMO SECTION (MEGA OFERTAS) */}
       <div className="super-promo-container">
@@ -537,6 +611,9 @@ export const Home = () => {
         </div>
       </div>
 
+      {/* MAIS 2 LINHAS DE CATEGORIAS (Grupo 2) */}
+      {renderVitrines(2, 2)}
+
       {/* BANNERS LADO A LADO */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', width: '100%' }}>
         <Link to="/promotions" style={{ textDecoration: 'none', flex: 1 }}>
@@ -555,101 +632,41 @@ export const Home = () => {
         </Link>
       </div>
 
-      {homeConfig.vitrines.filter(v => v.active).sort((a, b) => a.order - b.order).map(vitrine => {
-        const prods = vitrine.productIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean) as Product[];
-        return (
-          <Section
-            key={vitrine.id}
-            title={vitrine.title}
-            subtitle={vitrine.subtitle}
-            linkText="Ver tudo >"
-            theme={vitrine.theme}
-          >
-            {prods.map(product => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-            {prods.length === 0 && (
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto cadastrado nesta vitrine.</span>
-            )}
-          </Section>
-        );
-      })}
+      {/* MAIS 2 LINHAS DE CATEGORIAS (Grupo 3) */}
+      {renderVitrines(4, 2)}
 
-      {homeConfig.vitrines.length === 0 && (
-        <>
-          <Section
-            title="Bebidas"
-            subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]}
-            linkText="Ver tudo >"
-            theme="purple"
-          >
-            {bebidas.map(product => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-            {bebidas.length === 0 && (
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
-            )}
-          </Section>
+      {/* INFO CARDS ROW */}
+      <div className="info-cards-row">
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Bike size={18} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Entrega rápida</h4>
+            <p>Receba em até 30 min na sua casa.</p>
+          </div>
+        </div>
 
-          <Section
-            title="Alimentos"
-            subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]}
-            linkText="Ver tudo >"
-            theme="orange"
-          >
-            <ProductCard
-              title="Pão Pullman Forma Integral (500g)"
-              price="R$ 12,90"
-              image="/pao_de_forma.png"
-              badge="Melhor Preço"
-              badgeStyle="orange"
-              category="alimentos"
-            />
-            <ProductCard
-              title="Queijo Minas Frescal Itambé (300g)"
-              price="R$ 19,90"
-              image="/queijo_minas.png"
-              badge="Promocional"
-              badgeStyle="orange"
-              category="alimentos"
-            />
-            <ProductCard
-              title="Peito de Peru Fatiado Sadia (100g)"
-              price="R$ 7,49"
-              image="/peito_de_peru.webp"
-              category="alimentos"
-            />
-            <ProductCard
-              title="Manteiga Itambé Extra Sal (200g)"
-              price="R$ 11,90"
-              image="/manteiga_itambe.png"
-              category="alimentos"
-            />
-          </Section>
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Award size={18} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Nosso Clube</h4>
+            <p>Ofertas exclusivas só para você!</p>
+          </div>
+        </div>
 
-          <Section
-            title="Limpeza"
-            subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]}
-            linkText="Ver tudo >"
-            theme="green"
-          >
-            <ProductCard
-              title="Sabão Líquido Premium"
-              price="R$ 19,90"
-              image="/lava_roupa.png"
-              category="limpeza"
-            />
-            <ProductCard
-              title="Multiuso Fresh Ultra"
-              price="R$ 12,90"
-              image="/pano_multiuso.webp"
-              badge="Melhor Preço"
-              badgeStyle="orange"
-              category="limpeza"
-            />
-          </Section>
-        </>
-      )}
+        <div className="info-card">
+          <div className="info-card-icon-wrapper">
+            <Lock size={16} color="#D4AF37" />
+          </div>
+          <div className="info-card-content">
+            <h4>Compras seguras</h4>
+            <p>Seus dados sempre protegidos.</p>
+          </div>
+        </div>
+      </div>
 
 
 
