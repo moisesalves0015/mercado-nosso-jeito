@@ -102,7 +102,7 @@ export const defaultProducts: Product[] = [
     description: "Cerveja Corona Extra Long Neck 330ml, ideal com uma rodela de limão no gargalo.",
     price: 8.90,
     costPrice: 5.20,
-    image: "https://images.unsplash.com/photo-1608270176050-12ec057deab0?q=80&w=600",
+    image: "https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600",
     category: "Bebidas",
     diamondReward: 2,
     active: true,
