@@ -13,7 +13,7 @@ import bannerIndique from '../assets/banners/bannerIndique.svg';
 
 // Custom SVG backgrounds and button assets
 import manhaBg from '../assets/bkgs/manha.png';
-import almocoBg from '../assets/bkgs/almoço.png';
+import almocoBg from '../assets/bkgs/almoco.png';
 import tardeBg from '../assets/bkgs/tarde.png';
 import noiteBg from '../assets/bkgs/noite.png';
 import madrugadaBg from '../assets/bkgs/madrugada.png';
@@ -79,7 +79,7 @@ const periodProducts: Record<Period, Product[]> = {
   ],
   dawn: [
     { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-    { id: 'cafe_pilao', title: "Café Pilão Torrado e Moído (500g)", price: 21.90, image: "/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png", category: "cafe" },
+    { id: 'cafe_pilao', title: "Café Pilão Torrado e Moído (500g)", price: 21.90, image: "/cafe-pilao-500g.png", category: "cafe" },
     { id: 'lava_roupa', title: "Sabão Líquido Premium (3L)", price: 19.90, image: "/lava_roupa.png", category: "limpeza" },
     { id: 'pano_multiuso', title: "Multiuso Fresh Ultra", price: 12.90, image: "/pano_multiuso.webp", category: "limpeza", badge: "Melhor Preço", badgeStyle: "orange" },
     { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },

@@ -109,7 +109,7 @@ const PRODUCTS_MOCK: Record<string, ProductMock> = {
     title: 'Café Torrado e Moído Pilão (500g)',
     price: 'R$ 17,90',
     priceNum: 17.90,
-    image: '/Café-Pilão-Torrado-E-Moído-Tradicional-Almofada-500g.png',
+    image: '/cafe-pilao-500g.png',
     badge: 'Melhor Preço',
     rating: 4.6,
     ratingCount: 1850,
