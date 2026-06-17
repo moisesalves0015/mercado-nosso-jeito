@@ -6,8 +6,10 @@ import { PromoCard } from '../components/PromoCard';
 import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHomeConfig } from '../hooks/useHomeConfig';
+import { defaultProducts } from '../data/defaultProducts';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
+
 
 // Custom SVG backgrounds and button assets
 import manhaBg from '../assets/bkgs/manha.png';
@@ -259,43 +261,50 @@ export const Home = () => {
   useEffect(() => {
     const loadProducts = () => {
       const stored = localStorage.getItem('app-products');
+      let allProds: Product[] = [];
+      let updated = false;
+
       if (stored) {
-        let allProds = JSON.parse(stored) as Product[];
-        let updated = false;
-        allProds = allProds.map(p => {
-          if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
-            p.image = '/heineken.png';
+        allProds = JSON.parse(stored) as Product[];
+        // Check for missing default products and add them
+        defaultProducts.forEach(defP => {
+          if (!allProds.some(p => p.id === defP.id)) {
+            allProds.push(defP);
             updated = true;
           }
-          if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
-            p.image = '/coca_cola_zero.png';
-            updated = true;
-          }
-          if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
-            p.image = '/monster_energy.webp';
-            updated = true;
-          }
-          if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
-            p.image = '/spaten.webp';
-            updated = true;
-          }
-          return p;
         });
-        if (updated) {
-          localStorage.setItem('app-products', JSON.stringify(allProds));
-        }
-        setAllProducts(allProds);
-        setBebidas(allProds.filter(p => p.category === 'Bebidas'));
       } else {
-        // Fallback default drinks
-        const defaults: Product[] = [
-          { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-          { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
-          { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-          { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "/spaten.webp", category: "Bebidas", diamondReward: 1 }
-        ];
-        setBebidas(defaults);
+        allProds = [...defaultProducts];
+        updated = true;
       }
+
+      // Sync specific image updates if necessary
+      allProds = allProds.map(p => {
+        if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
+          p.image = '/heineken.png';
+          updated = true;
+        }
+        if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
+          p.image = '/coca_cola_zero.png';
+          updated = true;
+        }
+        if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
+          p.image = '/monster_energy.webp';
+          updated = true;
+        }
+        if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
+          p.image = '/spaten.webp';
+          updated = true;
+        }
+        return p;
+      });
+
+      if (updated) {
+        localStorage.setItem('app-products', JSON.stringify(allProds));
+      }
+
+      setAllProducts(allProds);
+      setBebidas(allProds.filter(p => p.category === 'Bebidas'));
     };
 
     loadProducts();

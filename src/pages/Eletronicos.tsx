@@ -3,6 +3,7 @@ import { ArrowLeft, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { MercadoLogo } from './Login';
+import { defaultProducts } from '../data/defaultProducts';
 
 interface Product {
   id: string;
@@ -21,21 +22,28 @@ export const Eletronicos = () => {
   useEffect(() => {
     const loadProducts = () => {
       const stored = localStorage.getItem('app-products');
+      let allProds: Product[] = [];
+      let updated = false;
+
       if (stored) {
-        const allProds = JSON.parse(stored) as Product[];
-        setEletronicoProds(allProds.filter(p => p.category === 'Eletrônicos'));
+        allProds = JSON.parse(stored) as Product[];
+        // Check for missing default products and add them
+        defaultProducts.forEach(defP => {
+          if (!allProds.some(p => p.id === defP.id)) {
+            allProds.push(defP);
+            updated = true;
+          }
+        });
       } else {
-        // Fallback default electronics
-        const defaults: Product[] = [
-          { id: 'fone-bluetooth', title: "Fone de Ouvido Bluetooth JBL Wave Flex", price: 289.90, image: "https://images.unsplash.com/photo-1608156639585-b3a032ef9689?q=80&w=600", category: "Eletrônicos", badge: "Frete Grátis", badgeStyle: "light", diamondReward: 40 },
-          { id: 'carregador-turbo', title: "Carregador de Tomada Turbo Anker 20W USB-C", price: 79.90, image: "https://images.unsplash.com/photo-1618220179428-22790b461013?q=80&w=600", category: "Eletrônicos", diamondReward: 8 },
-          { id: 'cabo-lightning', title: "Cabo USB-C para Lightning Reforçado (1m)", price: 29.90, image: "https://images.unsplash.com/photo-1541667590928-2c6b0ef4fcb3?q=80&w=600", category: "Eletrônicos", badge: "Ultra Resistente", diamondReward: 3 },
-          { id: 'cabo-usbc', title: "Cabo USB-C para USB-C Turbo (1.2m)", price: 24.90, image: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=600", category: "Eletrônicos", badge: "Turbo Power", diamondReward: 2 },
-          { id: 'fone-p2', title: "Fone de Ouvido com Fio e Microfone P2", price: 19.90, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600", category: "Eletrônicos", badge: "Clássico", diamondReward: 2 },
-          { id: 'powerbank', title: "Power Bank Portátil 10000mAh Ultra Rápido", price: 89.90, image: "https://images.unsplash.com/photo-1609592424109-dd89569ed053?q=80&w=600", category: "Eletrônicos", badge: "Bateria Extra", badgeStyle: "orange", diamondReward: 9 }
-        ];
-        setEletronicoProds(defaults);
+        allProds = [...defaultProducts];
+        updated = true;
       }
+
+      if (updated) {
+        localStorage.setItem('app-products', JSON.stringify(allProds));
+      }
+
+      setEletronicoProds(allProds.filter(p => p.category === 'Eletrônicos'));
     };
 
     loadProducts();

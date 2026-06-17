@@ -3,6 +3,7 @@ import { ArrowLeft, Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { MercadoLogo } from './Login';
+import { defaultProducts } from '../data/defaultProducts';
 
 interface Product {
   id: string;
@@ -21,21 +22,28 @@ export const Tabacaria = () => {
   useEffect(() => {
     const loadProducts = () => {
       const stored = localStorage.getItem('app-products');
+      let allProds: Product[] = [];
+      let updated = false;
+
       if (stored) {
-        const allProds = JSON.parse(stored) as Product[];
-        setTabacariaProds(allProds.filter(p => p.category === 'Tabacaria'));
+        allProds = JSON.parse(stored) as Product[];
+        // Check for missing default products and add them
+        defaultProducts.forEach(defP => {
+          if (!allProds.some(p => p.id === defP.id)) {
+            allProds.push(defP);
+            updated = true;
+          }
+        });
       } else {
-        // Fallback default tabacaria products
-        const defaults: Product[] = [
-          { id: 'marlboro-gold', title: "Cigarro Marlboro Gold Box (20un)", price: 13.50, image: "https://images.unsplash.com/photo-1627140469085-fcd84814df2a?q=80&w=600", category: "Tabacaria", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 2 },
-          { id: 'dunhill-carlton', title: "Cigarro Dunhill Carlton Blend (20un)", price: 14.00, image: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600", category: "Tabacaria", diamondReward: 2 },
-          { id: 'ignite-v50', title: "Vape Pod Ignite V50 Mentol (5000 Puffs)", price: 89.90, image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=600", category: "Tabacaria", badge: "Premium", badgeStyle: "orange", diamondReward: 10 },
-          { id: 'bic-grande', title: "Isqueiro Bic Grande Tradicional (1un)", price: 9.90, image: "https://images.unsplash.com/photo-1516245834210-c4c142787335?q=80&w=600", category: "Tabacaria", diamondReward: 1 },
-          { id: 'seda-raw', title: "Seda Raw Classic King Size", price: 8.90, image: "https://images.unsplash.com/photo-1530631673369-bc24f5803c5f?q=80&w=600", category: "Tabacaria", diamondReward: 1 },
-          { id: 'filtro-ocb', title: "Filtro OCB Slim Biodegradável (150un)", price: 7.50, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600", category: "Tabacaria" }
-        ];
-        setTabacariaProds(defaults);
+        allProds = [...defaultProducts];
+        updated = true;
       }
+
+      if (updated) {
+        localStorage.setItem('app-products', JSON.stringify(allProds));
+      }
+
+      setTabacariaProds(allProds.filter(p => p.category === 'Tabacaria'));
     };
 
     loadProducts();

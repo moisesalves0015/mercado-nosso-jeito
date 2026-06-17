@@ -6,9 +6,10 @@ import {
   AlertCircle, Sunrise, Sun, Sunset, Moon, Wind,
 } from 'lucide-react';
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc,
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc, getDocs,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { defaultProducts } from '../data/defaultProducts';
 import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig } from '../hooks/useHomeConfig';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -474,6 +475,112 @@ export const AdminMarketing: React.FC = () => {
     }
   };
 
+  const handleResetProductsAndVitrines = async () => {
+    if (!window.confirm('Deseja restaurar TODOS os produtos padrão e vitrines no banco de dados (Firestore)? Isso adicionará todos os produtos ausentes.')) return;
+    setSaving(true);
+    try {
+      // 1. Write all default products to Firestore if they do not exist
+      let productsCreated = 0;
+      for (const p of defaultProducts) {
+        const docRef = doc(db, 'products', p.id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, p);
+          productsCreated++;
+        }
+      }
+
+      // Fetch the latest products list from Firestore to group them
+      const productsSnap = await getDocs(collection(db, "products"));
+      const allProds = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Product);
+
+      const productsByCategory: Record<string, string[]> = {};
+      allProds.forEach(p => {
+        const cat = p.category;
+        if (!cat) return;
+        const normalizedCat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+        if (!productsByCategory[normalizedCat]) {
+          productsByCategory[normalizedCat] = [];
+        }
+        productsByCategory[normalizedCat].push(p.id);
+      });
+
+      // 2. Fetch existing vitrines
+      const vitrinesSnap = await getDocs(collection(db, "home-config", "data", "vitrines"));
+      const existingVitrines = vitrinesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as VitrineConfig));
+      const existingTitles = new Set(existingVitrines.map(v => v.title.toLowerCase()));
+
+      const targetCategories = [
+        { title: "Bebidas", theme: "purple" as const, subtitle: ["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"] },
+        { title: "Alimentos", theme: "orange" as const, subtitle: ["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"] },
+        { title: "Limpeza", theme: "green" as const, subtitle: ["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"] },
+        { title: "Promoções", theme: "orange" as const, subtitle: "As melhores ofertas da semana!" },
+        { title: "Padaria", theme: "orange" as const, subtitle: "Pães quentinhos e doces frescos!" },
+        { title: "Congelados", theme: "purple" as const, subtitle: "Praticidade para o seu dia a dia!" },
+        { title: "Pet Shop", theme: "green" as const, subtitle: "Tudo para o seu melhor amigo!" },
+        { title: "Salgadinhos", theme: "purple" as const, subtitle: "Para curtir aquele filme ou jogo!" },
+        { title: "Doces", theme: "orange" as const, subtitle: "Açúcar e felicidade em cada mordida!" },
+        { title: "Biscoitos", theme: "orange" as const, subtitle: "Perfeitos para acompanhar o café!" },
+        { title: "Beleza", theme: "purple" as const, subtitle: "Seu ritual de cuidados diários!" },
+        { title: "Eletrônicos", theme: "purple" as const, subtitle: "Tecnologia de ponta ao seu alcance!" },
+        { title: "Tabacaria", theme: "green" as const, subtitle: "Variedade de sedas, isqueiros e importados!" },
+        { title: "Sorvetes", theme: "purple" as const, subtitle: "Refresque-se com o melhor sabor!" },
+        { title: "Utilidades", theme: "green" as const, subtitle: "Facilidades para o seu lar!" },
+        { title: "Churrasco", theme: "orange" as const, subtitle: "Tudo para o churrasco perfeito!" },
+        { title: "Adega", theme: "purple" as const, subtitle: "Vinhos e destilados selecionados!" },
+        { title: "Bomboniere", theme: "orange" as const, subtitle: "Guloseimas irresistíveis!" },
+        { title: "Higiene", theme: "green" as const, subtitle: "Sua saúde e higiene pessoal em dia!" },
+        { title: "Fitness", theme: "purple" as const, subtitle: "Itens para manter a energia e o foco!" },
+        { title: "Combos", theme: "orange" as const, subtitle: "Leve mais por muito menos!" }
+      ];
+
+      let order = existingVitrines.reduce((max, v) => Math.max(max, (v as any).order ?? 0), 0) + 1;
+      let vitrinesCreated = 0;
+
+      for (const cat of targetCategories) {
+        if (existingTitles.has(cat.title.toLowerCase())) continue;
+
+        let matchedProductIds: string[] = [];
+        const categoryKey = Object.keys(productsByCategory).find(
+          k => k.toLowerCase() === cat.title.toLowerCase()
+        );
+        
+        if (categoryKey) {
+          matchedProductIds = productsByCategory[categoryKey];
+        } else {
+          matchedProductIds = allProds
+            .filter(p => p.category?.toLowerCase() === cat.title.toLowerCase() || p.title?.toLowerCase().includes(cat.title.toLowerCase()))
+            .map(p => p.id);
+        }
+
+        const slug = cat.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+        
+        await setDoc(doc(db, "home-config", "data", "vitrines", slug), {
+          title: cat.title,
+          subtitle: cat.subtitle,
+          theme: cat.theme,
+          active: true,
+          order: order++,
+          layout: "horizontal",
+          maxProducts: 6,
+          productIds: matchedProductIds.slice(0, 6)
+        });
+        vitrinesCreated++;
+      }
+
+      // Update local storage to match
+      localStorage.setItem('app-products', JSON.stringify(allProds));
+      // Dispatch update event
+      window.dispatchEvent(new Event('app-products-updated'));
+
+      alert(`Sucesso! ${productsCreated} produtos e ${vitrinesCreated} vitrines criados no Firestore.`);
+    } catch (e: any) {
+      alert('Erro: ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ── Mega Oferta Ops ─────────────────────────────────────────────────────────
   const addMegaOferta = useCallback(async () => {
     if (!moSelectedId) { alert('Selecione um produto.'); return; }
@@ -627,6 +734,9 @@ export const AdminMarketing: React.FC = () => {
             </div>
             {!creatingVitrine && (
               <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={handleResetProductsAndVitrines} style={{ ...btnGold, background: crmTheme.accent, boxShadow: '0 4px 12px rgba(14,165,233,0.2)' }}>
+                  <RefreshCw size={13} /> Gerar Produtos & Vitrines
+                </button>
                 <button onClick={handleGenerateDefaultVitrines} style={{ ...btnGold, background: crmTheme.success, boxShadow: '0 4px 12px rgba(16,185,129,0.2)' }}>
                   <RefreshCw size={13} /> Gerar Vitrines Padrão
                 </button>

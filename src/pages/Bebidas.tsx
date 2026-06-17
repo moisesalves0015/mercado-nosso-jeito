@@ -3,6 +3,7 @@ import { ArrowLeft, Snowflake, AlertOctagon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { MercadoLogo } from './Login';
+import { defaultProducts } from '../data/defaultProducts';
 
 interface Product {
   id: string;
@@ -22,44 +23,49 @@ export const Bebidas = () => {
   useEffect(() => {
     const loadProducts = () => {
       const stored = localStorage.getItem('app-products');
+      let allProds: Product[] = [];
+      let updated = false;
+
       if (stored) {
-        let allProds = JSON.parse(stored) as Product[];
-        let updated = false;
-        allProds = allProds.map(p => {
-          if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
-            p.image = '/heineken.png';
+        allProds = JSON.parse(stored) as Product[];
+        // Check for missing default products and add them
+        defaultProducts.forEach(defP => {
+          if (!allProds.some(p => p.id === defP.id)) {
+            allProds.push(defP);
             updated = true;
           }
-          if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
-            p.image = '/coca_cola_zero.png';
-            updated = true;
-          }
-          if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
-            p.image = '/monster_energy.webp';
-            updated = true;
-          }
-          if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
-            p.image = '/spaten.webp';
-            updated = true;
-          }
-          return p;
         });
-        if (updated) {
-          localStorage.setItem('app-products', JSON.stringify(allProds));
-        }
-        setBebidas(allProds.filter(p => p.category === 'Bebidas'));
       } else {
-        // Fallback defaults
-        const defaults: Product[] = [
-          { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-          { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
-          { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-          { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "/spaten.webp", category: "Bebidas", diamondReward: 1 },
-          { id: 'suco-dobem', title: "Suco de Laranja Integral Do Bem (1L)", price: 14.90, image: "/suco_do_bem_laranja_integral.png", category: "Bebidas", badge: "100% Suco", badgeStyle: "light", diamondReward: 10 },
-          { id: 'agua-crystal', title: "Água Mineral Sem Gás Crystal (500ml)", price: 2.50, image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?q=80&w=600", category: "Bebidas" }
-        ];
-        setBebidas(defaults);
+        allProds = [...defaultProducts];
+        updated = true;
       }
+
+      // Sync specific image updates if necessary
+      allProds = allProds.map(p => {
+        if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
+          p.image = '/heineken.png';
+          updated = true;
+        }
+        if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
+          p.image = '/coca_cola_zero.png';
+          updated = true;
+        }
+        if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
+          p.image = '/monster_energy.webp';
+          updated = true;
+        }
+        if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
+          p.image = '/spaten.webp';
+          updated = true;
+        }
+        return p;
+      });
+
+      if (updated) {
+        localStorage.setItem('app-products', JSON.stringify(allProds));
+      }
+
+      setBebidas(allProds.filter(p => p.category === 'Bebidas'));
     };
 
     loadProducts();
