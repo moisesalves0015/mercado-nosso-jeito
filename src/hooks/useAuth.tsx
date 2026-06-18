@@ -38,6 +38,7 @@ export interface UserProfile {
   cpf?: string;
   foto?: string;
   role: 'client' | 'admin';
+  unlockedBadges?: string[];
   createdAt?: Date;
   updatedAt?: Date;
   lastLogin?: Date;
@@ -57,7 +58,7 @@ interface AuthContextType {
   sendPasswordReset: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   // Profile actions
-  updateUserProfile: (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf'>>) => Promise<void>;
+  updateUserProfile: (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges'>>) => Promise<void>;
   uploadProfilePhoto: (file: File) => Promise<string>;
   refreshProfile: () => Promise<void>;
   // Legacy compat
@@ -103,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           cpf: data.cpf || '',
           foto: data.foto || firebaseUser.photoURL || '',
           role: data.role || 'client',
+          unlockedBadges: data.unlockedBadges || [],
           createdAt: data.createdAt?.toDate?.() ?? undefined,
           updatedAt: data.updatedAt?.toDate?.() ?? undefined,
           lastLogin: data.lastLogin?.toDate?.() ?? undefined,
@@ -125,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           cpf: '',
           foto: '',
           role: initialRole,
+          unlockedBadges: [],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
@@ -233,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cpf: data.cpf || '',
         foto: '',
         role: data.email.toLowerCase().startsWith('admin@') ? 'admin' : 'client',
+        unlockedBadges: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
@@ -267,13 +271,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ── Update Profile in Firestore ──────────────────────────
-  const updateUserProfile = async (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf'>>): Promise<void> => {
+  const updateUserProfile = async (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges'>>): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
 
     const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
     if (data.name !== undefined) updates.name = data.name;
     if (data.telefone !== undefined) updates.telefone = data.telefone;
     if (data.cpf !== undefined) updates.cpf = data.cpf;
+    if (data.unlockedBadges !== undefined) updates.unlockedBadges = data.unlockedBadges;
 
     await updateDoc(doc(db, 'users', user.uid), updates);
 

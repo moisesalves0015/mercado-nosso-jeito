@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, ShoppingCart, RefreshCw } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
@@ -353,8 +353,65 @@ export const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [productId]);
 
-  // Lookup product, fallback to Cafe Melitta if not found
-  const product = (productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g'];
+  const [allProducts, setAllProducts] = useState<any[]>(() => {
+    const stored = localStorage.getItem('app-products');
+    return stored ? JSON.parse(stored) : Object.values(PRODUCTS_MOCK);
+  });
+
+  const getProductInitial = () => {
+    const stored = localStorage.getItem('app-products');
+    if (stored) {
+      const list = JSON.parse(stored);
+      const found = list.find((p: any) => p.id === productId);
+      if (found) {
+        const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
+        return {
+          ...found,
+          priceNum: priceNum || 0,
+          price: `R$ ${(priceNum || 0).toFixed(2).replace('.', ',')}`,
+          rating: found.rating || 4.8,
+          ratingCount: found.ratingCount || 120,
+          soldCount: found.soldCount || '100+',
+          stockStatus: found.stockStatus || 'Em estoque',
+          deliveryTime: found.deliveryTime || 'Receba em até 30 min',
+        };
+      }
+    }
+    return (productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g'];
+  };
+
+  const [product, setProduct] = useState<any>(getProductInitial);
+
+  useEffect(() => {
+    const loadProduct = () => {
+      const stored = localStorage.getItem('app-products');
+      if (stored) {
+        const list = JSON.parse(stored);
+        setAllProducts(list);
+        const found = list.find((p: any) => p.id === productId);
+        if (found) {
+          const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
+          setProduct({
+            ...found,
+            priceNum: priceNum || 0,
+            price: `R$ ${(priceNum || 0).toFixed(2).replace('.', ',')}`,
+            rating: found.rating || 4.8,
+            ratingCount: found.ratingCount || 120,
+            soldCount: found.soldCount || '100+',
+            stockStatus: found.stockStatus || 'Em estoque',
+            deliveryTime: found.deliveryTime || 'Receba em até 30 min',
+          });
+          return;
+        }
+      }
+      setAllProducts(Object.values(PRODUCTS_MOCK));
+      setProduct((productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g']);
+    };
+
+    loadProduct();
+    window.addEventListener('app-products-updated', loadProduct);
+    return () => window.removeEventListener('app-products-updated', loadProduct);
+  }, [productId]);
 
   // State for subscription selection, quantity, and favoriting
   const [purchaseMode, setPurchaseMode] = useState<'subscribe' | 'onetime'>('subscribe');
@@ -370,15 +427,11 @@ export const ProductDetail = () => {
   const finalPrice = product.priceNum * discountMultiplier * couponMultiplier;
 
   // Filter suggested products from the same category or overall catalog dynamically
-  const suggestedProducts = Object.values(PRODUCTS_MOCK)
-    .filter(p => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
-
-  const fallbackSuggested = Object.values(PRODUCTS_MOCK)
-    .filter(p => p.id !== product.id)
-    .slice(0, 4);
-
-  const finalSuggested = suggestedProducts.length >= 2 ? suggestedProducts : fallbackSuggested;
+  const finalSuggested = useMemo(() => {
+    const fromCat = allProducts.filter(p => p.id !== product.id && p.category === product.category);
+    if (fromCat.length >= 2) return fromCat.slice(0, 4);
+    return allProducts.filter(p => p.id !== product.id).slice(0, 4);
+  }, [allProducts, product]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -397,17 +450,20 @@ export const ProductDetail = () => {
     <main className="app product-detail-page">
       {/* TOP HEADER */}
       <header className="product-detail-header">
-        <button onClick={() => navigate(-1)} className="header-icon-btn">
-          <ArrowLeft size={20} color="#fff" />
-        </button>
-        <div className="header-title">Detalhes do Produto</div>
-        <div className="header-actions">
-          <button onClick={handleShare} className="header-icon-btn">
-            <Share2 size={18} color="#fff" />
+        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="product-detail-header-content">
+          <button onClick={() => navigate(-1)} className="header-icon-btn">
+            <ArrowLeft size={20} color="#fff" />
           </button>
-          <button onClick={() => setIsFavorited(!isFavorited)} className="header-icon-btn">
-            <Heart size={18} fill={isFavorited ? "#FF4F4F" : "none"} color={isFavorited ? "#FF4F4F" : "#fff"} />
-          </button>
+          <div className="header-title">Detalhes do Produto</div>
+          <div className="header-actions">
+            <button onClick={handleShare} className="header-icon-btn">
+              <Share2 size={18} color="#fff" />
+            </button>
+            <button onClick={() => setIsFavorited(!isFavorited)} className="header-icon-btn">
+              <Heart size={18} fill={isFavorited ? "#FF4F4F" : "none"} color={isFavorited ? "#FF4F4F" : "#fff"} />
+            </button>
+          </div>
         </div>
       </header>
 

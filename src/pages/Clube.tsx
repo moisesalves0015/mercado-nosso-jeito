@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Truck
 } from 'lucide-react';
+import { SeasonRanking } from '../components/SeasonRanking';
 
 interface Mission {
   id: string;
@@ -400,12 +401,15 @@ export const Clube = () => {
     return (
       <main className="app clube-page">
         <header className="clube-topbar">
-          <div className="clube-logo-container">
-            <span className="clube-logo-text">clube nosso jeito</span>
-          </div>
-          <div className="clube-coins-badge">
-            <Gem size={11} />
-            <span>--- diamantes</span>
+          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="clube-topbar-content">
+            <div className="clube-logo-container">
+              <span className="clube-logo-text">clube nosso jeito</span>
+            </div>
+            <div className="clube-coins-badge">
+              <Gem size={11} />
+              <span>--- diamantes</span>
+            </div>
           </div>
         </header>
         <div className="clube-skeleton-wrapper">
@@ -431,13 +435,16 @@ export const Clube = () => {
     <main className="app clube-page">
       {/* HEADER PREMIUM */}
       <header className="clube-topbar">
-        <div className="clube-logo-container">
-          <Gem size={15} color="#FFDF73" style={{ filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.6))' }} />
-          <span className="clube-logo-text">clube nosso jeito</span>
-        </div>
-        <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
-          <Gem size={11} fill="#FFDF73" />
-          <span>{coins} diamantes</span>
+        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="clube-topbar-content">
+          <div className="clube-logo-container">
+            <Gem size={15} color="#FFDF73" style={{ filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.6))' }} />
+            <span className="clube-logo-text">clube nosso jeito</span>
+          </div>
+          <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
+            <Gem size={11} fill="#FFDF73" />
+            <span>{coins} diamantes</span>
+          </div>
         </div>
       </header>
 
@@ -499,6 +506,12 @@ export const Clube = () => {
           <ArrowRight size={16} color="#000" strokeWidth={2.5} />
         </div>
       </div>
+
+      {/* RANKING DA TEMPORADA */}
+      <div className="clube-section-title-row">
+        <h3>Ranking da Temporada</h3>
+      </div>
+      <SeasonRanking userPoints={coins * 12 + 4200} />
 
       {/* MISSÕES DIÁRIAS (HORIZONTAL SCROLL) */}
       <div className="clube-section-title-row">

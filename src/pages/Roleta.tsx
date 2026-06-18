@@ -598,26 +598,29 @@ export const Roleta: React.FC = () => {
 
       {/* HEADER */}
       <header className="clube-topbar" style={{ zIndex: 200 }}>
-        <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <ArrowLeft size={16} />
-          <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
-        </button>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button 
-            onClick={() => {
-              const nextVal = !soundEnabled;
-              setSoundEnabled(nextVal);
-              localStorage.setItem('roulette_sound', nextVal.toString());
-            }} 
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
-            {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
+        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="clube-topbar-content">
+          <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ArrowLeft size={16} />
+            <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
           </button>
- 
-          <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
-            <Gem size={12} fill="#FFDF73" color="#FFDF73" />
-            <span>{diamonds} diamantes</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button 
+              onClick={() => {
+                const nextVal = !soundEnabled;
+                setSoundEnabled(nextVal);
+                localStorage.setItem('roulette_sound', nextVal.toString());
+              }} 
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
+            </button>
+   
+            <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
+              <Gem size={12} fill="#FFDF73" color="#FFDF73" />
+              <span>{diamonds} diamantes</span>
+            </div>
           </div>
         </div>
       </header>

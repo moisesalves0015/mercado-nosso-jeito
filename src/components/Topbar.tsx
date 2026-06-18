@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +12,8 @@ export const Topbar = () => {
     const saved = localStorage.getItem('user_diamonds');
     return saved ? parseInt(saved, 10) : 320;
   });
+
+  const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -28,9 +30,27 @@ export const Topbar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (navRef.current) {
+        const activeEl = navRef.current.querySelector('.topbar-nav-link.active');
+        if (activeEl) {
+          activeEl.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center'
+          });
+        }
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   return (
-    <div className="topbar">
-      {/* ROW 1: LOCATION LEFT - SEARCH CENTER - GOLD BADGE RIGHT */}
+    <div className="topbar-container">
+      <div className="safe-area-top-bg" style={{ background: '#000000' }} />
+      <div className="topbar">
+        {/* ROW 1: LOCATION LEFT - SEARCH CENTER - GOLD BADGE RIGHT */}
       <div className="topbar-row-top">
         {/* ADDRESS / LOCATION */}
         <div className="topbar-location">
@@ -68,7 +88,7 @@ export const Topbar = () => {
 
       {/* ROW 2: NAV LINKS LEFT/CENTER - ICONS RIGHT */}
       <div className="topbar-row-bottom">
-        <div className="topbar-nav-links">
+        <div className="topbar-nav-links" ref={navRef}>
           <Link to="/" className={`topbar-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
             Tudo
             {location.pathname === '/' && <span className="active-line"></span>}
@@ -95,7 +115,7 @@ export const Topbar = () => {
           </Link>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <button className="topbar-icon-btn" title="Favoritos" style={{ background: 'transparent', border: 'none', color: '#fff', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Heart size={18} />
           </button>
@@ -246,6 +266,7 @@ export const Topbar = () => {
             </button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

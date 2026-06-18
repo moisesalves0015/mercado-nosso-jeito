@@ -162,55 +162,59 @@ export const Search = () => {
     <main className="app search-page" style={{ padding: 0, minHeight: '100vh' }}>
       {/* ── TOP BAR ── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 'calc(21px + env(safe-area-inset-top, 0px)) 16px 12px',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
-        background: 'rgba(9,7,5,0.4)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
         position: 'sticky',
         top: 0,
         zIndex: 20,
+        background: 'rgba(9,7,5,0.4)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '50%',
-            width: '38px', height: '38px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
-          }}
-        >
-          <ArrowLeft size={17} />
-        </button>
+        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px 12px',
+        }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '50%',
+              width: '38px', height: '38px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={17} />
+          </button>
 
-        <MercadoLogo size="sm" />
+          <MercadoLogo size="sm" />
 
-        <button
-          onClick={() => setShowFilters(v => !v)}
-          style={{
-            background: showFilters ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.06)',
-            border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.1)'}`,
-            borderRadius: 10, width: 38, height: 38,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
-            flexShrink: 0,
-            position: 'relative'
-          }}
-        >
-          <SlidersHorizontal size={15} />
-          {hasFilters && (
-            <span style={{
-              position: 'absolute', top: 8, right: 8,
-              width: 7, height: 7, borderRadius: '50%',
-              background: '#D4AF37', border: '1.5px solid #090705',
-            }} />
-          )}
-        </button>
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            style={{
+              background: showFilters ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 10, width: 38, height: 38,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+              flexShrink: 0,
+              position: 'relative'
+            }}
+          >
+            <SlidersHorizontal size={15} />
+            {hasFilters && (
+              <span style={{
+                position: 'absolute', top: 8, right: 8,
+                width: 7, height: 7, borderRadius: '50%',
+                background: '#D4AF37', border: '1.5px solid #090705',
+              }} />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Page contents with standardized width constraint ── */}

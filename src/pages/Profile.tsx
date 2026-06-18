@@ -10,16 +10,15 @@ import {
   Camera, Lock, Eye, EyeOff, Calendar, Clock, AlertTriangle, ArrowLeft, ShieldAlert, SlidersHorizontal,
 } from 'lucide-react';
 import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
-
 // ──────────────────────────────────────────────────────────────
 // Shared card & token styles
 // ──────────────────────────────────────────────────────────────
 const t = {
   card: {
-    background: 'rgba(9,7,5,0.58)',
+    background: 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
     backdropFilter: 'blur(28px)',
     WebkitBackdropFilter: 'blur(28px)',
-    border: '1px solid rgba(212,175,55,0.18)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '20px',
     padding: '18px',
     boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
@@ -30,12 +29,12 @@ const t = {
     gap: '8px',
     marginBottom: '14px',
     paddingBottom: '12px',
-    borderBottom: '1px solid rgba(212,175,55,0.12)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
   },
   sectionHeaderText: {
     fontSize: '10.5px',
     fontWeight: 800,
-    color: 'rgba(212,175,55,0.7)',
+    color: '#fff',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.8px',
   },
@@ -248,53 +247,58 @@ export const Profile: React.FC = () => {
 
         {/* ── TOP BAR ──────────────────────────────────────── */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: 'calc(23px + env(safe-area-inset-top, 0px)) 16px 14px',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
-          background: 'rgba(9,7,5,0.3)',
-          backdropFilter: 'blur(12px)',
           position: 'sticky',
           top: 0,
           zIndex: 20,
+          background: 'rgba(9,7,5,0.3)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(212,175,55,0.1)',
         }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '50%',
-              width: '38px', height: '38px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
-            }}
-          >
-            <ArrowLeft size={18} />
-          </button>
-
-          {/* Center logo */}
-          <MercadoLogo size="sm" />
-
-          {/* Edit toggle */}
-          {!editMode ? (
+          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px 12px',
+          }}>
             <button
-              onClick={() => setEditMode(true)}
+              onClick={() => navigate('/')}
               style={{
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.25)',
-                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '50%',
                 width: '38px', height: '38px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#D4AF37', flexShrink: 0,
+                cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
               }}
-              title="Editar perfil"
             >
-              <Edit3 size={16} />
+              <ArrowLeft size={18} />
             </button>
-          ) : (
-            <div style={{ width: '38px' }} /> /* spacer */
-          )}
+
+            {/* Center logo */}
+            <MercadoLogo size="sm" />
+
+            {/* Edit toggle */}
+            {!editMode ? (
+              <button
+                onClick={() => setEditMode(true)}
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '50%',
+                  width: '38px', height: '38px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+                }}
+                title="Editar perfil"
+              >
+                <Edit3 size={16} />
+              </button>
+            ) : (
+              <div style={{ width: '38px' }} /> /* spacer */
+            )}
+          </div>
         </div>
 
         <div style={{ padding: '16px', maxWidth: '480px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -312,20 +316,20 @@ export const Profile: React.FC = () => {
                   <div style={{ position: 'relative' }}>
                     <div style={{
                       width: '90px', height: '90px', borderRadius: '50%',
-                      border: '3px solid rgba(212,175,55,0.45)',
+                      border: '3px solid rgba(255,255,255,0.2)',
                       overflow: 'hidden',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: avatarUrl ? 'transparent' : 'linear-gradient(135deg,#D4AF37,#FFDF73)',
-                      boxShadow: '0 4px 24px rgba(212,175,55,0.25)',
+                      background: avatarUrl ? 'transparent' : 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
                       position: 'relative',
                     }}>
                       {avatarUrl
                         ? <img src={avatarUrl} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: '30px', fontWeight: 800, color: '#000' }}>{initials}</span>
+                        : <span style={{ fontSize: '30px', fontWeight: 800, color: '#fff' }}>{initials}</span>
                       }
                       {uploadingPhoto && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ width: '22px', height: '22px', border: '2.5px solid rgba(212,175,55,0.3)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'profileSpin 0.8s linear infinite', display: 'block' }} />
+                          <span style={{ width: '22px', height: '22px', border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'profileSpin 0.8s linear infinite', display: 'block' }} />
                         </div>
                       )}
                     </div>
@@ -335,14 +339,14 @@ export const Profile: React.FC = () => {
                       style={{
                         position: 'absolute', bottom: 0, right: 0,
                         width: '30px', height: '30px', borderRadius: '50%',
-                        background: 'linear-gradient(135deg,#D4AF37,#FFDF73)',
-                        border: '2.5px solid #090705',
+                        background: 'rgba(255,255,255,0.15)',
+                        border: '1.5px solid rgba(255,255,255,0.25)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
                       }}
                       title="Alterar foto"
                     >
-                      <Camera size={14} color="#000" />
+                      <Camera size={14} color="#fff" />
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoSelect} />
                   </div>
@@ -401,17 +405,67 @@ export const Profile: React.FC = () => {
                 </div>
               </div>
 
+              {/* ── CENTRAL DE COLEÇÕES BOTÃO ────────────── */}
+              <button
+                onClick={() => navigate('/colecoes')}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(212, 175, 55, 0.05))',
+                  border: '1px solid rgba(255, 193, 7, 0.3)',
+                  borderRadius: 20,
+                  padding: '20px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  marginBottom: 16,
+                  boxShadow: '0 4px 16px rgba(255, 193, 7, 0.1)',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'inherit'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 193, 7, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(255, 193, 7, 0.1)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12,
+                    background: 'rgba(255, 193, 7, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid rgba(255, 193, 7, 0.4)'
+                  }}>
+                    <span style={{ fontSize: 22 }}>🏆</span>
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#FFC107' }}>
+                      Visitar Minha Estante
+                    </h3>
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                      Acompanhe sua história e selos
+                    </p>
+                  </div>
+                </div>
+                <div style={{ color: '#FFC107', opacity: 0.8 }}>
+                  <ChevronRight size={20} />
+                </div>
+              </button>
+
               {/* ── INFO CARD ────────────────────────────── */}
               <div style={t.card}>
                 <div style={t.sectionHeader}>
-                  <User size={14} color="#D4AF37" />
+                  <User size={14} color="rgba(255,255,255,0.75)" />
                   <span style={t.sectionHeaderText}>Dados da Conta</span>
                 </div>
-                <InfoRow icon={<Mail size={15} color="#D4AF37" />} label="E-mail" value={userProfile?.email || user?.email || '—'} />
-                <InfoRow icon={<Phone size={15} color="#D4AF37" />} label="Telefone" value={userProfile?.telefone || 'Não informado'} faded={!userProfile?.telefone} />
-                <InfoRow icon={<CreditCard size={15} color="#D4AF37" />} label="CPF" value={userProfile?.cpf || 'Não informado'} faded={!userProfile?.cpf} />
-                <InfoRow icon={<Calendar size={15} color="#D4AF37" />} label="Membro desde" value={fmtDate(userProfile?.createdAt)} />
-                <InfoRow icon={<Clock size={15} color="#D4AF37" />} label="Último acesso" value={fmtTime(userProfile?.lastLogin)} last />
+                <InfoRow icon={<Mail size={15} color="rgba(255,255,255,0.75)" />} label="E-mail" value={userProfile?.email || user?.email || '—'} />
+                <InfoRow icon={<Phone size={15} color="rgba(255,255,255,0.75)" />} label="Telefone" value={userProfile?.telefone || 'Não informado'} faded={!userProfile?.telefone} />
+                <InfoRow icon={<CreditCard size={15} color="rgba(255,255,255,0.75)" />} label="CPF" value={userProfile?.cpf || 'Não informado'} faded={!userProfile?.cpf} />
+                <InfoRow icon={<Calendar size={15} color="rgba(255,255,255,0.75)" />} label="Membro desde" value={fmtDate(userProfile?.createdAt)} />
+                <InfoRow icon={<Clock size={15} color="rgba(255,255,255,0.75)" />} label="Último acesso" value={fmtTime(userProfile?.lastLogin)} last />
               </div>
 
               {/* ── CHANGE PASSWORD ──────────────────────── */}
@@ -422,7 +476,7 @@ export const Profile: React.FC = () => {
                   className="profile-section-toggle"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Lock size={15} color="#D4AF37" />
+                    <Lock size={15} color="rgba(255,255,255,0.75)" />
                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>Alterar Senha</span>
                   </div>
                   <ChevronRight size={17} color="rgba(255,255,255,0.3)" style={{ transform: pwSection ? 'rotate(90deg)' : 'none', transition: 'transform 0.25s ease' }} />
@@ -498,7 +552,7 @@ export const Profile: React.FC = () => {
               {isAdmin && (
                 <div style={t.card}>
                   <div style={t.sectionHeader}>
-                    <ShieldAlert size={14} color="#D4AF37" />
+                    <ShieldAlert size={14} color="rgba(255,255,255,0.75)" />
                     <span style={t.sectionHeaderText}>Portal do Administrador</span>
                   </div>
                   <button
@@ -506,10 +560,10 @@ export const Profile: React.FC = () => {
                     style={{
                       width: '100%',
                       height: '46px',
-                      background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(255,223,115,0.05) 100%)',
-                      border: '1px solid rgba(212, 175, 55, 0.35)',
+                      background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
-                      color: '#FFDF73',
+                      color: '#fff',
                       fontWeight: 800,
                       fontSize: '13px',
                       cursor: 'pointer',
@@ -518,7 +572,7 @@ export const Profile: React.FC = () => {
                       justifyContent: 'center',
                       gap: '8px',
                       fontFamily: 'inherit',
-                      boxShadow: '0 4px 16px rgba(212,175,55,0.1)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                       transition: 'all 0.2s ease',
                     }}
                     className="profile-save-btn"
@@ -532,14 +586,14 @@ export const Profile: React.FC = () => {
               {/* ── NAV MENU ─────────────────────────────── */}
               <div style={t.card}>
                 <div style={t.sectionHeader}>
-                  <ShoppingBag size={14} color="#D4AF37" />
+                  <ShoppingBag size={14} color="rgba(255,255,255,0.75)" />
                   <span style={t.sectionHeaderText}>Minha Conta</span>
                 </div>
                 {[
                   { icon: <ShoppingBag size={17} />, label: 'Meus Pedidos', path: '/orders' },
-                  { icon: <MapPin size={17} />, label: 'Meus Endereços', path: null },
-                  { icon: <Ticket size={17} />, label: 'Cupons e Descontos', path: null },
-                  { icon: <HelpCircle size={17} />, label: 'Ajuda e Suporte', path: null },
+                  { icon: <MapPin size={17} />, label: 'Meus Endereços', path: '/addresses' },
+                  { icon: <Ticket size={17} />, label: 'Cupons e Descontos', path: '/coupons' },
+                  { icon: <HelpCircle size={17} />, label: 'Ajuda e Suporte', path: '/support' },
                 ].map((item, i, arr) => (
                   <button
                     key={item.label}
@@ -554,7 +608,7 @@ export const Profile: React.FC = () => {
                     className="profile-menu-item"
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'rgba(255,255,255,0.75)' }}>
-                      <span style={{ color: '#D4AF37', display: 'flex' }}>{item.icon}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.75)', display: 'flex' }}>{item.icon}</span>
                       <span style={{ fontSize: '14px', fontWeight: 600 }}>{item.label}</span>
                     </div>
                     <ChevronRight size={15} color="rgba(255,255,255,0.25)" />

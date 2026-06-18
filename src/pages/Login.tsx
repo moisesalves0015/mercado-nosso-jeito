@@ -181,7 +181,7 @@ export const authStyles = {
   orb: { position: 'absolute' as const, borderRadius: '50%', pointerEvents: 'none' as const },
   backBtn: {
     position: 'absolute' as const,
-    top: '20px',
+    top: 'calc(20px + env(safe-area-inset-top, 0px))',
     left: '16px',
     display: 'flex',
     alignItems: 'center',

@@ -3,12 +3,16 @@ import { Topbar } from '../components/Topbar';
 import { Section } from '../components/Section';
 import { ProductCard } from '../components/ProductCard';
 import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search } from 'lucide-react';
+import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHomeConfig } from '../hooks/useHomeConfig';
 import { defaultProducts } from '../data/defaultProducts';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
+import { CondoBuildingActivity } from '../components/CondoBuildingActivity';
+import { SocialProofBanner } from '../components/SocialProofBanner';
+import { LiveActivityFeed } from '../components/LiveActivityFeed';
+import { useCommunityPresence } from '../hooks/useCommunityPresence';
 
 
 // Custom SVG backgrounds and button assets
@@ -95,6 +99,7 @@ export const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activePeriod, setActivePeriod] = useState<Period>('morning');
   const homeConfig = useHomeConfig();
+  const { condoFavorites } = useCommunityPresence();
 
   const renderVitrines = (startIndex: number, count: number) => {
     const activeVitrines = homeConfig.vitrines.filter(v => v.active).sort((a, b) => a.order - b.order);
@@ -337,6 +342,9 @@ export const Home = () => {
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
           <Topbar />
 
+          {/* CONDOMINIUM ACTIVITY BAR */}
+          <CondoBuildingActivity />
+
           {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
           <div 
             className="hero-banner"
@@ -578,6 +586,12 @@ export const Home = () => {
         </Section>
       </div>
 
+      {/* PROVA SOCIAL SILENCIOSA + FEED AO VIVO */}
+      <div style={{ padding: '0 0 0' }}>
+        <SocialProofBanner />
+        <LiveActivityFeed />
+      </div>
+
       {/* 2 LISTAS DE CATEGORIAS DE PRODUTO (Grupo 1) */}
       {renderVitrines(0, 2)}
 
@@ -815,6 +829,75 @@ export const Home = () => {
               left: `${(scrollProgress / 100) * (80 - 24)}px` 
             }}
           />
+        </div>
+      </div>
+
+      {/* ❤️ FAVORITOS DO CONDOMÍNIO */}
+      <div style={{ margin: '24px 0 8px' }}>
+        <div className="section-header" style={{ padding: '0 8px', marginBottom: '10px' }}>
+          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Heart size={14} fill="#f87171" color="#f87171" />
+            Favoritos do Condomínio
+          </h2>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          {condoFavorites.map((fav) => (
+            <Link
+              key={fav.id}
+              to={`/product/${fav.id}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '9px 12px',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 10,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 900,
+                    color: fav.rank <= 3 ? '#FFDF73' : 'rgba(255,255,255,0.35)',
+                    width: 16,
+                    textAlign: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {fav.rank <= 3 ? ['🥇','🥈','🥉'][fav.rank - 1] : `${fav.rank}º`}
+                </span>
+                <span style={{ fontSize: 18, flexShrink: 0 }}>{fav.emoji}</span>
+                <span
+                  style={{
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.85)',
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {fav.name}
+                </span>
+                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                  →
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 

@@ -22,10 +22,10 @@ import {
 // Design tokens — same as Profile.tsx
 // ──────────────────────────────────────────────────────────────
 const card = {
-  background: 'rgba(9,7,5,0.58)',
+  background: 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid rgba(212,175,55,0.18)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
   borderRadius: '18px',
   boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
 };
@@ -89,7 +89,7 @@ const MetricCard: React.FC<{
     </div>
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 10.5, color: 'rgba(212,175,55,0.6)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
+      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{sub}</div>}
     </div>
   </div>
@@ -101,8 +101,8 @@ const MetricCard: React.FC<{
 const SkeletonCard: React.FC = () => (
   <div style={{ ...card, padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <div style={{ width: 80, height: 13, borderRadius: 8, background: 'rgba(212,175,55,0.1)', animation: 'ordShimmer 1.4s ease-in-out infinite' }} />
-      <div style={{ width: 110, height: 22, borderRadius: 99, background: 'rgba(212,175,55,0.08)', animation: 'ordShimmer 1.4s ease-in-out infinite 0.1s' }} />
+      <div style={{ width: 80, height: 13, borderRadius: 8, background: 'rgba(255,255,255,0.08)', animation: 'ordShimmer 1.4s ease-in-out infinite' }} />
+      <div style={{ width: 110, height: 22, borderRadius: 99, background: 'rgba(255,255,255,0.06)', animation: 'ordShimmer 1.4s ease-in-out infinite 0.1s' }} />
     </div>
     <div style={{ display: 'flex', gap: 8 }}>
       {[0, 1, 2].map((i) => (
@@ -111,7 +111,7 @@ const SkeletonCard: React.FC = () => (
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ width: 70, height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.05)' }} />
-      <div style={{ width: 80, height: 12, borderRadius: 6, background: 'rgba(212,175,55,0.08)' }} />
+      <div style={{ width: 80, height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.06)' }} />
     </div>
   </div>
 );
@@ -197,7 +197,7 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
   return (
     <div style={{
       ...card,
-      border: `1px solid ${highlight ? 'rgba(212,175,55,0.4)' : 'rgba(212,175,55,0.18)'}`,
+      border: `1px solid ${highlight ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`,
       overflow: 'hidden',
       transition: 'border-color 0.3s ease',
     }}>
@@ -209,7 +209,7 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
         {/* Order number + status */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: '#D4AF37', letterSpacing: '0.3px' }}>{order.orderNumber}</div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', letterSpacing: '0.3px' }}>{order.orderNumber}</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
               {order.createdAt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
               {' · '}{relativeTime(order.createdAt)}
@@ -225,7 +225,7 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
               <div key={item.id} style={{
                 width: 40, height: 40, borderRadius: 10,
                 background: '#fff',
-                border: '2px solid rgba(212,175,55,0.15)',
+                border: '2px solid rgba(255,255,255,0.15)',
                 overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: i > 0 ? -10 : 0,
                 zIndex: visible.length - i, flexShrink: 0,
@@ -239,10 +239,10 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
             {extra > 0 && (
               <div style={{
                 width: 40, height: 40, borderRadius: 10,
-                background: 'rgba(212,175,55,0.08)', border: '1.5px solid rgba(212,175,55,0.2)',
+                background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: -10, zIndex: 0, flexShrink: 0, position: 'relative',
-                fontSize: 10, fontWeight: 800, color: '#D4AF37',
+                fontSize: 10, fontWeight: 800, color: '#fff',
               }}>+{extra}</div>
             )}
           </div>
@@ -454,49 +454,54 @@ export const Orders: React.FC = () => {
 
         {/* ── Topbar — same pattern as Profile ──────────────── */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: 'calc(21px + env(safe-area-inset-top, 0px)) 16px 12px',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          position: 'sticky', top: 0, zIndex: 20,
           background: 'rgba(9,7,5,0.4)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          position: 'sticky', top: 0, zIndex: 20,
+          borderBottom: '1px solid rgba(212,175,55,0.1)',
         }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '50%', width: 38, height: 38,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
-            }}
-          >
-            <ArrowLeft size={17} />
-          </button>
+          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 16px 12px',
+          }}>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '50%', width: 38, height: 38,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+              }}
+            >
+              <ArrowLeft size={17} />
+            </button>
 
-          <MercadoLogo size="sm" />
+            <MercadoLogo size="sm" />
 
-          {/* Filter toggle */}
-          <button
-            onClick={() => setShowFilters((v) => !v)}
-            style={{
-              background: showFilters ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 10, width: 38, height: 38,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
-              flexShrink: 0,
-            }}
-          >
-            <SlidersHorizontal size={15} />
-            {hasFilters && (
-              <span style={{
-                position: 'absolute', top: 8, right: 8,
-                width: 7, height: 7, borderRadius: '50%',
-                background: '#D4AF37', border: '1.5px solid #090705',
-              }} />
-            )}
-          </button>
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              style={{
+                background: showFilters ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${showFilters ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 10, width: 38, height: 38,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: showFilters ? '#fff' : 'rgba(255,255,255,0.6)',
+                position: 'relative',
+              }}
+              title="Filtros"
+            >
+              <SlidersHorizontal size={15} />
+              {hasFilters && (
+                <span style={{
+                  position: 'absolute', top: 9, right: 9,
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: '#fff', border: '1.5px solid #090705',
+                }} />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* ── Page title ──────────────────────────── */}
@@ -514,7 +519,7 @@ export const Orders: React.FC = () => {
           {/* ── Metric cards (2-col grid) ── */}
           {!loading && metrics.total > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <MetricCard icon={<ReceiptText size={18} />} iconColor="#D4AF37" iconBg="rgba(212,175,55,0.1)" label="Total" value={String(metrics.total)} />
+              <MetricCard icon={<ReceiptText size={18} />} iconColor="#fff" iconBg="rgba(255,255,255,0.1)" label="Total" value={String(metrics.total)} />
               <MetricCard icon={<Clock size={18} />} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)" label="Ativos" value={String(metrics.active)} sub={metrics.active > 0 ? 'Em andamento' : 'Todos concluídos'} />
               <MetricCard icon={<TrendingUp size={18} />} iconColor="#10B981" iconBg="rgba(16,185,129,0.1)" label="Total gasto" value={formatCurrency(metrics.totalSpent)} />
               <MetricCard icon={<Star size={18} />} iconColor="#8B5CF6" iconBg="rgba(139,92,246,0.1)" label="Ticket médio" value={formatCurrency(metrics.avgTicket)} />
@@ -563,7 +568,7 @@ export const Orders: React.FC = () => {
                     border: `1px solid ${sort === k ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.07)'}`,
                     borderRadius: 8, padding: '4px 10px',
                     fontSize: 10.5, fontWeight: sort === k ? 800 : 500,
-                    color: sort === k ? '#D4AF37' : 'rgba(255,255,255,0.35)',
+                    color: sort === k ? '#fff' : 'rgba(255,255,255,0.35)',
                     cursor: 'pointer',
                   }}>{l}</button>
                 ))}

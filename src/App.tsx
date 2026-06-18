@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
 import { AuthProvider } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -23,18 +25,51 @@ import { Admin } from './pages/Admin';
 import { AdminProductDetail } from './pages/AdminProductDetail';
 import { Roleta } from './pages/Roleta';
 import { Categories } from './pages/Categories';
+import { Addresses } from './pages/Addresses';
+import { Coupons } from './pages/Coupons';
+import { Support } from './pages/Support';
+import { BadgesCenter } from './pages/BadgesCenter';
 
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Real-time Firestore sync of products to localStorage
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'products'), (snap) => {
+      if (!snap.empty) {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        localStorage.setItem('app-products', JSON.stringify(list));
+        window.dispatchEvent(new Event('app-products-updated'));
+      }
+    });
+    return () => unsub();
+  }, []);
+
   // Ocultar gatilho na roleta, admin, login e register
   const showTrigger = !['/login', '/register', '/roleta'].includes(location.pathname) && !location.pathname.startsWith('/admin');
+
+  // Determinar cor do status bar com base na rota
+  const isBlackHeader = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
+  const safeAreaBg = isBlackHeader ? '#000000' : '#090705';
 
   return (
     <>
       <div className="bg"></div>
       <div className="overlay"></div>
+      <div 
+        className="safe-area-top-fixed" 
+        style={{ 
+          background: safeAreaBg,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 'env(safe-area-inset-top, 0px)',
+          zIndex: 2000,
+          pointerEvents: 'none'
+        }} 
+      />
 
       <Routes>
         {/* Public Routes */}
@@ -67,6 +102,22 @@ function AppContent() {
             <Profile />
           </ProtectedRoute>
         } />
+        <Route path="/colecoes" element={
+          <ProtectedRoute>
+            <BadgesCenter />
+          </ProtectedRoute>
+        } />
+        <Route path="/addresses" element={
+          <ProtectedRoute>
+            <Addresses />
+          </ProtectedRoute>
+        } />
+        <Route path="/coupons" element={
+          <ProtectedRoute>
+            <Coupons />
+          </ProtectedRoute>
+        } />
+        <Route path="/support" element={<Support />} />
         
         {/* Protected Admin Route */}
         <Route path="/admin" element={

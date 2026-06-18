@@ -126,36 +126,40 @@ export function Cart() {
 
   return (
     <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 110 }}>
-      {/* ── TOP BAR ──────────────────────────────────────── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '18px 16px 14px',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
-        background: 'rgba(9,7,5,0.3)',
-        backdropFilter: 'blur(12px)',
         position: 'sticky',
         top: 0,
         zIndex: 20,
+        background: 'rgba(9,7,5,0.3)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(212,175,55,0.1)',
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '50%',
-            width: '38px', height: '38px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
-          }}
-        >
-          <ArrowLeft size={18} />
-        </button>
+        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px 12px',
+        }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '50%',
+              width: '38px', height: '38px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={18} />
+          </button>
 
-        <MercadoLogo size="sm" />
+          <MercadoLogo size="sm" />
 
-        <div style={{ width: '38px' }} />
+          <div style={{ width: '38px' }} />
+        </div>
       </div>
 
       {/* ── Page title ──────────────────────────── */}
@@ -199,7 +203,7 @@ export function Cart() {
               <div 
                 key={item.id} 
                 className="clube-mission-row"
-                style={{ background: 'rgba(14, 11, 9, 0.7)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}
+                style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}
               >
                 {/* Product Thumbnail */}
                 <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -209,7 +213,7 @@ export function Cart() {
                 {/* Info and controls */}
                 <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                   <h4 style={{ fontSize: 11.5, fontWeight: 800, color: '#fff', margin: '0 0 3px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</h4>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#FFDF73' }}>R$ {item.price.toFixed(2)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#fff' }}>R$ {item.price.toFixed(2)}</span>
                 </div>
 
                 {/* Quantity Controls & Trash */}
@@ -253,8 +257,8 @@ export function Cart() {
           </div>
 
           {/* COUPON BOX */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 14, padding: 12, marginBottom: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Tag size={16} color="#FFDF73" style={{ flexShrink: 0 }} />
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 12, marginBottom: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Tag size={16} color="rgba(255,255,255,0.6)" style={{ flexShrink: 0 }} />
             <input 
               type="text" 
               placeholder="CUPOM DE DESCONTO" 
@@ -264,15 +268,15 @@ export function Cart() {
             />
             <button 
               onClick={applyCoupon}
-              style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 6, color: '#FFDF73', fontSize: 9.5, fontWeight: 900, padding: '5px 12px', cursor: 'pointer', textTransform: 'uppercase' }}
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#fff', fontSize: 9.5, fontWeight: 900, padding: '5px 12px', cursor: 'pointer', textTransform: 'uppercase' }}
             >
               Aplicar
             </button>
           </div>
 
           {/* CHECKOUT BOX */}
-          <div style={{ background: 'rgba(14, 11, 9, 0.9)', border: '1.5px solid rgba(212,175,55,0.35)', borderRadius: 18, padding: 16, marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <h3 style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase', color: '#FFDF73', margin: '0 0 4px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 6, textAlign: 'left' }}>Resumo do Pedido</h3>
+          <div style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 18, padding: 16, marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 4px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 6, textAlign: 'left' }}>Resumo do Pedido</h3>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'rgba(255,255,255,0.6)' }}>
               <span>Itens ({totalItems})</span>
@@ -293,7 +297,7 @@ export function Cart() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: '#fff', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: 10, marginTop: 4 }}>
               <span>Total Estimado</span>
-              <span style={{ color: '#FFDF73' }}>R$ {(totalPrice - discount).toFixed(2)}</span>
+              <span style={{ color: '#fff' }}>R$ {(totalPrice - discount).toFixed(2)}</span>
             </div>
 
             <button
@@ -317,7 +321,7 @@ export function Cart() {
         {recommendations.map((prod) => (
           <div 
             key={prod.id}
-            style={{ width: 115, flexShrink: 0, padding: '12px 10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}
+            style={{ width: 115, flexShrink: 0, padding: '12px 10px', background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}
           >
             <div style={{ width: 36, height: 36, background: '#fff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
@@ -325,7 +329,7 @@ export function Cart() {
             <h4 style={{ fontSize: 9.5, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.15, height: 22, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
               {prod.title}
             </h4>
-            <span style={{ fontSize: 10, fontWeight: 900, color: '#FFDF73' }}>R$ {prod.price.toFixed(2)}</span>
+            <span style={{ fontSize: 10, fontWeight: 900, color: '#fff' }}>R$ {prod.price.toFixed(2)}</span>
           </div>
         ))}
       </div>
