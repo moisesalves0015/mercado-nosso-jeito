@@ -455,7 +455,7 @@ export const Orders: React.FC = () => {
         {/* ── Topbar — same pattern as Profile ──────────────── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '16px 16px 12px',
+          padding: 'calc(21px + env(safe-area-inset-top, 0px)) 16px 12px',
           borderBottom: '1px solid rgba(212,175,55,0.1)',
           background: 'rgba(9,7,5,0.4)',
           backdropFilter: 'blur(16px)',

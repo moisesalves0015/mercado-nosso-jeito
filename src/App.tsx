@@ -14,6 +14,7 @@ import { Clube } from './pages/Clube';
 import { Tabacaria } from './pages/Tabacaria';
 import { Bebidas } from './pages/Bebidas';
 import { Eletronicos } from './pages/Eletronicos';
+import { Padaria } from './pages/Padaria';
 import { Cart } from './pages/Cart';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -45,6 +46,7 @@ function AppContent() {
         <Route path="/tabacaria" element={<Tabacaria />} />
         <Route path="/bebidas" element={<Bebidas />} />
         <Route path="/eletronicos" element={<Eletronicos />} />
+        <Route path="/padaria" element={<Padaria />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/roleta" element={<Roleta />} />

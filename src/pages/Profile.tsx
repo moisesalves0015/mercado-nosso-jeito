@@ -7,7 +7,7 @@ import { maskPhone } from '../utils/masks';
 import {
   User, Mail, Phone, CreditCard, MapPin, ShoppingBag, Ticket,
   HelpCircle, LogOut, ChevronRight, Edit3, Check, X,
-  Camera, Lock, Eye, EyeOff, Calendar, Clock, AlertTriangle, ArrowLeft,
+  Camera, Lock, Eye, EyeOff, Calendar, Clock, AlertTriangle, ArrowLeft, ShieldAlert, SlidersHorizontal,
 } from 'lucide-react';
 import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
 
@@ -134,7 +134,7 @@ const t = {
 // Profile Page
 // ──────────────────────────────────────────────────────────────
 export const Profile: React.FC = () => {
-  const { user, userProfile, profileLoading, updateUserProfile, uploadProfilePhoto, changePassword, logout } = useAuth();
+  const { user, userProfile, profileLoading, updateUserProfile, uploadProfilePhoto, changePassword, logout, isAdmin } = useAuth();
   const { success, error: toastError, warning } = useToast();
   const navigate = useNavigate();
 
@@ -251,7 +251,7 @@ export const Profile: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '18px 16px 14px',
+          padding: 'calc(23px + env(safe-area-inset-top, 0px)) 16px 14px',
           borderBottom: '1px solid rgba(212,175,55,0.1)',
           background: 'rgba(9,7,5,0.3)',
           backdropFilter: 'blur(12px)',
@@ -493,6 +493,41 @@ export const Profile: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* ── ADMIN CRM PORTAL CARD ──────────────────────── */}
+              {isAdmin && (
+                <div style={t.card}>
+                  <div style={t.sectionHeader}>
+                    <ShieldAlert size={14} color="#D4AF37" />
+                    <span style={t.sectionHeaderText}>Portal do Administrador</span>
+                  </div>
+                  <button
+                    onClick={() => navigate('/admin')}
+                    style={{
+                      width: '100%',
+                      height: '46px',
+                      background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(255,223,115,0.05) 100%)',
+                      border: '1px solid rgba(212, 175, 55, 0.35)',
+                      borderRadius: '12px',
+                      color: '#FFDF73',
+                      fontWeight: 800,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      fontFamily: 'inherit',
+                      boxShadow: '0 4px 16px rgba(212,175,55,0.1)',
+                      transition: 'all 0.2s ease',
+                    }}
+                    className="profile-save-btn"
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span>Acessar Portal do CRM</span>
+                  </button>
+                </div>
+              )}
 
               {/* ── NAV MENU ─────────────────────────────── */}
               <div style={t.card}>

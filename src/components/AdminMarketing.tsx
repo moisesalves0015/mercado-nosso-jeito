@@ -341,7 +341,34 @@ export const AdminMarketing: React.FC = () => {
   useEffect(() => {
     const unsubs = [
       onSnapshot(collection(db, 'products'), snap => {
-        setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+        setProducts(list);
+        
+        // Auto-correct Firestore if any product has the old 404 Corona image
+        list.forEach(async p => {
+          if (p.image) {
+            let updatedImage = '';
+            if (p.image.includes('1608270176050-12ec057deab0')) {
+              updatedImage = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
+            } else if (p.image.includes('1548907040-4d42b52145ca')) {
+              updatedImage = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
+            } else if (p.image.includes('1599490659213-e2b9527bb087')) {
+              updatedImage = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
+            } else if (p.image.includes('1549778398-f3c481549766')) {
+              updatedImage = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
+            }
+
+            if (updatedImage) {
+              try {
+                const docRef = doc(db, 'products', p.id);
+                await updateDoc(docRef, { image: updatedImage });
+                console.log(`Auto-corrected image for product ${p.id} in AdminMarketing`);
+              } catch (err) {
+                console.error(`Failed to auto-correct product image in AdminMarketing:`, err);
+              }
+            }
+          }
+        });
       }),
       onSnapshot(collection(db, 'home-config', 'data', 'vitrines'), snap => {
         setVitrines(snap.docs.map(d => ({ id: d.id, ...d.data() } as VitrineConfig)).sort((a, b) => a.order - b.order));
@@ -394,20 +421,24 @@ export const AdminMarketing: React.FC = () => {
   }, []);
 
   const handleGenerateDefaultVitrines = async () => {
-    if (!window.confirm('Deseja criar as vitrines padrão para todas as categorias em falta?')) return;
+    if (!window.confirm('Deseja criar ou atualizar as vitrines padrão para todas as categorias?')) return;
     setSaving(true);
     try {
+      const normalizeStr = (str: string) => 
+        (str || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
       const productsByCategory: Record<string, string[]> = {};
       products.forEach(p => {
         const cat = p.category;
         if (!cat) return;
-        if (!productsByCategory[cat]) {
-          productsByCategory[cat] = [];
+        const normalizedCat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+        if (!productsByCategory[normalizedCat]) {
+          productsByCategory[normalizedCat] = [];
         }
-        productsByCategory[cat].push(p.id);
+        productsByCategory[normalizedCat].push(p.id);
       });
 
-      const existingTitles = new Set(vitrines.map(v => v.title.toLowerCase()));
+      const existingVitrinesMap = new Map(vitrines.map(v => [normalizeStr(v.title), v]));
 
       const targetCategories = [
         { title: "Bebidas", theme: "purple" as const, subtitle: ["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"] },
@@ -435,39 +466,47 @@ export const AdminMarketing: React.FC = () => {
 
       let order = vitrines.reduce((max, v) => Math.max(max, v.order ?? 0), 0) + 1;
       let createdCount = 0;
+      let updatedCount = 0;
 
       for (const cat of targetCategories) {
-        if (existingTitles.has(cat.title.toLowerCase())) continue;
-
         let matchedProductIds: string[] = [];
         const categoryKey = Object.keys(productsByCategory).find(
-          k => k.toLowerCase() === cat.title.toLowerCase()
+          k => normalizeStr(k) === normalizeStr(cat.title)
         );
         
         if (categoryKey) {
           matchedProductIds = productsByCategory[categoryKey];
         } else {
           matchedProductIds = products
-            .filter(p => p.category?.toLowerCase() === cat.title.toLowerCase() || p.title?.toLowerCase().includes(cat.title.toLowerCase()))
+            .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
             .map(p => p.id);
         }
 
         const slug = cat.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
-        
-        await setDoc(doc(db, "home-config", "data", "vitrines", slug), {
-          title: cat.title,
-          subtitle: cat.subtitle,
-          theme: cat.theme,
-          active: true,
-          order: order++,
-          layout: "horizontal",
-          maxProducts: 6,
-          productIds: matchedProductIds.slice(0, 6)
-        });
-        createdCount++;
+        const docRef = doc(db, "home-config", "data", "vitrines", slug);
+        const existingVitrine = existingVitrinesMap.get(normalizeStr(cat.title));
+
+        if (!existingVitrine) {
+          await setDoc(docRef, {
+            title: cat.title,
+            subtitle: cat.subtitle,
+            theme: cat.theme,
+            active: true,
+            order: order++,
+            layout: "horizontal",
+            maxProducts: 6,
+            productIds: matchedProductIds.slice(0, 6)
+          });
+          createdCount++;
+        } else {
+          await updateDoc(docRef, {
+            productIds: matchedProductIds.slice(0, 6)
+          });
+          updatedCount++;
+        }
       }
 
-      alert(`${createdCount} vitrines criadas com sucesso!`);
+      alert(`${createdCount} vitrines criadas e ${updatedCount} vitrines atualizadas com sucesso!`);
     } catch (e: any) {
       alert('Erro ao criar vitrines: ' + e.message);
     } finally {
@@ -476,17 +515,39 @@ export const AdminMarketing: React.FC = () => {
   };
 
   const handleResetProductsAndVitrines = async () => {
-    if (!window.confirm('Deseja restaurar TODOS os produtos padrão e vitrines no banco de dados (Firestore)? Isso adicionará todos os produtos ausentes.')) return;
+    if (!window.confirm('Deseja restaurar TODOS os produtos padrão e vitrines no banco de dados (Firestore)? Isso adicionará todos os produtos ausentes e atualizará os dados existentes.')) return;
     setSaving(true);
     try {
+      // Helper function to normalize strings for comparison without accents and in lowercase
+      const normalizeStr = (str: string) => 
+        (str || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
       // 1. Write all default products to Firestore if they do not exist
       let productsCreated = 0;
+      let productsUpdated = 0;
       for (const p of defaultProducts) {
         const docRef = doc(db, 'products', p.id);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) {
           await setDoc(docRef, p);
           productsCreated++;
+        } else {
+          const existing = docSnap.data();
+          const pPrice = Number(p.price);
+          const pCost = p.costPrice !== undefined ? Number(p.costPrice) : undefined;
+
+          const hasChanges = 
+            existing.title !== p.title ||
+            existing.image !== p.image ||
+            existing.category !== p.category ||
+            existing.price !== pPrice ||
+            (existing.costPrice !== pCost && pCost !== undefined) ||
+            existing.description !== p.description;
+
+          if (hasChanges) {
+            await setDoc(docRef, p, { merge: true });
+            productsUpdated++;
+          }
         }
       }
 
@@ -508,7 +569,7 @@ export const AdminMarketing: React.FC = () => {
       // 2. Fetch existing vitrines
       const vitrinesSnap = await getDocs(collection(db, "home-config", "data", "vitrines"));
       const existingVitrines = vitrinesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as VitrineConfig));
-      const existingTitles = new Set(existingVitrines.map(v => v.title.toLowerCase()));
+      const existingVitrinesMap = new Map(existingVitrines.map(v => [normalizeStr(v.title), v]));
 
       const targetCategories = [
         { title: "Bebidas", theme: "purple" as const, subtitle: ["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"] },
@@ -536,36 +597,44 @@ export const AdminMarketing: React.FC = () => {
 
       let order = existingVitrines.reduce((max, v) => Math.max(max, (v as any).order ?? 0), 0) + 1;
       let vitrinesCreated = 0;
+      let vitrinesUpdated = 0;
 
       for (const cat of targetCategories) {
-        if (existingTitles.has(cat.title.toLowerCase())) continue;
-
         let matchedProductIds: string[] = [];
         const categoryKey = Object.keys(productsByCategory).find(
-          k => k.toLowerCase() === cat.title.toLowerCase()
+          k => normalizeStr(k) === normalizeStr(cat.title)
         );
         
         if (categoryKey) {
           matchedProductIds = productsByCategory[categoryKey];
         } else {
           matchedProductIds = allProds
-            .filter(p => p.category?.toLowerCase() === cat.title.toLowerCase() || p.title?.toLowerCase().includes(cat.title.toLowerCase()))
+            .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
             .map(p => p.id);
         }
 
         const slug = cat.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
-        
-        await setDoc(doc(db, "home-config", "data", "vitrines", slug), {
-          title: cat.title,
-          subtitle: cat.subtitle,
-          theme: cat.theme,
-          active: true,
-          order: order++,
-          layout: "horizontal",
-          maxProducts: 6,
-          productIds: matchedProductIds.slice(0, 6)
-        });
-        vitrinesCreated++;
+        const docRef = doc(db, "home-config", "data", "vitrines", slug);
+        const existingVitrine = existingVitrinesMap.get(normalizeStr(cat.title));
+
+        if (!existingVitrine) {
+          await setDoc(docRef, {
+            title: cat.title,
+            subtitle: cat.subtitle,
+            theme: cat.theme,
+            active: true,
+            order: order++,
+            layout: "horizontal",
+            maxProducts: 6,
+            productIds: matchedProductIds.slice(0, 6)
+          });
+          vitrinesCreated++;
+        } else {
+          await updateDoc(docRef, {
+            productIds: matchedProductIds.slice(0, 6)
+          });
+          vitrinesUpdated++;
+        }
       }
 
       // Update local storage to match
@@ -573,7 +642,7 @@ export const AdminMarketing: React.FC = () => {
       // Dispatch update event
       window.dispatchEvent(new Event('app-products-updated'));
 
-      alert(`Sucesso! ${productsCreated} produtos e ${vitrinesCreated} vitrines criados no Firestore.`);
+      alert(`Sucesso! ${productsCreated} produtos criados, ${productsUpdated} atualizados. ${vitrinesCreated} vitrines criadas e ${vitrinesUpdated} vitrines populadas.`);
     } catch (e: any) {
       alert('Erro: ' + e.message);
     } finally {

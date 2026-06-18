@@ -214,7 +214,34 @@ export const Admin: React.FC = () => {
           }
         }
       }
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+      setProducts(list);
+
+      // Auto-correct Firestore if any product has the old 404 Corona image
+      list.forEach(async p => {
+        if (p.image) {
+          let updatedImage = '';
+          if (p.image.includes('1608270176050-12ec057deab0')) {
+            updatedImage = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
+          } else if (p.image.includes('1548907040-4d42b52145ca')) {
+            updatedImage = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
+          } else if (p.image.includes('1599490659213-e2b9527bb087')) {
+            updatedImage = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
+          } else if (p.image.includes('1549778398-f3c481549766')) {
+            updatedImage = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
+          }
+
+          if (updatedImage) {
+            try {
+              const docRef = doc(db, 'products', p.id);
+              await updateDoc(docRef, { image: updatedImage });
+              console.log(`Auto-corrected image for product ${p.id} in Admin`);
+            } catch (err) {
+              console.error(`Failed to auto-correct product image in Admin:`, err);
+            }
+          }
+        }
+      });
     });
 
     const unsubO = onSnapshot(collection(db, 'orders'), async (snap) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PartyPopper, Flame } from 'lucide-react';
+import { Cookie, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { Topbar } from '../components/Topbar';
@@ -17,8 +17,8 @@ interface Product {
   promoActive?: boolean;
 }
 
-export const Promotions = () => {
-  const [promoProds, setPromoProds] = useState<Product[]>([]);
+export const Padaria = () => {
+  const [padariaProds, setPadariaProds] = useState<Product[]>([]);
 
   useEffect(() => {
     const loadProducts = () => {
@@ -65,11 +65,7 @@ export const Promotions = () => {
         localStorage.setItem('app-products', JSON.stringify(allProds));
       }
 
-      // Promotions are products with category "Promoções" OR promoActive === true
-      const filtered = allProds.filter(
-        p => p.category === 'Promoções' || p.promoActive === true
-      );
-      setPromoProds(filtered as any[]);
+      setPadariaProds(allProds.filter(p => p.category === 'Padaria') as any[]);
     };
 
     loadProducts();
@@ -78,48 +74,69 @@ export const Promotions = () => {
   }, []);
 
   return (
-    <main className="app promotions-page" style={{ paddingTop: 0 }}>
+    <main className="app padaria-page" style={{ paddingTop: 0 }}>
       <Topbar />
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Promoções Especiais</h1>
-        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>OFERTAS EXCLUSIVAS DO DIA</p>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Padaria & Confeitaria</h1>
+        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>PÃES E DOCES ASSADOS NA HORA</p>
       </div>
 
-      {/* PROMO BANNER */}
+      {/* BAKERY BANNER */}
       <div className="promo-banner" style={{ 
         margin: '16px 4px', 
-        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.4) 100%)', 
-        border: '1px solid rgba(239, 68, 68, 0.3)',
-        boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)'
+        background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(217, 119, 6 0.4) 100%)', 
+        border: '1px solid rgba(251, 191, 36, 0.3)',
+        boxShadow: '0 8px 30px rgba(251, 191, 36, 0.15)'
       }}>
         <div className="promo-text">
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Flame size={11} color="#FF6B6B" />
-            <span style={{ color: '#FF8E8E', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Super Descontos</span>
+            <Cookie size={11} color="#FBBF24" />
+            <span style={{ color: '#FCD34D', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Fresco todo dia</span>
           </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Leve Mais por Menos</h3>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>Aproveite as ofertas por tempo limitado!</p>
+          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Pães & Croissants</h3>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>Fornos ligados o dia todo para você!</p>
         </div>
-        <PartyPopper size={40} color="#fff" />
+        <Cookie size={40} color="#fff" />
+      </div>
+
+      {/* WARNING BANNER */}
+      <div className="glass-panel" style={{ 
+        margin: '0 4px 20px', 
+        background: 'rgba(251, 191, 36, 0.03)', 
+        border: '1px solid rgba(251, 191, 36, 0.15)', 
+        padding: '12px',
+        borderRadius: '12px'
+      }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(251, 191, 36, 0.1)', padding: '6px', borderRadius: '8px', color: '#FBBF24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Info size={15} />
+          </div>
+          <div>
+            <h4 style={{ color: '#FBBF24', fontSize: '12px', fontWeight: 900, margin: '0 0 2px' }}>Pães Sob Encomenda</h4>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', lineHeight: '1.4', margin: 0 }}>
+              Nossos pães franceses saem quentinhos do forno a cada hora! Para pedidos de fornadas especiais, peça pelo nosso chat de atendimento.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* PRODUCTS GRID */}
-      <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Destaques em Oferta</h3>
+      <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Fornada do Dia</h3>
       <div className="products-grid">
-        {promoProds.slice(0, 6).map(product => (
+        {padariaProds.slice(0, 6).map(product => (
           <ProductCard key={product.id} {...product} />
         ))}
-        {promoProds.length === 0 && (
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma oferta ativa no momento.</span>
+        {padariaProds.length === 0 && (
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhum item de padaria no catálogo.</span>
         )}
       </div>
 
-      {promoProds.length > 6 && (
+      {padariaProds.length > 6 && (
         <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0 40px' }}>
           <Link
-            to="/search?category=Promoções"
+            to="/search?category=Padaria"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -136,7 +153,7 @@ export const Promotions = () => {
               fontFamily: 'Manrope, sans-serif'
             }}
           >
-            Ver todos ({promoProds.length})
+            Ver todos ({padariaProds.length})
           </Link>
         </div>
       )}

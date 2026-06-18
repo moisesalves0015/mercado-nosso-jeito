@@ -296,6 +296,22 @@ export const Home = () => {
           p.image = '/spaten.webp';
           updated = true;
         }
+        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
+          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
+          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
+          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1549778398-f3c481549766')) {
+          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
+          updated = true;
+        }
         return p;
       });
 

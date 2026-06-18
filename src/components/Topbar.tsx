@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut } from 'lucide-react';
+import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Topbar = () => {
@@ -81,13 +81,17 @@ export const Topbar = () => {
             Bebidas
             {location.pathname === '/bebidas' && <span className="active-line"></span>}
           </Link>
-          <Link to="/search?q=padaria" className={`topbar-nav-link ${location.pathname === '/search' && location.search.includes('padaria') ? 'active' : ''}`}>
+          <Link to="/padaria" className={`topbar-nav-link ${location.pathname === '/padaria' ? 'active' : ''}`}>
             Padaria
-            {location.pathname === '/search' && location.search.includes('padaria') && <span className="active-line"></span>}
+            {location.pathname === '/padaria' && <span className="active-line"></span>}
           </Link>
           <Link to="/tabacaria" className={`topbar-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`}>
             Tabacaria
             {location.pathname === '/tabacaria' && <span className="active-line"></span>}
+          </Link>
+          <Link to="/eletronicos" className={`topbar-nav-link ${location.pathname === '/eletronicos' ? 'active' : ''}`}>
+            Eletrônicos
+            {location.pathname === '/eletronicos' && <span className="active-line"></span>}
           </Link>
         </div>
         
@@ -181,6 +185,11 @@ export const Topbar = () => {
           <Link to="/bebidas" className={`topbar-menu-nav-link ${location.pathname === '/bebidas' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
             <Wine size={16} />
             <span>Bebidas</span>
+          </Link>
+
+          <Link to="/padaria" className={`topbar-menu-nav-link ${location.pathname === '/padaria' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+            <Cookie size={16} />
+            <span>Padaria</span>
           </Link>
 
           <Link to="/tabacaria" className={`topbar-menu-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>

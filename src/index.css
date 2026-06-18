@@ -93,7 +93,8 @@ body{
   flex-direction: column;
   gap: 4px;
   background: #000000;
-  padding: 4px 8px;
+  padding: 9px 8px 4px 8px;
+  padding-top: calc(9px + env(safe-area-inset-top, 0px));
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -3457,9 +3458,9 @@ body{
 ========================================================= */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 12px 16px 100px; /* Reduced top padding to bring closer to titles */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 8px 100px; /* Reduced padding and gap to fit 3 columns on mobile screen widths */
   justify-items: center;
 }
 

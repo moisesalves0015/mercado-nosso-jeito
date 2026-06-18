@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Snowflake, AlertOctagon } from 'lucide-react';
+import { Snowflake, AlertOctagon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
-import { MercadoLogo } from './Login';
+import { Topbar } from '../components/Topbar';
 import { defaultProducts } from '../data/defaultProducts';
 
 interface Product {
@@ -58,6 +58,22 @@ export const Bebidas = () => {
           p.image = '/spaten.webp';
           updated = true;
         }
+        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
+          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
+          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
+          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
+          updated = true;
+        }
+        if (p.image && p.image.includes('1549778398-f3c481549766')) {
+          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
+          updated = true;
+        }
         return p;
       });
 
@@ -108,38 +124,8 @@ export const Bebidas = () => {
   });
 
   return (
-    <main className="app bebidas-page">
-      {/* ── TOP BAR ──────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '18px 16px 14px',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
-        background: 'rgba(9,7,5,0.3)',
-        backdropFilter: 'blur(12px)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-      }}>
-        <Link
-          to="/"
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '50%',
-            width: '38px', height: '38px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
-          }}
-        >
-          <ArrowLeft size={18} />
-        </Link>
-
-        <MercadoLogo size="sm" />
-
-        <div style={{ width: '38px' }} />
-      </div>
+    <main className="app bebidas-page" style={{ paddingTop: 0 }}>
+      <Topbar />
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
@@ -253,13 +239,38 @@ export const Bebidas = () => {
       {/* REFRESHING DRINKS GRID */}
       <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Bebidas no Ponto</h3>
       <div className="products-grid">
-        {bebidas.map(product => (
+        {bebidas.slice(0, 6).map(product => (
           <ProductCard key={product.id} {...product} />
         ))}
         {bebidas.length === 0 && (
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma bebida no catálogo.</span>
         )}
       </div>
+
+      {bebidas.length > 6 && (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0 40px' }}>
+          <Link
+            to="/search?category=Bebidas"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(212,175,55,0.08)',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: '8px',
+              padding: '10px 24px',
+              color: '#FFDF73',
+              fontSize: '12px',
+              fontWeight: 800,
+              textDecoration: 'none',
+              transition: 'all 0.2s',
+              fontFamily: 'Manrope, sans-serif'
+            }}
+          >
+            Ver todos ({bebidas.length})
+          </Link>
+        </div>
+      )}
     </main>
   );
 };
