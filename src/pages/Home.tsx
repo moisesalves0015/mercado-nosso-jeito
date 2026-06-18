@@ -9,7 +9,7 @@ import { useHomeConfig } from '../hooks/useHomeConfig';
 import { defaultProducts } from '../data/defaultProducts';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
-import { CondoBuildingActivity } from '../components/CondoBuildingActivity';
+import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
 import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { useCommunityPresence } from '../hooks/useCommunityPresence';
@@ -342,8 +342,8 @@ export const Home = () => {
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
           <Topbar />
 
-          {/* CONDOMINIUM ACTIVITY BAR */}
-          <CondoBuildingActivity />
+          {/* APP INSTALL PROMO BANNER */}
+          <PwaInstallBanner />
 
           {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
           <div 
