@@ -29,6 +29,7 @@ export const ProductCard = ({
   diamondReward,
   category,
   glassEffect,
+  stock,
 }: {
   title: string;
   price: number | string;
@@ -38,6 +39,7 @@ export const ProductCard = ({
   diamondReward?: number;
   category?: string;
   glassEffect?: boolean;
+  stock?: number;
 }) => {
   const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
 
@@ -96,6 +98,10 @@ export const ProductCard = ({
   const handlePlus = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (stock !== undefined && currentQuantity >= stock) {
+      alert(`Desculpe, temos apenas ${stock} unidade(s) deste produto em estoque.`);
+      return;
+    }
     updateQuantity(slug, currentQuantity + 1);
   };
 
@@ -256,6 +262,11 @@ export const ProductCard = ({
     e.preventDefault();
     e.stopPropagation();
 
+    if (stock !== undefined && stock <= 0) {
+      alert('Produto esgotado no momento.');
+      return;
+    }
+
     // Spawn coordinate calculations
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const startX = rect.left + rect.width / 2;
@@ -364,7 +375,9 @@ export const ProductCard = ({
       <div className={`price-pill ${
         animationState === 'club-only' || animationState === 'reduced-flash' ? 'green-pill-active' : ''
       } ${animationState === 'club-only' ? 'club-only-active' : ''}`} ref={pricePillRef}>
-        {animationState === 'club-only' ? (
+        {stock === 0 ? (
+          <div className="out-of-stock-flash" style={{ color: '#FF6B6B', fontWeight: 900, fontSize: 11 }}>ESGOTADO</div>
+        ) : animationState === 'club-only' ? (
           <div className="club-only-flash">SÓ NO CLUBE!</div>
         ) : currentQuantity > 0 ? (
           <div className="quantity-control-wrapper">

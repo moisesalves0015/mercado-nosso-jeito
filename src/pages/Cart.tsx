@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
-import { createOrder } from '../hooks/useOrders';
-import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, CheckCircle, Tag } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag } from 'lucide-react';
 import { useState } from 'react';
 import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
 import { MercadoLogo } from './Login';
@@ -13,9 +12,7 @@ export function Cart() {
   const { user } = useAuth();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [successOrder, setSuccessOrder] = useState<{ orderId: string; itemsCount: number; total: number } | null>(null);
-
+  const checkoutLoading = false;
   // Recommended related items
   const recommendations = [
     {
@@ -47,82 +44,16 @@ export function Cart() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (cartItems.length === 0 || checkoutLoading) return;
-    setCheckoutLoading(true);
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return;
 
-    const finalAmount = totalPrice - discount;
-
-    // Fire confetti regardless of auth state
-    import('canvas-confetti').then((confettiModule) => {
-      confettiModule.default({
-        particleCount: 100,
-        angle: 90,
-        spread: 60,
-        origin: { y: 0.8 },
-        colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
-      });
-    });
-
-    let orderNumber = `#MJ-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    // Persist to Firestore only for authenticated users
-    if (user?.uid) {
-      try {
-        orderNumber = await createOrder({
-          uid: user.uid,
-          items: cartItems.map((item) => ({
-            id: item.id,
-            title: item.title,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image ?? '',
-          })),
-          subtotal: totalPrice,
-          discount,
-          deliveryFee: 0,
-          total: finalAmount,
-          coupon: couponCode.trim() || undefined,
-          paymentMethod: 'Cartão / Pix',
-        });
-      } catch (err) {
-        console.error('Erro ao salvar pedido no Firestore:', err);
-        // Fall through — still show success UI
-      }
+    if (!user) {
+      navigate('/login?returnUrl=/checkout');
+      return;
     }
 
-    setSuccessOrder({ orderId: orderNumber, itemsCount: totalItems, total: finalAmount });
-    clearCart();
-    setCheckoutLoading(false);
+    navigate('/checkout');
   };
-
-  if (successOrder) {
-    return (
-      <div className="clube-page" style={{ padding: '80px 20px', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div className="reward-icon-box animate-pop" style={{ background: 'rgba(52, 199, 89, 0.1)', borderColor: '#34C759', width: 64, height: 64 }}>
-          <CheckCircle size={36} color="#34C759" />
-        </div>
-        <h2 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', margin: '24px 0 8px 0' }}>Pedido Realizado!</h2>
-        <p style={{ fontSize: 13, color: '#34C759', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>{successOrder.orderId}</p>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 32px 0', maxWidth: 280 }}>
-          Seu pedido com {successOrder.itemsCount} itens foi registrado com sucesso e já está sendo preparado para entrega!
-        </p>
-
-        <div className="clube-modal-coupon-box" style={{ width: '100%', maxWidth: 280, background: 'var(--card-bg)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 14, marginBottom: 32 }}>
-          <span className="coupon-label" style={{ fontSize: 9, color: 'var(--text-secondary)' }}>TOTAL PAGO</span>
-          <span className="coupon-code-value" style={{ fontSize: 18, color: '#34C759' }}>R$ {successOrder.total.toFixed(2)}</span>
-        </div>
-
-        <button 
-          className="clube-mission-action-btn"
-          style={{ width: '100%', maxWidth: 280, padding: '12px 0', borderRadius: 8, fontSize: 11, fontWeight: 900, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000' }}
-          onClick={() => navigate('/')}
-        >
-          Voltar para a Loja 🛍️
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 110 }}>

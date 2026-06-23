@@ -4,12 +4,12 @@ import {
   query,
   where,
   onSnapshot,
-  addDoc,
   updateDoc,
   doc,
   getDoc,
   serverTimestamp,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -39,6 +39,16 @@ export interface TimelineEvent {
   actor?: string;
 }
 
+export interface OrderAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
 export interface Order {
   id: string;                  // Firestore doc ID
   uid: string;                 // Firebase Auth UID
@@ -51,6 +61,10 @@ export interface Order {
   total: number;
   coupon?: string;
   paymentMethod: string;
+  paymentStatus?: 'pending' | 'approved' | 'rejected';
+  paymentDetails?: any;
+  deliveryMethod?: string;
+  address?: OrderAddress;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +90,10 @@ export interface CreateOrderPayload {
   total: number;
   coupon?: string;
   paymentMethod?: string;
+  paymentStatus?: 'pending' | 'approved' | 'rejected';
+  paymentDetails?: any;
+  deliveryMethod?: string;
+  address?: OrderAddress;
   notes?: string;
 }
 
@@ -132,6 +150,10 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
     total: Number(data.total ?? 0),
     coupon: data.coupon ? String(data.coupon) : undefined,
     paymentMethod: String(data.paymentMethod ?? 'Não informado'),
+    paymentStatus: data.paymentStatus as any,
+    paymentDetails: data.paymentDetails,
+    deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod) : undefined,
+    address: data.address as OrderAddress | undefined,
     notes: data.notes ? String(data.notes) : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -214,32 +236,82 @@ export function useOrders(uid: string | null) {
 export async function createOrder(payload: CreateOrderPayload): Promise<string> {
   const orderNumber = `#MJ-${Math.floor(1000 + Math.random() * 9000)}`;
   const now = serverTimestamp();
-  // NOTE: serverTimestamp() is NOT allowed inside arrays in Firestore.
-  // Use Timestamp.now() (client-side timestamp) for timeline events inside arrays.
   const timelineNow = Timestamp.now();
 
   const timeline = {
     status: 'pending' as OrderStatus,
     label: TIMELINE_LABELS.pending,
-    timestamp: timelineNow,   // ← Timestamp.now(), not serverTimestamp()
+    timestamp: timelineNow,
     actor: 'Sistema',
   };
 
-  await addDoc(collection(db, 'orders'), {
-    uid: payload.uid,
-    orderNumber,
-    status: 'pending' as OrderStatus,
-    items: payload.items,
-    subtotal: payload.subtotal,
-    discount: payload.discount,
-    deliveryFee: payload.deliveryFee,
-    total: payload.total,
-    coupon: payload.coupon ?? null,
-    paymentMethod: payload.paymentMethod ?? 'Não informado',
-    notes: payload.notes ?? null,
-    createdAt: now,           // serverTimestamp() OK at top-level fields
-    updatedAt: now,
-    timeline: [timeline],     // Timestamp.now() inside array
+  await runTransaction(db, async (transaction) => {
+    // 1. Read all product docs to check stock
+    const productRefs = payload.items.map(item => ({
+      ref: doc(db, 'products', item.id),
+      item
+    }));
+
+    const productDocs = await Promise.all(
+      productRefs.map(p => transaction.get(p.ref))
+    );
+
+    // 2. Validate stock
+    const updates: { ref: any, newStock: number, history: any[] }[] = [];
+    
+    for (let i = 0; i < productDocs.length; i++) {
+      const pDoc = productDocs[i];
+      const { item, ref } = productRefs[i];
+      
+      if (pDoc.exists()) {
+        const data = pDoc.data();
+        if (data.stock !== undefined && data.stock !== null) {
+          if (data.stock < item.quantity) {
+            throw new Error(`Estoque insuficiente para o produto: ${item.title}`);
+          }
+          const newStock = data.stock - item.quantity;
+          const history = data.stockHistory || [];
+          updates.push({
+            ref,
+            newStock,
+            history: [
+              { delta: -item.quantity, note: `Venda Pedido ${orderNumber}`, date: new Date().toISOString() },
+              ...history
+            ].slice(0, 20)
+          });
+        }
+      }
+    }
+
+    // 3. Write updates and create order
+    for (const update of updates) {
+      transaction.update(update.ref, {
+        stock: update.newStock,
+        stockHistory: update.history
+      });
+    }
+
+    const orderRef = doc(collection(db, 'orders'));
+    transaction.set(orderRef, {
+      uid: payload.uid,
+      orderNumber,
+      status: 'pending' as OrderStatus,
+      items: payload.items,
+      subtotal: payload.subtotal,
+      discount: payload.discount,
+      deliveryFee: payload.deliveryFee,
+      total: payload.total,
+      coupon: payload.coupon ?? null,
+      paymentMethod: payload.paymentMethod ?? 'Não informado',
+      paymentStatus: payload.paymentStatus ?? 'pending',
+      paymentDetails: payload.paymentDetails ?? null,
+      deliveryMethod: payload.deliveryMethod ?? null,
+      address: payload.address ?? null,
+      notes: payload.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+      timeline: [timeline],
+    });
   });
 
   return orderNumber;
@@ -263,6 +335,83 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
     status: newStatus,
     updatedAt: now,
     timeline: [...existing, newEvent],
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// cancelOrder — for user/admin to cancel order and refund stock
+// ──────────────────────────────────────────────────────────────
+export async function cancelOrder(orderId: string): Promise<void> {
+  const now = serverTimestamp();
+  const orderRef = doc(db, 'orders', orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnap = await transaction.get(orderRef);
+    if (!orderSnap.exists()) {
+      throw new Error('Pedido não encontrado');
+    }
+
+    const orderData = orderSnap.data();
+    if (orderData.status === 'cancelled') {
+      throw new Error('Pedido já cancelado');
+    }
+
+    // Process stock refund
+    const items = orderData.items || [];
+    const productRefs = items.map((item: any) => ({
+      ref: doc(db, 'products', item.id),
+      item
+    }));
+
+    const productDocs = await Promise.all(
+      productRefs.map(p => transaction.get(p.ref))
+    );
+
+    const updates: { ref: any, newStock: number, history: any[] }[] = [];
+    
+    for (let i = 0; i < productDocs.length; i++) {
+      const pDoc = productDocs[i];
+      const { item, ref } = productRefs[i];
+      
+      if (pDoc.exists()) {
+        const data = pDoc.data();
+        if (data.stock !== undefined && data.stock !== null) {
+          const newStock = data.stock + item.quantity;
+          const history = data.stockHistory || [];
+          updates.push({
+            ref,
+            newStock,
+            history: [
+              { delta: item.quantity, note: `Estorno Pedido Cancelado`, date: new Date().toISOString() },
+              ...history
+            ].slice(0, 20)
+          });
+        }
+      }
+    }
+
+    // Apply stock updates
+    for (const update of updates) {
+      transaction.update(update.ref, {
+        stock: update.newStock,
+        stockHistory: update.history
+      });
+    }
+
+    // Update order status
+    const existingTimeline = orderData.timeline || [];
+    const newEvent = { 
+      status: 'cancelled', 
+      label: TIMELINE_LABELS['cancelled'], 
+      timestamp: Timestamp.now(), 
+      actor: 'Sistema' 
+    };
+
+    transaction.update(orderRef, {
+      status: 'cancelled',
+      updatedAt: now,
+      timeline: [...existingTimeline, newEvent],
+    });
   });
 }
 

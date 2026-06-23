@@ -11,7 +11,7 @@ export const BottomNav = () => {
   const isHiddenRoute = ['/login', '/register'].includes(location.pathname) || location.pathname.startsWith('/admin');
   if (isHiddenRoute) return null;
 
-  const hiddenMiniCartRoutes = ['/cart', '/clube', '/profile'];
+  const hiddenMiniCartRoutes = ['/cart', '/clube', '/profile', '/checkout'];
   const showMiniCart = totalItems > 0 && !hiddenMiniCartRoutes.includes(location.pathname);
   const freeShippingThreshold = 60;
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);

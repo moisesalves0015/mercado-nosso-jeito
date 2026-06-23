@@ -636,8 +636,10 @@ export const ProductDetail = () => {
               <span className="info-text">Receba: <strong style={{color: 'var(--text-primary)'}}>{product.deliveryTime}</strong></span>
             </div>
             <div className="info-badge-item">
-              <CheckCircle size={14} color="#34C759" />
-              <span className="info-text" style={{color: '#34C759'}}>{product.stockStatus}</span>
+              <CheckCircle size={14} color={product.stock === 0 ? "#FF6B6B" : "#34C759"} />
+              <span className="info-text" style={{color: product.stock === 0 ? '#FF6B6B' : '#34C759'}}>
+                {product.stock === 0 ? 'Esgotado' : product.stockStatus}
+              </span>
             </div>
           </div>
         </div>
@@ -691,7 +693,10 @@ export const ProductDetail = () => {
         <div className="cta-container">
           <button 
             className="main-gold-cta"
+            disabled={product.stock === 0}
+            style={{ opacity: product.stock === 0 ? 0.6 : 1, cursor: product.stock === 0 ? 'not-allowed' : 'pointer' }}
             onClick={(e) => {
+              if (product.stock === 0) return;
               if (purchaseMode === 'subscribe') {
                 alert(`Assinatura de ${quantity}x ${product.title} a cada ${frequency} dias configurada!`);
               } else {
@@ -751,7 +756,12 @@ export const ProductDetail = () => {
               }
             }}
           >
-            {purchaseMode === 'subscribe' ? (
+            {product.stock === 0 ? (
+              <>
+                <Shield size={18} style={{marginRight: 8}} />
+                Produto Esgotado
+              </>
+            ) : purchaseMode === 'subscribe' ? (
               <>
                 <RefreshCw size={18} style={{marginRight: 8, animation: 'spin 4s linear infinite'}} />
                 Configurar Clube do Nosso Jeito

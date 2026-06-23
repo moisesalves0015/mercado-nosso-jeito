@@ -18,6 +18,7 @@ import { Bebidas } from './pages/Bebidas';
 import { Eletronicos } from './pages/Eletronicos';
 import { Padaria } from './pages/Padaria';
 import { Cart } from './pages/Cart';
+import { Checkout } from './pages/Checkout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
@@ -109,6 +110,11 @@ function AppContent() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
         {/* Protected Client Routes */}
+        <Route path="/checkout" element={
+          <ProtectedRoute>
+            <Checkout />
+          </ProtectedRoute>
+        } />
         <Route path="/orders" element={
           <ProtectedRoute>
             <Orders />
