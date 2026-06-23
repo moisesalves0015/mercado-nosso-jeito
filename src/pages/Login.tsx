@@ -41,7 +41,7 @@ export const MercadoLogo: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'm
         <h1 style={{
           fontSize: `${17 * s}px`,
           fontWeight: 800,
-          color: '#fff',
+          color: 'var(--logo-text-color)',
           lineHeight: 1.1,
           letterSpacing: '-0.3px',
           margin: 0,
@@ -79,10 +79,10 @@ export const GoogleSignInButton: React.FC<{ onClick: () => void; loading: boolea
     style={{
       width: '100%',
       height: '46px',
-      background: 'rgba(255,255,255,0.06)',
-      border: '1px solid rgba(255,255,255,0.15)',
+      background: 'var(--card-bg)',
+      border: '1px solid var(--border-primary)',
       borderRadius: '12px',
-      color: '#fff',
+      color: 'var(--text-primary)',
       fontWeight: 700,
       fontSize: '13.5px',
       cursor: loading ? 'not-allowed' : 'pointer',
@@ -117,48 +117,56 @@ export const GoogleSignInButton: React.FC<{ onClick: () => void; loading: boolea
 export const AuthBackground: React.FC = () => (
   <>
     {/* Real supermarket photo — same as Home */}
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundImage: 'url("/bg-supermercado.jpeg")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center 65%',
-      filter: 'brightness(0.35)',
-      zIndex: 0,
-    }} />
+    <div 
+      className="auth-bg-image"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundImage: 'url("/bg-supermercado.jpeg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 65%',
+        zIndex: 0,
+      }} 
+    />
     {/* Deep gradient overlay so card stays readable */}
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'linear-gradient(160deg, rgba(9,7,5,0.55) 0%, rgba(9,7,5,0.82) 60%, rgba(9,7,5,0.97) 100%)',
+      background: 'var(--overlay-bg)',
       zIndex: 0,
     }} />
     {/* Subtle gold glow top-right */}
-    <div style={{
-      position: 'fixed',
-      top: '-80px',
-      right: '-80px',
-      width: '340px',
-      height: '340px',
-      borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)',
-      filter: 'blur(40px)',
-      zIndex: 0,
-      pointerEvents: 'none',
-    }} />
+    <div 
+      className="auth-glow-gold"
+      style={{
+        position: 'fixed',
+        top: '-80px',
+        right: '-80px',
+        width: '340px',
+        height: '340px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)',
+        filter: 'blur(40px)',
+        zIndex: 0,
+        pointerEvents: 'none',
+      }} 
+    />
     {/* Blue glow bottom-left */}
-    <div style={{
-      position: 'fixed',
-      bottom: '-60px',
-      left: '-60px',
-      width: '280px',
-      height: '280px',
-      borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
-      filter: 'blur(50px)',
-      zIndex: 0,
-      pointerEvents: 'none',
-    }} />
+    <div 
+      className="auth-glow-blue"
+      style={{
+        position: 'fixed',
+        bottom: '-60px',
+        left: '-60px',
+        width: '280px',
+        height: '280px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
+        filter: 'blur(50px)',
+        zIndex: 0,
+        pointerEvents: 'none',
+      }} 
+    />
   </>
 );
 
@@ -189,9 +197,9 @@ export const authStyles = {
     width: '40px',
     height: '40px',
     borderRadius: '50%',
-    background: 'rgba(255,255,255,0.07)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: 'rgba(255,255,255,0.8)',
+    background: 'var(--back-btn-bg)',
+    border: '1px solid var(--border-primary)',
+    color: 'var(--text-primary)',
     textDecoration: 'none',
     transition: 'all 0.2s ease',
     zIndex: 10,
@@ -230,19 +238,19 @@ export const authStyles = {
   card: {
     width: '100%',
     maxWidth: '390px',
-    background: 'rgba(9,7,5,0.6)',
+    background: 'var(--card-bg)',
     backdropFilter: 'blur(28px)',
     WebkitBackdropFilter: 'blur(28px)',
-    border: '1px solid rgba(212,175,55,0.2)',
+    border: '1px solid var(--border-gold)',
     borderRadius: '22px',
     padding: '26px 22px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
+    boxShadow: 'var(--card-shadow)',
     zIndex: 2,
   },
   sectionTitle: {
     fontSize: '13px',
     fontWeight: 800,
-    color: '#fff',
+    color: 'var(--text-primary)',
     marginBottom: '14px',
     textAlign: 'center' as const,
   },
@@ -250,7 +258,7 @@ export const authStyles = {
     display: 'block' as const,
     fontSize: '10.5px',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.5)',
+    color: 'var(--text-muted)',
     marginBottom: '5px',
     letterSpacing: '0.5px',
     textTransform: 'uppercase' as const,
@@ -266,12 +274,12 @@ export const authStyles = {
   input: {
     width: '100%',
     height: '46px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--input-bg)',
+    border: '1px solid var(--input-border)',
     borderRadius: '12px',
     paddingLeft: '42px',
     paddingRight: '14px',
-    color: '#fff',
+    color: 'var(--text-primary)',
     fontSize: '13.5px',
     outline: 'none',
     boxSizing: 'border-box' as const,
@@ -285,7 +293,7 @@ export const authStyles = {
     transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     padding: '4px',
     display: 'flex' as const,
@@ -343,11 +351,11 @@ export const authStyles = {
     gap: '12px',
     margin: '20px 0',
   },
-  dividerLine: { flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' },
+  dividerLine: { flex: 1, height: '1px', background: 'var(--border-primary)' },
   dividerText: {
     fontSize: '10px',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.25)',
+    color: 'var(--text-muted)',
     textTransform: 'uppercase' as const,
     letterSpacing: '1px',
   },
@@ -388,6 +396,51 @@ export const AuthStyles: React.FC = () => (
     .auth-back-btn:hover {
       background: rgba(255,255,255,0.12) !important;
       color: #fff !important;
+    }
+
+    .auth-bg-image {
+      filter: brightness(0.35);
+      transition: filter 0.3s ease;
+    }
+    body.light-mode .auth-bg-image {
+      filter: brightness(0.95) opacity(0.12) grayscale(0.5);
+    }
+    body.light-mode .auth-glow-gold {
+      background: radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%) !important;
+    }
+    body.light-mode .auth-glow-blue {
+      background: radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 70%) !important;
+    }
+    body.light-mode .auth-input {
+      color: #000 !important;
+      background: #fff !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.light-mode .auth-input:focus {
+      border-color: #D4AF37 !important;
+      background: #fff !important;
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.15) !important;
+    }
+    body.light-mode .auth-input::placeholder {
+      color: #94a3b8 !important;
+    }
+    body.light-mode .google-btn {
+      background: #fff !important;
+      border-color: #cbd5e1 !important;
+      color: #000 !important;
+    }
+    body.light-mode .google-btn:hover:not(:disabled) {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.light-mode .auth-back-btn {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.light-mode .auth-back-btn:hover {
+      background: #cbd5e1 !important;
+      color: #0f172a !important;
     }
   `}</style>
 );
@@ -502,7 +555,7 @@ export const Login: React.FC = () => {
             <div>
               <label htmlFor={`${id}-email`} style={s.label}>E-mail</label>
               <div style={s.inputWrapper}>
-                <Mail size={16} color="rgba(255,255,255,0.35)" style={s.inputIcon} />
+                <Mail size={16} color="var(--text-muted)" style={s.inputIcon} />
                 <input
                   id={`${id}-email`}
                   type="email"
@@ -526,7 +579,7 @@ export const Login: React.FC = () => {
                 <Link to="/forgot-password" style={s.forgotLink}>Esqueci minha senha</Link>
               </div>
               <div style={s.inputWrapper}>
-                <Lock size={16} color="rgba(255,255,255,0.35)" style={s.inputIcon} />
+                <Lock size={16} color="var(--text-muted)" style={s.inputIcon} />
                 <input
                   id={`${id}-pw`}
                   type={showPassword ? 'text' : 'password'}
@@ -555,7 +608,7 @@ export const Login: React.FC = () => {
                 onKeyDown={e => e.key === ' ' && setRememberMe(v => !v)}
                 style={{
                   width: '18px', height: '18px', borderRadius: '5px',
-                  border: rememberMe ? '2px solid #D4AF37' : '2px solid rgba(255,255,255,0.2)',
+                  border: rememberMe ? '2px solid #D4AF37' : '2px solid var(--border-primary)',
                   background: rememberMe ? 'rgba(212,175,55,0.18)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'all 0.2s ease',
@@ -563,7 +616,7 @@ export const Login: React.FC = () => {
               >
                 {rememberMe && <span style={{ color: '#FFDF73', fontSize: '11px', fontWeight: 800, lineHeight: 1 }}>✓</span>}
               </div>
-              <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)', userSelect: 'none' }}>Lembrar de mim</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', userSelect: 'none' }}>Lembrar de mim</span>
             </label>
 
             {/* Submit */}
@@ -578,7 +631,7 @@ export const Login: React.FC = () => {
           </form>
 
           <p style={{ textAlign: 'center', margin: '20px 0 0' }}>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>Não tem conta? </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Não tem conta? </span>
             <Link to="/register" style={s.authLink}>Cadastre-se grátis</Link>
           </p>
         </div>

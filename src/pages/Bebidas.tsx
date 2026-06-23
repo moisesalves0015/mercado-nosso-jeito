@@ -129,8 +129,8 @@ export const Bebidas = () => {
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Bebidas Geladas</h1>
-        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>TRINCANDO NO GELO</p>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Bebidas Geladas</h1>
+        <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>TRINCANDO NO GELO</p>
       </div>
 
       {/* FROSTY AD BANNER */}
@@ -217,7 +217,7 @@ export const Bebidas = () => {
           </div>
           <div>
             <h4 style={{ color: '#0EA5E9', fontSize: '12px', fontWeight: 900, margin: '0 0 2px' }}>Consumo Responsável</h4>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', lineHeight: '1.4' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '10px', lineHeight: '1.4' }}>
               Se beber, não dirija. A venda de bebidas alcoólicas é proibida para menores de 18 anos. Beba com moderação.
             </p>
           </div>
@@ -226,24 +226,24 @@ export const Bebidas = () => {
 
       {/* QUICK STATS ROW */}
       <div style={{ display: 'flex', gap: '8px', margin: '0 0 24px' }}>
-        <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Snowflake size={14} color="#0EA5E9" />
-          <span style={{ fontSize: '9.5px', color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>Entregue no Gelo</span>
+          <span style={{ fontSize: '9.5px', color: 'var(--text-primary)', fontWeight: 600 }}>Entregue no Gelo</span>
         </div>
-        <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: '14px' }}>⚡</span>
-          <span style={{ fontSize: '9.5px', color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>Sem Taxa de Gelado</span>
+          <span style={{ fontSize: '9.5px', color: 'var(--text-primary)', fontWeight: 600 }}>Sem Taxa de Gelado</span>
         </div>
       </div>
 
       {/* REFRESHING DRINKS GRID */}
-      <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Bebidas no Ponto</h3>
+      <h3 style={{ margin: '0 0 12px 6px', color: 'var(--text-primary)', fontSize: '15px', fontWeight: 800 }}>Bebidas no Ponto</h3>
       <div className="products-grid">
         {bebidas.slice(0, 6).map(product => (
           <ProductCard key={product.id} {...product} />
         ))}
         {bebidas.length === 0 && (
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma bebida no catálogo.</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma bebida no catálogo.</span>
         )}
       </div>
 
@@ -259,7 +259,7 @@ export const Bebidas = () => {
               border: '1px solid rgba(212,175,55,0.3)',
               borderRadius: '8px',
               padding: '10px 24px',
-              color: '#FFDF73',
+              color: '#D4AF37',
               fontSize: '12px',
               fontWeight: 800,
               textDecoration: 'none',

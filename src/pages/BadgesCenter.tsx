@@ -30,15 +30,15 @@ export function BadgesCenter() {
   return (
     <div style={{
       position: 'relative', minHeight: '100vh',
-      background: '#090705', // Fundo principal da Home
+      background: 'var(--bg-primary)', // Fundo principal da Home
       fontFamily: "'Manrope','Outfit',sans-serif",
       paddingBottom: '60px',
     }}>
       {/* ── HEADER ──────────────────────────────────────── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(9,7,5,0.85)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: 'var(--bg-secondary)', backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid var(--border-primary)',
         padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
         <div>
@@ -46,18 +46,18 @@ export function BadgesCenter() {
             <button
               onClick={() => navigate(-1)}
               style={{
-                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%',
+                background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%',
                 width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0, marginRight: 8
+                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0, marginRight: 8
               }}
             >
               <ArrowLeft size={16} />
             </button>
-            <h1 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.5px' }}>
               Minha Estante
             </h1>
           </div>
-          <p style={{ fontSize: 13, color: '#C7D0D9', margin: '4px 0 0 40px', fontWeight: 500 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0 40px', fontWeight: 500 }}>
             Construa sua história na comunidade.
           </p>
         </div>
@@ -66,20 +66,20 @@ export function BadgesCenter() {
       <div style={{ padding: '20px 0' }}>
         {/* ── CARD PRINCIPAL (PROGRESSO) ──────────────── */}
         <div style={{
-          background: 'rgba(255,255,255,0.03)', borderRadius: 24, padding: 20, margin: '0 20px 32px',
-          border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+          background: 'var(--card-gradient)', borderRadius: 24, padding: 20, margin: '0 20px 32px',
+          border: '1px solid var(--border-primary)', boxShadow: 'var(--card-shadow)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: 0 }}>Coleção do Morador</h2>
-              <div style={{ fontSize: 13, color: '#C7D0D9', marginTop: 4 }}>{unlockedCount}/{totalCount} selos conquistados</div>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Coleção do Morador</h2>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{unlockedCount}/{totalCount} selos conquistados</div>
             </div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#FFDF73' }}>{progressPercent}%</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#D4AF37' }}>{progressPercent}%</div>
           </div>
-          <div style={{ width: '100%', height: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 99, overflow: 'hidden', marginBottom: 12 }}>
+          <div style={{ width: '100%', height: 10, background: 'var(--border-primary)', borderRadius: 99, overflow: 'hidden', marginBottom: 12 }}>
             <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #D4AF37, #FFDF73)', borderRadius: 99 }} />
           </div>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0, textAlign: 'center' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
             Continue participando para desbloquear novos selos.
           </p>
         </div>
@@ -93,7 +93,7 @@ export function BadgesCenter() {
             return (
               <div key={category}>
                 <div style={{ padding: '0 20px', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {category === 'Pertencimento' && '🏢'}
                     {category === 'Compra' && '🛒'}
                     {category === 'Constância' && '🔥'}
@@ -113,7 +113,7 @@ export function BadgesCenter() {
                     const isUnlocked = unlockedIds.includes(badge.id);
                     const isSecretHidden = badge.secret && !isUnlocked;
                     
-                    let borderCol = 'rgba(255,255,255,0.05)';
+                    let borderCol = 'var(--border-primary)';
                     let glow = 'none';
                     if (isUnlocked) {
                       if (badge.rarity === 'mitico') { borderCol = '#9B5DE5'; glow = '0 0 12px rgba(155, 93, 229, 0.4)'; }
@@ -129,7 +129,7 @@ export function BadgesCenter() {
                         onClick={() => setSelectedBadge(badge)}
                         style={{
                           minWidth: 80, width: 80, height: 80,
-                          background: isUnlocked ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                          background: isUnlocked ? 'var(--card-bg)' : 'var(--input-bg)',
                           border: `1px solid ${borderCol}`, borderRadius: 20,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           cursor: 'pointer', position: 'relative',
@@ -141,8 +141,8 @@ export function BadgesCenter() {
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       >
                         {!isUnlocked && (
-                          <div style={{ position: 'absolute', top: -4, right: -4, background: '#090705', borderRadius: '50%', padding: 4, border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Lock size={10} color="rgba(255,255,255,0.4)" />
+                          <div style={{ position: 'absolute', top: -4, right: -4, background: 'var(--bg-primary)', borderRadius: '50%', padding: 4, border: '1px solid var(--border-primary)' }}>
+                            <Lock size={10} color="var(--text-muted)" />
                           </div>
                         )}
 
@@ -168,7 +168,7 @@ export function BadgesCenter() {
           onClick={() => setSelectedBadge(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 24, animation: 'fadeIn 0.2s ease'
           }}
@@ -176,11 +176,11 @@ export function BadgesCenter() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#120f0d', borderRadius: 32, padding: '40px 24px',
+              background: 'var(--bg-secondary)', borderRadius: 32, padding: '40px 24px',
               width: '100%', maxWidth: 360, position: 'relative',
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              border: `1px solid ${unlockedIds.includes(selectedBadge.id) ? selectedBadge.color : 'rgba(255,255,255,0.1)'}`,
-              boxShadow: `0 24px 48px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.05)`,
+              border: `1px solid ${unlockedIds.includes(selectedBadge.id) ? selectedBadge.color : 'var(--border-primary)'}`,
+              boxShadow: `var(--card-shadow)`,
               animation: 'slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
@@ -188,9 +188,9 @@ export function BadgesCenter() {
               onClick={() => setSelectedBadge(null)}
               style={{
                 position: 'absolute', top: 16, right: 16,
-                background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%',
+                background: 'var(--back-btn-bg)', border: 'none', borderRadius: '50%',
                 width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: 'pointer'
+                color: 'var(--text-primary)', cursor: 'pointer'
               }}
             >
               <X size={18} />
@@ -210,8 +210,8 @@ export function BadgesCenter() {
                 <>
                   <div style={{
                     width: 120, height: 120, borderRadius: 32,
-                    background: isUnlocked ? `linear-gradient(135deg, ${selectedBadge.color}40, rgba(255,255,255,0.02))` : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isUnlocked ? selectedBadge.color + '60' : 'rgba(255,255,255,0.1)'}`,
+                    background: isUnlocked ? `linear-gradient(135deg, ${selectedBadge.color}40, var(--bg-primary))` : 'var(--input-bg)',
+                    border: `1px solid ${isUnlocked ? selectedBadge.color + '60' : 'var(--border-primary)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 64, marginBottom: 24,
                     filter: isUnlocked ? `drop-shadow(0 8px 16px ${selectedBadge.color}50)` : 'grayscale(100%) brightness(0.4)',
@@ -222,7 +222,7 @@ export function BadgesCenter() {
 
                   {!isSecretHidden && isUnlocked && (
                     <div style={{
-                      background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: 99,
+                      background: 'var(--input-bg)', padding: '4px 12px', borderRadius: 99,
                       fontSize: 12, fontWeight: 800, color: selectedBadge.color, marginBottom: 12,
                       letterSpacing: '1px', textTransform: 'uppercase', border: `1px solid ${selectedBadge.color}30`
                     }}>
@@ -230,16 +230,16 @@ export function BadgesCenter() {
                     </div>
                   )}
 
-                  <h3 style={{ fontSize: 24, fontWeight: 900, color: isUnlocked ? '#fff' : '#C7D0D9', margin: '0 0 12px', textAlign: 'center' }}>
+                  <h3 style={{ fontSize: 24, fontWeight: 900, color: isUnlocked ? 'var(--text-primary)' : 'var(--text-secondary)', margin: '0 0 12px', textAlign: 'center' }}>
                     {isSecretHidden ? 'Selo Secreto' : selectedBadge.name}
                   </h3>
 
-                  <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 15, color: 'var(--text-secondary)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
                     {isSecretHidden ? 'Existem conquistas que só os mais curiosos descobrem. Continue explorando para revelar este selo.' : selectedBadge.description}
                   </p>
 
                   {!isUnlocked && (
-                    <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 700 }}>
+                    <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13, fontWeight: 700 }}>
                       <Lock size={16} />
                       Ainda não conquistado
                     </div>

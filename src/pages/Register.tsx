@@ -115,7 +115,7 @@ export const Register: React.FC = () => {
     if (errors[field]) return 'rgba(239,68,68,0.5)';
     const values: Record<string, string> = { name, email, telefone, cpf, password, confirmPassword };
     if (touched[field] && !errors[field] && !!values[field]) return 'rgba(16,185,129,0.4)';
-    return 'rgba(255,255,255,0.1)';
+    return 'var(--input-border)';
   };
 
   const isValid = (field: string) => touched[field] && !errors[field];
@@ -153,7 +153,7 @@ export const Register: React.FC = () => {
           <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
 
             {/* Nome */}
-            <FieldWrap id={`${id}-name`} label="Nome Completo" icon={<User size={15} color="rgba(255,255,255,0.35)" />} error={errors.name} valid={isValid('name')}>
+            <FieldWrap id={`${id}-name`} label="Nome Completo" icon={<User size={15} color="var(--text-muted)" />} error={errors.name} valid={isValid('name')}>
               <input id={`${id}-name`} type="text" autoComplete="name" placeholder="João da Silva"
                 value={name}
                 onChange={e => { setName(e.target.value); handleChange('name', e.target.value); }}
@@ -163,7 +163,7 @@ export const Register: React.FC = () => {
             </FieldWrap>
 
             {/* Email */}
-            <FieldWrap id={`${id}-email`} label="E-mail" icon={<Mail size={15} color="rgba(255,255,255,0.35)" />} error={errors.email} valid={isValid('email')}>
+            <FieldWrap id={`${id}-email`} label="E-mail" icon={<Mail size={15} color="var(--text-muted)" />} error={errors.email} valid={isValid('email')}>
               <input id={`${id}-email`} type="email" autoComplete="email" placeholder="seuemail@exemplo.com"
                 value={email}
                 onChange={e => { setEmail(e.target.value); handleChange('email', e.target.value); }}
@@ -174,7 +174,7 @@ export const Register: React.FC = () => {
 
             {/* Telefone + CPF side by side */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <FieldWrap id={`${id}-phone`} label="Telefone *" icon={<Phone size={15} color="rgba(255,255,255,0.35)" />} error={errors.telefone} valid={isValid('telefone')}>
+              <FieldWrap id={`${id}-phone`} label="Telefone *" icon={<Phone size={15} color="var(--text-muted)" />} error={errors.telefone} valid={isValid('telefone')}>
                 <input id={`${id}-phone`} type="tel" autoComplete="tel" placeholder="(11) 99999-9999"
                   value={telefone}
                   onChange={e => { const m = maskPhone(e.target.value); setTelefone(m); handleChange('telefone', m); }}
@@ -183,7 +183,7 @@ export const Register: React.FC = () => {
                   className="auth-input" disabled={loading} />
               </FieldWrap>
 
-              <FieldWrap id={`${id}-cpf`} label="CPF *" icon={<CreditCard size={15} color="rgba(255,255,255,0.35)" />} error={errors.cpf} valid={isValid('cpf')}>
+              <FieldWrap id={`${id}-cpf`} label="CPF *" icon={<CreditCard size={15} color="var(--text-muted)" />} error={errors.cpf} valid={isValid('cpf')}>
                 <input id={`${id}-cpf`} type="text" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00"
                   value={cpf}
                   onChange={e => { const m = maskCPF(e.target.value); setCpf(m); handleChange('cpf', m); }}
@@ -195,7 +195,7 @@ export const Register: React.FC = () => {
 
             {/* Senha */}
             <div>
-              <FieldWrap id={`${id}-pw`} label="Senha" icon={<Lock size={15} color="rgba(255,255,255,0.35)" />} error={errors.password} valid={isValid('password')}
+              <FieldWrap id={`${id}-pw`} label="Senha" icon={<Lock size={15} color="var(--text-muted)" />} error={errors.password} valid={isValid('password')}
                 eye={<button type="button" onClick={() => setShowPassword(v => !v)} style={s.eyeBtn} tabIndex={-1}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button>}>
                 <input id={`${id}-pw`} type={showPassword ? 'text' : 'password'} autoComplete="new-password" placeholder="Mínimo 8 caracteres"
                   value={password}
@@ -208,10 +208,10 @@ export const Register: React.FC = () => {
               {password && (
                 <div style={{ marginTop: '7px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Força</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Força</span>
                     <span style={{ fontSize: '10px', fontWeight: 700, color: passwordStrength.color }}>{passwordStrength.label}</span>
                   </div>
-                  <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '3px', background: 'var(--border-primary)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: passwordStrength.width, background: passwordStrength.color, transition: 'all 0.4s ease' }} />
                   </div>
                 </div>
@@ -219,7 +219,7 @@ export const Register: React.FC = () => {
             </div>
 
             {/* Confirmar Senha */}
-            <FieldWrap id={`${id}-confirm`} label="Confirmar Senha" icon={<Lock size={15} color="rgba(255,255,255,0.35)" />} error={errors.confirmPassword} valid={isValid('confirmPassword')}
+            <FieldWrap id={`${id}-confirm`} label="Confirmar Senha" icon={<Lock size={15} color="var(--text-muted)" />} error={errors.confirmPassword} valid={isValid('confirmPassword')}
               eye={<button type="button" onClick={() => setShowConfirm(v => !v)} style={s.eyeBtn} tabIndex={-1}>{showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}</button>}>
               <input id={`${id}-confirm`} type={showConfirm ? 'text' : 'password'} autoComplete="new-password" placeholder="Repita a senha"
                 value={confirmPassword}
@@ -230,7 +230,7 @@ export const Register: React.FC = () => {
             </FieldWrap>
 
             {/* Privacy note */}
-            <p style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.5, margin: '2px 0 0' }}>
+            <p style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: '2px 0 0' }}>
               Ao se cadastrar você concorda com os{' '}
               <span style={{ color: '#D4AF37' }}>Termos de Uso</span>
               {' '}e a{' '}
@@ -249,7 +249,7 @@ export const Register: React.FC = () => {
           </form>
 
           <p style={{ textAlign: 'center', margin: '18px 0 0' }}>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>Já tem conta? </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Já tem conta? </span>
             <Link to="/login" style={s.authLink}>Faça login</Link>
           </p>
         </div>

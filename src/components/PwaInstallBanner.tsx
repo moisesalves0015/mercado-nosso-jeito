@@ -50,19 +50,19 @@ export function PwaInstallBanner() {
         height: '24px', // Tão fino quanto a linha da topbar
       }}
     >
-      <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>
+      <span className="pwa-banner-text" style={{ fontSize: 12, fontWeight: 600 }}>
         Faça suas compras em 1 clique
       </span>
       
       <button
         onClick={handleInstallClick}
+        className="pwa-banner-btn"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
           background: 'none',
           border: 'none',
-          color: '#FFDF73',
           fontSize: 12,
           fontWeight: 800,
           cursor: 'pointer',

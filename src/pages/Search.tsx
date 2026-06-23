@@ -6,12 +6,12 @@ import { MercadoLogo } from './Login';
 import { defaultProducts } from '../data/defaultProducts';
 
 const card = {
-  background: 'rgba(9,7,5,0.58)',
+  background: 'var(--card-gradient)',
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid rgba(212,175,55,0.18)',
+  border: '1px solid var(--border-gold)',
   borderRadius: '18px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--card-shadow)',
 };
 
 interface Product {
@@ -47,8 +47,16 @@ export const Search = () => {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
   const hasFilters = !!searchQuery.trim() || !!selectedCategory;
+
+  // React to theme changes
+  useEffect(() => {
+    const handleThemeChange = () => setTheme(localStorage.getItem('theme') || 'dark');
+    window.addEventListener('theme-changed', handleThemeChange);
+    return () => window.removeEventListener('theme-changed', handleThemeChange);
+  }, []);
 
   // Sync state with URL parameter changes
   useEffect(() => {
@@ -165,12 +173,12 @@ export const Search = () => {
         position: 'sticky',
         top: 0,
         zIndex: 20,
-        background: 'rgba(9,7,5,0.4)',
+        background: 'var(--bg-secondary)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
+        borderBottom: '1px solid var(--border-primary)',
       }}>
-        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -180,12 +188,12 @@ export const Search = () => {
           <button
             onClick={() => navigate(-1)}
             style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--back-btn-bg)',
+              border: '1px solid var(--border-primary)',
               borderRadius: '50%',
               width: '38px', height: '38px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+              cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
             }}
           >
             <ArrowLeft size={17} />
@@ -196,11 +204,11 @@ export const Search = () => {
           <button
             onClick={() => setShowFilters(v => !v)}
             style={{
-              background: showFilters ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              background: showFilters ? 'rgba(212,175,55,0.1)' : 'var(--input-bg)',
+              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'var(--input-border)'}`,
               borderRadius: 10, width: 38, height: 38,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: showFilters ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+              cursor: 'pointer', color: showFilters ? '#D4AF37' : 'var(--text-secondary)',
               flexShrink: 0,
               position: 'relative'
             }}
@@ -210,7 +218,7 @@ export const Search = () => {
               <span style={{
                 position: 'absolute', top: 8, right: 8,
                 width: 7, height: 7, borderRadius: '50%',
-                background: '#D4AF37', border: '1.5px solid #090705',
+                background: '#D4AF37', border: `1.5px solid var(--bg-secondary)`,
               }} />
             )}
           </button>
@@ -221,7 +229,7 @@ export const Search = () => {
       <div style={{ padding: '12px 16px 0', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         
         <div style={{ padding: '6px 0 0 2px' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Buscar Produtos</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Buscar Produtos</h1>
         </div>
 
         {/* ── Toggleable Filters Card Panel ── */}
@@ -235,7 +243,7 @@ export const Search = () => {
                 placeholder="O que você está procurando?" 
                 value={searchQuery}
                 onChange={e => handleSearchChange(e.target.value)}
-                style={{ width: '100%', paddingRight: '36px', fontSize: '14px', color: '#fff', outline: 'none' }}
+                style={{ width: '100%', paddingRight: '36px', fontSize: '14px', color: 'var(--text-primary)', outline: 'none' }}
               />
               {searchQuery && (
                 <button 
@@ -247,7 +255,7 @@ export const Search = () => {
                     transform: 'translateY(-50%)',
                     background: 'transparent',
                     border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text-muted)',
                     cursor: 'pointer',
                     padding: '4px',
                     display: 'flex',
@@ -275,9 +283,9 @@ export const Search = () => {
                       gap: '6px',
                       padding: '5px 11px',
                       borderRadius: '999px',
-                      border: `1px solid ${isActive ? cat.color : 'rgba(255,255,255,0.07)'}`,
-                      background: isActive ? `${cat.color}25` : 'rgba(255,255,255,0.03)',
-                      color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                      border: `1px solid ${isActive ? cat.color : 'var(--border-primary)'}`,
+                      background: isActive ? `${cat.color}18` : 'var(--input-bg)',
+                      color: isActive ? (theme === 'light' ? cat.color : '#fff') : 'var(--text-secondary)',
                       fontSize: '11px',
                       fontWeight: isActive ? 900 : 700,
                       cursor: 'pointer',
@@ -287,7 +295,7 @@ export const Search = () => {
                       flexShrink: 0
                     }}
                   >
-                    <Icon size={12} color={isActive ? cat.color : 'rgba(255,255,255,0.5)'} />
+                    <Icon size={12} color={isActive ? cat.color : 'var(--text-muted)'} />
                     {cat.label}
                   </button>
                 );
@@ -298,9 +306,9 @@ export const Search = () => {
 
         {/* ── SEARCH RESULTS GRID HEADER ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px' }}>
-          <h3 style={{ margin: 0, color: '#fff', fontSize: '13px', fontWeight: 800 }}>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '13px', fontWeight: 800 }}>
             {selectedCategory ? `${selectedCategory}` : 'Todos os Produtos'} 
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 500, fontSize: '11px', marginLeft: '6px' }}>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '11px', marginLeft: '6px' }}>
               ({filteredProducts.length} itens)
             </span>
           </h3>
@@ -310,7 +318,7 @@ export const Search = () => {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#E7BC79',
+                color: '#D4AF37',
                 fontSize: '11px',
                 fontWeight: 800,
                 cursor: 'pointer'
@@ -327,7 +335,7 @@ export const Search = () => {
             <ProductCard key={product.id} {...product} />
           ))}
           {filteredProducts.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', padding: '40px 16px', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', padding: '40px 16px', color: 'var(--text-muted)', textAlign: 'center' }}>
               <span style={{ fontSize: '28px' }}>🔍</span>
               <span style={{ fontSize: '12px', fontWeight: 700 }}>Nenhum produto correspondente.</span>
               <span style={{ fontSize: '10px' }}>Tente ajustar os termos de busca ou mudar o filtro da categoria.</span>

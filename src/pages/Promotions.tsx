@@ -83,36 +83,36 @@ export const Promotions = () => {
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Promoções Especiais</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Promoções Especiais</h1>
         <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>OFERTAS EXCLUSIVAS DO DIA</p>
       </div>
 
       {/* PROMO BANNER */}
       <div className="promo-banner" style={{ 
         margin: '16px 4px', 
-        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.4) 100%)', 
+        background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', 
         border: '1px solid rgba(239, 68, 68, 0.3)',
         boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)'
       }}>
         <div className="promo-text">
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Flame size={11} color="#FF6B6B" />
-            <span style={{ color: '#FF8E8E', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Super Descontos</span>
+            <Flame size={11} color="#fff" />
+            <span style={{ color: '#fff', opacity: 0.9, fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Super Descontos</span>
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Leve Mais por Menos</h3>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>Aproveite as ofertas por tempo limitado!</p>
+          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '11px' }}>Aproveite as ofertas por tempo limitado!</p>
         </div>
         <PartyPopper size={40} color="#fff" />
       </div>
 
       {/* PRODUCTS GRID */}
-      <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Destaques em Oferta</h3>
+      <h3 style={{ margin: '0 0 12px 6px', color: 'var(--text-primary)', fontSize: '15px', fontWeight: 800 }}>Destaques em Oferta</h3>
       <div className="products-grid">
         {promoProds.slice(0, 6).map(product => (
           <ProductCard key={product.id} {...product} />
         ))}
         {promoProds.length === 0 && (
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma oferta ativa no momento.</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhuma oferta ativa no momento.</span>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
@@ -33,6 +33,20 @@ import { BadgesCenter } from './pages/BadgesCenter';
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+    };
+    window.addEventListener('theme-changed', handleThemeChange);
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+    return () => window.removeEventListener('theme-changed', handleThemeChange);
+  }, [theme]);
 
   // Real-time Firestore sync of products to localStorage
   useEffect(() => {
@@ -49,9 +63,12 @@ function AppContent() {
   // Ocultar gatilho na roleta, admin, login e register
   const showTrigger = !['/login', '/register', '/roleta'].includes(location.pathname) && !location.pathname.startsWith('/admin');
 
-  // Determinar cor do status bar com base na rota
+  // Determinar cor do status bar com base na rota e tema
   const isBlackHeader = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
-  const safeAreaBg = isBlackHeader ? '#000000' : '#090705';
+  const isLight = theme === 'light';
+  const safeAreaBg = isLight 
+    ? (isBlackHeader ? '#ffffff' : '#f8fafc')
+    : (isBlackHeader ? '#000000' : '#090705');
 
   return (
     <>

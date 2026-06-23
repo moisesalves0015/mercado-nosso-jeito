@@ -38,22 +38,22 @@ export interface Address {
 // Design tokens
 // ──────────────────────────────────────────────────────────────
 const card = {
-  background: 'rgba(9,7,5,0.58)',
+  background: 'var(--card-gradient)',
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid rgba(212,175,55,0.18)',
+  border: '1px solid var(--border-gold)',
   borderRadius: '20px',
-  boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--card-shadow)',
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: '44px',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--input-bg)',
+  border: '1px solid var(--input-border)',
   borderRadius: '11px',
   padding: '0 14px',
-  color: '#fff',
+  color: 'var(--text-primary)',
   fontSize: '13.5px',
   outline: 'none',
   boxSizing: 'border-box',
@@ -65,7 +65,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '10px',
   fontWeight: 700,
-  color: 'rgba(255,255,255,0.4)',
+  color: 'var(--text-muted)',
   marginBottom: '5px',
   textTransform: 'uppercase',
   letterSpacing: '0.4px',
@@ -190,11 +190,11 @@ const AddressForm: React.FC<FormProps> = ({ initial, onSave, onCancel, saving })
                 className="addr-type-btn"
                 style={{
                   flex: 1, height: '40px',
-                  background: active ? cfg.bg : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${active ? cfg.color + '60' : 'rgba(255,255,255,0.08)'}`,
+                  background: active ? cfg.bg : 'var(--input-bg)',
+                  border: `1px solid ${active ? cfg.color + '60' : 'var(--border-primary)'}`,
                   borderRadius: '10px', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  color: active ? cfg.color : 'rgba(255,255,255,0.4)',
+                  color: active ? cfg.color : 'var(--text-secondary)',
                   fontSize: '11.5px', fontWeight: 700, fontFamily: 'inherit',
                   transition: 'all 0.2s ease',
                 }}
@@ -293,26 +293,26 @@ const AddressForm: React.FC<FormProps> = ({ initial, onSave, onCancel, saving })
         className="addr-toggle-btn"
         style={{
           display: 'flex', alignItems: 'center', gap: '10px',
-          background: form.isDefault ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${form.isDefault ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.08)'}`,
+          background: form.isDefault ? 'rgba(212,175,55,0.08)' : 'var(--input-bg)',
+          border: `1px solid ${form.isDefault ? 'rgba(212,175,55,0.3)' : 'var(--border-primary)'}`,
           borderRadius: '11px', padding: '11px 14px', cursor: 'pointer',
           width: '100%', textAlign: 'left', fontFamily: 'inherit',
         }}
       >
         <div style={{
           width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
-          background: form.isDefault ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(255,255,255,0.06)',
-          border: `1.5px solid ${form.isDefault ? 'transparent' : 'rgba(255,255,255,0.15)'}`,
+          background: form.isDefault ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'var(--input-bg)',
+          border: `1.5px solid ${form.isDefault ? 'transparent' : 'var(--border-primary)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s ease',
         }}>
           {form.isDefault && <Check size={12} color="#000" strokeWidth={3} />}
         </div>
         <div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: form.isDefault ? '#D4AF37' : 'rgba(255,255,255,0.7)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: form.isDefault ? '#D4AF37' : 'var(--text-primary)' }}>
             Endereço padrão
           </div>
-          <div style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.3)', marginTop: '1px' }}>
+          <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '1px' }}>
             Usado automaticamente no checkout
           </div>
         </div>
@@ -322,8 +322,8 @@ const AddressForm: React.FC<FormProps> = ({ initial, onSave, onCancel, saving })
       <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
         <button onClick={onCancel} className="addr-cancel-btn" style={{
           flex: 1, height: '44px',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '12px', color: 'rgba(255,255,255,0.65)', fontWeight: 700,
+          background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+          borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: 700,
           fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
         }}>
           <X size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
@@ -362,7 +362,7 @@ const AddressCard: React.FC<{
       ...card,
       padding: '14px 16px',
       position: 'relative',
-      border: addr.isDefault ? '1px solid rgba(212,175,55,0.4)' : '1px solid rgba(212,175,55,0.18)',
+      border: addr.isDefault ? '1px solid rgba(212,175,55,0.4)' : '1px solid var(--border-gold)',
     }}>
       <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
         {/* Type icon */}
@@ -378,7 +378,7 @@ const AddressCard: React.FC<{
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
               {addr.label || cfg.label}
             </span>
             {addr.isDefault && (
@@ -392,11 +392,11 @@ const AddressCard: React.FC<{
               </span>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             {addr.street}, {addr.number}
             {addr.complement ? `, ${addr.complement}` : ''}<br />
             {addr.neighborhood} · {addr.city}/{addr.state}<br />
-            <span style={{ color: 'rgba(255,255,255,0.35)' }}>CEP {addr.cep}</span>
+            <span style={{ color: 'var(--text-muted)' }}>CEP {addr.cep}</span>
           </div>
         </div>
 
@@ -407,9 +407,9 @@ const AddressCard: React.FC<{
             className="addr-menu-btn"
             style={{
               width: '32px', height: '32px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--input-bg)', border: '1px solid var(--border-primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
+              cursor: 'pointer', color: 'var(--text-secondary)',
             }}
           >
             <MoreHorizontal size={16} />
@@ -419,10 +419,10 @@ const AddressCard: React.FC<{
               <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setMenuOpen(false)} />
               <div style={{
                 position: 'absolute', right: 0, top: '38px', zIndex: 100,
-                background: 'rgba(15,12,8,0.98)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(212,175,55,0.2)', borderRadius: '14px',
+                background: 'var(--bg-secondary)', backdropFilter: 'blur(20px)',
+                border: '1px solid var(--border-gold)', borderRadius: '14px',
                 overflow: 'hidden', minWidth: '160px',
-                boxShadow: '0 16px 40px rgba(0,0,0,0.7)',
+                boxShadow: 'var(--card-shadow)',
               }}>
                 {!addr.isDefault && (
                   <button onClick={() => { onSetDefault(); setMenuOpen(false); }} className="addr-menu-item" style={{
@@ -437,9 +437,9 @@ const AddressCard: React.FC<{
                 <button onClick={() => { onEdit(); setMenuOpen(false); }} className="addr-menu-item" style={{
                   width: '100%', padding: '12px 14px', background: 'none', border: 'none',
                   display: 'flex', alignItems: 'center', gap: '10px',
-                  color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 600,
+                  color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                  borderTop: addr.isDefault ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                  borderTop: addr.isDefault ? 'none' : '1px solid var(--border-primary)',
                 }}>
                   <Edit3 size={14} /> Editar
                 </button>
@@ -448,7 +448,7 @@ const AddressCard: React.FC<{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   color: '#ef4444', fontSize: '13px', fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  borderTop: '1px solid var(--border-primary)',
                 }}>
                   <Trash2 size={14} /> Remover
                 </button>
@@ -467,14 +467,14 @@ const AddressCard: React.FC<{
 const DeleteModal: React.FC<{ onConfirm: () => void; onCancel: () => void; deleting: boolean }> = ({ onConfirm, onCancel, deleting }) => (
   <div style={{
     position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 9999, padding: '24px', animation: 'addrFadeIn 0.2s ease',
   }} onClick={onCancel}>
     <div style={{
-      background: 'rgba(9,7,5,0.97)', border: '1px solid rgba(239,68,68,0.3)',
+      background: 'var(--bg-secondary)', border: '1px solid rgba(239,68,68,0.3)',
       borderRadius: '22px', padding: '28px 22px', width: '100%', maxWidth: '300px',
-      boxShadow: '0 24px 64px rgba(0,0,0,0.8)', animation: 'addrModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+      boxShadow: 'var(--card-shadow)', animation: 'addrModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1)',
     }} onClick={e => e.stopPropagation()}>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
         <div style={{
@@ -485,17 +485,17 @@ const DeleteModal: React.FC<{ onConfirm: () => void; onCancel: () => void; delet
           <AlertTriangle size={22} color="#ef4444" />
         </div>
       </div>
-      <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', textAlign: 'center', margin: '0 0 8px' }}>
+      <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 8px' }}>
         Remover endereço?
       </h3>
-      <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', margin: '0 0 22px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 22px', lineHeight: 1.5 }}>
         Esta ação não pode ser desfeita.
       </p>
       <div style={{ display: 'flex', gap: '10px' }}>
         <button onClick={onCancel} className="addr-cancel-btn" style={{
           flex: 1, height: '42px',
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: 700,
+          background: 'var(--input-bg)', border: '1px solid var(--input-border)',
+          borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: 700,
           fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
         }}>Cancelar</button>
         <button onClick={onConfirm} disabled={deleting} style={{
@@ -530,10 +530,10 @@ const EmptyAddresses: React.FC<{ onAdd: () => void }> = ({ onAdd }) => (
       <Navigation size={28} color="rgba(212,175,55,0.4)" />
     </div>
     <div>
-      <h3 style={{ fontSize: '17px', fontWeight: 900, color: '#fff', margin: '0 0 6px' }}>
+      <h3 style={{ fontSize: '17px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 6px' }}>
         Nenhum endereço ainda
       </h3>
-      <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.4)', margin: 0, lineHeight: 1.5, maxWidth: '220px' }}>
+      <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5, maxWidth: '220px' }}>
         Adicione seus endereços para agilizar as entregas.
       </p>
     </div>
@@ -654,11 +654,11 @@ export const Addresses: React.FC = () => {
 
   const skeletonCard = (
     <div style={{ ...card, padding: '16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.06)', animation: 'addrShimmer 1.4s ease-in-out infinite' }} />
+      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--input-bg)', animation: 'addrShimmer 1.4s ease-in-out infinite' }} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ width: '55%', height: 14, borderRadius: 7, background: 'rgba(255,255,255,0.07)', animation: 'addrShimmer 1.4s ease-in-out infinite' }} />
-        <div style={{ width: '80%', height: 11, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'addrShimmer 1.4s ease-in-out infinite 0.1s' }} />
-        <div style={{ width: '65%', height: 11, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'addrShimmer 1.4s ease-in-out infinite 0.2s' }} />
+        <div style={{ width: '55%', height: 14, borderRadius: 7, background: 'var(--border-primary)', animation: 'addrShimmer 1.4s ease-in-out infinite' }} />
+        <div style={{ width: '80%', height: 11, borderRadius: 6, background: 'var(--input-bg)', animation: 'addrShimmer 1.4s ease-in-out infinite 0.1s' }} />
+        <div style={{ width: '65%', height: 11, borderRadius: 6, background: 'var(--input-bg)', animation: 'addrShimmer 1.4s ease-in-out infinite 0.2s' }} />
       </div>
     </div>
   );
@@ -673,20 +673,20 @@ export const Addresses: React.FC = () => {
         {/* ── Topbar ─────────────────────────────────────────── */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 20,
-          background: 'rgba(9,7,5,0.4)', backdropFilter: 'blur(16px)',
+          background: 'var(--bg-secondary)', backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          borderBottom: '1px solid var(--border-primary)',
         }}>
-          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 16px',
           }}>
             <button onClick={() => navigate(-1)} className="addr-back-btn" style={{
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)',
               borderRadius: '50%', width: 38, height: 38,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.8)',
+              cursor: 'pointer', color: 'var(--text-primary)',
             }}>
               <ArrowLeft size={18} />
             </button>
@@ -717,11 +717,11 @@ export const Addresses: React.FC = () => {
             }}>
               <MapPin size={16} color="#D4AF37" />
             </div>
-            <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#fff', margin: 0 }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
               Meus Endereços
             </h1>
           </div>
-          <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.5)', margin: '0 0 0 42px', fontWeight: 600 }}>
+          <p style={{ fontSize: '11px', color: '#D4AF37', margin: '0 0 0 42px', fontWeight: 600 }}>
             {addresses.length} endereço{addresses.length !== 1 ? 's' : ''} cadastrado{addresses.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -739,7 +739,7 @@ export const Addresses: React.FC = () => {
                 }}>
                   {editingId ? <Edit3 size={13} color="#D4AF37" /> : <Plus size={13} color="#D4AF37" />}
                 </div>
-                <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
                   {editingId ? 'Editar endereço' : 'Novo endereço'}
                 </span>
               </div>
@@ -777,11 +777,11 @@ export const Addresses: React.FC = () => {
               className="addr-add-btn"
               style={{
                 width: '100%', height: '48px',
-                background: 'rgba(212,175,55,0.06)',
-                border: '1.5px dashed rgba(212,175,55,0.3)',
+                background: 'var(--input-bg)',
+                border: '1.5px dashed var(--border-gold)',
                 borderRadius: '16px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                color: 'rgba(212,175,55,0.7)', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit',
+                color: '#D4AF37', fontSize: '13px', fontWeight: 700, fontFamily: 'inherit',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -791,7 +791,7 @@ export const Addresses: React.FC = () => {
 
           {/* ── Tip card ─────────────────────────────────────── */}
           {!loading && (
-            <div style={{ ...card, padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ ...card, padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid var(--border-primary)' }}>
               <div style={{
                 width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
                 background: 'rgba(99,102,241,0.1)',
@@ -800,10 +800,10 @@ export const Addresses: React.FC = () => {
                 <Navigation size={16} color="#6366F1" />
               </div>
               <div>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
                   Entrega no endereço certo
                 </div>
-                <div style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                   O endereço padrão é selecionado automaticamente no checkout. Você pode alterar antes de confirmar.
                 </div>
               </div>
@@ -843,16 +843,16 @@ const AddressStyles: React.FC = () => (
     .addr-input:focus {
       border-color: rgba(212,175,55,0.5) !important;
       box-shadow: 0 0 0 3px rgba(212,175,55,0.08) !important;
-      background: rgba(255,255,255,0.08) !important;
+      background: var(--input-bg) !important;
     }
-    .addr-input::placeholder { color: rgba(255,255,255,0.2); }
+    .addr-input::placeholder { color: var(--text-muted); }
     .addr-save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(212,175,55,0.4) !important; }
     .addr-save-btn:disabled { opacity: 0.65; cursor: not-allowed; }
-    .addr-cancel-btn:hover { background: rgba(255,255,255,0.09) !important; }
+    .addr-cancel-btn:hover { background: var(--input-bg) !important; opacity: 0.9; }
     .addr-add-btn:hover { background: rgba(212,175,55,0.1) !important; border-color: rgba(212,175,55,0.5) !important; color: #D4AF37 !important; }
-    .addr-menu-btn:hover { background: rgba(255,255,255,0.1) !important; }
-    .addr-menu-item:hover { background: rgba(255,255,255,0.05) !important; }
-    .addr-back-btn:hover { background: rgba(255,255,255,0.12) !important; }
+    .addr-menu-btn:hover { background: var(--input-bg) !important; opacity: 0.9; }
+    .addr-menu-item:hover { background: var(--input-bg) !important; opacity: 0.9; }
+    .addr-back-btn:hover { background: var(--back-btn-bg) !important; opacity: 0.9; }
     .addr-add-header-btn:hover { background: rgba(212,175,55,0.18) !important; }
     .addr-type-btn:active { transform: scale(0.97); }
     .addr-toggle-btn:hover { opacity: 0.85; }

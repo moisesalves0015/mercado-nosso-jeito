@@ -530,30 +530,14 @@ export const Roleta: React.FC = () => {
   } as React.CSSProperties;
 
   return (
-    <main className="app roulette-page-container" style={{ backgroundColor: '#090705', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+    <main className="app roulette-page-container" style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
       
       {/* Supermarket blurred and darkened background image overlay - exactly matching product details styling */}
       <div 
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: 'url("/bg-supermercado.jpeg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(1.5px) brightness(0.45)',
-          opacity: 1,
-          pointerEvents: 'none',
-          zIndex: 0
-        }}
+        className="roulette-bg-image"
       />
       <div 
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.40) 40%, rgba(9, 7, 5, 1) 100%)',
-          pointerEvents: 'none',
-          zIndex: 0
-        }}
+        className="roulette-bg-overlay"
       />
 
       {/* Dynamic particles render */}
@@ -598,9 +582,9 @@ export const Roleta: React.FC = () => {
 
       {/* HEADER */}
       <header className="clube-topbar" style={{ zIndex: 200 }}>
-        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div className="clube-topbar-content">
-          <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
             <ArrowLeft size={16} />
             <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
           </button>
@@ -612,7 +596,7 @@ export const Roleta: React.FC = () => {
                 setSoundEnabled(nextVal);
                 localStorage.setItem('roulette_sound', nextVal.toString());
               }} 
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             >
               {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
             </button>
@@ -630,20 +614,20 @@ export const Roleta: React.FC = () => {
         <>
           {/* Streak and multiplier counters */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(9, 7, 5, 0.65)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--card-bg)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
               <Flame size={13} color="#F59E0B" fill="#F59E0B" />
               <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212, 175, 55, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.35)' }}>
               <TrendingUp size={13} color="#D4AF37" />
-              <span style={{ fontSize: 11, color: '#FFDF73', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
+              <span style={{ fontSize: 11, color: '#D4AF37', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
             </div>
 
             {combo >= 2 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(139, 92, 246, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.3)', animation: 'pulse 1.5s infinite' }}>
                 <Zap size={13} color="#8B5CF6" fill="#8B5CF6" />
-                <span style={{ fontSize: 11, color: '#A78BFA', fontWeight: 'bold' }}>COMBO x{combo}!</span>
+                <span style={{ fontSize: 11, color: '#7C3AED', fontWeight: 'bold' }}>COMBO x{combo}!</span>
               </div>
             )}
           </div>
@@ -653,7 +637,7 @@ export const Roleta: React.FC = () => {
             <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Roleta Premium
             </h2>
-            <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', marginBottom: 20 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 20 }}>
               Gire e multiplique seus prêmios do clube! 🎰
             </p>
 
@@ -801,12 +785,12 @@ export const Roleta: React.FC = () => {
                   disabled={true}
                   style={{
                     flex: 1,
-                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02))',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: 'var(--card-gradient)',
+                    border: '1px solid var(--border-primary)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.3)',
-                    color: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: 'var(--card-shadow)',
+                    color: 'var(--text-muted)',
                     padding: '12px 8px',
                     borderRadius: 12,
                     display: 'flex',
@@ -826,9 +810,9 @@ export const Roleta: React.FC = () => {
                 disabled={spinning || items.length === 0 || diamonds < 30}
                 style={{ 
                   flex: 1,
-                  background: diamonds < 30 ? 'rgba(255,255,255,0.02)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
-                  color: diamonds < 30 ? 'rgba(255,255,255,0.25)' : '#090705',
-                  border: diamonds < 30 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  background: diamonds < 30 ? 'var(--input-bg)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
+                  color: diamonds < 30 ? 'var(--text-muted)' : '#090705',
+                  border: diamonds < 30 ? '1px solid var(--border-primary)' : 'none',
                   padding: '12px 8px',
                   borderRadius: 12,
                   fontWeight: 900,
@@ -849,9 +833,7 @@ export const Roleta: React.FC = () => {
               <div style={{ textAlign: 'center', marginTop: 10 }}>
                 <button 
                   onClick={resetMultiplier} 
-                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.45)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
+                  style={{ background: 'none', border: '1px solid var(--border-primary)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
                 >
                   Resetar Bônus
                 </button>
@@ -864,13 +846,13 @@ export const Roleta: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Award size={15} color="#D4AF37" />
-                <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: -0.2 }}>Últimos Prêmios</span>
+                <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: -0.2 }}>Últimos Prêmios</span>
               </div>
-              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)' }}>({history.length}/50 giros)</span>
+              <span style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>({history.length}/50 giros)</span>
             </div>
             
             {history.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+              <div style={{ textAlign: 'center', padding: '12px 0', fontSize: 11, color: 'var(--text-muted)' }}>
                 Gire a roleta para começar a ganhar! 🎰
               </div>
             ) : (
@@ -878,12 +860,12 @@ export const Roleta: React.FC = () => {
                 {history.map((h, index) => {
                   const config = RARITY_CONFIG[h.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common;
                   return (
-                    <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <div key={index} className="clube-ledger-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, padding: '7px 10px', background: 'var(--input-bg)', borderRadius: 8, border: '1px solid var(--border-primary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: 12 }}>{config.icon}</span>
-                        <span style={{ fontWeight: 700, color: h.won ? config.color : 'rgba(255,255,255,0.45)' }}>{h.text}</span>
+                        <span style={{ fontWeight: 700, color: h.won ? config.color : 'var(--text-muted)' }}>{h.text}</span>
                       </div>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9.5 }}>{h.date}</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>{h.date}</span>
                     </div>
                   );
                 })}
@@ -944,7 +926,7 @@ export const Roleta: React.FC = () => {
                   <span className="premium-congrats-tag" style={{ color: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color, borderColor: (RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).color }}>
                     ✨ PRÊMIO {(RARITY_CONFIG[result.rarity as keyof typeof RARITY_CONFIG] || RARITY_CONFIG.common).label} ✨
                   </span>
-                  <h3 style={{ marginTop: 8, fontSize: 22, fontWeight: 900, color: '#fff', textAlign: 'center' }}>
+                  <h3 style={{ marginTop: 8, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', textAlign: 'center' }}>
                     {result.text}
                   </h3>
                   <p className="reward-premium-desc">
@@ -1041,6 +1023,32 @@ export const Roleta: React.FC = () => {
 
 
       <style>{`
+        .roulette-bg-image {
+          position: absolute;
+          inset: 0;
+          background-image: url("/bg-supermercado.jpeg");
+          background-size: cover;
+          background-position: center;
+          filter: blur(1.5px) brightness(0.45);
+          opacity: 1;
+          pointer-events: none;
+          z-index: 0;
+          transition: filter 0.3s ease;
+        }
+        body.light-mode .roulette-bg-image {
+          filter: blur(1.5px) brightness(0.95) opacity(0.12) grayscale(0.5);
+        }
+        .roulette-bg-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(9, 7, 5, 0.40) 40%, rgba(9, 7, 5, 1) 100%);
+          pointer-events: none;
+          z-index: 0;
+          transition: background 0.3s ease;
+        }
+        body.light-mode .roulette-bg-overlay {
+          background: var(--overlay-bg);
+        }
         @keyframes particleFade {
           0% { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0); }

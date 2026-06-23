@@ -79,24 +79,24 @@ export const Padaria = () => {
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Padaria & Confeitaria</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Padaria & Confeitaria</h1>
         <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>PÃES E DOCES ASSADOS NA HORA</p>
       </div>
 
       {/* BAKERY BANNER */}
       <div className="promo-banner" style={{ 
         margin: '16px 4px', 
-        background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(217, 119, 6 0.4) 100%)', 
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
         border: '1px solid rgba(251, 191, 36, 0.3)',
         boxShadow: '0 8px 30px rgba(251, 191, 36, 0.15)'
       }}>
         <div className="promo-text">
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Cookie size={11} color="#FBBF24" />
-            <span style={{ color: '#FCD34D', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Fresco todo dia</span>
+            <Cookie size={11} color="#fff" />
+            <span style={{ color: '#fff', opacity: 0.9, fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Fresco todo dia</span>
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Pães & Croissants</h3>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>Fornos ligados o dia todo para você!</p>
+          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '11px' }}>Fornos ligados o dia todo para você!</p>
         </div>
         <Cookie size={40} color="#fff" />
       </div>
@@ -115,7 +115,7 @@ export const Padaria = () => {
           </div>
           <div>
             <h4 style={{ color: '#FBBF24', fontSize: '12px', fontWeight: 900, margin: '0 0 2px' }}>Pães Sob Encomenda</h4>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', lineHeight: '1.4', margin: 0 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '10px', lineHeight: '1.4', margin: 0 }}>
               Nossos pães franceses saem quentinhos do forno a cada hora! Para pedidos de fornadas especiais, peça pelo nosso chat de atendimento.
             </p>
           </div>
@@ -123,13 +123,13 @@ export const Padaria = () => {
       </div>
 
       {/* PRODUCTS GRID */}
-      <h3 style={{ margin: '0 0 12px 6px', color: '#fff', fontSize: '15px', fontWeight: 800 }}>Fornada do Dia</h3>
+      <h3 style={{ margin: '0 0 12px 6px', color: 'var(--text-primary)', fontSize: '15px', fontWeight: 800 }}>Fornada do Dia</h3>
       <div className="products-grid">
         {padariaProds.slice(0, 6).map(product => (
           <ProductCard key={product.id} {...product} />
         ))}
         {padariaProds.length === 0 && (
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhum item de padaria no catálogo.</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '24px' }}>Nenhum item de padaria no catálogo.</span>
         )}
       </div>
 

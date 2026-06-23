@@ -450,18 +450,18 @@ export const ProductDetail = () => {
     <main className="app product-detail-page">
       {/* TOP HEADER */}
       <header className="product-detail-header">
-        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div className="product-detail-header-content">
           <button onClick={() => navigate(-1)} className="header-icon-btn">
-            <ArrowLeft size={20} color="#fff" />
+            <ArrowLeft size={20} color="currentColor" />
           </button>
           <div className="header-title">Detalhes do Produto</div>
           <div className="header-actions">
             <button onClick={handleShare} className="header-icon-btn">
-              <Share2 size={18} color="#fff" />
+              <Share2 size={18} color="currentColor" />
             </button>
             <button onClick={() => setIsFavorited(!isFavorited)} className="header-icon-btn">
-              <Heart size={18} fill={isFavorited ? "#FF4F4F" : "none"} color={isFavorited ? "#FF4F4F" : "#fff"} />
+              <Heart size={18} fill={isFavorited ? "#FF4F4F" : "none"} color={isFavorited ? "#FF4F4F" : "currentColor"} />
             </button>
           </div>
         </div>
@@ -633,7 +633,7 @@ export const ProductDetail = () => {
           <div className="shipping-info-badges">
             <div className="info-badge-item">
               <CheckCircle size={14} color="#D4AF37" />
-              <span className="info-text">Receba: <strong style={{color: '#fff'}}>{product.deliveryTime}</strong></span>
+              <span className="info-text">Receba: <strong style={{color: 'var(--text-primary)'}}>{product.deliveryTime}</strong></span>
             </div>
             <div className="info-badge-item">
               <CheckCircle size={14} color="#34C759" />

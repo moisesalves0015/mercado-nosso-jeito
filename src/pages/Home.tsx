@@ -416,7 +416,7 @@ export const Home = () => {
 
           {/* QUICK CATEGORIES (SINGLE ROW, NO SCROLL) - DIRECTLY BELOW HERO BANNER */}
           <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '10px' }}>
-            <h2 style={{ margin: 0, fontSize: '11.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
+            <h2 style={{ margin: 0, fontSize: '11.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
           </div>
           <div className="quick-categories-grid-no-scroll" style={{ marginBottom: '10px' }}>
             <Link to="/promotions" className="quick-gold-card">
@@ -491,7 +491,7 @@ export const Home = () => {
       <main className="app" style={{ paddingTop: 0 }}>
 
       <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '2px' }}>
-        <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Os mais pedidos por horário</h2>
+        <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Os mais pedidos por horário</h2>
       </div>
 
       {/* PERIOD SELECTOR BUTTONS */}
@@ -711,7 +711,7 @@ export const Home = () => {
 
         {/* CATEGORY ROW (3D REALISTIC ICONS) */}
         <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
-          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Categorias</h2>
+          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
             <Link to="/categories" className="glass-ver-todas-btn">
               Ver todas <span style={{ color: '#FFDF73' }}>&gt;</span>
             </Link>
@@ -835,7 +835,7 @@ export const Home = () => {
       {/* ❤️ FAVORITOS DO CONDOMÍNIO */}
       <div style={{ margin: '24px 0 8px' }}>
         <div className="section-header" style={{ padding: '0 8px', marginBottom: '10px' }}>
-          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#fff', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Heart size={14} fill="#f87171" color="#f87171" />
             Favoritos do Condomínio
           </h2>
@@ -859,8 +859,8 @@ export const Home = () => {
                   alignItems: 'center',
                   gap: 12,
                   padding: '9px 12px',
-                  background: 'linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--card-gradient)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 10,
                   transition: 'all 0.2s ease',
                 }}
@@ -869,7 +869,7 @@ export const Home = () => {
                   style={{
                     fontSize: '13px',
                     fontWeight: 900,
-                    color: fav.rank <= 3 ? '#FFDF73' : 'rgba(255,255,255,0.35)',
+                    color: fav.rank <= 3 ? '#D4AF37' : 'var(--text-muted)',
                     width: 16,
                     textAlign: 'center',
                     flexShrink: 0,
@@ -882,7 +882,7 @@ export const Home = () => {
                   style={{
                     fontSize: '12.5px',
                     fontWeight: 700,
-                    color: 'rgba(255,255,255,0.85)',
+                    color: 'var(--text-primary)',
                     flex: 1,
                     minWidth: 0,
                     overflow: 'hidden',
@@ -892,7 +892,7 @@ export const Home = () => {
                 >
                   {fav.name}
                 </span>
-                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>
                   →
                 </span>
               </div>

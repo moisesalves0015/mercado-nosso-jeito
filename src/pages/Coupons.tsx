@@ -36,12 +36,12 @@ interface Coupon {
 // Design tokens
 // ──────────────────────────────────────────────────────────────
 const card = {
-  background: 'rgba(9,7,5,0.58)',
+  background: 'var(--card-gradient)',
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid rgba(212,175,55,0.18)',
+  border: '1px solid var(--border-gold)',
   borderRadius: '20px',
-  boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--card-shadow)',
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ const TYPE_CFG: Record<CouponType, { label: string; color: string; bg: string; i
 
 const STATUS_CFG: Record<CouponStatus, { label: string; color: string; bg: string }> = {
   available: { label: 'Disponível', color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
-  used:      { label: 'Utilizado',  color: 'rgba(255,255,255,0.3)', bg: 'rgba(255,255,255,0.05)' },
+  used:      { label: 'Utilizado',  color: 'var(--text-muted)', bg: 'var(--border-primary)' },
   expired:   { label: 'Expirado',   color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
 };
 
@@ -149,28 +149,28 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
       border: available
         ? coupon.club
           ? '1px solid rgba(212,175,55,0.45)'
-          : '1px solid rgba(212,175,55,0.22)'
-        : '1px solid rgba(255,255,255,0.07)',
+          : '1px solid var(--border-gold)'
+        : '1px solid var(--border-primary)',
     }}>
       {/* ── Dashed ticket separator ── */}
       <div style={{
         position: 'relative',
-        borderBottom: '1.5px dashed rgba(255,255,255,0.07)',
+        borderBottom: '1.5px dashed var(--border-primary)',
         marginBottom: '0',
       }}>
         {/* Left circle notch */}
         <div style={{
           position: 'absolute', left: -14, top: '50%', transform: 'translateY(-50%)',
           width: 24, height: 24, borderRadius: '50%',
-          background: '#090705',
-          border: '1.5px solid rgba(212,175,55,0.1)',
+          background: 'var(--bg-primary)',
+          border: '1.5px solid var(--border-gold)',
         }} />
         {/* Right circle notch */}
         <div style={{
           position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)',
           width: 24, height: 24, borderRadius: '50%',
-          background: '#090705',
-          border: '1.5px solid rgba(212,175,55,0.1)',
+          background: 'var(--bg-primary)',
+          border: '1.5px solid var(--border-gold)',
         }} />
 
         {/* Main coupon body */}
@@ -180,17 +180,17 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
             minWidth: '72px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             padding: '10px 6px',
-            background: available ? typeCfg.bg : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${available ? typeCfg.color + '30' : 'rgba(255,255,255,0.06)'}`,
+            background: available ? typeCfg.bg : 'var(--input-bg)',
+            border: `1px solid ${available ? typeCfg.color + '30' : 'var(--border-primary)'}`,
             borderRadius: '14px',
             flexShrink: 0,
           }}>
-            <div style={{ color: available ? typeCfg.color : 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>
+            <div style={{ color: available ? typeCfg.color : 'var(--text-muted)', marginBottom: '4px' }}>
               {typeCfg.icon}
             </div>
             <div style={{
               fontSize: '15px', fontWeight: 900, lineHeight: 1.1,
-              color: available ? typeCfg.color : 'rgba(255,255,255,0.25)',
+              color: available ? typeCfg.color : 'var(--text-muted)',
               textAlign: 'center',
             }}>
               {fmtDiscount(coupon)}
@@ -200,7 +200,7 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: available ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: available ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                 {coupon.title}
               </span>
               {coupon.club && (
@@ -218,10 +218,10 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
                 {statusCfg.label}
               </span>
             </div>
-            <p style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.45)', margin: '0 0 6px', lineHeight: 1.45 }}>
+            <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.45 }}>
               {coupon.description}
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', fontSize: '10px', color: 'var(--text-muted)' }}>
               {coupon.minOrder && <span>Mín. R$ {coupon.minOrder.toFixed(2).replace('.', ',')}</span>}
               {coupon.maxDiscount && <span>· Máx. R$ {coupon.maxDiscount.toFixed(2).replace('.', ',')}</span>}
               {coupon.categoryRestriction && <span>· {coupon.categoryRestriction} somente</span>}
@@ -239,14 +239,14 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
         {/* Code */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1.5px dashed rgba(255,255,255,0.12)',
+          background: 'var(--input-bg)',
+          border: '1.5px dashed var(--border-primary)',
           borderRadius: '9px', padding: '6px 12px',
           flex: 1, minWidth: 0,
         }}>
           <span style={{
             fontSize: '13px', fontWeight: 900, letterSpacing: '1.5px',
-            color: available ? '#FFDF73' : 'rgba(255,255,255,0.25)',
+            color: available ? '#D4AF37' : 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {coupon.code}
@@ -256,8 +256,8 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
         {/* Expiry */}
         {expiry && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-            <Timer size={10} color={expiringUrgent ? '#EF4444' : 'rgba(255,255,255,0.3)'} />
-            <span style={{ fontSize: '10px', color: expiringUrgent ? '#EF4444' : 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            <Timer size={10} color={expiringUrgent ? '#EF4444' : 'var(--text-muted)'} />
+            <span style={{ fontSize: '10px', color: expiringUrgent ? '#EF4444' : 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {expiry}
             </span>
           </div>
@@ -285,8 +285,8 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
 
         {coupon.status === 'used' && coupon.usedAt && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <CheckCircle2 size={11} color="rgba(255,255,255,0.2)" />
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
+            <CheckCircle2 size={11} color="var(--text-muted)" />
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
               {coupon.usedAt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
             </span>
           </div>
@@ -331,7 +331,7 @@ const ApplyCoupon: React.FC<{ onApply: (code: string) => void }> = ({ onApply })
     <div style={{ ...card, padding: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <Ticket size={14} color="#D4AF37" />
-        <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
           Inserir cupom
         </span>
       </div>
@@ -345,9 +345,9 @@ const ApplyCoupon: React.FC<{ onApply: (code: string) => void }> = ({ onApply })
           className="coupon-input"
           style={{
             flex: 1, height: '44px',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--input-bg)', border: '1px solid var(--input-border)',
             borderRadius: '11px', padding: '0 14px',
-            color: '#fff', fontSize: '13px', letterSpacing: '1px', fontWeight: 700,
+            color: 'var(--text-primary)', fontSize: '13px', letterSpacing: '1px', fontWeight: 700,
             outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
           }}
         />
@@ -357,10 +357,10 @@ const ApplyCoupon: React.FC<{ onApply: (code: string) => void }> = ({ onApply })
           className="coupon-apply-btn"
           style={{
             height: '44px', padding: '0 16px',
-            background: value.trim() ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(255,255,255,0.05)',
-            border: value.trim() ? 'none' : '1px solid rgba(255,255,255,0.08)',
+            background: value.trim() ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'var(--input-bg)',
+            border: value.trim() ? 'none' : '1px solid var(--input-border)',
             borderRadius: '11px', cursor: value.trim() ? 'pointer' : 'default',
-            color: value.trim() ? '#000' : 'rgba(255,255,255,0.25)',
+            color: value.trim() ? '#000' : 'var(--text-muted)',
             fontWeight: 800, fontSize: '13px', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
             transition: 'all 0.2s ease',
@@ -392,8 +392,8 @@ const StatsBar: React.FC<{ coupons: Coupon[] }> = ({ coupons }) => {
       ].map(s => (
         <div key={s.label} style={{ ...card, padding: '12px 10px', textAlign: 'center' }}>
           <div style={{ color: s.color, display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>{s.icon}</div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{s.value}</div>
-          <div style={{ fontSize: '9.5px', color: 'rgba(255,255,255,0.3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '2px' }}>{s.label}</div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>{s.value}</div>
+          <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '2px' }}>{s.label}</div>
         </div>
       ))}
     </div>
@@ -456,20 +456,20 @@ export const Coupons: React.FC = () => {
         {/* ── Topbar ─────────────────────────────────────────── */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 20,
-          background: 'rgba(9,7,5,0.4)', backdropFilter: 'blur(16px)',
+          background: 'var(--bg-secondary)', backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          borderBottom: '1px solid var(--border-primary)',
         }}>
-          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 16px',
           }}>
             <button onClick={() => navigate(-1)} className="coupon-back-btn" style={{
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)',
               borderRadius: '50%', width: 38, height: 38,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'rgba(255,255,255,0.8)',
+              cursor: 'pointer', color: 'var(--text-primary)',
             }}>
               <ArrowLeft size={18} />
             </button>
@@ -488,12 +488,12 @@ export const Coupons: React.FC = () => {
             }}>
               <Ticket size={16} color="#D4AF37" />
             </div>
-            <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#fff', margin: 0 }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
               Cupons e Descontos
             </h1>
           </div>
           {userProfile?.name && (
-            <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.5)', margin: '0 0 0 42px', fontWeight: 600 }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 0 42px', fontWeight: 600 }}>
               Olá, {userProfile.name.split(' ')[0]}! Você tem {allCoupons.filter(c => c.status === 'available').length} cupons disponíveis
             </p>
           )}
@@ -509,7 +509,7 @@ export const Coupons: React.FC = () => {
 
           {/* Search */}
           <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(212,175,55,0.5)', pointerEvents: 'none' }} />
+            <Search size={13} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#D4AF37', pointerEvents: 'none' }} />
             <input
               type="text"
               placeholder="Buscar cupom..."
@@ -518,16 +518,16 @@ export const Coupons: React.FC = () => {
               className="coupon-input"
               style={{
                 width: '100%', height: '40px',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--input-bg)', border: '1px solid var(--input-border)',
                 borderRadius: '11px', padding: '0 36px',
-                color: '#fff', fontSize: '12.5px', outline: 'none', fontFamily: 'inherit',
+                color: 'var(--text-primary)', fontSize: '12.5px', outline: 'none', fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 2, display: 'flex' }}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2, display: 'flex' }}
               >
                 <X size={13} />
               </button>
@@ -543,18 +543,18 @@ export const Coupons: React.FC = () => {
                 className="coupon-filter-btn"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0,
-                  background: filter === t.key ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${filter === t.key ? 'rgba(212,175,55,0.35)' : 'rgba(255,255,255,0.07)'}`,
+                  background: filter === t.key ? 'rgba(212,175,55,0.15)' : 'var(--input-bg)',
+                  border: `1px solid ${filter === t.key ? 'rgba(212,175,55,0.45)' : 'var(--border-primary)'}`,
                   borderRadius: '99px', padding: '6px 12px',
                   fontSize: '10.5px', fontWeight: 700,
-                  color: filter === t.key ? '#D4AF37' : 'rgba(255,255,255,0.4)',
+                  color: filter === t.key ? '#D4AF37' : 'var(--text-secondary)',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 {t.label}
                 <span style={{
-                  background: filter === t.key ? 'rgba(212,175,55,0.25)' : 'rgba(255,255,255,0.08)',
-                  color: filter === t.key ? '#D4AF37' : 'rgba(255,255,255,0.3)',
+                  background: filter === t.key ? 'rgba(212,175,55,0.25)' : 'var(--input-bg)',
+                  color: filter === t.key ? '#D4AF37' : 'var(--text-muted)',
                   borderRadius: '99px', padding: '0 6px',
                   fontSize: '9px', fontWeight: 900, lineHeight: '15px',
                 }}>{t.count}</span>
@@ -573,10 +573,10 @@ export const Coupons: React.FC = () => {
                 <Ticket size={24} color="rgba(212,175,55,0.35)" />
               </div>
               <div>
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '5px' }}>
                   Nenhum cupom encontrado
                 </div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5, maxWidth: '200px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: '200px' }}>
                   Tente outros filtros ou busque por um código diferente.
                 </div>
               </div>
@@ -588,9 +588,9 @@ export const Coupons: React.FC = () => {
           ))}
 
           {/* Info tip */}
-          <div style={{ ...card, padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'flex-start', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <AlertCircle size={16} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+          <div style={{ ...card, padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'flex-start', border: '1px solid var(--border-primary)' }}>
+            <AlertCircle size={16} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
               Os cupons são de uso único e pessoal. Aplique o código no checkout antes de finalizar o pedido. Cupons de frete são válidos somente para entregas na área de cobertura.
             </div>
           </div>
@@ -616,13 +616,13 @@ const CouponStyles: React.FC = () => (
     .coupon-input:focus {
       border-color: rgba(212,175,55,0.45) !important;
       box-shadow: 0 0 0 3px rgba(212,175,55,0.08) !important;
-      background: rgba(255,255,255,0.08) !important;
+      background: var(--input-bg) !important;
     }
-    .coupon-input::placeholder { color: rgba(255,255,255,0.2); }
+    .coupon-input::placeholder { color: var(--text-muted); }
     .coupon-copy-btn:hover { transform: translateY(-1px); }
     .coupon-apply-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212,175,55,0.3); }
     .coupon-filter-btn:hover { opacity: 0.85; }
-    .coupon-back-btn:hover { background: rgba(255,255,255,0.12) !important; }
+    .coupon-back-btn:hover { background: var(--back-btn-bg) !important; opacity: 0.9; }
     .coupon-copied { animation: couponCopied 0.3s ease; }
     @keyframes couponCopied { 0% { transform: scale(1) } 50% { transform: scale(0.95) } 100% { transform: scale(1) } }
   `}</style>

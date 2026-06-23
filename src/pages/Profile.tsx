@@ -8,6 +8,7 @@ import {
   User, Mail, Phone, CreditCard, MapPin, ShoppingBag, Ticket,
   HelpCircle, LogOut, ChevronRight, Edit3, Check, X,
   Camera, Lock, Eye, EyeOff, Calendar, Clock, AlertTriangle, ArrowLeft, ShieldAlert, SlidersHorizontal,
+  Sun, Moon,
 } from 'lucide-react';
 import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
 // ──────────────────────────────────────────────────────────────
@@ -15,13 +16,13 @@ import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
 // ──────────────────────────────────────────────────────────────
 const t = {
   card: {
-    background: 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+    background: 'var(--card-gradient)',
     backdropFilter: 'blur(28px)',
     WebkitBackdropFilter: 'blur(28px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-primary)',
     borderRadius: '20px',
     padding: '18px',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+    boxShadow: 'var(--card-shadow)',
   },
   sectionHeader: {
     display: 'flex' as const,
@@ -29,12 +30,12 @@ const t = {
     gap: '8px',
     marginBottom: '14px',
     paddingBottom: '12px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    borderBottom: '1px solid var(--border-primary)',
   },
   sectionHeaderText: {
     fontSize: '10.5px',
     fontWeight: 800,
-    color: '#fff',
+    color: 'var(--text-primary)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.8px',
   },
@@ -42,7 +43,7 @@ const t = {
     display: 'block' as const,
     fontSize: '10px',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.4)',
+    color: 'var(--text-muted)',
     marginBottom: '5px',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.4px',
@@ -50,12 +51,12 @@ const t = {
   input: {
     width: '100%',
     height: '44px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--input-bg)',
+    border: '1px solid var(--input-border)',
     borderRadius: '11px',
     paddingLeft: '14px',
     paddingRight: '14px',
-    color: '#fff',
+    color: 'var(--text-primary)',
     fontSize: '13.5px',
     outline: 'none',
     boxSizing: 'border-box' as const,
@@ -90,10 +91,10 @@ const t = {
   cancelBtn: {
     flex: 1,
     height: '42px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--input-bg)',
+    border: '1px solid var(--input-border)',
     borderRadius: '11px',
-    color: 'rgba(255,255,255,0.65)',
+    color: 'var(--text-secondary)',
     fontWeight: 700,
     fontSize: '13px',
     cursor: 'pointer',
@@ -111,7 +112,7 @@ const t = {
     transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     display: 'flex' as const,
     alignItems: 'center' as const,
@@ -136,6 +137,16 @@ export const Profile: React.FC = () => {
   const { user, userProfile, profileLoading, updateUserProfile, uploadProfilePhoto, changePassword, logout, isAdmin } = useAuth();
   const { success, error: toastError, warning } = useToast();
   const navigate = useNavigate();
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const isLight = theme === 'light';
+
+  const toggleTheme = () => {
+    const nextTheme = isLight ? 'dark' : 'light';
+    localStorage.setItem('theme', nextTheme);
+    setTheme(nextTheme);
+    window.dispatchEvent(new Event('theme-changed'));
+  };
 
   // Edit profile
   const [editMode, setEditMode] = useState(false);
@@ -250,12 +261,12 @@ export const Profile: React.FC = () => {
           position: 'sticky',
           top: 0,
           zIndex: 20,
-          background: 'rgba(9,7,5,0.3)',
+          background: 'var(--bg-secondary)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          borderBottom: '1px solid var(--border-gold)',
         }}>
-          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -265,12 +276,12 @@ export const Profile: React.FC = () => {
             <button
               onClick={() => navigate('/')}
               style={{
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'var(--back-btn-bg)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: '50%',
                 width: '38px', height: '38px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
               }}
             >
               <ArrowLeft size={18} />
@@ -284,12 +295,12 @@ export const Profile: React.FC = () => {
               <button
                 onClick={() => setEditMode(true)}
                 style={{
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'var(--back-btn-bg)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: '50%',
                   width: '38px', height: '38px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+                  cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
                 }}
                 title="Editar perfil"
               >
@@ -445,7 +456,7 @@ export const Profile: React.FC = () => {
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#FFC107' }}>
                       Visitar Minha Estante
                     </h3>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
                       Acompanhe sua história e selos
                     </p>
                   </div>
@@ -455,17 +466,60 @@ export const Profile: React.FC = () => {
                 </div>
               </button>
 
+              {/* ── THEME SWITCHER CARD ────────────────────────── */}
+              <div style={t.card}>
+                <div style={t.sectionHeader}>
+                  {isLight ? <Sun size={14} color="var(--text-primary)" /> : <Moon size={14} color="var(--text-primary)" />}
+                  <span style={t.sectionHeaderText}>Aparência</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-primary)' }}>
+                    {isLight ? <Sun size={17} color="#D4AF37" /> : <Moon size={17} color="#6366F1" />}
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600 }}>Modo Claro</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Ativar tema com cores claras</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    style={{
+                      width: '46px',
+                      height: '24px',
+                      borderRadius: '99px',
+                      background: isLight ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(255,255,255,0.1)',
+                      border: '1px solid var(--border-primary)',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: isLight ? '#000' : '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: isLight ? '24px' : '2px',
+                      transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    }} />
+                  </button>
+                </div>
+              </div>
+
               {/* ── INFO CARD ────────────────────────────── */}
               <div style={t.card}>
                 <div style={t.sectionHeader}>
-                  <User size={14} color="rgba(255,255,255,0.75)" />
+                  <User size={14} color="var(--text-secondary)" />
                   <span style={t.sectionHeaderText}>Dados da Conta</span>
                 </div>
-                <InfoRow icon={<Mail size={15} color="rgba(255,255,255,0.75)" />} label="E-mail" value={userProfile?.email || user?.email || '—'} />
-                <InfoRow icon={<Phone size={15} color="rgba(255,255,255,0.75)" />} label="Telefone" value={userProfile?.telefone || 'Não informado'} faded={!userProfile?.telefone} />
-                <InfoRow icon={<CreditCard size={15} color="rgba(255,255,255,0.75)" />} label="CPF" value={userProfile?.cpf || 'Não informado'} faded={!userProfile?.cpf} />
-                <InfoRow icon={<Calendar size={15} color="rgba(255,255,255,0.75)" />} label="Membro desde" value={fmtDate(userProfile?.createdAt)} />
-                <InfoRow icon={<Clock size={15} color="rgba(255,255,255,0.75)" />} label="Último acesso" value={fmtTime(userProfile?.lastLogin)} last />
+                <InfoRow icon={<Mail size={15} color="var(--text-secondary)" />} label="E-mail" value={userProfile?.email || user?.email || '—'} />
+                <InfoRow icon={<Phone size={15} color="var(--text-secondary)" />} label="Telefone" value={userProfile?.telefone || 'Não informado'} faded={!userProfile?.telefone} />
+                <InfoRow icon={<CreditCard size={15} color="var(--text-secondary)" />} label="CPF" value={userProfile?.cpf || 'Não informado'} faded={!userProfile?.cpf} />
+                <InfoRow icon={<Calendar size={15} color="var(--text-secondary)" />} label="Membro desde" value={fmtDate(userProfile?.createdAt)} />
+                <InfoRow icon={<Clock size={15} color="var(--text-secondary)" />} label="Último acesso" value={fmtTime(userProfile?.lastLogin)} last />
               </div>
 
               {/* ── CHANGE PASSWORD ──────────────────────── */}
@@ -476,10 +530,10 @@ export const Profile: React.FC = () => {
                   className="profile-section-toggle"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Lock size={15} color="rgba(255,255,255,0.75)" />
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>Alterar Senha</span>
+                    <Lock size={15} color="var(--text-primary)" />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Alterar Senha</span>
                   </div>
-                  <ChevronRight size={17} color="rgba(255,255,255,0.3)" style={{ transform: pwSection ? 'rotate(90deg)' : 'none', transition: 'transform 0.25s ease' }} />
+                  <ChevronRight size={17} color="var(--text-muted)" style={{ transform: pwSection ? 'rotate(90deg)' : 'none', transition: 'transform 0.25s ease' }} />
                 </button>
 
                 {pwSection && (
@@ -515,10 +569,10 @@ export const Profile: React.FC = () => {
                       {newPw && (
                         <div style={{ marginTop: '6px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>Força</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Força</span>
                             <span style={{ fontSize: '10px', fontWeight: 700, color: passwordStrength.color }}>{passwordStrength.label}</span>
                           </div>
-                          <div style={{ height: '3px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '3px', background: 'var(--border-primary)', borderRadius: '3px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: passwordStrength.width, background: passwordStrength.color, transition: 'all 0.4s ease' }} />
                           </div>
                         </div>
@@ -552,7 +606,7 @@ export const Profile: React.FC = () => {
               {isAdmin && (
                 <div style={t.card}>
                   <div style={t.sectionHeader}>
-                    <ShieldAlert size={14} color="rgba(255,255,255,0.75)" />
+                    <ShieldAlert size={14} color="var(--text-primary)" />
                     <span style={t.sectionHeaderText}>Portal do Administrador</span>
                   </div>
                   <button
@@ -560,10 +614,10 @@ export const Profile: React.FC = () => {
                     style={{
                       width: '100%',
                       height: '46px',
-                      background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'var(--card-gradient)',
+                      border: '1px solid var(--border-primary)',
                       borderRadius: '12px',
-                      color: '#fff',
+                      color: 'var(--text-primary)',
                       fontWeight: 800,
                       fontSize: '13px',
                       cursor: 'pointer',
@@ -572,7 +626,7 @@ export const Profile: React.FC = () => {
                       justifyContent: 'center',
                       gap: '8px',
                       fontFamily: 'inherit',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                      boxShadow: 'var(--card-shadow)',
                       transition: 'all 0.2s ease',
                     }}
                     className="profile-save-btn"
@@ -586,7 +640,7 @@ export const Profile: React.FC = () => {
               {/* ── NAV MENU ─────────────────────────────── */}
               <div style={t.card}>
                 <div style={t.sectionHeader}>
-                  <ShoppingBag size={14} color="rgba(255,255,255,0.75)" />
+                  <ShoppingBag size={14} color="var(--text-primary)" />
                   <span style={t.sectionHeaderText}>Minha Conta</span>
                 </div>
                 {[
@@ -602,16 +656,16 @@ export const Profile: React.FC = () => {
                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '13px 0',
                       background: 'none', border: 'none',
-                      borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      borderBottom: i < arr.length - 1 ? '1px solid var(--border-primary)' : 'none',
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
                     className="profile-menu-item"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'rgba(255,255,255,0.75)' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.75)', display: 'flex' }}>{item.icon}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--text-secondary)', display: 'flex' }}>{item.icon}</span>
                       <span style={{ fontSize: '14px', fontWeight: 600 }}>{item.label}</span>
                     </div>
-                    <ChevronRight size={15} color="rgba(255,255,255,0.25)" />
+                    <ChevronRight size={15} color="var(--text-muted)" />
                   </button>
                 ))}
               </div>
@@ -646,7 +700,7 @@ export const Profile: React.FC = () => {
           onClick={() => setShowLogoutModal(false)}
         >
           <div
-            style={{ background: 'rgba(9,7,5,0.95)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '22px', padding: '30px 24px', width: '100%', maxWidth: '320px', boxShadow: '0 24px 64px rgba(0,0,0,0.8)', animation: 'modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-gold)', borderRadius: '22px', padding: '30px 24px', width: '100%', maxWidth: '320px', boxShadow: 'var(--card-shadow)', animation: 'modalPop 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
@@ -654,8 +708,8 @@ export const Profile: React.FC = () => {
                 <AlertTriangle size={24} color="#ef4444" />
               </div>
             </div>
-            <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#fff', textAlign: 'center', margin: '0 0 8px' }}>Sair da conta?</h3>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', margin: '0 0 24px', lineHeight: 1.5 }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 8px' }}>Sair da conta?</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: '0 0 24px', lineHeight: 1.5 }}>
               Você será desconectado do Mercado Nosso Jeito.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -678,11 +732,11 @@ export const Profile: React.FC = () => {
 // InfoRow
 // ──────────────────────────────────────────────────────────────
 const InfoRow: React.FC<{ icon: React.ReactNode; label: string; value: string; faded?: boolean; last?: boolean }> = ({ icon, label, value, faded, last }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: last ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: last ? 'none' : '1px solid var(--border-primary)' }}>
     <span style={{ display: 'flex', flexShrink: 0 }}>{icon}</span>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
-      <div style={{ fontSize: '13.5px', color: faded ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.85)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
+      <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>{label}</div>
+      <div style={{ fontSize: '13.5px', color: faded ? 'var(--text-muted)' : 'var(--text-secondary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   </div>
 );
@@ -744,6 +798,29 @@ const ProfileStyles: React.FC = () => (
     .profile-logout-confirm-btn:hover { background: rgb(239,68,68) !important; }
     .profile-menu-item:hover { background: rgba(212,175,55,0.05) !important; border-radius: 8px; }
     .profile-section-toggle:hover { opacity: 0.85; }
+
+    body.light-mode .profile-edit-input {
+      color: #000 !important;
+      background: #fff !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.light-mode .profile-edit-input:focus {
+      border-color: #D4AF37 !important;
+      background: #fff !important;
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.15) !important;
+    }
+    body.light-mode .profile-edit-input::placeholder {
+      color: #94a3b8 !important;
+    }
+    body.light-mode .profile-menu-item:hover {
+      background: rgba(0, 0, 0, 0.04) !important;
+    }
+    body.light-mode .profile-logout-btn:hover {
+      background: rgba(239,68,68,0.05) !important;
+    }
+    body.light-mode .profile-cancel-btn:hover {
+      background: rgba(0, 0, 0, 0.04) !important;
+    }
   `}</style>
 );
 

@@ -72,10 +72,10 @@ export const ForgotPassword: React.FC = () => {
                 }}>
                   <Mail size={24} color="#D4AF37" />
                 </div>
-                <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
+                <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>
                   Esqueceu sua senha?
                 </h2>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.55 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
                   Digite seu e-mail e enviaremos um link para criar uma nova senha.
                 </p>
               </div>
@@ -84,7 +84,7 @@ export const ForgotPassword: React.FC = () => {
                 <div>
                   <label htmlFor={`${id}-email`} style={s.label}>Seu e-mail</label>
                   <div style={s.inputWrapper}>
-                    <Mail size={16} color="rgba(255,255,255,0.35)" style={s.inputIcon} />
+                    <Mail size={16} color="var(--text-muted)" style={s.inputIcon} />
                     <input
                       id={`${id}-email`}
                       type="email"
@@ -133,14 +133,14 @@ export const ForgotPassword: React.FC = () => {
               }}>
                 <CheckCircle size={30} color="#10b981" />
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>E-mail enviado!</h2>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px', lineHeight: 1.6 }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px' }}>E-mail enviado!</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.6 }}>
                 Enviamos instruções para{' '}
-                <strong style={{ color: '#FFDF73' }}>{email}</strong>.
+                <strong style={{ color: '#D4AF37' }}>{email}</strong>.
               </p>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '0 0 24px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 24px' }}>
                 Verifique a pasta de spam. O link expira em{' '}
-                <strong style={{ color: 'rgba(255,255,255,0.5)' }}>1 hora</strong>.
+                <strong style={{ color: 'var(--text-secondary)' }}>1 hora</strong>.
               </p>
 
               <button
@@ -150,7 +150,7 @@ export const ForgotPassword: React.FC = () => {
                   background: 'rgba(212,175,55,0.08)',
                   border: '1px solid rgba(212,175,55,0.25)',
                   borderRadius: '10px',
-                  color: '#FFDF73', fontSize: '13px', fontWeight: 700,
+                  color: '#D4AF37', fontSize: '13px', fontWeight: 700,
                   cursor: 'pointer', fontFamily: 'inherit', marginBottom: '14px',
                   transition: 'all 0.2s ease',
                 }}

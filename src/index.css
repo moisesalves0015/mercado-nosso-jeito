@@ -1,4 +1,4 @@
-﻿/* =========================================================
+/* =========================================================
    FONTS
 ========================================================= */
 @font-face {
@@ -8,6 +8,385 @@
   font-weight: normal;
   font-style: normal;
   font-display: block;
+}
+:root {
+  /* Core backgrounds */
+  --bg-primary: #090705;
+  --bg-secondary: #000000;
+  --bg-tertiary: rgba(255,255,255,0.03);
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-disabled: rgba(255, 255, 255, 0.25);
+  /* Borders */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-gold: rgba(212, 175, 55, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  /* Cards */
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --card-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  /* Inputs */
+  --input-bg: rgba(255,255,255,0.05);
+  --input-border: rgba(255,255,255,0.1);
+  --input-text: #ffffff;
+  --input-placeholder: rgba(255, 255, 255, 0.35);
+  /* Misc */
+  --overlay-bg: linear-gradient(160deg, rgba(9,7,5,0.55) 0%, rgba(9,7,5,0.82) 60%, rgba(9,7,5,0.97) 100%);
+  --back-btn-bg: rgba(255,255,255,0.07);
+  --logo-text-color: #ffffff;
+  /* Glass panel */
+  --glass-panel-bg: linear-gradient(145deg, rgba(30,30,30,0.7), rgba(15,15,15,0.85));
+  --glass-panel-border: rgba(255, 255, 255, 0.15);
+  /* Section headers */
+  --section-title-color: #ffffff;
+  /* Toast */
+  --toast-bg: rgba(10, 15, 30, 0.95);
+  --toast-text: #ffffff;
+  --toast-text-secondary: rgba(255, 255, 255, 0.55);
+  --toast-close-color: rgba(255, 255, 255, 0.6);
+  /* Modal overlay */
+  --modal-overlay-bg: rgba(0, 0, 0, 0.85);
+  --modal-content-bg: rgba(9,7,5,0.95);
+  /* Skeleton */
+  --skeleton-base: rgba(255,255,255,0.03);
+  --skeleton-highlight: rgba(255,255,255,0.08);
+  /* Footer */
+  --footer-text: rgba(255,255,255,0.4);
+  --footer-heading: rgba(255,255,255,0.6);
+  /* Search bar */
+  --search-bar-bg: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --search-bar-border: rgba(255, 255, 255, 0.1);
+  --search-bar-hover-bg: rgba(255, 255, 255, 0.08);
+  --search-bar-hover-border: rgba(255, 255, 255, 0.25);
+  /* Info cards */
+  --info-card-bg: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --info-card-border: rgba(255, 255, 255, 0.1);
+  /* Product detail */
+  --product-detail-header-bg: rgba(9,7,5,0.85);
+  --product-detail-header-border: rgba(255, 255, 255, 0.08);
+  /* Rating */
+  --rating-text: #ffffff;
+  --rating-count-text: rgba(255,255,255,0.5);
+  /* Coupon text */
+  --coupon-text-color: rgba(255,255,255,0.85);
+  /* Delivery/option text */
+  --delivery-text: rgba(255,255,255,0.45);
+  --setting-label-text: rgba(255,255,255,0.6);
+  --quantity-label-text: rgba(255,255,255,0.6);
+  --info-text-color: rgba(255,255,255,0.5);
+  /* Custom select */
+  --custom-select-bg: rgba(255,255,255,0.06);
+  --custom-select-border: rgba(255,255,255,0.15);
+  --custom-select-text: #fff;
+  --custom-select-arrow: rgba(255,255,255,0.5);
+  /* Super promo */
+  --super-promo-bg: rgba(9,7,5,0.95);
+  /* Mega oferta card */
+  --mega-card-bg: rgba(9,7,5,0.95);
+  /* Weekly calendar */
+  --weekly-cal-bg: rgba(255,255,255,0.03);
+  --weekly-cal-border: rgba(255,255,255,0.06);
+  --weekly-day-bg: rgba(255,255,255,0.02);
+  --weekly-day-border: rgba(255,255,255,0.04);
+  --weekly-day-name-color: rgba(255,255,255,0.5);
+  --weekly-day-val-color: rgba(255,255,255,0.35);
+  /* Promo card (Mega Ofertas) */
+  --promo-card-bg: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  --promo-card-border: rgba(255,255,255,0.1);
+  --promo-card-title: rgba(255,255,255,0.9);
+  /* Quick gold cards */
+  --quick-gold-card-bg: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --quick-gold-card-border: rgba(255,255,255,0.1);
+  --quick-gold-label-color: rgba(255,255,255,0.75);
+  /* Quick search */
+  --quick-search-bg: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --quick-search-border: rgba(255,255,255,0.1);
+  --quick-search-text: #ffffff;
+  --quick-search-placeholder: rgba(255,255,255,0.35);
+  /* Categories page */
+  --categories-page-card-bg: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --categories-page-card-border: rgba(255,255,255,0.1);
+  /* Club missions */
+  --mission-details-text: #ffffff;
+  --mission-details-sub: rgba(255,255,255,0.45);
+  --mission-row-bg: rgba(255,255,255,0.02);
+  --mission-row-border: rgba(255,255,255,0.05);
+  /* Club ad completed overlay */
+  --ad-completed-overlay-bg: rgba(9,7,5,0.72);
+  --ad-completed-overlay-text: rgba(255,255,255,0.8);
+  /* Club ad theater */
+  --ad-theater-overlay-bg: rgba(2,2,2,0.94);
+  /* Reward modal */
+  --reward-modal-bg: rgba(9,7,5,0.95);
+  --reward-modal-desc: rgba(255,255,255,0.75);
+  /* Period button */
+  --period-btn-bg: transparent;
+  --period-btn-border: rgba(255,255,255,0.1);
+  --period-btn-title: #fff;
+  --period-btn-subtitle: rgba(255,255,255,0.9);
+  /* Search container */
+  --search-container-bg: rgba(255,255,255,0.12);
+  --search-container-border: rgba(255,255,255,0.15);
+  --search-input-color: #ffffff;
+  --search-placeholder-color: rgba(255,255,255,0.45);
+  --search-btn-bg: #000000;
+  --search-btn-color: #ffffff;
+  /* Section & category text */
+  --section-h2-color: #ffffff;
+  --category-text-color: #ffffff;
+  --info-card-h4-color: #ffffff;
+  --info-card-p-color: rgba(255,255,255,0.65);
+  /* Product detail header */
+  --detail-header-bg: rgba(9,7,5,0.88);
+  --detail-header-border: rgba(255,255,255,0.08);
+  --detail-header-title: #ffffff;
+  /* Header icon active */
+  --header-icon-active-bg: rgba(255,255,255,0.05);
+  /* Option/purchase title */
+  --option-title-color: #ffffff;
+  /* Coupon text inside detail */
+  --coupon-text-detail: rgba(255,255,255,0.85);
+  /* Choice badge */
+  --choice-text-color: rgba(255,255,255,0.5);
+  /* Delivery details */
+  --delivery-details-color: rgba(255,255,255,0.45);
+  /* Setting label */
+  --setting-label-color: rgba(255,255,255,0.6);
+  --quantity-select-label-color: rgba(255,255,255,0.6);
+  /* Product main title */
+  --product-main-title-color: #ffffff;
+  /* Glass panel */
+  --glass-panel-bg-full: linear-gradient(145deg, rgba(30,30,30,0.7), rgba(15,15,15,0.85));
+  --glass-panel-border-full: rgba(255,255,255,0.15);
+  --glass-panel-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5);
+  /* Super promo background */
+  --super-promo-inner-bg: rgba(9,7,5,0.95);
+  /* Mega oferta background */
+  --mega-oferta-inner-bg: rgba(9,7,5,0.95);
+  /* Promo card title/text */
+  --promo-card-content-title: rgba(255,255,255,0.9);
+  /* App footer */
+  --footer-p-color: rgba(255,255,255,0.4);
+  --footer-h4-color: rgba(255,255,255,0.6);
+  /* Categories page */
+  --categories-h2-color: #ffffff;
+  --categories-back-bg: rgba(255,255,255,0.04);
+  --categories-back-border: rgba(255,255,255,0.08);
+  --categories-back-color: #ffffff;
+  --categories-card-info-gradient: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 60%);
+  --categories-header-border: rgba(255,255,255,0.06);
+  /* Rating */
+  --rating-value-color: #ffffff;
+  --rating-count-color: rgba(255,255,255,0.5);
+  /* Quick search / gold cards (extras) */
+  --quick-search-focus-border: rgba(255,255,255,0.25);
+  --quick-search-focus-bg: rgba(255,255,255,0.08);
+  --quick-card-hover-bg: rgba(255,255,255,0.08);
+  --quick-card-hover-border: rgba(255,255,255,0.25);
+  /* Skeleton base already exists but add shimmer gradient token */
+  --skeleton-shimmer-gradient: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  /* Weekly calendar hover */
+  --weekly-slot-hover-bg: rgba(255,255,255,0.05);
+  /* Section header sub/link color */
+  --section-sub-color: #D4AF37;
+  /* Club missions row */
+  --mission-row-title-color: #ffffff;
+  --mission-row-sub-color: rgba(255,255,255,0.45);
+  /* Period button with image — text shadow stays for readability */
+  --period-title-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,0.8);
+  --period-sub-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+}
+
+body.light-mode {
+  /* Core backgrounds */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: rgba(0,0,0,0.02);
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-disabled: #cbd5e1;
+  /* Borders */
+  --border-primary: #e2e8f0;
+  --border-gold: rgba(212, 175, 55, 0.35);
+  --border-subtle: #f1f5f9;
+  /* Cards */
+  --card-bg: #ffffff;
+  --card-gradient: linear-gradient(145deg, #ffffff, #f1f5f9);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  /* Inputs */
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-text: #0f172a;
+  --input-placeholder: #94a3b8;
+  /* Misc */
+  --overlay-bg: linear-gradient(160deg, rgba(248,250,252,0.85) 0%, rgba(248,250,252,0.95) 60%, rgba(248,250,252,0.98) 100%);
+  --back-btn-bg: #e2e8f0;
+  --logo-text-color: #0f172a;
+  /* Glass panel */
+  --glass-panel-bg: linear-gradient(145deg, #ffffff, #f8fafc);
+  --glass-panel-border: #e2e8f0;
+  /* Section headers */
+  --section-title-color: #0f172a;
+  /* Toast */
+  --toast-bg: rgba(255, 255, 255, 0.97);
+  --toast-text: #0f172a;
+  --toast-text-secondary: #64748b;
+  --toast-close-color: #94a3b8;
+  /* Modal overlay */
+  --modal-overlay-bg: rgba(15, 23, 42, 0.7);
+  --modal-content-bg: #ffffff;
+  /* Skeleton */
+  --skeleton-base: rgba(0,0,0,0.04);
+  --skeleton-highlight: rgba(0,0,0,0.08);
+  /* Footer */
+  --footer-text: #94a3b8;
+  --footer-heading: #64748b;
+  /* Search bar */
+  --search-bar-bg: #ffffff;
+  --search-bar-border: #e2e8f0;
+  --search-bar-hover-bg: #f8fafc;
+  --search-bar-hover-border: #cbd5e1;
+  /* Info cards */
+  --info-card-bg: #ffffff;
+  --info-card-border: #e2e8f0;
+  /* Product detail */
+  --product-detail-header-bg: rgba(248,250,252,0.95);
+  --product-detail-header-border: #e2e8f0;
+  /* Rating */
+  --rating-text: #0f172a;
+  --rating-count-text: #94a3b8;
+  /* Coupon text */
+  --coupon-text-color: #475569;
+  /* Delivery/option text */
+  --delivery-text: #94a3b8;
+  --setting-label-text: #64748b;
+  --quantity-label-text: #64748b;
+  --info-text-color: #94a3b8;
+  /* Custom select */
+  --custom-select-bg: #f1f5f9;
+  --custom-select-border: #cbd5e1;
+  --custom-select-text: #0f172a;
+  --custom-select-arrow: #94a3b8;
+  /* Super promo */
+  --super-promo-bg: #ffffff;
+  /* Mega oferta card */
+  --mega-card-bg: #ffffff;
+  /* Weekly calendar */
+  --weekly-cal-bg: #f8fafc;
+  --weekly-cal-border: #e2e8f0;
+  --weekly-day-bg: #ffffff;
+  --weekly-day-border: #e2e8f0;
+  --weekly-day-name-color: #94a3b8;
+  --weekly-day-val-color: #cbd5e1;
+  /* Promo card (Mega Ofertas) */
+  --promo-card-bg: linear-gradient(145deg, #ffffff, #f1f5f9);
+  --promo-card-border: #e2e8f0;
+  --promo-card-title: #0f172a;
+  /* Quick gold cards */
+  --quick-gold-card-bg: linear-gradient(145deg, #ffffff, #f8fafc);
+  --quick-gold-card-border: #e2e8f0;
+  --quick-gold-label-color: #475569;
+  /* Quick search */
+  --quick-search-bg: #ffffff;
+  --quick-search-border: #e2e8f0;
+  --quick-search-text: #0f172a;
+  --quick-search-placeholder: #94a3b8;
+  /* Categories page */
+  --categories-page-card-bg: linear-gradient(145deg, #ffffff, #f1f5f9);
+  --categories-page-card-border: #e2e8f0;
+  /* Club missions */
+  --mission-details-text: #0f172a;
+  --mission-details-sub: #94a3b8;
+  --mission-row-bg: #ffffff;
+  --mission-row-border: #e2e8f0;
+  /* Club ad completed overlay */
+  --ad-completed-overlay-bg: rgba(248,250,252,0.88);
+  --ad-completed-overlay-text: #475569;
+  /* Club ad theater */
+  --ad-theater-overlay-bg: rgba(15,23,42,0.92);
+  /* Reward modal */
+  --reward-modal-bg: #ffffff;
+  --reward-modal-desc: #475569;
+  /* Period button */
+  --period-btn-bg: transparent;
+  --period-btn-border: #e2e8f0;
+  --period-btn-title: #ffffff;
+  --period-btn-subtitle: rgba(255,255,255,0.9);
+  /* Search container */
+  --search-container-bg: #ffffff;
+  --search-container-border: #cbd5e1;
+  --search-input-color: #0f172a;
+  --search-placeholder-color: #94a3b8;
+  --search-btn-bg: #0f172a;
+  --search-btn-color: #ffffff;
+  /* Section & category text */
+  --section-h2-color: #0f172a;
+  --category-text-color: #0f172a;
+  --info-card-h4-color: #0f172a;
+  --info-card-p-color: #64748b;
+  /* Product detail header */
+  --detail-header-bg: rgba(248,250,252,0.95);
+  --detail-header-border: #e2e8f0;
+  --detail-header-title: #0f172a;
+  /* Header icon active */
+  --header-icon-active-bg: rgba(0,0,0,0.04);
+  /* Option/purchase title */
+  --option-title-color: #0f172a;
+  /* Coupon text inside detail */
+  --coupon-text-detail: #475569;
+  /* Choice badge */
+  --choice-text-color: #64748b;
+  /* Delivery details */
+  --delivery-details-color: #94a3b8;
+  /* Setting label */
+  --setting-label-color: #64748b;
+  --quantity-select-label-color: #64748b;
+  /* Product main title */
+  --product-main-title-color: #0f172a;
+  /* Glass panel */
+  --glass-panel-bg-full: linear-gradient(145deg, #ffffff, #f8fafc);
+  --glass-panel-border-full: #e2e8f0;
+  --glass-panel-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+  /* Super promo background */
+  --super-promo-inner-bg: #ffffff;
+  /* Mega oferta background */
+  --mega-oferta-inner-bg: #ffffff;
+  /* Promo card title/text */
+  --promo-card-content-title: #0f172a;
+  /* App footer */
+  --footer-p-color: #94a3b8;
+  --footer-h4-color: #64748b;
+  /* Categories page */
+  --categories-h2-color: #0f172a;
+  --categories-back-bg: #e2e8f0;
+  --categories-back-border: #cbd5e1;
+  --categories-back-color: #0f172a;
+  --categories-card-info-gradient: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.98) 60%);
+  --categories-header-border: #e2e8f0;
+  /* Rating */
+  --rating-value-color: #0f172a;
+  --rating-count-color: #94a3b8;
+  /* Quick search / gold cards (extras) */
+  --quick-search-focus-border: #94a3b8;
+  --quick-search-focus-bg: #f8fafc;
+  --quick-card-hover-bg: #f1f5f9;
+  --quick-card-hover-border: #cbd5e1;
+  /* Skeleton shimmer */
+  --skeleton-shimmer-gradient: linear-gradient(90deg, rgba(0,0,0,0.03) 25%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.03) 75%);
+  /* Weekly calendar hover */
+  --weekly-slot-hover-bg: #f1f5f9;
+  /* Section header sub/link color */
+  --section-sub-color: #D4AF37;
+  /* Club missions row */
+  --mission-row-title-color: #0f172a;
+  --mission-row-sub-color: #64748b;
+  /* Period button with image — shadows remain minimal on light */
+  --period-title-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  --period-sub-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 /* =========================================================
@@ -31,9 +410,10 @@ body{
     'Manrope',
     'Outfit',
     sans-serif;
-  background:#090705;
+  background: var(--bg-primary);
   overflow-x:hidden;
-  color:#fff;
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* =========================================================
@@ -43,20 +423,17 @@ body{
 .bg{
   position:fixed;
   inset:0;
-  background:#090705; /* Full black background, keeping the image file intact in public/ */
+  background: var(--bg-primary); /* Full black background, keeping the image file intact in public/ */
   z-index: -2;
+  transition: background 0.3s ease;
 }
 
 .overlay{
   position:fixed;
   inset:0;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(0,0,0,.5),
-      rgba(0,0,0,.85)
-    );
+  background: var(--overlay-bg);
   z-index: -1;
+  transition: background 0.3s ease;
 }
 
 /* =========================================================
@@ -97,19 +474,19 @@ body{
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: #000000;
+  background: var(--bg-secondary);
   margin-top: 0;
   margin-left: -8px;
   margin-right: -8px;
   width: calc(100% + 16px);
   margin-bottom: 0px;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+  border-bottom: 1px solid var(--border-gold);
 }
 .topbar {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: #000000;
+  background: var(--bg-secondary);
   padding: 9px 8px 4px 8px;
 }
 .topbar-row-top {
@@ -136,7 +513,7 @@ body{
 }
 .location-label {
   font-size: 8.5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-secondary);
   font-weight: 500;
   line-height: 1.1;
   white-space: nowrap;
@@ -147,7 +524,7 @@ body{
 }
 .location-value {
   font-size: 9.5px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
@@ -187,7 +564,7 @@ body{
 .gold-badge-points {
   font-size: 9.5px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1;
 }
 .topbar-left-icons, .topbar-right-icons {
@@ -198,7 +575,7 @@ body{
 .topbar-icon-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   padding: 4px;
   cursor: pointer;
   display: flex;
@@ -212,19 +589,25 @@ body{
 .topbar-search-container {
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: var(--search-container-bg);
   border-radius: 6px;
   padding: 1px 1px 1px 6px;
   flex: 1;
   gap: 4px;
   height: 28px;
   box-sizing: border-box;
+  border: 1px solid var(--search-container-border);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+body.light-mode .topbar-search-container {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 .topbar-search-input {
   background: transparent;
   border: none;
   outline: none;
-  color: #000000;
+  color: var(--search-input-color);
   font-size: 16px !important;
   width: 100%;
   padding: 0;
@@ -232,14 +615,14 @@ body{
   line-height: normal;
 }
 .topbar-search-input::placeholder {
-  color: #777777;
+  color: var(--search-placeholder-color);
   font-size: 11px;
 }
 .topbar-search-btn {
-  background: #000000;
-  border: 1px solid #000000;
+  background: var(--search-btn-bg);
+  border: 1px solid var(--search-btn-bg);
   border-radius: 4px;
-  color: #ffffff;
+  color: var(--search-btn-color);
   width: 24px;
   height: 24px;
   display: flex;
@@ -274,7 +657,7 @@ body{
   text-decoration: none;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   padding: 2px 0 4px 0;
   position: relative;
   white-space: nowrap;
@@ -284,10 +667,10 @@ body{
   align-items: center;
 }
 .topbar-nav-link:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 .topbar-nav-link.active {
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
 }
 .active-line {
@@ -295,13 +678,13 @@ body{
   bottom: 0;
   width: 12px;
   height: 2px;
-  background-color: #ffffff;
+  background-color: var(--text-primary);
   border-radius: 99px;
 }
 .topbar-hamburger-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   padding: 4px;
   cursor: pointer;
   display: flex;
@@ -338,7 +721,7 @@ body{
 .logo-main {
   font-size: 17px;
   font-weight: 800;
-  color: #fff;
+  color: var(--logo-text-color);
   line-height: 1.1;
   letter-spacing: -0.3px;
   margin: 0;
@@ -626,8 +1009,8 @@ body{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--search-bar-bg);
+  border: 1px solid var(--search-bar-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 14px;
@@ -638,8 +1021,8 @@ body{
   transition: all 0.2s ease;
 }
 .search-bar:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--search-bar-hover-border);
+  background: var(--search-bar-hover-bg);
 }
 .search-bar-input-side {
   display: flex;
@@ -651,14 +1034,14 @@ body{
   background: transparent;
   border: none;
   outline: none;
-  color: white;
+  color: var(--search-input-color);
   font-family: inherit;
   font-size: 16px;
   width: 100%;
   margin-left: 0;
 }
 .search-bar input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--search-placeholder-color);
 }
 .search-ai-btn {
   display: flex;
@@ -811,7 +1194,7 @@ body{
 .category-text {
   font-size: 11px; 
   font-weight: 700;
-  color: #FFF;
+  color: var(--category-text-color);
   text-align: center;
   width: 100%;
   padding: 0 4px;
@@ -884,8 +1267,8 @@ body{
   width: calc((100% - 8px) / 3); /* Squeezed mathematically to fit exactly within margins with a 4px gap */
   flex-shrink: 0;
   min-height: 50px; /* Taller premium height as requested */
-  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); /* Category style glass background */
-  border: 1px solid rgba(255,255,255,0.1); /* Category style border */
+  background: var(--info-card-bg);
+  border: 1px solid var(--info-card-border);
   backdrop-filter: blur(12px);
   border-radius: 6px;
   padding: 6px 6px;
@@ -912,7 +1295,7 @@ body{
 .info-card-content h4 {
   font-size: 10.5px; /* Squeezed a bit more for premium styling */
   font-weight: 800;
-  color: #fff;
+  color: var(--info-card-h4-color);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -921,7 +1304,7 @@ body{
 
 .info-card-content p {
   font-size: 9px; /* Increased to 9px for better mobile legibility */
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--info-card-p-color);
   margin: 0;
   line-height: 1.15;
   display: -webkit-box;
@@ -950,9 +1333,9 @@ body{
   min-height: 50px;
   background-size: cover;
   background-position: right center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--period-btn-border);
   border-radius: 6px;
-  padding: 4px 6px; /* Padding reduzido para os botÃµes */
+  padding: 4px 6px; /* Padding reduzido para os botões */
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -985,12 +1368,12 @@ body{
 .period-button-title {
   font-size: 12px;
   font-weight: 800;
-  color: #fff;
+  color: var(--period-btn-title);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,0.8);
+  text-shadow: var(--period-title-shadow);
 }
 
 .period-button.active .period-button-title {
@@ -999,13 +1382,13 @@ body{
 
 .period-button-subtitle {
   font-size: 9.5px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--period-btn-subtitle);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.1;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+  text-shadow: var(--period-sub-shadow);
 }
 
 .period-button.active .period-button-subtitle {
@@ -1262,7 +1645,7 @@ body{
   font-size: 15px; /* Decreased size */
   line-height:1.1;
   font-weight:800;
-  color:#fff;
+  color: var(--section-h2-color);
   letter-spacing:-0.3px;
   white-space: nowrap; /* Prevent line breaks */
 }
@@ -1270,7 +1653,7 @@ body{
 .hero-section .section-header h2{
   font-size: 15px; /* Uniform decreased size */
   font-weight:800;
-  color:#fff;
+  color: var(--section-h2-color);
   margin:0;
   letter-spacing:-0.3px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -1278,7 +1661,7 @@ body{
 
 .section-header p{
   font-size:12px;
-  color:#D4AF37;
+  color: var(--section-sub-color);
   white-space: nowrap; /* Prevent line breaks */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1328,18 +1711,18 @@ body{
   gap: 2.5px;
   padding: 2.5px 6px;
   border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-primary) !important;
+  background: var(--input-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-size: 9px;
   font-weight: 600;
-  color: #fff !important;
+  color: var(--text-primary) !important;
   transition: all 0.2s ease;
 }
 .glass-ver-todas-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: var(--border-primary);
+  border-color: var(--border-gold) !important;
   transform: translateY(-0.5px);
 }
 .glass-ver-todas-btn:active {
@@ -1399,13 +1782,13 @@ body{
    NEW PAGES GLASS PANEL
 ========================================================= */
 .glass-panel {
-  background: linear-gradient(145deg, rgba(30, 30, 30, 0.7), rgba(15, 15, 15, 0.85));
+  background: var(--glass-panel-bg-full);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--glass-panel-border-full);
   border-radius: 12px; /* Reduced border-radius */
   padding: 20px;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: var(--glass-panel-shadow);
   margin-bottom: 8px; /* Reduced margin */
 }
 
@@ -1415,12 +1798,12 @@ body{
 .app-footer {
   text-align: center;
   padding: 24px 0 40px;
-  color: rgba(255,255,255,0.4);
+  color: var(--footer-p-color);
   font-size: 11px;
 }
 .app-footer h4 {
   font-size: 14px;
-  color: rgba(255,255,255,0.6);
+  color: var(--footer-h4-color);
   margin-bottom: 8px;
   font-weight: 600;
 }
@@ -1449,23 +1832,23 @@ body{
   flex-direction: column;
   align-items: center;
   position: relative;
-  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02)); /* Category style background glass */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Category style border */
+  background: var(--card-gradient); /* Category style background glass */
+  border: 1px solid var(--border-primary); /* Category style border */
   backdrop-filter: blur(12px);
   border-radius: 6px; /* Tight border-radius */
   padding: 8px 6px;
   margin-top: 4px; /* Extremely pulled closer to title */
   padding-bottom: 8px;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3); /* Integrated category shadows */
+  box-shadow: var(--card-shadow); /* Integrated category shadows */
   overflow: visible; /* Allow badge to bleed outside the card */
 }
 
 .product-card.glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--card-shadow);
 }
 
 /* Maintain exact mobile styling for horizontal scroll lists */
@@ -1569,8 +1952,8 @@ body{
   flex-direction: column;
   align-items: center;
   width: 110px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   backdrop-filter: blur(12px);
   border-radius: 10px;
   padding: 8px 6px 8px;
@@ -1717,7 +2100,7 @@ body{
   font-size:11px;
   line-height:1.2;
   font-weight:500;
-  color:white;
+  color: var(--text-primary);
   text-align: center;
   width: 100%;
   max-height: 26.4px; /* Constrain max height */
@@ -1742,14 +2125,14 @@ body{
   align-items:center;
   justify-content:space-between;
   padding: 2px 4px 2px 8px; /* Increased right padding to 4px so button is well-spaced from the edge */
-  background: rgba(255, 255, 255, 0.03); /* Subtle backdrop pop on dark backgrounds */
+  background: var(--input-bg); /* Subtle backdrop pop on dark backgrounds */
   border: 1.2px solid #D4AF37; /* Solid gold, no glow shadow */
 }
 
 .product-price{
   font-size:11px;
   font-weight:600;
-  color:#fff;
+  color: var(--text-primary);
   white-space: nowrap;
   transition: color 0.2s ease;
 }
@@ -1886,8 +2269,8 @@ body{
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--back-btn-bg);
+  color: var(--text-primary);
   font-size: 10px;
   font-weight: 900;
   cursor: pointer;
@@ -1912,7 +2295,7 @@ body{
 .current-quantity {
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   text-align: center;
   width: 20px;
 }
@@ -1944,27 +2327,27 @@ body{
   transform: translateX(-50%);
   bottom: 0;
   height: 74px; /* Increased from 60px to push items up and clear iPhone home bar! */
-  background: #000000; /* Solid premium black background */
+  background: var(--bg-secondary); /* Solid premium background */
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 110;
-  border-top: 1.2px solid rgba(212, 175, 55, 0.18); /* Elegant gold top line */
+  border-top: 1.2px solid var(--border-gold); /* Elegant gold top line */
   border-top-left-radius: 16px; /* High fidelity curved top-corners */
   border-top-right-radius: 16px;
   padding-bottom: 14px; /* Push items up to clear native iOS home indicator bar! */
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--card-shadow);
 }
 
 .floating-mini-cart {
   position: fixed;
   left: 50%;
   bottom: 74px; /* Rests right above the bottom-nav */
-  background: rgba(14, 11, 9, 0.94);
+  background: var(--bg-secondary);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1.2px solid rgba(212, 175, 55, 0.45);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
+  border-top: 1.2px solid var(--border-gold);
+  box-shadow: var(--card-shadow);
   z-index: 99; /* Exactly behind bottom-nav (z-index: 100) */
   display: flex;
   flex-direction: column;
@@ -1994,7 +2377,7 @@ body{
   justify-content: center;
   gap: 3px;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.45); /* Elegant gray-white for inactive */
+  color: var(--text-muted); /* Elegant gray-white for inactive */
   font-size: 9.5px;
   font-weight: 600;
   padding: 6px 14px;
@@ -2003,8 +2386,8 @@ body{
 }
 
 .bottom-nav a.active {
-  color: #FFDF73; /* Rich gold for active items */
-  background: rgba(255, 223, 115, 0.1); /* Subtle premium golden tint background */
+  color: #D4AF37; /* Rich gold for active items */
+  background: rgba(212, 175, 55, 0.12); /* Subtle premium golden tint background */
   transform: translateY(-2px); /* Slight hover levitation */
 }
 
@@ -2026,8 +2409,8 @@ body{
 .product-detail-page {
   padding-top: calc(56px + env(safe-area-inset-top, 0px));
   padding-bottom: 90px;
-  background: #090705;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   overflow-x: hidden;
 }
 
@@ -2038,10 +2421,10 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 414px;
-  background: rgba(9, 7, 5, 0.85);
+  background: var(--detail-header-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--detail-header-border);
   display: flex;
   flex-direction: column;
   z-index: 200;
@@ -2078,15 +2461,16 @@ body{
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: var(--text-primary);
 }
 .header-icon-btn:active {
-  background: rgba(255,255,255,0.05);
+  background: var(--header-icon-active-bg);
 }
 
 .header-title {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--detail-header-title);
   letter-spacing: -0.2px;
 }
 
@@ -2186,12 +2570,12 @@ body{
 .rating-value {
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: var(--rating-value-color);
   margin-right: 4px;
 }
 .rating-count {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.5);
+  color: var(--rating-count-color);
 }
 
 .amazon-choice-row {
@@ -2217,7 +2601,7 @@ body{
 .product-main-title {
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--product-main-title-color);
   margin: 6px 0 2px 0;
   line-height: 1.25;
   letter-spacing: -0.3px;
@@ -2304,7 +2688,7 @@ body{
 }
 .coupon-text {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.85);
+  color: var(--coupon-text-detail);
   line-height: 1.35;
 }
 .shop-items {
@@ -2354,7 +2738,7 @@ body{
 .option-title {
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  color: var(--option-title-color);
 }
 
 .savings-badge {
@@ -2376,7 +2760,7 @@ body{
 
 .delivery-details-text {
   font-size: 9.5px;
-  color: rgba(255,255,255,0.45);
+  color: var(--delivery-details-color);
   line-height: 1.25;
 }
 
@@ -2394,7 +2778,7 @@ body{
 
 .setting-label {
   font-size: 10px;
-  color: rgba(255,255,255,0.6);
+  color: var(--setting-label-color);
 }
 
 /* RADIO SELECT ON THE RIGHT FOR RIGHT-HANDED ACCESSIBILITY */
@@ -2441,12 +2825,12 @@ body{
 .custom-select-wrapper select {
   appearance: none;
   -webkit-appearance: none;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: var(--custom-select-bg);
+  border: 1px solid var(--custom-select-border);
   border-radius: 4px;
   padding: 3px 20px 3px 6px;
   font-size: 10px;
-  color: #fff;
+  color: var(--custom-select-text);
   font-family: inherit;
   font-weight: 600;
   outline: none;
@@ -2457,7 +2841,7 @@ body{
   position: absolute;
   right: 6px;
   pointer-events: none;
-  color: rgba(255,255,255,0.5);
+  color: var(--custom-select-arrow);
 }
 
 /* QUANTITY SELECTOR & SHIPPING INFO */
@@ -2476,7 +2860,7 @@ body{
 
 .quantity-label {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.6);
+  color: var(--quantity-select-label-color);
 }
 
 .shipping-info-badges {
@@ -2495,7 +2879,7 @@ body{
 
 .info-text {
   font-size: 10px;
-  color: rgba(255,255,255,0.5);
+  color: var(--info-text-color);
 }
 
 /* OBVIOUS HIGH-CONTRAST CONVERSION CALL-TO-ACTION (CTA) BUTTON */
@@ -2529,7 +2913,7 @@ body{
 
 .cta-assurance-sub {
   font-size: 9.5px;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -2540,7 +2924,7 @@ body{
   gap: 16px;
   margin: 12px 0 16px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .security-item {
@@ -2548,7 +2932,7 @@ body{
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: rgba(255,255,255,0.4);
+  color: var(--text-muted);
 }
 
 /* RELATED CAROUSEL */
@@ -2558,7 +2942,7 @@ body{
 .suggested-header h3 {
   font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 6px 0;
   letter-spacing: -0.2px;
 }
@@ -2576,9 +2960,9 @@ body{
 ========================================================= */
 .promo-banner {
   width: 100%;
-  background: radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.15) 0%, rgba(9, 7, 5, 0) 70%), 
-              rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.15) 0%, var(--bg-primary) 70%), 
+              var(--card-bg);
+  border: 1px solid var(--border-primary);
   border-radius: 16px;
   margin-top: 10px;
   margin-bottom: 8px; /* Reduced vertical spacing */
@@ -2603,7 +2987,7 @@ body{
 .promo-text h3 {
   font-size: 18px;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
   line-height: 1.15;
   letter-spacing: -0.4px;
@@ -2611,7 +2995,7 @@ body{
 
 .promo-text p {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-weight: 500;
   margin: 0;
 }
@@ -2628,10 +3012,10 @@ body{
 .product-specifications-card {
   margin: 12px 0;
   padding: 12px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .product-specifications-card h3 {
@@ -2646,7 +3030,7 @@ body{
 .spec-description {
   font-size: 11px;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   margin: 0 0 10px 0;
 }
 
@@ -2654,7 +3038,7 @@ body{
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid var(--border-primary);
   padding-top: 8px;
 }
 
@@ -2665,11 +3049,11 @@ body{
 }
 
 .spec-label {
-  color: rgba(255,255,255,0.45);
+  color: var(--text-secondary);
 }
 
 .spec-value {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -2677,10 +3061,10 @@ body{
 .clube-nosso-jeito-invite {
   margin: 14px 0;
   padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(16, 12, 8, 0.8) 100%);
-  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, var(--bg-secondary) 100%);
+  border: 1.5px solid var(--border-gold);
   border-radius: 8px;
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.1), 0 8px 16px rgba(0,0,0,0.4);
+  box-shadow: var(--card-shadow);
   position: relative;
   overflow: hidden;
 }
@@ -2696,7 +3080,7 @@ body{
 .clube-invite-text {
   font-size: 10.5px;
   line-height: 1.35;
-  color: rgba(255,255,255,0.9);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -2723,8 +3107,8 @@ body{
 .clube-page {
   padding-top: calc(56px + env(safe-area-inset-top, 0px));
   padding-bottom: 96px;
-  background: #090705;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -2736,8 +3120,8 @@ body{
   transform: translateX(-50%);
   width: 100%;
   max-width: 414px;
-  background: #090705;
-  border-bottom: 1.2px solid rgba(212, 175, 55, 0.15);
+  background: var(--bg-secondary);
+  border-bottom: 1.2px solid var(--border-gold);
   display: flex;
   flex-direction: column;
   z-index: 200;
@@ -2817,12 +3201,12 @@ body{
 .clube-hero-card {
   margin: 16px 0;
   padding: 20px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2859,7 +3243,7 @@ body{
 .clube-hero-body h2 {
   font-size: 20px;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
   line-height: 1.15;
   letter-spacing: -0.4px;
@@ -2867,7 +3251,7 @@ body{
 
 .clube-hero-body p {
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.35;
 }
@@ -2883,13 +3267,13 @@ body{
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-muted);
 }
 
 .clube-progress-track {
   width: 100%;
   height: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-primary);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -2915,7 +3299,7 @@ body{
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -2941,8 +3325,8 @@ body{
   width: 115px;
   flex-shrink: 0;
   padding: 12px 10px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -2963,7 +3347,7 @@ body{
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--back-btn-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2976,7 +3360,7 @@ body{
 .clube-mission-info h4 {
   font-size: 9.5px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 2px 0;
   line-height: 1.15;
   display: -webkit-box;
@@ -2990,7 +3374,7 @@ body{
 .clube-mission-info p {
   font-size: 10px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -3051,8 +3435,8 @@ body{
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   gap: 12px;
   transition: all 0.25s ease;
@@ -3090,7 +3474,7 @@ body{
 .clube-ad-text h4 {
   font-size: 11.5px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 2px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -3099,7 +3483,7 @@ body{
 
 .clube-ad-text p {
   font-size: 9.5px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -3107,9 +3491,9 @@ body{
 }
 
 .clube-ad-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
   font-size: 9.5px;
   font-weight: 800;
   padding: 6px 12px;
@@ -3128,21 +3512,21 @@ body{
 .clube-wallet-section {
   margin: 16px 0;
   padding: 14px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 6px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .clube-wallet-stats {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-primary);
   padding-bottom: 10px;
 }
 
@@ -3154,14 +3538,14 @@ body{
 
 .clube-stat-box span:first-child {
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .clube-stat-box span:last-child {
   font-size: 13px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .clube-ledger-history {
@@ -3173,7 +3557,7 @@ body{
 .clube-ledger-title {
   font-size: 10.5px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -3192,13 +3576,13 @@ body{
 }
 
 .clube-ledger-left span:first-child {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .clube-ledger-left span:last-child {
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
 }
 
 .clube-ledger-val {
@@ -3236,8 +3620,8 @@ body{
 }
 
 .clube-reward-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   padding: 10px;
   display: flex;
@@ -3272,14 +3656,14 @@ body{
 .clube-reward-details h4 {
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 2px 0;
   line-height: 1.2;
 }
 
 .clube-reward-details p {
   font-size: 9.5px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -3323,7 +3707,7 @@ body{
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background: var(--skeleton-shimmer-gradient);
   background-size: 200% 100%;
   animation: shimmer-anim 1.5s infinite;
   border-radius: 8px;
@@ -3350,12 +3734,12 @@ body{
 .clube-modal-content {
   width: 100%;
   max-width: 320px;
-  background: linear-gradient(135deg, #16120e 0%, #0c0907 100%);
-  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  background: var(--card-gradient) !important;
+  border: 1.5px solid var(--border-gold) !important;
   border-radius: 12px;
   padding: 24px 20px;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3383,21 +3767,21 @@ body{
 .clube-modal-text h3 {
   font-size: 16px;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 6px 0;
 }
 
 .clube-modal-text p {
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.35;
 }
 
 .clube-modal-coupon-box {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(212, 175, 55, 0.5);
+  background: var(--input-bg);
+  border: 1px dashed var(--border-gold);
   border-radius: 6px;
   padding: 10px;
   font-family: monospace;
@@ -3716,8 +4100,8 @@ body{
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--weekly-cal-bg);
+  border: 1px solid var(--weekly-cal-border);
   padding: 14px 10px;
   border-radius: 16px;
   margin: 12px 0 20px 0;
@@ -3733,9 +4117,9 @@ body{
   align-items: center;
   gap: 6px;
   padding: 8px 4px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--weekly-day-bg);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--weekly-day-border);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   position: relative;
@@ -3743,7 +4127,7 @@ body{
 
 .weekly-day-slot:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--weekly-slot-hover-bg);
   border-color: rgba(212, 175, 55, 0.2);
 }
 
@@ -3774,7 +4158,7 @@ body{
   font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--weekly-day-name-color);
   letter-spacing: 0.5px;
 }
 
@@ -3788,7 +4172,7 @@ body{
 .weekly-day-val {
   font-size: 8px;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--weekly-day-val-color);
   letter-spacing: 0.2px;
 }
 
@@ -4072,14 +4456,14 @@ body{
 .clube-mission-details h4 {
   font-size: 12.5px !important;
   font-weight: 700 !important;
-  color: #fff !important;
+  color: var(--mission-row-title-color) !important;
   margin: 0 0 1px 0 !important;
   line-height: 1.2 !important;
 }
 
 .clube-mission-details p {
   font-size: 9.5px !important;
-  color: rgba(255, 255, 255, 0.45) !important;
+  color: var(--mission-row-sub-color) !important;
   margin: 0 !important;
   line-height: 1.2 !important;
 }
@@ -4243,14 +4627,14 @@ body{
 /* THE BEAUTIFUL VERTICAL CARD STYLING */
 .clube-ad-card-vertical {
   position: relative !important;
-  background: rgba(14, 11, 9, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-primary) !important;
   border-radius: 18px !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: var(--card-shadow) !important;
 }
 
 /* TOP BANNER VISUAL */
@@ -4323,13 +4707,13 @@ body{
   width: 48px !important;
   height: 48px !important;
   border-radius: 50% !important;
-  background: rgba(18, 14, 11, 0.95) !important;
-  border: 2px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--bg-secondary) !important;
+  border: 2px solid var(--border-gold) !important;
   padding: 3px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7) !important;
+  box-shadow: var(--card-shadow) !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
@@ -4370,8 +4754,8 @@ body{
 .clube-ad-brand-tag-vertical {
   font-size: 7.5px !important;
   font-weight: 900 !important;
-  background: rgba(255,255,255,0.06) !important;
-  color: rgba(255,255,255,0.85) !important;
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
   padding: 1.5px 5px !important;
   border-radius: 4px !important;
   text-transform: uppercase !important;
@@ -4395,14 +4779,14 @@ body{
 .clube-ad-title-vertical {
   font-size: 11px !important;
   font-weight: 800 !important;
-  color: #fff !important;
+  color: var(--text-primary) !important;
   margin: 3px 0 !important;
   line-height: 1.25 !important;
 }
 
 .clube-ad-desc-vertical {
   font-size: 9px !important;
-  color: rgba(255, 255, 255, 0.55) !important;
+  color: var(--text-secondary) !important;
   margin: 0 0 10px !important;
   line-height: 1.35 !important;
 }
@@ -5233,9 +5617,9 @@ body{
 }
 
 .roulette-wrapper .btnStart:disabled {
-  background: #2a2a2a !important;
-  color: rgba(255,255,255,0.3) !important;
-  border-color: #444 !important;
+  background: var(--input-bg) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--input-border) !important;
   cursor: not-allowed;
   box-shadow: none !important;
 }
@@ -5338,10 +5722,10 @@ body{
 ========================================================= */
 .super-promo-container {
   border: 2px solid transparent;
-  background: linear-gradient(rgba(9, 7, 5, 0.95), rgba(9, 7, 5, 0.95)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
+  background: linear-gradient(var(--super-promo-inner-bg), var(--super-promo-inner-bg)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
-  padding: 12px 0px 4px 0px; /* Reduzido padding-bottom para economizar espaÃ§o do rodapÃ© */
+  padding: 12px 0px 4px 0px; /* Reduzido padding-bottom para economizar espaço do rodapé */
   border-radius: 16px;
   width: 100%;
   margin-top: 16px;
@@ -5394,7 +5778,7 @@ body{
 
 .super-promo-subtitle {
   display: inline-block;
-  background: #000;
+  background: transparent;
   color: #FFDF73;
   font-size: 11.5px;
   font-weight: 900;
@@ -5403,10 +5787,10 @@ body{
   margin-top: 4px;
   margin-bottom: 12px;
   letter-spacing: 1.5px;
-  border: 1px solid rgba(212, 175, 55, 0.6);
+  border: 1.5px solid #FFDF73;
   position: relative;
   z-index: 2;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+  box-shadow: none;
   text-transform: uppercase;
   transform: rotate(-1deg);
 }
@@ -5441,9 +5825,9 @@ body{
   flex-direction: column;
   align-items: center;
   position: relative;
-  /* Borda estÃ¡tica em degradÃª dourado/Ã¢mbar usando a paleta de cores do projeto */
+  /* Borda estática em degradaê dourado/âmbar usando a paleta de cores do projeto */
   border: 2px solid transparent;
-  background: linear-gradient(rgba(9, 7, 5, 0.95), rgba(9, 7, 5, 0.95)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
+  background: linear-gradient(var(--mega-oferta-inner-bg), var(--mega-oferta-inner-bg)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
   border-radius: 6px;
@@ -5644,7 +6028,7 @@ body{
   font-size: 11px;
   line-height: 1.2;
   font-weight: 500;
-  color: white;
+  color: var(--text-primary);
   text-align: center;
   width: 100%;
   max-height: 26.4px;
@@ -5707,8 +6091,8 @@ body{
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #090705;
-  border: 1px solid rgba(212, 175, 55, 0.8);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-gold);
   border-radius: 99px;
   padding: 1px 5px;
   box-shadow: 0 3px 6px rgba(0,0,0,0.5);
@@ -5731,7 +6115,7 @@ body{
 }
 
 .mega-oferta-wrapper .quantity-control-pill .current-quantity {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 10px;
   font-weight: 700;
   min-width: 10px;
@@ -5739,7 +6123,7 @@ body{
 }
 
 .mega-oferta-wrapper .club-only-pill {
-  background: #090705;
+  background: var(--bg-primary);
   border: 1px solid #2ecc71;
   border-radius: 99px;
   padding: 1px 7px;
@@ -5777,8 +6161,8 @@ body{
   flex-direction: column;
   align-items: center;
   width: 110px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--promo-card-bg);
+  border: 1px solid var(--promo-card-border);
   backdrop-filter: blur(12px);
   border-radius: 10px;
   padding: 8px 6px 8px;
@@ -6141,8 +6525,8 @@ body{
   justify-content: center;
   height: 70px;
   padding: 2px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--quick-gold-card-bg);
+  border: 1px solid var(--quick-gold-card-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 8px;
@@ -6155,8 +6539,8 @@ body{
 
 .quick-gold-card:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--quick-card-hover-border);
+  background: var(--quick-card-hover-bg);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -6180,7 +6564,7 @@ body{
 .quick-gold-label {
   font-size: 9.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--quick-gold-label-color);
   text-align: center;
   margin-top: 3px;
   transition: color 0.2s ease;
@@ -6206,8 +6590,8 @@ body{
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--quick-search-bg);
+  border: 1px solid var(--quick-search-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 10px;
@@ -6220,8 +6604,8 @@ body{
 
 .quick-search-container:focus-within,
 .quick-search-container:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--quick-search-focus-border);
+  background: var(--quick-search-focus-bg);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -6239,7 +6623,7 @@ body{
   background: transparent !important;
   border: none !important;
   outline: none !important;
-  color: #ffffff !important;
+  color: var(--quick-search-text) !important;
   font-family: inherit;
   font-size: 16px;
   width: 100%;
@@ -6248,7 +6632,7 @@ body{
 }
 
 .quick-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--quick-search-placeholder);
 }
 
 /* =========================================================
@@ -6269,14 +6653,14 @@ body{
   justify-content: space-between;
   width: 100%;
   margin-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--categories-header-border);
   padding-bottom: 12px;
 }
 
 .categories-page-header h2 {
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--categories-h2-color);
   margin: 0;
   letter-spacing: -0.3px;
 }
@@ -6288,16 +6672,16 @@ body{
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--categories-back-bg);
+  border: 1px solid var(--categories-back-border);
+  color: var(--categories-back-color);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .categories-back-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--back-btn-bg);
+  border-color: var(--border-primary);
 }
 
 .categories-back-btn:active {
@@ -6375,7 +6759,7 @@ body{
   right: 0;
   height: 38px;
   padding: 0 12px;
-  background: linear-gradient(180deg, rgba(5, 5, 5, 0) 0%, rgba(5, 5, 5, 0.95) 60%);
+  background: var(--categories-card-info-gradient);
   z-index: 2;
   box-sizing: border-box;
 }
@@ -6383,7 +6767,7 @@ body{
 .categories-page-card-title {
   font-size: 13px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--categories-h2-color);
   transition: color 0.2s ease;
 }
 
@@ -6431,9 +6815,9 @@ body{
   right: -300px; /* Hidden offscreen by default */
   width: 280px;
   height: 100vh;
-  background: linear-gradient(135deg, #120e0c, #090705);
-  border-left: 2px solid rgba(212, 175, 55, 0.25);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.85);
+  background: var(--bg-primary);
+  border-left: 2px solid var(--border-gold);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
   z-index: 1001;
   display: flex;
   flex-direction: column;
@@ -6452,7 +6836,7 @@ body{
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-primary);
   padding-bottom: 12px;
 }
 
@@ -6464,7 +6848,7 @@ body{
 .topbar-menu-logo .logo-main {
   font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.1;
   margin: 0;
 }
@@ -6481,7 +6865,7 @@ body{
 .topbar-menu-close-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -6492,7 +6876,7 @@ body{
 }
 
 .topbar-menu-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-primary);
 }
 
 /* Profile summary */
@@ -6501,8 +6885,8 @@ body{
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: var(--input-bg);
+  border: 1px solid var(--border-gold);
   border-radius: 10px;
   margin-bottom: 24px;
 }
@@ -6532,7 +6916,7 @@ body{
 .topbar-menu-username {
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6578,7 +6962,7 @@ body{
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 12.5px;
   font-weight: 600;
@@ -6586,8 +6970,8 @@ body{
 }
 
 .topbar-menu-nav-link:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #fff;
+  background: var(--border-primary);
+  color: var(--text-primary);
   padding-left: 16px; /* Micro-animation of sliding right */
 }
 
@@ -6605,7 +6989,7 @@ body{
 
 /* Footer / Logout */
 .topbar-menu-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--border-primary);
   padding-top: 12px;
   margin-top: auto;
 }
@@ -6667,3 +7051,645 @@ body{
   100% { transform: scale(1); }
 }
 
+/* Categories page Light Mode overrides */
+body.light-mode .categories-page-header {
+  border-bottom-color: var(--border-primary);
+}
+body.light-mode .categories-page-header h2 {
+  color: var(--text-primary);
+}
+body.light-mode .categories-back-btn {
+  background: var(--back-btn-bg);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+body.light-mode .categories-back-btn:hover {
+  background: var(--border-primary);
+}
+body.light-mode .categories-page-card {
+  background: var(--card-gradient);
+  border-color: var(--border-primary);
+  box-shadow: var(--card-shadow);
+}
+body.light-mode .categories-page-card:hover {
+  border-color: var(--border-gold);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+body.light-mode .categories-page-card-info {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.98) 60%);
+}
+body.light-mode .categories-page-card-title {
+  color: var(--text-primary);
+}
+body.light-mode .categories-page-card-arrow {
+  color: #D4AF37;
+}
+
+/* =========================================================
+   FASE 4: LIGHT MODE OVERRIDES FOR COMPLEX COMPONENTS
+   These cover elements with hardcoded dark-specific visuals
+   that can't be cleanly handled by tokens alone.
+========================================================= */
+
+/* ---- SEARCH BAR (main page search) ---- */
+body.light-mode .search-bar {
+  background: var(--search-bar-bg);
+  border-color: var(--search-bar-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+body.light-mode .search-bar:hover {
+  background: var(--search-bar-hover-bg);
+  border-color: var(--search-bar-hover-border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ---- INFO CARDS ---- */
+body.light-mode .info-card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ---- SECTION SCROLL TRACK ---- */
+body.light-mode .category-scroll-track {
+  background: rgba(0,0,0,0.08);
+}
+
+/* ---- GLASS PANEL ---- */
+body.light-mode .glass-panel {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+}
+
+/* ---- QUICK GOLD CARDS ---- */
+body.light-mode .quick-gold-card {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+body.light-mode .quick-gold-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ---- QUICK SEARCH ---- */
+body.light-mode .quick-search-container {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+body.light-mode .quick-search-container:focus-within,
+body.light-mode .quick-search-container:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ---- SUPER PROMO CONTAINER ---- */
+body.light-mode .super-promo-container::before {
+  background: repeating-conic-gradient(
+    rgba(212, 175, 55, 0.025) 0deg 15deg,
+    transparent 15deg 30deg
+  );
+}
+
+/* ---- MEGA OFERTA CARD ---- */
+body.light-mode .mega-oferta-wrapper.product-card {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1), 0 2px 6px rgba(212,175,55,0.15);
+}
+
+/* ---- PROMO CARD ---- */
+body.light-mode .promo-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* ---- WEEKLY CALENDAR SLOTS ---- */
+body.light-mode .weekly-day-slot {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+body.light-mode .weekly-day-slot:hover {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+body.light-mode .weekly-day-slot.completed {
+  background: linear-gradient(135deg, rgba(52,199,89,0.08) 0%, rgba(52,199,89,0.02) 100%);
+  border-color: rgba(52,199,89,0.25);
+}
+body.light-mode .weekly-day-slot.active {
+  background: linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.03) 100%);
+  border-color: rgba(212,175,55,0.5);
+}
+body.light-mode .weekly-day-icon-wrap {
+  background: rgba(0,0,0,0.04);
+}
+
+/* ---- CLUBE MISSIONS LIST ---- */
+body.light-mode .clube-mission-row {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+body.light-mode .clube-mission-row:hover {
+  background: #f8fafc !important;
+  border-color: rgba(212,175,55,0.25) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.07) !important;
+}
+body.light-mode .clube-mission-row.completed {
+  background: rgba(52,199,89,0.03) !important;
+  border-color: rgba(52,199,89,0.15) !important;
+}
+body.light-mode .clube-mission-icon-box {
+  background: rgba(212,175,55,0.06) !important;
+  border-color: rgba(212,175,55,0.12) !important;
+}
+body.light-mode .clube-mission-row.completed .clube-mission-icon-box {
+  background: rgba(52,199,89,0.06) !important;
+}
+body.light-mode .clube-mission-action-btn.completed {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: #94a3b8 !important;
+}
+
+/* ---- CLUBE MISSION CARDS (scroll) ---- */
+body.light-mode .clube-mission-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+body.light-mode .clube-mission-card:hover {
+  background: #f8fafc !important;
+  border-color: rgba(212,175,55,0.3) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .clube-mission-card.completed {
+  background: rgba(52,199,89,0.03) !important;
+  border-color: rgba(52,199,89,0.15) !important;
+}
+
+/* ---- CLUBE AD CARDS ---- */
+body.light-mode .clube-ad-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .clube-ad-card:hover {
+  background: #f8fafc !important;
+  border-color: rgba(212,175,55,0.3) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .clube-ad-logo-box {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ---- CLUBE AD CARD VERTICAL ---- */
+body.light-mode .clube-ad-card-vertical {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .clube-ad-logo-box {
+  background: #ffffff !important;
+}
+body.light-mode .clube-ad-completed-overlay {
+  background: var(--ad-completed-overlay-bg) !important;
+}
+body.light-mode .clube-ad-completed-overlay span {
+  color: var(--ad-completed-overlay-text) !important;
+}
+body.light-mode .clube-ad-btn-vertical.completed {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: #94a3b8 !important;
+}
+
+/* ---- CLUBE REWARD CARDS ---- */
+body.light-mode .clube-reward-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+body.light-mode .clube-reward-card:hover {
+  border-color: rgba(212,175,55,0.35) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .clube-reward-img-wrapper::after {
+  background: linear-gradient(180deg, transparent 60%, rgba(255,255,255,0.95));
+}
+
+/* ---- REWARD MODAL ---- */
+body.light-mode .reward-modal-premium {
+  background: var(--reward-modal-bg) !important;
+  border-color: rgba(212,175,55,0.4) !important;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15), 0 0 20px rgba(212,175,55,0.12) !important;
+}
+body.light-mode .reward-premium-desc {
+  color: var(--reward-modal-desc) !important;
+}
+
+/* ---- PRODUCT DETAIL ---- */
+body.light-mode .product-hero-bg {
+  filter: blur(1.5px) brightness(0.55);
+}
+body.light-mode .product-hero-overlay {
+  background: linear-gradient(180deg, rgba(248,250,252,0) 40%, rgba(248,250,252,1) 100%);
+}
+body.light-mode .strike-price {
+  color: #94a3b8;
+}
+body.light-mode .choice-text {
+  color: var(--choice-text-color);
+}
+body.light-mode .radio-outer {
+  border-color: #cbd5e1;
+}
+body.light-mode .purchase-option-card {
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+body.light-mode .purchase-option-card.active {
+  border-color: #D4AF37;
+  background: rgba(212,175,55,0.03);
+}
+body.light-mode .subscription-settings {
+  border-top-color: rgba(212,175,55,0.15);
+}
+
+/* ---- CLUBE HERO / WALLET ---- */
+body.light-mode .clube-weekly-calendar {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* ---- FLOATING ROULETTE TRIGGER ---- */
+body.light-mode .floating-roulette-trigger {
+  background: rgba(248,250,252,0.85);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: -2px 2px 12px rgba(0,0,0,0.12);
+}
+body.light-mode .floating-roulette-trigger:hover {
+  background: rgba(248,250,252,0.98);
+  box-shadow: -4px 4px 16px rgba(212,175,55,0.12);
+}
+
+/* ---- TOPBAR MENU BACKDROP ---- */
+body.light-mode .topbar-menu-backdrop {
+  background: rgba(15,23,42,0.5);
+}
+
+/* ---- PRODUCT ACTION PILL ---- */
+body.light-mode .product-action {
+  background: rgba(0,0,0,0.04);
+  border-color: #D4AF37;
+}
+body.light-mode .price {
+  color: var(--text-primary);
+}
+
+/* ---- CATEGORY INTRO LINE ---- */
+body.light-mode .category-intro-line {
+  color: #475569;
+}
+
+/* ---- HERO BANNER TEXTS (always on top of image, keep white) ---- */
+body.light-mode .hero-banner h2 {
+  color: #fff;
+}
+body.light-mode .hero-banner p {
+  color: rgba(255,255,255,0.9);
+}
+
+/* ---- PROMO CARD first occurrence (from PromoCard.tsx) ---- */
+body.light-mode .promo-card__title {
+  color: var(--promo-card-title);
+}
+
+/* ---- SECTION HEADER ANIMATED SUBTITLE ---- */
+body.light-mode .animated-subtitle {
+  color: var(--section-sub-color);
+}
+
+/* ---- SEARCH FILTER BUTTON ---- */
+body.light-mode .search-filter-btn {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+body.light-mode .search-filter-btn:active {
+  background: #cbd5e1;
+}
+
+/* ---- HEADER ICON BUTTON HOVER ---- */
+body.light-mode .header-icon-btn:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+/* ---- SUBPAGE TOPBARS (Clube, Product Detail) ---- */
+body.light-mode .clube-topbar {
+  background: var(--bg-secondary);
+}
+
+/* ---- CLUB AD THEATER (always dark by design) ---- */
+body.light-mode .clube-ad-theater-overlay {
+  background: rgba(2,2,2,0.96) !important;
+}
+
+/* ---- ADMIN PAGE (always dark for pro look) ---- */
+body.light-mode .reward-val-shimmer {
+  background: linear-gradient(135deg, #0f172a 30%, #D4AF37 50%, #0f172a 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---- BOTTOM NAV MINI CART ---- */
+body.light-mode .floating-mini-cart {
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+
+/* ---- BADGE wrapper remains gold on both themes ---- */
+body.light-mode .badge {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ---- SCROLLBAR TRACK ---- */
+body.light-mode .category-scroll-thumb {
+  background: #D4AF37;
+}
+body.light-mode .category-scroll-track {
+  background: #e2e8f0;
+}
+
+/* ---- TOPBAR NAV LINK ACTIVE LINE ---- */
+body.light-mode .active-line {
+  background-color: var(--text-primary);
+}
+
+/* ---- PERIOD BUTTON HOVER/ACTIVE on light: reduce shadow ---- */
+body.light-mode .period-button:hover {
+  border-color: rgba(0,0,0,0.25);
+  box-shadow: inset 0 0 0 1000px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1);
+}
+body.light-mode .period-button.active {
+  border-color: #D4AF37;
+  box-shadow: 0 0 12px rgba(212,175,55,0.3), inset 0 0 0 1000px rgba(255,255,255,0.1);
+}
+
+/* ---- CLUBE MODAL ---- */
+body.light-mode .clube-modal-overlay {
+  background: rgba(15,23,42,0.7);
+}
+body.light-mode .clube-modal-content {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* ---- TOAST (already uses CSS vars, just ensure bg) ---- */
+body.light-mode .toast-item-inner {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* ---- TOPBAR SEARCH BUTTON on light ---- */
+body.light-mode .topbar-search-btn {
+  background: var(--search-btn-bg);
+  border-color: var(--search-btn-bg);
+  color: var(--search-btn-color);
+}
+
+/* ---- PRODUCT CARD on light mode ---- */
+body.light-mode .product-card {
+  box-shadow: var(--card-shadow);
+}
+
+/* ---- SECTION HEADER SEE-ALL LINK ---- */
+body.light-mode .section-header a,
+body.light-mode .glass-ver-todas-btn {
+  color: #D4AF37;
+}
+body.light-mode .clube-reward-card:hover {
+  border-color: rgba(212,175,55,0.35) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .clube-reward-img-wrapper::after {
+  background: linear-gradient(180deg, transparent 60%, rgba(255,255,255,0.95));
+}
+
+/* ---- REWARD MODAL ---- */
+body.light-mode .reward-modal-premium {
+  background: var(--reward-modal-bg) !important;
+  border-color: rgba(212,175,55,0.4) !important;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15), 0 0 20px rgba(212,175,55,0.12) !important;
+}
+body.light-mode .reward-premium-desc {
+  color: var(--reward-modal-desc) !important;
+}
+
+/* ---- PRODUCT DETAIL ---- */
+body.light-mode .product-hero-bg {
+  filter: blur(1.5px) brightness(0.55);
+}
+body.light-mode .product-hero-overlay {
+  background: linear-gradient(180deg, rgba(248,250,252,0) 40%, rgba(248,250,252,1) 100%);
+}
+body.light-mode .strike-price {
+  color: #94a3b8;
+}
+body.light-mode .choice-text {
+  color: var(--choice-text-color);
+}
+body.light-mode .radio-outer {
+  border-color: #cbd5e1;
+}
+body.light-mode .purchase-option-card {
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+body.light-mode .purchase-option-card.active {
+  border-color: #D4AF37;
+  background: rgba(212,175,55,0.03);
+}
+body.light-mode .subscription-settings {
+  border-top-color: rgba(212,175,55,0.15);
+}
+
+/* ---- CLUBE HERO / WALLET ---- */
+body.light-mode .clube-weekly-calendar {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* ---- FLOATING ROULETTE TRIGGER ---- */
+body.light-mode .floating-roulette-trigger {
+  background: rgba(248,250,252,0.85);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: -2px 2px 12px rgba(0,0,0,0.12);
+}
+body.light-mode .floating-roulette-trigger:hover {
+  background: rgba(248,250,252,0.98);
+  box-shadow: -4px 4px 16px rgba(212,175,55,0.12);
+}
+
+/* ---- TOPBAR MENU BACKDROP ---- */
+body.light-mode .topbar-menu-backdrop {
+  background: rgba(15,23,42,0.5);
+}
+
+/* ---- PRODUCT ACTION PILL ---- */
+body.light-mode .product-action {
+  background: rgba(0,0,0,0.04);
+  border-color: #D4AF37;
+}
+body.light-mode .price {
+  color: var(--text-primary);
+}
+
+/* ---- CATEGORY INTRO LINE ---- */
+body.light-mode .category-intro-line {
+  color: #475569;
+}
+
+/* ---- HERO BANNER TEXTS (always on top of image, keep white) ---- */
+body.light-mode .hero-banner h2 {
+  color: #fff;
+}
+body.light-mode .hero-banner p {
+  color: rgba(255,255,255,0.9);
+}
+
+/* ---- PROMO CARD first occurrence (from PromoCard.tsx) ---- */
+body.light-mode .promo-card__title {
+  color: var(--promo-card-title);
+}
+
+/* ---- SECTION HEADER ANIMATED SUBTITLE ---- */
+body.light-mode .animated-subtitle {
+  color: var(--section-sub-color);
+}
+
+/* ---- SEARCH FILTER BUTTON ---- */
+body.light-mode .search-filter-btn {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+body.light-mode .search-filter-btn:active {
+  background: #cbd5e1;
+}
+
+/* ---- HEADER ICON BUTTON HOVER ---- */
+body.light-mode .header-icon-btn:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+/* ---- SUBPAGE TOPBARS (Clube, Product Detail) ---- */
+body.light-mode .clube-topbar {
+  background: var(--bg-secondary);
+}
+
+/* ---- CLUB AD THEATER (always dark by design) ---- */
+body.light-mode .clube-ad-theater-overlay {
+  background: rgba(2,2,2,0.96) !important;
+}
+
+/* ---- ADMIN PAGE (always dark for pro look) ---- */
+body.light-mode .reward-val-shimmer {
+  background: linear-gradient(135deg, #0f172a 30%, #D4AF37 50%, #0f172a 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---- BOTTOM NAV MINI CART ---- */
+body.light-mode .floating-mini-cart {
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+
+/* ---- BADGE wrapper remains gold on both themes ---- */
+body.light-mode .badge {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ---- SCROLLBAR TRACK ---- */
+body.light-mode .category-scroll-thumb {
+  background: #D4AF37;
+}
+body.light-mode .category-scroll-track {
+  background: #e2e8f0;
+}
+
+/* ---- TOPBAR NAV LINK ACTIVE LINE ---- */
+body.light-mode .active-line {
+  background-color: var(--text-primary);
+}
+
+/* ---- PERIOD BUTTON HOVER/ACTIVE on light: reduce shadow ---- */
+body.light-mode .period-button:hover {
+  border-color: rgba(0,0,0,0.25);
+  box-shadow: inset 0 0 0 1000px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1);
+}
+body.light-mode .period-button.active {
+  border-color: #D4AF37;
+  box-shadow: 0 0 12px rgba(212,175,55,0.3), inset 0 0 0 1000px rgba(255,255,255,0.1);
+}
+
+/* ---- CLUBE MODAL ---- */
+body.light-mode .clube-modal-overlay {
+  background: rgba(15,23,42,0.7);
+}
+body.light-mode .clube-modal-content {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* ---- TOAST (already uses CSS vars, just ensure bg) ---- */
+body.light-mode .toast-item-inner {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* ---- TOPBAR SEARCH BUTTON on light ---- */
+body.light-mode .topbar-search-btn {
+  background: var(--search-btn-bg);
+  border-color: var(--search-btn-bg);
+  color: var(--search-btn-color);
+}
+
+/* ---- PRODUCT CARD on light mode ---- */
+body.light-mode .product-card {
+  box-shadow: var(--card-shadow);
+}
+
+/* ---- SECTION HEADER SEE-ALL LINK ---- */
+body.light-mode .section-header a,
+body.light-mode .glass-ver-todas-btn {
+  color: #D4AF37;
+}
+
+/* ---- SUB-NAV ---- */
+body.light-mode .sub-nav {
+  color: #64748b;
+}
+body.light-mode .sub-nav span:first-child {
+  color: var(--text-primary);
+}
+
+/* ---- PWA INSTALL BANNER ON LIGHT/DARK ---- */
+.pwa-banner-text {
+  color: #ffffff;
+}
+body.light-mode .pwa-banner-text {
+  color: #0f172a;
+}
+.pwa-banner-btn {
+  color: #FFDF73;
+}
+body.light-mode .pwa-banner-btn {
+  color: #b45309;
+}
+
+/* ---- SUPER PROMO TITLE & SUBTITLE ON LIGHT ---- */
+body.light-mode .super-promo-title {
+  color: #090705 !important;
+  -webkit-text-fill-color: #090705 !important;
+}
+body.light-mode .super-promo-subtitle {
+  color: #b45309;
+  border-color: #b45309;
+}
+body.light-mode .super-promo-container::before {
+  background: repeating-conic-gradient(
+    rgba(212, 175, 55, 0.12) 0deg 15deg,
+    transparent 15deg 30deg
+  );
+}
+
+/* ---- CATEGORY IMAGES (NO SHADOW ON LIGHT MODE) ---- */
+body.light-mode .category-3d-icon {
+  filter: brightness(1.15) contrast(1.08) saturate(1.1) !important;
+}
+body.light-mode .category-item:hover .category-3d-icon {
+  filter: brightness(1.25) contrast(1.1) saturate(1.15) !important;
+  transform: scale(1.15);
+}

@@ -22,12 +22,12 @@ import {
 // Design tokens — same as Profile.tsx
 // ──────────────────────────────────────────────────────────────
 const card = {
-  background: 'linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+  background: 'var(--card-gradient)',
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
+  border: '1px solid var(--border-primary)',
   borderRadius: '18px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--card-shadow)',
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -88,9 +88,9 @@ const MetricCard: React.FC<{
       {icon}
     </div>
     <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
+      {sub && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   </div>
 );
@@ -129,7 +129,7 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
         </div>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#EF4444' }}>Pedido cancelado</div>
-          {ev?.timestamp && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{relativeTime(ev.timestamp)}</div>}
+          {ev?.timestamp && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{relativeTime(ev.timestamp)}</div>}
         </div>
       </div>
     );
@@ -149,10 +149,10 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0 }}>
               <div style={{
                 width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                background: done ? cfg.bg : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${done ? cfg.border : 'rgba(255,255,255,0.08)'}`,
+                background: done ? cfg.bg : 'var(--input-bg)',
+                border: `1.5px solid ${done ? cfg.border : 'var(--border-primary)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: done ? cfg.color : 'rgba(255,255,255,0.15)',
+                color: done ? cfg.color : 'var(--text-muted)',
                 boxShadow: active ? `0 0 8px ${cfg.color}44` : 'none',
               }}>
                 {done ? <span style={{ fontSize: 7.5 }}>{STATUS_ICONS[step]}</span> : <CircleDot size={7} />}
@@ -160,17 +160,17 @@ const Timeline: React.FC<{ order: Order }> = ({ order }) => {
               {!isLast && (
                 <div style={{
                   width: 1.5, flex: 1, minHeight: 16,
-                  background: done ? `${cfg.color}50` : 'rgba(255,255,255,0.05)',
+                  background: done ? `${cfg.color}50` : 'var(--border-primary)',
                   margin: '2px 0',
                 }} />
               )}
             </div>
             <div style={{ paddingBottom: isLast ? 0 : 12, flex: 1 }}>
-              <div style={{ fontSize: 11.5, fontWeight: done ? 700 : 500, color: done ? cfg.color : 'rgba(255,255,255,0.2)', lineHeight: 1.2 }}>
+              <div style={{ fontSize: 11.5, fontWeight: done ? 700 : 500, color: done ? cfg.color : 'var(--text-muted)', lineHeight: 1.2 }}>
                 {cfg.label}
               </div>
               {ev?.timestamp && (
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
                   {ev.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · {relativeTime(ev.timestamp)}
                 </div>
               )}
@@ -197,7 +197,7 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
   return (
     <div style={{
       ...card,
-      border: `1px solid ${highlight ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)'}`,
+      border: `1px solid ${highlight ? 'var(--text-secondary)' : 'var(--border-primary)'}`,
       overflow: 'hidden',
       transition: 'border-color 0.3s ease',
     }}>
@@ -209,8 +209,8 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
         {/* Order number + status */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', letterSpacing: '0.3px' }}>{order.orderNumber}</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.3px' }}>{order.orderNumber}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
               {order.createdAt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
               {' · '}{relativeTime(order.createdAt)}
             </div>
@@ -225,7 +225,7 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
               <div key={item.id} style={{
                 width: 40, height: 40, borderRadius: 10,
                 background: '#fff',
-                border: '2px solid rgba(255,255,255,0.15)',
+                border: '2px solid var(--border-primary)',
                 overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: i > 0 ? -10 : 0,
                 zIndex: visible.length - i, flexShrink: 0,
@@ -239,18 +239,18 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
             {extra > 0 && (
               <div style={{
                 width: 40, height: 40, borderRadius: 10,
-                background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.2)',
+                background: 'var(--input-bg)', border: '1.5px solid var(--border-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 marginLeft: -10, zIndex: 0, flexShrink: 0, position: 'relative',
-                fontSize: 10, fontWeight: 800, color: '#fff',
+                fontSize: 10, fontWeight: 800, color: 'var(--text-primary)',
               }}>+{extra}</div>
             )}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {order.items.map((i) => i.title.split(' ').slice(0, 2).join(' ')).join(', ')}
             </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
               {order.paymentMethod}
             </div>
           </div>
@@ -258,17 +258,17 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
 
         {/* Footer row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 600 }}>
             {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{formatCurrency(order.total)}</span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>{formatCurrency(order.total)}</span>
             <div style={{
               width: 24, height: 24, borderRadius: '50%',
-              background: expanded ? cfg.bg : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${expanded ? cfg.border : 'rgba(255,255,255,0.08)'}`,
+              background: expanded ? cfg.bg : 'var(--input-bg)',
+              border: `1px solid ${expanded ? cfg.border : 'var(--border-primary)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: expanded ? cfg.color : 'rgba(255,255,255,0.35)',
+              color: expanded ? cfg.color : 'var(--text-muted)',
             }}>
               {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </div>
@@ -278,11 +278,11 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
 
       {/* ── Expanded detail ── */}
       {expanded && (
-        <div style={{ borderTop: '1px solid rgba(212,175,55,0.1)', padding: '14px 16px 16px' }}>
+        <div style={{ borderTop: '1px solid var(--border-gold)', padding: '14px 16px 16px' }}>
 
           {/* Items list */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.6)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
               Itens do pedido
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -292,30 +292,30 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
                     {item.image ? <img src={item.image} alt={item.title} style={{ width: '82%', height: '82%', objectFit: 'contain' }} /> : <Package size={13} color="#090705" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{item.quantity}x · {formatCurrency(item.price)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.quantity}x · {formatCurrency(item.price)}</div>
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#FFDF73', flexShrink: 0 }}>{formatCurrency(item.price * item.quantity)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#D4AF37', flexShrink: 0 }}>{formatCurrency(item.price * item.quantity)}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Financial summary */}
-          <div style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 12, padding: '11px 13px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.5)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 2 }}>Resumo</div>
+          <div style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '11px 13px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 2 }}>Resumo</div>
             <SumRow label="Subtotal" value={formatCurrency(order.subtotal)} />
             {order.discount > 0 && <SumRow label={`Desconto${order.coupon ? ` (${order.coupon})` : ''}`} value={`-${formatCurrency(order.discount)}`} color="#10B981" />}
             <SumRow label="Entrega" value={order.deliveryFee === 0 ? 'Grátis' : formatCurrency(order.deliveryFee)} color={order.deliveryFee === 0 ? '#10B981' : undefined} />
-            <div style={{ borderTop: '1px dashed rgba(212,175,55,0.15)', paddingTop: 8, marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>Total</span>
-              <span style={{ fontSize: 13, fontWeight: 900, color: '#FFDF73' }}>{formatCurrency(order.total)}</span>
+            <div style={{ borderTop: '1px dashed var(--border-gold)', paddingTop: 8, marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)' }}>Total</span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: '#D4AF37' }}>{formatCurrency(order.total)}</span>
             </div>
           </div>
 
           {/* Timeline */}
           <div>
-            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.6)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
               Histórico
             </div>
             <Timeline order={order} />
@@ -328,8 +328,8 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
 
 const SumRow: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
-    <span style={{ color: 'rgba(255,255,255,0.4)' }}>{label}</span>
-    <span style={{ color: color ?? 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{value}</span>
+    <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+    <span style={{ color: color ?? 'var(--text-secondary)', fontWeight: 600 }}>{value}</span>
   </div>
 );
 
@@ -341,17 +341,17 @@ const FilterChip: React.FC<{ status: OrderStatus; active: boolean; count: number
   return (
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-      background: active ? cfg.bg : 'rgba(255,255,255,0.04)',
-      border: `1px solid ${active ? cfg.border : 'rgba(255,255,255,0.07)'}`,
+      background: active ? cfg.bg : 'var(--input-bg)',
+      border: `1px solid ${active ? cfg.border : 'var(--border-primary)'}`,
       borderRadius: 99, padding: '5px 11px',
       fontSize: 10.5, fontWeight: 700,
-      color: active ? cfg.color : 'rgba(255,255,255,0.4)',
+      color: active ? cfg.color : 'var(--text-muted)',
       cursor: 'pointer', transition: 'all 0.15s ease',
     }}>
       {cfg.label}
       <span style={{
-        background: active ? cfg.color : 'rgba(255,255,255,0.08)',
-        color: active ? '#090705' : 'rgba(255,255,255,0.35)',
+        background: active ? cfg.color : 'var(--border-primary)',
+        color: active ? '#090705' : 'var(--text-muted)',
         borderRadius: 99, padding: '0 5px', fontSize: 9, fontWeight: 900,
         lineHeight: '15px', display: 'inline-block',
       }}>{count}</span>
@@ -374,15 +374,15 @@ const EmptyState: React.FC<{ filtered: boolean; onClear: () => void }> = ({ filt
         <ShoppingBag size={26} color="rgba(212,175,55,0.4)" />
       </div>
       <div>
-        <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', margin: 0 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
           {filtered ? 'Nenhum resultado' : 'Nenhum pedido ainda'}
         </h3>
-        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '6px 0 0', maxWidth: 220, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '6px 0 0', maxWidth: 220, lineHeight: 1.5 }}>
           {filtered ? 'Tente remover os filtros.' : 'Faça seu primeiro pedido e ele aparecerá aqui.'}
         </p>
       </div>
       {filtered ? (
-        <button onClick={onClear} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 700, padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={onClear} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 12, fontWeight: 700, padding: '8px 16px', cursor: 'pointer' }}>
           <X size={13} /> Limpar filtros
         </button>
       ) : (
@@ -455,12 +455,12 @@ export const Orders: React.FC = () => {
         {/* ── Topbar — same pattern as Profile ──────────────── */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 20,
-          background: 'rgba(9,7,5,0.4)',
+          background: 'var(--bg-secondary)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(212,175,55,0.1)',
+          borderBottom: '1px solid var(--border-gold)',
         }}>
-          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 16px 12px',
@@ -468,10 +468,10 @@ export const Orders: React.FC = () => {
             <button
               onClick={() => navigate(-1)}
               style={{
-                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)',
                 borderRadius: '50%', width: 38, height: 38,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
               }}
             >
               <ArrowLeft size={17} />
@@ -483,11 +483,11 @@ export const Orders: React.FC = () => {
             <button
               onClick={() => setShowFilters((v) => !v)}
               style={{
-                background: showFilters ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.06)',
-                border: `1px solid ${showFilters ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                background: showFilters ? 'var(--back-btn-bg)' : 'var(--card-bg)',
+                border: `1px solid ${showFilters ? 'var(--text-primary)' : 'var(--border-primary)'}`,
                 borderRadius: 10, width: 38, height: 38,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: showFilters ? '#fff' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer', color: showFilters ? 'var(--text-primary)' : 'var(--text-secondary)',
                 position: 'relative',
               }}
               title="Filtros"
@@ -497,7 +497,7 @@ export const Orders: React.FC = () => {
                 <span style={{
                   position: 'absolute', top: 9, right: 9,
                   width: 5, height: 5, borderRadius: '50%',
-                  background: '#fff', border: '1.5px solid #090705',
+                  background: 'var(--text-primary)', border: '1.5px solid var(--bg-primary)',
                 }} />
               )}
             </button>
@@ -506,9 +506,9 @@ export const Orders: React.FC = () => {
 
         {/* ── Page title ──────────────────────────── */}
         <div style={{ padding: '18px 16px 4px' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.3px' }}>Meus Pedidos</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Meus Pedidos</h1>
           {metrics.total > 0 && (
-            <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>
+            <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>
               {metrics.total} pedido{metrics.total !== 1 ? 's' : ''} · {metrics.active > 0 ? `${metrics.active} em andamento` : 'Nenhum em andamento'}
             </p>
           )}
@@ -519,7 +519,7 @@ export const Orders: React.FC = () => {
           {/* ── Metric cards (2-col grid) ── */}
           {!loading && metrics.total > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <MetricCard icon={<ReceiptText size={18} />} iconColor="#fff" iconBg="rgba(255,255,255,0.1)" label="Total" value={String(metrics.total)} />
+              <MetricCard icon={<ReceiptText size={18} />} iconColor="var(--text-primary)" iconBg="var(--back-btn-bg)" label="Total" value={String(metrics.total)} />
               <MetricCard icon={<Clock size={18} />} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)" label="Ativos" value={String(metrics.active)} sub={metrics.active > 0 ? 'Em andamento' : 'Todos concluídos'} />
               <MetricCard icon={<TrendingUp size={18} />} iconColor="#10B981" iconBg="rgba(16,185,129,0.1)" label="Total gasto" value={formatCurrency(metrics.totalSpent)} />
               <MetricCard icon={<Star size={18} />} iconColor="#8B5CF6" iconBg="rgba(139,92,246,0.1)" label="Ticket médio" value={formatCurrency(metrics.avgTicket)} />
@@ -537,16 +537,17 @@ export const Orders: React.FC = () => {
                   placeholder="Buscar pedido ou produto..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  className="orders-filter-input"
                   style={{
-                    width: '100%', background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(212,175,55,0.15)',
+                    width: '100%', background: 'var(--input-bg)',
+                    border: '1px solid var(--border-gold)',
                     borderRadius: 11, padding: '9px 34px',
-                    fontSize: 12, color: '#fff', outline: 'none',
+                    fontSize: 12, color: 'var(--text-primary)', outline: 'none',
                     fontFamily: 'inherit', boxSizing: 'border-box',
                   }}
                 />
                 {search && (
-                  <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', padding: 2 }}>
+                  <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: 2 }}>
                     <X size={13} />
                   </button>
                 )}
@@ -561,14 +562,14 @@ export const Orders: React.FC = () => {
 
               {/* Sort row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ordenar:</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ordenar:</span>
                 {([['recent', 'Recente'], ['oldest', 'Antigo'], ['highest', 'Maior valor']] as const).map(([k, l]) => (
                   <button key={k} onClick={() => setSort(k)} style={{
-                    background: sort === k ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${sort === k ? 'rgba(212,175,55,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                    background: sort === k ? 'rgba(212,175,55,0.1)' : 'var(--input-bg)',
+                    border: `1px solid ${sort === k ? 'rgba(212,175,55,0.3)' : 'var(--border-primary)'}`,
                     borderRadius: 8, padding: '4px 10px',
                     fontSize: 10.5, fontWeight: sort === k ? 800 : 500,
-                    color: sort === k ? '#fff' : 'rgba(255,255,255,0.35)',
+                    color: sort === k ? 'var(--text-primary)' : 'var(--text-muted)',
                     cursor: 'pointer',
                   }}>{l}</button>
                 ))}
@@ -596,7 +597,7 @@ export const Orders: React.FC = () => {
           {!loading && !error && (
             <>
               {hasFilters && filtered.length > 0 && (
-                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 600 }}>
                   {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
                 </div>
               )}
@@ -621,6 +622,22 @@ export const Orders: React.FC = () => {
           50%       { opacity: 1; }
         }
         input[placeholder]::placeholder { color: rgba(255,255,255,0.2); }
+
+        body.light-mode input::placeholder { color: #94a3b8 !important; }
+        body.light-mode input {
+          background: #fff !important;
+          color: #000 !important;
+          border-color: #cbd5e1 !important;
+        }
+        body.light-mode .orders-filter-input {
+          background: #fff !important;
+          color: #000 !important;
+          border-color: #cbd5e1 !important;
+        }
+        body.light-mode .orders-filter-input:focus {
+          border-color: #D4AF37 !important;
+          box-shadow: 0 0 0 3px rgba(212,175,55,0.15) !important;
+        }
       `}</style>
     </div>
   );

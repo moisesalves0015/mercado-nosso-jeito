@@ -107,6 +107,28 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
           animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
           pointer-events: auto;
         }
+        .toast-item-inner {
+          background: var(--toast-bg, rgba(10, 15, 30, 0.95));
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 14px;
+          padding: 14px 16px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+          overflow: hidden;
+          position: relative;
+        }
+        .toast-item-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--toast-text, #fff);
+          line-height: 1.3;
+        }
+        .toast-item-message {
+          font-size: 12px;
+          color: var(--toast-text-secondary, rgba(255,255,255,0.55));
+          margin-top: 3px;
+          line-height: 1.4;
+        }
         .toast-close-btn {
           background: none;
           border: none;
@@ -118,6 +140,7 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
           line-height: 1;
           font-size: 14px;
           flex-shrink: 0;
+          color: var(--toast-close-color, rgba(255,255,255,0.6));
         }
         .toast-close-btn:hover { opacity: 1; }
       `}</style>
@@ -142,68 +165,61 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
             <div
               key={toast.id}
               className="toast-item"
-              style={{
-                background: 'rgba(10, 15, 30, 0.92)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: `1px solid ${colors.border}`,
-                borderRadius: '14px',
-                padding: '14px 16px',
-                boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)`,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
             >
-              {/* Progress bar */}
               <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  height: '2px',
-                  background: colors.text,
-                  opacity: 0.5,
-                  animation: `toastProgress ${duration}ms linear forwards`,
-                }}
-              />
-              {/* Content */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                className="toast-item-inner"
+                style={{ border: `1px solid ${colors.border}` }}
+              >
+                {/* Progress bar */}
                 <div
                   style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    background: colors.bg,
-                    border: `1px solid ${colors.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: colors.text,
-                    fontWeight: 800,
-                    fontSize: '14px',
-                    flexShrink: 0,
-                    marginTop: '1px',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    height: '2px',
+                    background: colors.text,
+                    opacity: 0.5,
+                    animation: `toastProgress ${duration}ms linear forwards`,
                   }}
-                >
-                  {colors.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
-                    {toast.title}
+                />
+                {/* Content */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: colors.text,
+                      fontWeight: 800,
+                      fontSize: '14px',
+                      flexShrink: 0,
+                      marginTop: '1px',
+                    }}
+                  >
+                    {colors.icon}
                   </div>
-                  {toast.message && (
-                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '3px', lineHeight: 1.4 }}>
-                      {toast.message}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="toast-item-title">
+                      {toast.title}
                     </div>
-                  )}
+                    {toast.message && (
+                      <div className="toast-item-message">
+                        {toast.message}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="toast-close-btn"
+                    onClick={() => onRemove(toast.id)}
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  className="toast-close-btn"
-                  onClick={() => onRemove(toast.id)}
-                  style={{ color: 'rgba(255,255,255,0.6)' }}
-                >
-                  ✕
-                </button>
               </div>
             </div>
           );

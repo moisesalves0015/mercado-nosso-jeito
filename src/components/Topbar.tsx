@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie } from 'lucide-react';
+import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Topbar = () => {
@@ -12,6 +12,24 @@ export const Topbar = () => {
     const saved = localStorage.getItem('user_diamonds');
     return saved ? parseInt(saved, 10) : 320;
   });
+
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const isLight = theme === 'light';
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      setTheme(localStorage.getItem('theme') || 'dark');
+    };
+    window.addEventListener('theme-changed', handleThemeChange);
+    return () => window.removeEventListener('theme-changed', handleThemeChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = isLight ? 'dark' : 'light';
+    localStorage.setItem('theme', nextTheme);
+    setTheme(nextTheme);
+    window.dispatchEvent(new Event('theme-changed'));
+  };
 
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +66,7 @@ export const Topbar = () => {
 
   return (
     <div className="topbar-container">
-      <div className="safe-area-top-bg" style={{ background: '#000000' }} />
+      <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
       <div className="topbar">
         {/* ROW 1: LOCATION LEFT - SEARCH CENTER - GOLD BADGE RIGHT */}
       <div className="topbar-row-top">
@@ -116,7 +134,7 @@ export const Topbar = () => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <button className="topbar-icon-btn" title="Favoritos" style={{ background: 'transparent', border: 'none', color: '#fff', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button className="topbar-icon-btn" title="Favoritos" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Heart size={18} />
           </button>
           <button 
@@ -170,7 +188,7 @@ export const Topbar = () => {
             </>
           ) : (
             <div style={{ width: '100%' }}>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
                 Acesse sua conta para fazer pedidos
               </div>
               <Link 
@@ -248,6 +266,38 @@ export const Topbar = () => {
               <span>Painel Admin</span>
             </Link>
           )}
+
+          {/* Theme switcher inside list */}
+          <div 
+            className="topbar-menu-nav-link" 
+            onClick={toggleTheme}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {isLight ? <Sun size={16} color="#D4AF37" /> : <Moon size={16} color="#6366F1" />}
+              <span>Modo Claro</span>
+            </div>
+            <div style={{
+              width: '34px',
+              height: '18px',
+              borderRadius: '99px',
+              background: isLight ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(255,255,255,0.15)',
+              position: 'relative',
+              transition: 'all 0.2s ease',
+              border: '1px solid var(--border-primary)',
+            }}>
+              <div style={{
+                width: '14px',
+                height: '14px',
+                borderRadius: '50%',
+                background: isLight ? '#000' : '#fff',
+                position: 'absolute',
+                top: '1px',
+                left: isLight ? '17px' : '1px',
+                transition: 'all 0.2s ease',
+              }} />
+            </div>
+          </div>
         </div>
 
         {/* Footer with logout button */}

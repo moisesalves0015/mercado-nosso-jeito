@@ -14,7 +14,7 @@ const TIER_COLORS: Record<string, string> = {
   gold: '#FFDF73',
   silver: '#C0C0C0',
   bronze: '#CD7F32',
-  default: 'rgba(255,255,255,0.7)',
+  default: 'var(--text-secondary)',
 };
 
 function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: number }) {
@@ -31,9 +31,9 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
         padding: '10px 12px',
         borderRadius: 10,
         background: isUser
-          ? 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))'
+          ? 'var(--input-bg)'
           : 'transparent',
-        border: isUser ? '1px solid rgba(255,255,255,0.15)' : '1px solid transparent',
+        border: isUser ? '1px solid var(--border-gold)' : '1px solid transparent',
         marginBottom: 4,
         transition: 'all 0.25s ease',
         position: 'relative',
@@ -60,7 +60,7 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
           style={{
             fontSize: '13px',
             fontWeight: isUser ? 900 : 700,
-            color: isUser ? '#fff' : 'rgba(255,255,255,0.8)',
+            color: 'var(--text-primary)',
             letterSpacing: isUser ? '-0.2px' : 0,
           }}
         >
@@ -73,9 +73,9 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
                 fontWeight: 800,
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
-                color: 'rgba(255,255,255,0.4)',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-muted)',
+                background: 'var(--input-bg)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: 99,
                 padding: '1px 6px',
               }}
@@ -89,7 +89,7 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
           <div
             style={{
               fontSize: '9px',
-              color: 'rgba(255,255,255,0.3)',
+              color: 'var(--text-muted)',
               marginTop: 1,
             }}
           >
@@ -103,7 +103,7 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
         style={{
           fontSize: '13px',
           fontWeight: 900,
-          color: isUser ? '#fff' : nameColor,
+          color: isUser ? 'var(--text-primary)' : nameColor,
           letterSpacing: '-0.3px',
           flexShrink: 0,
         }}
@@ -113,7 +113,7 @@ function RankRow({ entry, userPoints }: { entry: RankingEntry; userPoints: numbe
           style={{
             fontSize: '9px',
             fontWeight: 600,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text-muted)',
             marginLeft: 3,
           }}
         >
@@ -137,8 +137,8 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
   return (
     <div
       style={{
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'var(--card-gradient)',
+        border: '1px solid var(--border-gold)',
         borderRadius: 14,
         padding: '16px 14px',
         marginBottom: 20,
@@ -161,7 +161,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
                 fontWeight: 800,
                 textTransform: 'uppercase',
                 letterSpacing: '0.8px',
-                color: 'rgba(255,255,255,0.4)',
+                color: 'var(--text-muted)',
               }}
             >
               🏆 Ranking da Temporada
@@ -170,7 +170,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
               style={{
                 fontSize: '14px',
                 fontWeight: 900,
-                color: '#fff',
+                color: 'var(--text-primary)',
                 marginTop: 2,
                 letterSpacing: '-0.2px',
               }}
@@ -187,7 +187,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
             <span
               style={{
                 fontSize: '9px',
-                color: 'rgba(255,255,255,0.35)',
+                color: 'var(--text-muted)',
                 fontWeight: 600,
               }}
             >
@@ -197,7 +197,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
               style={{
                 fontSize: '11px',
                 fontWeight: 800,
-                color: season.daysRemaining <= 5 ? '#f87171' : 'rgba(255,255,255,0.7)',
+                color: season.daysRemaining <= 5 ? '#f87171' : 'var(--text-secondary)',
                 marginTop: 1,
               }}
             >
@@ -211,7 +211,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
           style={{
             height: 4,
             borderRadius: 99,
-            background: 'rgba(255,255,255,0.07)',
+            background: 'var(--border-primary)',
             overflow: 'hidden',
           }}
         >
@@ -219,7 +219,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
             style={{
               height: '100%',
               width: `${seasonProgress}%`,
-              background: 'linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6))',
+              background: 'linear-gradient(90deg, #D4AF37, #FFDF73)',
               borderRadius: 99,
             }}
           />
@@ -227,7 +227,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
         <div
           style={{
             fontSize: '9px',
-            color: 'rgba(255,255,255,0.3)',
+            color: 'var(--text-muted)',
             marginTop: 3,
             textAlign: 'right',
           }}
@@ -243,7 +243,7 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
         ))}
         <div
           style={{
-            borderTop: '1px dashed rgba(255,255,255,0.08)',
+            borderTop: '1px dashed var(--border-primary)',
             margin: '6px 0',
           }}
         />
@@ -257,10 +257,10 @@ export function SeasonRanking({ userPoints }: SeasonRankingProps) {
         style={{
           marginTop: 10,
           padding: '8px 10px',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'var(--input-bg)',
           borderRadius: 8,
           fontSize: '10px',
-          color: 'rgba(255,255,255,0.35)',
+          color: 'var(--text-muted)',
           lineHeight: 1.4,
           textAlign: 'center',
         }}

@@ -28,9 +28,9 @@ export const BottomNav = () => {
           <div style={{ padding: '10px 16px 6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
               <Truck size={14} color="#2ecc71" />
-              <span style={{ fontSize: '11.5px', color: '#fff', fontWeight: 600 }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-primary)', fontWeight: 600 }}>
                 {missingForFreeShipping > 0 
-                  ? <>Faltam <strong style={{color:'#FFDF73'}}>R$ {missingForFreeShipping.toFixed(2).replace('.', ',')}</strong> para frete grátis</>
+                  ? <>Faltam <strong style={{color:'#D4AF37'}}>R$ {missingForFreeShipping.toFixed(2).replace('.', ',')}</strong> para frete grátis</>
                   : <strong style={{color:'#2ecc71'}}>Você ganhou frete grátis!</strong>
                 }
               </span>
@@ -39,7 +39,7 @@ export const BottomNav = () => {
             <div style={{ 
               width: '100%', 
               height: '5px', 
-              background: 'rgba(255,255,255,0.1)', 
+              background: 'var(--border-primary)', 
               borderRadius: '3px',
               overflow: 'hidden'
             }}>
@@ -71,12 +71,12 @@ export const BottomNav = () => {
                 justifyContent: 'center',
                 position: 'relative'
               }}>
-                <ShoppingBag size={14} color="#FFDF73" className="lucide-shopping-bag" />
+                <ShoppingBag size={14} color="#D4AF37" className="lucide-shopping-bag" />
                 <span style={{
                   position: 'absolute',
                   top: '-4px',
                   right: '-4px',
-                  background: '#FFDF73',
+                  background: '#D4AF37',
                   color: '#000',
                   fontSize: '8.5px',
                   fontWeight: '900',
@@ -90,16 +90,16 @@ export const BottomNav = () => {
                   {totalItems}
                 </span>
               </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '850', color: '#fff', letterSpacing: '-0.1px' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: '850', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
                 Ver meu carrinho
               </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: '950', color: '#FFDF73' }}>
+              <span style={{ fontSize: '12px', fontWeight: '950', color: '#D4AF37' }}>
                 R$ {totalPrice.toFixed(2)}
               </span>
-              <span style={{ fontSize: '10px', color: '#FFDF73', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
+              <span style={{ fontSize: '10px', color: '#D4AF37', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
             </div>
           </div>
         </div>

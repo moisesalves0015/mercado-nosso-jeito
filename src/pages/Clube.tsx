@@ -401,7 +401,7 @@ export const Clube = () => {
     return (
       <main className="app clube-page">
         <header className="clube-topbar">
-          <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div className="clube-topbar-content">
             <div className="clube-logo-container">
               <span className="clube-logo-text">clube nosso jeito</span>
@@ -435,7 +435,7 @@ export const Clube = () => {
     <main className="app clube-page">
       {/* HEADER PREMIUM */}
       <header className="clube-topbar">
-        <div className="safe-area-top-bg" style={{ background: '#090705' }} />
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div className="clube-topbar-content">
           <div className="clube-logo-container">
             <Gem size={15} color="#FFDF73" style={{ filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.6))' }} />
