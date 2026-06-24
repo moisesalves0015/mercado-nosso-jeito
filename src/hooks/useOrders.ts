@@ -364,7 +364,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
     }));
 
     const productDocs = await Promise.all(
-      productRefs.map(p => transaction.get(p.ref))
+      productRefs.map((p: any) => transaction.get(p.ref))
     );
 
     const updates: { ref: any, newStock: number, history: any[] }[] = [];
