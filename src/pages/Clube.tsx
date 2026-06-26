@@ -5,16 +5,23 @@ import {
   Gem, 
   CheckCircle, 
   Check,
-  Play, 
   UserPlus, 
   ShoppingBag, 
   Flame, 
   ArrowRight, 
   MessageCircle,
   ExternalLink,
-  Truck
+  Truck,
+  Trophy,
+  X
 } from 'lucide-react';
 import { SeasonRanking } from '../components/SeasonRanking';
+import { db } from '../firebase';
+import { doc, setDoc, onSnapshot, updateDoc, arrayUnion, increment, collection, getDocs, query, where } from 'firebase/firestore';
+import { useAuth } from '../hooks/useAuth';
+import { performCheckinTransaction } from '../services/checkinService';
+import { useOrders } from '../hooks/useOrders';
+import { useCart } from '../hooks/useCart';
 
 interface Mission {
   id: string;
@@ -70,23 +77,27 @@ const PremiumDiamondSVG = ({ size = 24, className = '', style = {}, fill = 'none
   </svg>
 );
 
+const formatHistoryDate = (dateVal: any): string => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string') return dateVal;
+  if (dateVal instanceof Date) return dateVal.toLocaleString('pt-BR');
+  if (typeof dateVal.toDate === 'function') return dateVal.toDate().toLocaleString('pt-BR');
+  if (typeof dateVal.seconds === 'number') return new Date(dateVal.seconds * 1000).toLocaleString('pt-BR');
+  return String(dateVal);
+};
+
 export const Clube = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [coins, setCoins] = useState<number>(() => {
-    const saved = localStorage.getItem('user_diamonds');
-    return saved ? parseInt(saved, 10) : 320;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('user_diamonds', coins.toString());
-    window.dispatchEvent(new Event('diamonds_updated'));
-  }, [coins]);
+  const [coins, setCoins] = useState<number>(0);
 
   const [popBadge, setPopBadge] = useState<boolean>(false);
-  const [streak, setStreak] = useState<number>(7);
+  const [streak, setStreak] = useState<number>(0);
+  const [currentDay, setCurrentDay] = useState<number>(1);
   const [checkedIn, setCheckedIn] = useState<boolean>(false);
-  const [vipProgress, setVipProgress] = useState<number>(64);
+  const [vipProgress, setVipProgress] = useState<number>(0);
   const [vipTier, setVipTier] = useState<string>('Bronze');
   const [activeAd, setActiveAd] = useState<SponsorAd | null>(null);
   const [adTimer, setAdTimer] = useState<number>(3);
@@ -99,80 +110,168 @@ export const Clube = () => {
     description?: string;
   } | null>(null);
   const [completedAds, setCompletedAds] = useState<string[]>([]);
+  
+  const [freeSpinUsed, setFreeSpinUsed] = useState<boolean>(false);
+  const [showRanking, setShowRanking] = useState<boolean>(false);
+  const [showReferralsModal, setShowReferralsModal] = useState<boolean>(false);
 
-  // Simulated points history ledgers
-  const [history, setHistory] = useState<Array<{id: string; desc: string; date: string; value: string; isPlus: boolean}>>([
-    { id: '1', desc: 'Indicação de Amigo (Marcos)', date: 'Hoje, 10:42', value: '+80', isPlus: true },
-    { id: '2', desc: 'Check-in Diário (Dia 6)', date: 'Ontem, 08:15', value: '+15', isPlus: true },
-    { id: '3', desc: 'Desconto Resgatado R$ 5,00', date: '15 Mai, 19:30', value: '-150', isPlus: false },
-    { id: '4', desc: 'Pedido Completado #8942', date: '14 Mai, 14:22', value: '+100', isPlus: true },
-  ]);
+  // Dynamic points history ledgers
+  const [history, setHistory] = useState<Array<{id: string; desc: string; date: string; value: string; isPlus: boolean}>>([]);
 
-  const [missions, setMissions] = useState<Mission[]>([
-    { id: 'm1', title: 'Check-in Diário', rewardText: '+15 diamantes', rewardVal: 15, progressText: '0/1 dia', completed: false, type: 'checkin' },
-    { id: 'm2', title: 'Assistir Anúncio', rewardText: '+50 diamantes', rewardVal: 50, progressText: '0/1 vídeo', completed: false, type: 'ad' },
-    { id: 'm3', title: 'Fazer Pedido', rewardText: '+100 diamantes', rewardVal: 100, progressText: '0/1 pedido', completed: false, type: 'order' },
-    { id: 'm4', title: 'Indicar Amigo', rewardText: '+80 diamantes', rewardVal: 80, progressText: '0/3 indicados', completed: false, type: 'refer' },
-    { id: 'm5', title: 'Comprar Combo', rewardText: '+120 diamantes', rewardVal: 120, progressText: '0/1 combo', completed: false, type: 'combo' },
-  ]);
+  const [sponsorAds, setSponsorAds] = useState<SponsorAd[]>([]);
+  const [rewards, setRewards] = useState<RewardItem[]>([]);
+  const [profileMissions, setProfileMissions] = useState<{ order: boolean; refer: boolean; combo: boolean }>({ order: false, refer: false, combo: false });
+  const [referredUsers, setReferredUsers] = useState<any[]>([]);
 
-  const sponsorAds: SponsorAd[] = [
-    { 
-      id: 'ad1', 
-      brand: 'Melitta', 
-      title: 'Melitta Especial', 
-      desc: 'Café fresquinho do condomínio! Assista e ganhe 50 diamantes.', 
-      logo: '/cafe-novo.png', 
-      rewardVal: 50, 
-      type: 'coins', 
-      buttonLabel: 'Assistir',
-      bannerImage: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=400',
-      duration: 20,
-      category: 'Serviço Premium'
-    },
-    { 
-      id: 'ad2', 
-      brand: 'Danone Grego', 
-      title: 'Danone Grego Especial', 
-      desc: 'Estilo de vida leve e saudável! Assista ao spot e ganhe 40 diamantes.', 
-      logo: '/iogurte-novo.webp', 
-      rewardVal: 40, 
-      type: 'coins', 
-      buttonLabel: 'Assistir',
-      bannerImage: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=400',
-      duration: 30,
-      category: 'Bem-Estar'
-    },
-    { 
-      id: 'ad3', 
-      brand: 'Do Bem', 
-      title: 'Do Bem Especial', 
-      desc: 'Sucos 100% naturais! Conheça a nossa história e ganhe frete grátis.', 
-      logo: '/suco_do_bem_laranja_integral.png', 
-      rewardVal: 0, 
-      type: 'shipping', 
-      buttonLabel: 'Ativar Frete',
-      bannerImage: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?q=80&w=400',
-      duration: 25,
-      category: 'Parceiro Local'
-    },
-  ];
+  const { orders } = useOrders(user?.uid || null);
+  const { cartItems } = useCart();
 
-  const rewards: RewardItem[] = [
-    { id: 'r1', title: 'Frete Grátis Recorrente', cost: 100, desc: 'Clube Exclusivo', image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=200', code: 'FREEFREQ' },
-    { id: 'r2', title: 'Cupom de R$ 5,00 OFF', cost: 150, desc: 'Válido para todo o app', image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=200', code: 'NOSSOCINCO' },
-    { id: 'r3', title: 'Energético Monster 473ml', cost: 250, desc: 'Ganhe um Monster gelado', image: 'https://images.unsplash.com/photo-1622543953490-0b70039a23f9?q=80&w=200', code: 'MONSTERCLUB' },
-    { id: 'r4', title: 'Iogurte Danone Grego', cost: 200, desc: 'Copinho unitário grátis', image: '/iogurte-novo.webp', code: 'GREGOGRATS' },
-    { id: 'r5', title: 'Cashback R$ 10,00', cost: 300, desc: 'Crédito na próxima compra', image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=200', code: 'CASHBACK10' },
-  ];
-
-  // Simulated Loading Skeleton Screen
+  // Listen to referred users
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 850);
-    return () => clearTimeout(timer);
+    if (!user) return;
+    const qRefer = query(collection(db, 'users'), where('referredBy', '==', user.uid));
+    const unsubRefer = onSnapshot(qRefer, snap => {
+      setReferredUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+    });
+    return () => unsubRefer();
+  }, [user]);
+
+  // Fetch dynamic configurations from Admin Collections
+  useEffect(() => {
+    const unsub2 = onSnapshot(collection(db, 'premium_offers'), snap => {
+      setSponsorAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+    });
+    const unsub3 = onSnapshot(collection(db, 'diamond_rewards'), snap => {
+      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+    });
+    return () => { unsub2(); unsub3(); };
   }, []);
+
+  // Firebase Connection and Initialization
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    
+    const clubeRef = doc(db, 'users', user.uid, 'clube', 'profile');
+    
+    const unsubscribe = onSnapshot(clubeRef, async (snap) => {
+      if (!snap.exists()) {
+        await setDoc(clubeRef, {
+          diamonds: 320,
+          streak: 1,
+          lastCheckinDate: '',
+          freeSpinUsed: false,
+          freeSpinDate: '',
+          history: [
+            { id: '1', desc: 'Bem-vindo ao Clube!', date: 'Hoje', value: '+320', isPlus: true }
+          ],
+          missions: { order: false, refer: false, combo: false },
+          completedAds: []
+        });
+      } else {
+        const data = snap.data();
+        setCoins(data.diamonds || 0);
+        window.dispatchEvent(new Event('diamonds_updated'));
+        
+        const now = new Date();
+        const todayUTC = now.toISOString().split('T')[0];
+        const lastCheckinStr = data.last_checkin_at;
+        
+        let cDay = data.current_day || 1;
+        let cStreak = data.streak || 0;
+        
+        if (lastCheckinStr) {
+          const lastCheckinUTC = new Date(lastCheckinStr).toISOString().split('T')[0];
+          
+          if (todayUTC === lastCheckinUTC) {
+            setCheckedIn(true);
+          } else {
+            setCheckedIn(false);
+            const expectedNextDate = new Date(lastCheckinUTC);
+            expectedNextDate.setUTCDate(expectedNextDate.getUTCDate() + 1);
+            if (todayUTC !== expectedNextDate.toISOString().split('T')[0]) {
+              // Missed a day
+              cDay = 1;
+              cStreak = 0;
+            }
+          }
+        } else {
+          setCheckedIn(false);
+          cDay = 1;
+          cStreak = 0;
+        }
+        
+        setCurrentDay(cDay);
+        setStreak(cStreak);
+        const currentStreak = cStreak;
+        
+        if (currentStreak < 7) {
+          setVipTier('Bronze');
+          setVipProgress(Math.min((currentStreak / 7) * 100, 100));
+        } else if (currentStreak < 30) {
+          setVipTier('Prata');
+          setVipProgress(Math.min(((currentStreak - 7) / 23) * 100, 100));
+        } else {
+          setVipTier('Ouro');
+          setVipProgress(100);
+        }
+        
+        const todayBr = new Date().toLocaleDateString('pt-BR');
+        if (data.freeSpinDate !== todayBr) {
+          setFreeSpinUsed(false);
+        } else {
+          setFreeSpinUsed(data.freeSpinUsed || false);
+        }
+        
+        if (data.history) setHistory(data.history);
+        if (data.completedAds) setCompletedAds(data.completedAds);
+        if (data.missions) setProfileMissions(data.missions);
+        
+        setIsLoading(false);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+
+  const completedReferralsCount = referredUsers.filter((u: any) => u.firstOrderPlaced).length;
+  const hasDeliveredOrder = orders.some((o: any) => o.status === 'delivered');
+
+  const missions: Mission[] = [
+    { 
+      id: 'm3', 
+      title: 'Fazer Pedido', 
+      rewardText: '+100 diamantes', 
+      rewardVal: 100, 
+      progressText: profileMissions.order 
+        ? '1/1 pedido' 
+        : (hasDeliveredOrder ? '1/1 concluído! Coletar' : '0/1 pedido'), 
+      completed: profileMissions.order || false, 
+      type: 'order' 
+    },
+    { 
+      id: 'm4', 
+      title: 'Indicar Amigo', 
+      rewardText: '+80 diamantes', 
+      rewardVal: 80, 
+      progressText: profileMissions.refer 
+        ? '3/3 indicados' 
+        : `${Math.min(completedReferralsCount, 3)}/3 indicados`, 
+      completed: profileMissions.refer || false, 
+      type: 'refer' 
+    },
+    { 
+      id: 'm5', 
+      title: 'Comprar Combo', 
+      rewardText: '+120 diamantes', 
+      rewardVal: 120, 
+      progressText: profileMissions.combo ? '1/1 combo' : '0/1 combo', 
+      completed: profileMissions.combo || false, 
+      type: 'combo' 
+    },
+  ];
 
   // Shimmering Gold Confetti explosion sequence (matching brand premium theme)
   useEffect(() => {
@@ -266,7 +365,17 @@ export const Clube = () => {
     };
   }, [successModal, isAdPlaying]);
 
-  const handleEarnCoins = (amount: number, description: string) => {
+  const updateFirebaseDoc = async (updates: any) => {
+    if (!user) return;
+    const clubeRef = doc(db, 'users', user.uid, 'clube', 'profile');
+    try {
+      await updateDoc(clubeRef, updates);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleEarnCoins = async (amount: number, description: string) => {
     // Progressive Count-Up Ticker Animation for Coins Balance
     const startCoins = coins;
     const targetCoins = startCoins + amount;
@@ -278,10 +387,10 @@ export const Clube = () => {
     const durationMs = 2400;
     const stepTimeMs = 60;
     const totalSteps = durationMs / stepTimeMs;
-    const increment = Math.max(1, Math.round(amount / totalSteps));
+    const incrementAmount = Math.max(1, Math.round(amount / totalSteps));
     
     const counterInterval = setInterval(() => {
-      tempCoins += increment;
+      tempCoins += incrementAmount;
       if (tempCoins >= targetCoins) {
         tempCoins = targetCoins;
         clearInterval(counterInterval);
@@ -290,46 +399,43 @@ export const Clube = () => {
       setCoins(tempCoins);
     }, stepTimeMs);
 
-    // Update VIP progress
-    setVipProgress((prev) => {
-      const next = prev + (amount / 10);
-      if (next >= 100) {
-        setVipTier('Prata');
-        return next - 100;
-      }
-      return next;
-    });
-
-    // Append to ledger history
     const now = new Date();
     const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    setHistory((prev) => [
-      {
+    
+    await updateFirebaseDoc({
+      diamonds: increment(amount),
+      history: arrayUnion({
         id: Math.random().toString(),
         desc: description,
         date: `Hoje, ${timeStr}`,
         value: `+${amount}`,
-        isPlus: true,
-      },
-      ...prev,
-    ]);
+        isPlus: true
+      })
+    });
   };
 
-  const handleCheckin = () => {
-    if (checkedIn) return;
+  const handleCheckin = async () => {
+    if (checkedIn || !user) return;
+    
+    // Optimistic UI lock
     setCheckedIn(true);
-    setStreak(prev => prev + 1);
     
-    setSuccessModal({
-      title: 'Check-in Realizado!',
-      desc: 'Check-in Diário (Dia 8). Fique ativo para acumular mais diamantes e resgatar prêmios!',
-      coupon: 'CREDITADO',
-      amountGained: 15,
-      description: 'Check-in Diário (Dia 8)'
-    });
-    
-    // Mark checkin mission completed
-    setMissions(prev => prev.map(m => m.type === 'checkin' ? { ...m, completed: true, progressText: '1/1 dia' } : m));
+    try {
+      const result = await performCheckinTransaction(user.uid);
+      if (result.success) {
+        setSuccessModal({
+          title: 'Check-in Realizado!',
+          desc: `Check-in Diário (Dia ${result.currentDay}). Fique ativo para acumular mais diamantes e resgatar prêmios!`,
+          coupon: 'CREDITADO',
+          amountGained: result.reward,
+          description: `Check-in Diário (Dia ${result.currentDay})`
+        });
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "Erro ao fazer check-in.");
+      setCheckedIn(false); // unlock if failed
+    }
   };
 
   const handleAdClick = (ad: SponsorAd) => {
@@ -338,24 +444,42 @@ export const Clube = () => {
     setIsAdPlaying(true);
   };
 
-  const handleReferral = () => {
-    navigator.clipboard.writeText('https://mercado.nossojeito/invite?ref=MEMBER320');
-    alert('Link de indicação exclusivo copiado!');
-    
-    setSuccessModal({
-      title: 'Indicação Registrada!',
-      desc: 'Sua indicação foi computada com sucesso no sistema!',
-      coupon: 'CREDITADO',
-      amountGained: 80,
-      description: 'Indicação Compartilhada'
-    });
-    
-    // Mark refer mission completed
-    setMissions(prev => prev.map(m => m.type === 'refer' ? { ...m, completed: true, progressText: '1/3 indicados' } : m));
+  const handleCopyReferralLink = () => {
+    if (!user) return;
+    const inviteUrl = `${window.location.origin}/register?ref=${user.uid}`;
+    navigator.clipboard.writeText(inviteUrl);
+    alert('Link de indicação exclusivo copiado! Envie para seus amigos.');
   };
 
-  const handleCompleteOrder = () => {
-    if (missions[2].completed) return;
+  const handleReferReferralReward = async () => {
+    if (profileMissions.refer) return;
+    
+    setSuccessModal({
+      title: 'Indicações Concluídas!',
+      desc: 'Parabéns por atingir a meta de 3 indicações qualificadas! Seus diamantes bônus foram ativados com sucesso!',
+      coupon: 'CREDITADO',
+      amountGained: 80,
+      description: 'Missão: Indicar Amigo'
+    });
+    
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
+    
+    await updateFirebaseDoc({
+      'missions.refer': true,
+      diamonds: increment(80),
+      history: arrayUnion({
+        id: Math.random().toString(),
+        desc: 'Missão: Indicar Amigos (3/3)',
+        date: `Hoje, ${timeStr}`,
+        value: `+80`,
+        isPlus: true
+      })
+    });
+  };
+
+  const handleCompleteOrder = async () => {
+    if (profileMissions.order) return;
     
     setSuccessModal({
       title: 'Pedido Concluído!',
@@ -365,35 +489,46 @@ export const Clube = () => {
       description: 'Missão: Fazer Pedido'
     });
     
-    setMissions(prev => prev.map(m => m.type === 'order' ? { ...m, completed: true, progressText: '1/1 pedido' } : m));
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
+    
+    await updateFirebaseDoc({
+      'missions.order': true,
+      diamonds: increment(100),
+      history: arrayUnion({
+        id: Math.random().toString(),
+        desc: 'Missão: Fazer Pedido',
+        date: `Hoje, ${timeStr}`,
+        value: `+100`,
+        isPlus: true
+      })
+    });
   };
 
-  const handleRedeemReward = (reward: RewardItem) => {
+  const handleRedeemReward = async (reward: RewardItem) => {
     if (coins < reward.cost) {
       alert('Diamantes insuficientes para resgatar este benefício premium.');
       return;
     }
-    setCoins(prev => prev - reward.cost);
     
-    // Append to ledger history
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    setHistory((prev) => [
-      {
-        id: Math.random().toString(),
-        desc: `Resgate: ${reward.title}`,
-        date: `Hoje, ${timeStr}`,
-        value: `-${reward.cost}`,
-        isPlus: false,
-      },
-      ...prev,
-    ]);
-
-    // Show beautiful coupon modal
     setSuccessModal({
       title: 'Benefício Resgatado!',
       desc: `Parabéns! Você trocou seus diamantes por: ${reward.title}. Use o cupom abaixo no checkout.`,
       coupon: reward.code
+    });
+    
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
+    
+    await updateFirebaseDoc({
+      diamonds: increment(-reward.cost),
+      history: arrayUnion({
+        id: Math.random().toString(),
+        desc: `Resgate: ${reward.title}`,
+        date: `Hoje, ${timeStr}`,
+        value: `-${reward.cost}`,
+        isPlus: false
+      })
     });
   };
 
@@ -441,9 +576,17 @@ export const Clube = () => {
             <Gem size={15} color="#FFDF73" style={{ filter: 'drop-shadow(0 0 4px rgba(212,175,55,0.6))' }} />
             <span className="clube-logo-text">clube nosso jeito</span>
           </div>
-          <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
-            <Gem size={11} fill="#FFDF73" />
-            <span>{coins} diamantes</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button 
+              onClick={() => setShowRanking(true)}
+              style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 12, padding: 6, color: '#FFDF73', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Trophy size={16} />
+            </button>
+            <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
+              <Gem size={11} fill="#FFDF73" />
+              <span>{coins} diamantes</span>
+            </div>
           </div>
         </div>
       </header>
@@ -476,24 +619,26 @@ export const Clube = () => {
 
       {/* NOVO BANNER/CARD DE ACESSO À ROLETA */}
       <div 
-        onClick={() => navigate('/roleta')}
+        onClick={() => !freeSpinUsed && navigate('/roleta')}
         style={{
-          background: 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.06) 100%)',
-          border: '1.5px solid rgba(212,175,55,0.3)',
+          background: freeSpinUsed ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, rgba(212,175,55,0.18) 0%, rgba(212,175,55,0.06) 100%)',
+          border: freeSpinUsed ? '1px solid rgba(255,255,255,0.1)' : '1.5px solid rgba(212,175,55,0.3)',
           borderRadius: 20,
           padding: '16px 20px',
           margin: '0 0 20px',
-          cursor: 'pointer',
+          cursor: freeSpinUsed ? 'default' : 'pointer',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 8px 24px rgba(212,175,55,0.1)',
+          boxShadow: freeSpinUsed ? 'none' : '0 8px 24px rgba(212,175,55,0.1)',
           transition: 'all 0.25s ease',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          filter: freeSpinUsed ? 'grayscale(100%) opacity(0.8)' : 'none'
         }}
-        className="clube-roulette-banner animate-pulse"
+        className={`clube-roulette-banner ${freeSpinUsed ? '' : 'animate-scale-pulse'}`}
       >
+        <style>{`.animate-scale-pulse { animation: scalePulse 2s infinite; } @keyframes scalePulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }`}</style>
         <div style={{ position: 'absolute', right: '-20px', top: '-10px', width: 100, height: 100, opacity: 0.15, background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
         
         <div>
@@ -507,11 +652,20 @@ export const Clube = () => {
         </div>
       </div>
 
-      {/* RANKING DA TEMPORADA */}
-      <div className="clube-section-title-row">
-        <h3>Ranking da Temporada</h3>
-      </div>
-      <SeasonRanking userPoints={coins * 12 + 4200} />
+      {/* RANKING DA TEMPORADA (MODAL) */}
+      {showRanking && createPortal(
+        <div className="clube-modal-overlay" onClick={() => setShowRanking(false)} style={{ zIndex: 99999, backdropFilter: 'blur(8px)' }}>
+          <div className="clube-modal-content" onClick={e => e.stopPropagation()} style={{ width: '92%', maxWidth: 420, padding: 0, overflow: 'hidden', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)' }}>
+            <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-gold)', background: 'var(--bg-secondary)' }}>
+              <h3 style={{ margin: 0, fontSize: 18, color: '#FFDF73', display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={18} /> Ranking da Temporada</h3>
+              <button onClick={() => setShowRanking(false)} style={{ background: 'var(--input-bg)', border: 'none', color: 'var(--text-secondary)', width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <div style={{ maxHeight: '75vh', overflowY: 'auto', padding: '16px' }}>
+              <SeasonRanking userPoints={coins * 12 + 4200} />
+            </div>
+          </div>
+        </div>
+      , document.body)}
 
       {/* MISSÕES DIÁRIAS (HORIZONTAL SCROLL) */}
       <div className="clube-section-title-row">
@@ -523,29 +677,49 @@ export const Clube = () => {
       <div className="clube-weekly-calendar">
         {[...Array(7)].map((_, index) => {
           const dayNum = index + 1;
-          const isCompleted = streak >= dayNum || (checkedIn && dayNum === streak);
-          const isActive = dayNum === (checkedIn ? streak : streak + 1);
-          const isLocked = dayNum > (checkedIn ? streak : streak + 1);
+          
+          let isCompleted = false;
+          let isTodayPending = false;
+          let isFuture = false;
+
+          if (dayNum < currentDay) {
+            isCompleted = true;
+          } else if (dayNum === currentDay) {
+            if (checkedIn) {
+              isCompleted = true;
+            } else {
+              isTodayPending = true;
+            }
+          } else {
+            isFuture = true;
+          }
+
+          const dayNames = ['Dia 1', 'Dia 2', 'Dia 3', 'Dia 4', 'Dia 5', 'Dia 6', 'Dia 7'];
           const rewardVal = dayNum === 7 ? 50 : dayNum >= 5 ? 20 : 15;
-          const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+          // Classes
+          let slotClass = 'weekly-day-slot ';
+          if (isFuture) slotClass += 'locked ';
+          if (isCompleted) slotClass += 'completed ';
+          if (isTodayPending) slotClass += 'active ';
 
           return (
             <div 
               key={index} 
-              className={`weekly-day-slot ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
-              onClick={isActive ? handleCheckin : undefined}
-              title={isActive ? 'Clique para fazer Check-in!' : undefined}
+              className={slotClass.trim()}
+              onClick={isTodayPending ? handleCheckin : undefined}
+              title={isTodayPending ? 'Clique para fazer Check-in!' : undefined}
             >
               <span className="weekly-day-name">{dayNames[index]}</span>
               <div className="weekly-day-icon-wrap">
                 {isCompleted ? (
                   <Check size={10} strokeWidth={3} />
                 ) : (
-                  <PremiumDiamondSVG size={10} fill={isActive ? '#FFDF73' : 'none'} color={isActive ? '#FFDF73' : 'rgba(255,255,255,0.2)'} />
+                  <PremiumDiamondSVG size={10} fill={isTodayPending ? '#FFDF73' : 'none'} color={isTodayPending ? '#FFDF73' : 'rgba(255,255,255,0.2)'} />
                 )}
               </div>
               <span className="weekly-day-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                <PremiumDiamondSVG size={8} fill={isActive ? '#FFDF73' : 'rgba(255,255,255,0.4)'} color={isActive ? '#FFDF73' : 'rgba(255,255,255,0.4)'} />
+                <PremiumDiamondSVG size={8} fill={isTodayPending ? '#FFDF73' : 'rgba(255,255,255,0.4)'} color={isTodayPending ? '#FFDF73' : 'rgba(255,255,255,0.4)'} />
                 +{rewardVal}
               </span>
             </div>
@@ -554,109 +728,70 @@ export const Clube = () => {
       </div>
 
       <div className="clube-missions-list">
-        {/* CHECK-IN ROW */}
-        <div className={`clube-mission-row ${checkedIn ? 'completed' : ''}`}>
-          <div className="clube-mission-left">
-            <div className="clube-mission-icon-box">
-              <CheckCircle size={16} color={checkedIn ? "#34C759" : "#D4AF37"} />
+        {missions.map(m => (
+          <div className={`clube-mission-row ${m.completed ? 'completed' : ''}`} key={m.id}>
+            <div className="clube-mission-left">
+              <div className="clube-mission-icon-box">
+                {m.type === 'order' && <ShoppingBag size={15} color={m.completed ? "#34C759" : "#D4AF37"} />}
+                {m.type === 'refer' && <UserPlus size={15} color={m.completed ? "#34C759" : "#D4AF37"} />}
+                {m.type === 'combo' && <Gem size={15} color={m.completed ? "#34C759" : "#D4AF37"} />}
+              </div>
+              <div className="clube-mission-details">
+                <h4>{m.title}</h4>
+                <p>{m.progressText}</p>
+                {m.type === 'refer' && (
+                  <button 
+                    onClick={() => setShowReferralsModal(true)}
+                    style={{ marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 10, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    Acompanhar Indicações
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="clube-mission-details">
-              <h4>Check-in Diário</h4>
-              <p>Acesse o app diariamente e acumule diamantes</p>
-            </div>
-          </div>
-          <div className="clube-mission-right">
-            <div className="clube-mission-reward-badge">
-              <PremiumDiamondSVG size={10} fill="#FFDF73" color="#FFDF73" />
-              <span>+15</span>
-            </div>
-            <button 
-              className={`clube-mission-action-btn ${checkedIn ? 'completed' : ''}`}
-              onClick={handleCheckin}
-              disabled={checkedIn}
-            >
-              {checkedIn ? 'Resgatado' : 'Check-in'}
-            </button>
-          </div>
-        </div>
-
-        {/* AD ROW */}
-        <div className={`clube-mission-row ${missions[1].completed ? 'completed' : ''}`}>
-          <div className="clube-mission-left">
-            <div className="clube-mission-icon-box">
-              <Play size={15} color={missions[1].completed ? "#34C759" : "#D4AF37"} />
-            </div>
-            <div className="clube-mission-details">
-              <h4>Assistir Spot</h4>
-              <p>Assista a anúncios rápidos de marcas parceiras</p>
-            </div>
-          </div>
-          <div className="clube-mission-right">
-            <div className="clube-mission-reward-badge">
-              <PremiumDiamondSVG size={10} fill="#FFDF73" color="#FFDF73" />
-              <span>+50</span>
-            </div>
-            <button 
-              className={`clube-mission-action-btn ${missions[1].completed ? 'completed' : ''}`}
-              onClick={() => handleAdClick(sponsorAds[0])}
-              disabled={missions[1].completed}
-            >
-              {missions[1].completed ? 'Concluído' : 'Assistir'}
-            </button>
-          </div>
-        </div>
-
-        {/* REFER FRIEND ROW */}
-        <div className={`clube-mission-row ${missions[3].completed ? 'completed' : ''}`}>
-          <div className="clube-mission-left">
-            <div className="clube-mission-icon-box">
-              <UserPlus size={15} color={missions[3].completed ? "#34C759" : "#D4AF37"} />
-            </div>
-            <div className="clube-mission-details">
-              <h4>Indicar Amigo</h4>
-              <p>Convide novos contatos para economizar no app</p>
-            </div>
-          </div>
-          <div className="clube-mission-right">
-            <div className="clube-mission-reward-badge">
-              <PremiumDiamondSVG size={10} fill="#FFDF73" color="#FFDF73" />
-              <span>+80</span>
-            </div>
-            <button 
-              className={`clube-mission-action-btn ${missions[3].completed ? 'completed' : ''}`}
-              onClick={handleReferral}
-              disabled={missions[3].completed}
-            >
-              {missions[3].completed ? 'Concluído' : 'Indicar'}
-            </button>
-          </div>
-        </div>
-
-        {/* COMPLETE ORDER ROW */}
-        <div className={`clube-mission-row ${missions[2].completed ? 'completed' : ''}`}>
-          <div className="clube-mission-left">
-            <div className="clube-mission-icon-box">
-              <ShoppingBag size={15} color={missions[2].completed ? "#34C759" : "#D4AF37"} />
-            </div>
-            <div className="clube-mission-details">
-              <h4>Fazer Pedido</h4>
-              <p>Receba recompensas a cada compra concluída</p>
+            <div className="clube-mission-right">
+              <div className="clube-mission-reward-badge">
+                <PremiumDiamondSVG size={10} fill="#FFDF73" color="#FFDF73" />
+                <span>+{m.rewardVal}</span>
+              </div>
+               <button 
+                className={`clube-mission-action-btn ${m.completed ? 'completed' : ''}`}
+                onClick={() => {
+                  if (m.type === 'order') {
+                    if (hasDeliveredOrder) {
+                      handleCompleteOrder();
+                    } else {
+                      if (cartItems.length > 0) {
+                        navigate('/cart');
+                      } else {
+                        navigate('/');
+                      }
+                    }
+                  }
+                  if (m.type === 'refer') {
+                    if (completedReferralsCount >= 3) {
+                      handleReferReferralReward();
+                    } else {
+                      handleCopyReferralLink();
+                    }
+                  }
+                }}
+                disabled={m.completed}
+              >
+                {m.completed 
+                  ? 'Concluído' 
+                  : (m.type === 'order' 
+                      ? (hasDeliveredOrder ? 'Coletar' : 'Fazer') 
+                      : (m.type === 'refer' 
+                          ? (completedReferralsCount >= 3 ? 'Coletar' : 'Indicar') 
+                          : 'Fazer'
+                        )
+                    )
+                }
+              </button>
             </div>
           </div>
-          <div className="clube-mission-right">
-            <div className="clube-mission-reward-badge">
-              <PremiumDiamondSVG size={10} fill="#FFDF73" color="#FFDF73" />
-              <span>+100</span>
-            </div>
-            <button 
-              className={`clube-mission-action-btn ${missions[2].completed ? 'completed' : ''}`}
-              onClick={handleCompleteOrder}
-              disabled={missions[2].completed}
-            >
-              {missions[2].completed ? 'Concluído' : 'Completar'}
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* ÁREA DE ANÚNCIOS OPCIONAIS (SPONSORED) */}
@@ -765,7 +900,7 @@ export const Clube = () => {
             <div className="clube-ledger-row" key={h.id}>
               <div className="clube-ledger-left">
                 <span>{h.desc}</span>
-                <span>{h.date}</span>
+                <span>{formatHistoryDate(h.date)}</span>
               </div>
               <span className={`clube-ledger-val ${h.isPlus ? 'plus' : 'minus'}`}>
                 {h.value}
@@ -854,8 +989,10 @@ export const Clube = () => {
                         });
                       }
                       
-                      // Mark ad mission completed
-                      setMissions(prev => prev.map(m => m.type === 'ad' ? { ...m, completed: true, progressText: '1/1 vídeo' } : m));
+                      // Mark ad completed in Firestore and state
+                      updateFirebaseDoc({
+                        completedAds: arrayUnion(activeAd.id)
+                      }).catch(e => console.error("Error saving completed ad:", e));
                       
                       setCompletedAds(prev => [...prev, activeAd.id]);
                       setActiveAd(null);
@@ -1082,6 +1219,78 @@ export const Clube = () => {
         </div>
       ), document.body)}
 
+      {/* REFERRALS TRACKING MODAL */}
+      {showReferralsModal && createPortal((
+        <div className="clube-modal-overlay" onClick={() => setShowReferralsModal(false)} style={{ backdropFilter: 'blur(8px)', zIndex: 99999 }}>
+          <div className="clube-modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '92%', maxWidth: 400, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', padding: 0 }}>
+            <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-gold)', background: 'var(--bg-secondary)' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><UserPlus size={16} /> Acompanhar Indicações</h3>
+              <button onClick={() => setShowReferralsModal(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <div style={{ padding: 20 }}>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 16 }}>Acompanhe o status dos amigos que você indicou. Cada amigo que se cadastrar e realizar o primeiro pedido garante +80 diamantes na sua carteira!</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '300px', overflowY: 'auto' }}>
+                {referredUsers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)', fontSize: 12 }}>
+                    Nenhuma indicação cadastrada ainda. Compartilhe seu link!
+                  </div>
+                ) : (
+                  referredUsers.map((referred) => (
+                    <div key={referred.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <strong style={{ fontSize: 13, color: '#fff' }}>{referred.name}</strong>
+                        <span style={{ 
+                          fontSize: 10, 
+                          background: referred.firstOrderPlaced ? 'rgba(52,199,89,0.2)' : 'rgba(245,158,11,0.2)', 
+                          color: referred.firstOrderPlaced ? '#34C759' : '#F59E0B', 
+                          padding: '2px 6px', 
+                          borderRadius: 8 
+                        }}>
+                          {referred.firstOrderPlaced ? 'Pedido Realizado (+80 💎)' : 'Cadastro Realizado (Pendente)'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span>Status: {referred.firstOrderPlaced ? 'Pedido Concluído' : 'Aguardando 1º pedido'}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+
+      {/* DEV RESET BUTTON */}
+      <div style={{ padding: '20px', textAlign: 'center', marginBottom: 40 }}>
+        <button 
+          onClick={async () => {
+            if (window.confirm('Limpar todos os diamantes, histórico e missões de TODOS os usuários para iniciar os testes do zero?')) {
+              try {
+                const usersSnap = await getDocs(collection(db, 'users'));
+                for (const uDoc of usersSnap.docs) {
+                  await setDoc(doc(db, 'users', uDoc.id, 'clube', 'profile'), {
+                    diamonds: 0,
+                    current_day: 0,
+                    streak: 0,
+                    history: [],
+                    freeSpinUsed: false,
+                    missions: {}
+                  });
+                }
+                alert('Dados limpos com sucesso para TODOS os usuários! A página será recarregada.');
+                window.location.reload();
+              } catch (e) {
+                console.error(e);
+                alert('Erro ao limpar dados de todos os usuários.');
+              }
+            }
+          }}
+          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '10px 20px', borderRadius: 12, fontWeight: 'bold', fontSize: 12, cursor: 'pointer' }}
+        >
+          Limpar Dados (Teste)
+        </button>
+      </div>
 
     </main>
   );

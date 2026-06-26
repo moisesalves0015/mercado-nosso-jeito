@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import {
   Gem, ShoppingBag, Users, TrendingUp, Plus, Edit2, Trash2, Power,
   Store, Search, Filter, Award, X, Package, BarChart2, ChevronDown,
@@ -15,6 +15,7 @@ import {
 import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AdminMarketing } from '../components/AdminMarketing';
+import { AdminClube } from './AdminClube';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
 interface Product {
@@ -51,7 +52,7 @@ interface FirestoreClient {
   id: string; name: string; email: string; role: string;
   diamonds?: number; createdAt?: any;
 }
-type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing';
+type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing' | 'clube';
 // ─── VIP LEVELS ──────────────────────────────────────────────────────────────
 const getVipLevel = (diamonds: number = 0) => {
   if (diamonds >= 5000) return { label: 'Black', emoji: '⬛', color: '#e2e8f0', border: 'rgba(226,232,240,0.3)', bg: 'rgba(255,255,255,0.07)' };
@@ -79,6 +80,19 @@ const getMarginStatus = (margin: number | null) => {
   if (margin < 15)  return { label: '🔴 Risco Alto',  color: '#f97316', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.4)' };
   if (margin < 30)  return { label: '🟡 Aceitável',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.4)' };
   return                   { label: '🟢 Saudável',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)' };
+};
+
+const formatAdminDate = (dateVal: any): string => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string') return dateVal;
+  if (dateVal instanceof Date) return dateVal.toLocaleString('pt-BR');
+  if (typeof dateVal.toDate === 'function') {
+    return dateVal.toDate().toLocaleString('pt-BR');
+  }
+  if (typeof dateVal.seconds === 'number') {
+    return new Date(dateVal.seconds * 1000).toLocaleString('pt-BR');
+  }
+  return String(dateVal);
 };
 
 // ─── KNOWN IMAGES (quick gallery) ────────────────────────────────────────────
@@ -173,7 +187,8 @@ const StatCard = ({ label, value, sub, icon: Icon, iconColor, trend }: any) => (
 export const Admin: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const { tab } = useParams<{ tab?: string }>();
+  const activeTab: TabType = (tab === 'dashboard' ? 'dashboard' : (tab || 'dashboard')) as TabType;
 
   // ── Products ──
   const [products, setProducts] = useState<Product[]>([]);
@@ -407,6 +422,7 @@ export const Admin: React.FC = () => {
     { key: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { key: 'marketing',  label: 'Marketing',  icon: Layers },
     { key: 'roleta',     label: 'Roleta',     icon: RefreshCw },
+    { key: 'clube',      label: 'Clube Vip',  icon: Gem },
   ];
 
   // ═══════ RENDER ═══════════════════════════════════════════════════════════
@@ -443,7 +459,7 @@ export const Admin: React.FC = () => {
           {TABS.map(tab => {
             const Icon = tab.icon; const active = activeTab === tab.key;
             return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+              <button key={tab.key} onClick={() => navigate('/admin/' + tab.key)} style={{
                 flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px',
                 background: active ? crmTheme.primary : crmTheme.cardBg,
                 border: active ? 'none' : `1px solid ${crmTheme.border}`,
@@ -505,7 +521,7 @@ export const Admin: React.FC = () => {
             <div style={sectionCard}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}><AlertCircle size={15} color={crmTheme.warning} /> Pedidos Aguardando Ação</h3>
-                <button onClick={() => setActiveTab('pedidos')} style={{ background: 'none', border: 'none', color: crmTheme.primary, fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>Ver todos <ChevronDown size={12} style={{ transform: 'rotate(-90deg)' }} /></button>
+                <button onClick={() => navigate('/admin/pedidos')} style={{ background: 'none', border: 'none', color: crmTheme.primary, fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>Ver todos <ChevronDown size={12} style={{ transform: 'rotate(-90deg)' }} /></button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {orders.filter(o => o.status === 'Pendente' || o.status === 'Aprovado').length === 0 ? (
@@ -513,13 +529,13 @@ export const Admin: React.FC = () => {
                 ) : orders.filter(o => o.status === 'Pendente' || o.status === 'Aprovado').map(order => {
                   const sc = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' };
                   return (
-                    <div key={order.id} onClick={() => { setSelectedOrder(order); setActiveTab('pedidos'); }} style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', boxShadow: crmTheme.shadowSm }}>
+                    <div key={order.id} onClick={() => { setSelectedOrder(order); navigate('/admin/pedidos'); }} style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', boxShadow: crmTheme.shadowSm }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName}</span>
                           <span style={{ fontSize: 8, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{order.status}</span>
                         </div>
-                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{order.createdAt}</span>
+                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{formatAdminDate(order.createdAt)}</span>
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 900, color: crmTheme.primary }}>R$ {order.total.toFixed(2)}</span>
                     </div>
@@ -642,7 +658,7 @@ export const Admin: React.FC = () => {
                           <span style={{ fontSize: 13.5, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName}</span>
                           <span style={{ fontSize: 9, fontWeight: 800, color: crmTheme.primary }}>#{order.id}</span>
                         </div>
-                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{order.createdAt}</span>
+                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{formatAdminDate(order.createdAt)}</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                         <span style={{ fontSize: 16, fontWeight: 900, color: crmTheme.primary }}>R$ {order.total.toFixed(2)}</span>
@@ -909,7 +925,7 @@ export const Admin: React.FC = () => {
           <div style={{ background: crmTheme.cardBg, border: `1.5px solid ${crmTheme.border}`, borderRadius: 22, width: '100%', maxWidth: 460, padding: 24, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', position: 'relative' }}>
             <button onClick={() => setSelectedOrder(null)} style={{ position: 'absolute', top: 16, right: 16, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, width: 30, height: 30, borderRadius: 8, color: crmTheme.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>
             <h3 style={{ fontSize: 17, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 2px' }}>Pedido #{selectedOrder.id}</h3>
-            <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>{selectedOrder.createdAt} • {selectedOrder.clientName}</span>
+            <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>{formatAdminDate(selectedOrder.createdAt)} • {selectedOrder.clientName}</span>
             <div style={{ margin: '18px 0', borderTop: `1px solid ${crmTheme.border}`, paddingTop: 14 }}>
               <label style={{ ...labelStyle, marginBottom: 8 }}>Itens do Pedido</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -964,6 +980,11 @@ export const Admin: React.FC = () => {
             <button onClick={handleAwardDiamonds} style={{ width: '100%', height: 44, background: crmTheme.success, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(16,185,129,0.2)' }}>Confirmar Premiação 💎</button>
           </div>
         </div>
+      )}
+
+      {/* ══ TAB: CLUBE VIP ═════════════════════════════════════════════════════ */}
+      {activeTab === 'clube' && (
+        <AdminClube />
       )}
 
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>

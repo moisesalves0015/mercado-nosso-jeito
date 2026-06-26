@@ -7693,3 +7693,17 @@ body.light-mode .category-item:hover .category-3d-icon {
   filter: brightness(1.25) contrast(1.1) saturate(1.15) !important;
   transform: scale(1.15);
 }
+
+.weekly-day-slot.missed {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.02) 100%);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+.weekly-day-slot.missed .weekly-day-name,
+.weekly-day-slot.missed .weekly-day-val {
+  color: #FFDF73;
+}
+.weekly-day-slot.missed .weekly-day-icon-wrap {
+  background: rgba(212, 175, 55, 0.1);
+  color: #FFDF73;
+}
+

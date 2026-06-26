@@ -11,7 +11,6 @@ import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
-import { LiveActivityFeed } from '../components/LiveActivityFeed';
 import { useCommunityPresence } from '../hooks/useCommunityPresence';
 
 
@@ -586,10 +585,9 @@ export const Home = () => {
         </Section>
       </div>
 
-      {/* PROVA SOCIAL SILENCIOSA + FEED AO VIVO */}
+      {/* PROVA SOCIAL SILENCIOSA */}
       <div style={{ padding: '0 0 0' }}>
         <SocialProofBanner />
-        <LiveActivityFeed />
       </div>
 
       {/* 2 LISTAS DE CATEGORIAS DE PRODUTO (Grupo 1) */}

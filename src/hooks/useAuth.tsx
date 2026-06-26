@@ -39,6 +39,9 @@ export interface UserProfile {
   foto?: string;
   role: 'client' | 'admin';
   unlockedBadges?: string[];
+  referredBy?: string | null;
+  firstOrderPlaced?: boolean;
+  referralRewarded?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   lastLogin?: Date;
@@ -88,6 +91,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const auth = getAuth(app);
 
+  const toDate = (ts: any): Date | undefined => {
+    if (!ts) return undefined;
+    if (ts instanceof Date) return ts;
+    if (typeof ts.toDate === 'function') return ts.toDate();
+    if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+    if (typeof ts === 'string' || typeof ts === 'number') {
+      const d = new Date(ts);
+      return isNaN(d.getTime()) ? undefined : d;
+    }
+    return undefined;
+  };
+
   // ── Fetch profile from Firestore ──────────────────────────
   const fetchProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile | null> => {
     try {
@@ -105,9 +120,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           foto: data.foto || firebaseUser.photoURL || '',
           role: data.role || 'client',
           unlockedBadges: data.unlockedBadges || [],
-          createdAt: data.createdAt?.toDate?.() ?? undefined,
-          updatedAt: data.updatedAt?.toDate?.() ?? undefined,
-          lastLogin: data.lastLogin?.toDate?.() ?? undefined,
+          referredBy: data.referredBy || null,
+          firstOrderPlaced: !!data.firstOrderPlaced,
+          referralRewarded: !!data.referralRewarded,
+          createdAt: toDate(data.createdAt),
+          updatedAt: toDate(data.updatedAt),
+          lastLogin: toDate(data.lastLogin),
         };
         return profile;
       } else {
@@ -119,6 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: firebaseUser.displayName || 'Usuário',
           email: firebaseUser.email || '',
           role: initialRole,
+          referredBy: null,
+          firstOrderPlaced: false,
+          referralRewarded: false,
         };
         await setDoc(userDocRef, {
           name: profile.name,
@@ -128,6 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           foto: '',
           role: initialRole,
           unlockedBadges: [],
+          referredBy: null,
+          firstOrderPlaced: false,
+          referralRewarded: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
@@ -200,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const snap = await getDoc(userDocRef);
     if (!snap.exists()) {
+      const referredBy = localStorage.getItem('referred_by') || null;
       await setDoc(userDocRef, {
         name: firebaseUser.displayName || 'Usuário Google',
         email: firebaseUser.email || '',
@@ -207,6 +232,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cpf: '',
         foto: firebaseUser.photoURL || '',
         role: 'client',
+        referredBy: referredBy,
+        firstOrderPlaced: false,
+        referralRewarded: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
@@ -229,6 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await firebaseUpdateProfile(firebaseUser, { displayName: data.name });
 
       // Create Firestore document
+      const referredBy = localStorage.getItem('referred_by') || null;
       await setDoc(doc(db, 'users', firebaseUser.uid), {
         name: data.name,
         email: data.email,
@@ -237,6 +266,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         foto: '',
         role: data.email.toLowerCase().startsWith('admin@') ? 'admin' : 'client',
         unlockedBadges: [],
+        referredBy: referredBy,
+        firstOrderPlaced: false,
+        referralRewarded: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),

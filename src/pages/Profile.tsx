@@ -245,8 +245,25 @@ export const Profile: React.FC = () => {
   const avatarUrl = photoPreview || userProfile?.foto || user?.photoURL || '';
   const initials = (userProfile?.name || user?.displayName || 'U')
     .split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
-  const fmtDate = (d?: Date) => d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
-  const fmtTime = (d?: Date) => d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const toDateObj = (ts: any): Date | null => {
+    if (!ts) return null;
+    if (ts instanceof Date) return ts;
+    if (typeof ts.toDate === 'function') return ts.toDate();
+    if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+    if (typeof ts === 'string' || typeof ts === 'number') {
+      const d = new Date(ts);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+  const fmtDate = (d?: any) => {
+    const dateObj = toDateObj(d);
+    return dateObj ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+  };
+  const fmtTime = (d?: any) => {
+    const dateObj = toDateObj(d);
+    return dateObj ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' às ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+  };
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>

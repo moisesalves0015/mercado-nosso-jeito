@@ -127,10 +127,15 @@ const ACTIVE_STATUSES: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'de
 // ──────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────
-function toDate(ts: unknown): Date {
+function toDate(ts: any): Date {
   if (!ts) return new Date();
   if (ts instanceof Date) return ts;
-  if (ts instanceof Timestamp) return ts.toDate();
+  if (typeof ts.toDate === 'function') return ts.toDate();
+  if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+  if (typeof ts === 'string' || typeof ts === 'number') {
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
   return new Date();
 }
 
@@ -138,11 +143,21 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
   const rawItems = (data.items as OrderItem[] | undefined) ?? [];
   const rawTimeline = (data.timeline as Array<{ status: OrderStatus; label: string; timestamp: unknown; actor?: string }> | undefined) ?? [];
 
+  let statusStr = String(data.status ?? 'pending');
+  let status: OrderStatus = 'pending';
+  
+  if (statusStr === 'Pendente' || statusStr === 'pending') status = 'pending';
+  else if (statusStr === 'Aprovado' || statusStr === 'confirmed') status = 'confirmed';
+  else if (statusStr === 'Em preparo' || statusStr === 'preparing') status = 'preparing';
+  else if (statusStr === 'Saiu para Entrega' || statusStr === 'delivering') status = 'delivering';
+  else if (statusStr === 'Entregue' || statusStr === 'delivered') status = 'delivered';
+  else if (statusStr === 'Cancelado' || statusStr === 'cancelled') status = 'cancelled';
+
   return {
     id,
     uid: String(data.uid ?? ''),
     orderNumber: String(data.orderNumber ?? id),
-    status: (data.status as OrderStatus) ?? 'pending',
+    status,
     items: rawItems,
     subtotal: Number(data.subtotal ?? 0),
     discount: Number(data.discount ?? 0),
@@ -157,12 +172,22 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
     notes: data.notes ? String(data.notes) : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
-    timeline: rawTimeline.map((t) => ({
-      status: t.status,
-      label: t.label,
-      timestamp: t.timestamp ? toDate(t.timestamp) : null,
-      actor: t.actor,
-    })),
+    timeline: rawTimeline.map((t) => {
+      let tStatusStr = String(t.status ?? 'pending');
+      let tStatus: OrderStatus = 'pending';
+      if (tStatusStr === 'Pendente' || tStatusStr === 'pending') tStatus = 'pending';
+      else if (tStatusStr === 'Aprovado' || tStatusStr === 'confirmed') tStatus = 'confirmed';
+      else if (tStatusStr === 'Em preparo' || tStatusStr === 'preparing') tStatus = 'preparing';
+      else if (tStatusStr === 'Saiu para Entrega' || tStatusStr === 'delivering') tStatus = 'delivering';
+      else if (tStatusStr === 'Entregue' || tStatusStr === 'delivered') tStatus = 'delivered';
+      else if (tStatusStr === 'Cancelado' || tStatusStr === 'cancelled') tStatus = 'cancelled';
+      return {
+        status: tStatus,
+        label: t.label,
+        timestamp: t.timestamp ? toDate(t.timestamp) : null,
+        actor: t.actor,
+      };
+    }),
   };
 }
 
@@ -256,6 +281,27 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
       productRefs.map(p => transaction.get(p.ref))
     );
 
+    // Read user profile and potentially referrer profile
+    const userRef = doc(db, 'users', payload.uid);
+    const userSnap = await transaction.get(userRef);
+
+    let referrerClubeRef: any = null;
+    let referrerClubeSnap: any = null;
+    let referrerUid: string | null = null;
+    let userName = 'Amigo';
+    let shouldRewardReferral = false;
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      userName = userData.name || 'Amigo';
+      if (!userData.firstOrderPlaced && userData.referredBy) {
+        referrerUid = userData.referredBy;
+        referrerClubeRef = doc(db, 'users', referrerUid!, 'clube', 'profile');
+        referrerClubeSnap = await transaction.get(referrerClubeRef);
+        shouldRewardReferral = true;
+      }
+    }
+
     // 2. Validate stock
     const updates: { ref: any, newStock: number, history: any[] }[] = [];
     
@@ -289,6 +335,48 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
         stock: update.newStock,
         stockHistory: update.history
       });
+    }
+
+    // Update user firstOrderPlaced / referralRewarded flags
+    if (userSnap.exists() && !userSnap.data().firstOrderPlaced) {
+      transaction.update(userRef, {
+        firstOrderPlaced: true,
+        referralRewarded: shouldRewardReferral
+      });
+    }
+
+    // Reward referrer if applicable
+    if (shouldRewardReferral && referrerClubeRef) {
+      const nowTime = new Date();
+      const timeStr = `${nowTime.getHours()}:${nowTime.getMinutes() < 10 ? '0' + nowTime.getMinutes() : nowTime.getMinutes()}`;
+      const newHistoryItem = {
+        id: Math.random().toString(),
+        desc: `Indicação: ${userName} (1º Pedido)`,
+        date: `Hoje, ${timeStr}`,
+        value: `+80`,
+        isPlus: true
+      };
+
+      if (referrerClubeSnap && referrerClubeSnap.exists()) {
+        const referrerData = referrerClubeSnap.data();
+        const currentDiamonds = referrerData.diamonds || 0;
+        const currentHistory = referrerData.history || [];
+        transaction.update(referrerClubeRef, {
+          diamonds: currentDiamonds + 80,
+          history: [newHistoryItem, ...currentHistory]
+        });
+      } else {
+        transaction.set(referrerClubeRef, {
+          diamonds: 80,
+          streak: 1,
+          lastCheckinDate: '',
+          freeSpinUsed: false,
+          freeSpinDate: '',
+          history: [newHistoryItem],
+          missions: { order: false, refer: false, combo: false },
+          completedAds: []
+        });
+      }
     }
 
     const orderRef = doc(collection(db, 'orders'));

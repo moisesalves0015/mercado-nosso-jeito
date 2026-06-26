@@ -49,6 +49,15 @@ function AppContent() {
     return () => window.removeEventListener('theme-changed', handleThemeChange);
   }, [theme]);
 
+  // Capture referral code from URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const refCode = params.get('ref');
+    if (refCode) {
+      localStorage.setItem('referred_by', refCode);
+    }
+  }, [location.search]);
+
   // Real-time Firestore sync of products to localStorage
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'products'), (snap) => {
@@ -144,6 +153,11 @@ function AppContent() {
         
         {/* Protected Admin Route */}
         <Route path="/admin" element={
+          <ProtectedRoute adminOnly>
+            <Admin />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/:tab" element={
           <ProtectedRoute adminOnly>
             <Admin />
           </ProtectedRoute>

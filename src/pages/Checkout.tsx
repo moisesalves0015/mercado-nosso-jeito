@@ -8,7 +8,7 @@ import { db } from '../firebase';
 import { 
   ArrowLeft, CheckCircle, MapPin, 
   ChevronRight, AlertTriangle, ShieldCheck, Clock,
-  Plus, Star, Lock, Award, TrendingUp, Zap
+  Plus, Star, Lock, Award, TrendingUp, Zap, ShoppingCart
 } from 'lucide-react';
 import { MercadoLogo } from './Login';
 
@@ -174,9 +174,48 @@ export function Checkout() {
 
   if (cartItems.length === 0 && step !== 'success') {
     return (
-      <div className="clube-page" style={{ padding: '80px 20px', textAlign: 'center' }}>
-        <h2>Seu carrinho está vazio</h2>
-        <button onClick={() => navigate('/')} style={{ marginTop: 20, padding: '10px 20px' }}>Voltar à Loja</button>
+      <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 110, fontFamily: "'Manrope','Outfit',sans-serif", display: 'flex', flexDirection: 'column' }}>
+        {/* Topbar */}
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 20,
+          background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border-gold)'
+        }}>
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+            <button onClick={() => navigate(-1)} 
+              style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
+              <ArrowLeft size={18} />
+            </button>
+            <MercadoLogo size="sm" />
+            <div style={{ width: 38 }} />
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', gap: 16 }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: 24,
+            background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ShoppingCart size={32} color="#D4AF37" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
+              Seu carrinho está vazio
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 260, lineHeight: 1.5 }}>
+              Que tal dar uma olhada em nossas ofertas e encher o carrinho?
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            style={{ marginTop: 8, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 14, color: '#090705', fontSize: 14, fontWeight: 900, padding: '14px 32px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            Explorar produtos 🛍️
+          </button>
+        </div>
       </div>
     );
   }

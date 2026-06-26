@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ShoppingBag, Clock, Truck, CheckCircle2, XCircle, ChefHat,
   Search, SlidersHorizontal, X, ChevronDown, ChevronUp,
-  Package, TrendingUp, Star, ReceiptText, ArrowLeft,
+  Package, ArrowLeft,
   AlertCircle, CircleDot,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -72,28 +72,7 @@ const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
   );
 };
 
-// ──────────────────────────────────────────────────────────────
-// Metric Card (same card token as Profile)
-// ──────────────────────────────────────────────────────────────
-const MetricCard: React.FC<{
-  icon: React.ReactNode; iconColor: string; iconBg: string;
-  label: string; value: string; sub?: string;
-}> = ({ icon, iconColor, iconBg, label, value, sub }) => (
-  <div style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-    <div style={{
-      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-      background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: iconColor,
-    }}>
-      {icon}
-    </div>
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
-    </div>
-  </div>
-);
+
 
 // ──────────────────────────────────────────────────────────────
 // Skeleton
@@ -515,16 +494,6 @@ export const Orders: React.FC = () => {
         </div>
 
         <div style={{ padding: '12px 16px 0', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-          {/* ── Metric cards (2-col grid) ── */}
-          {!loading && metrics.total > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <MetricCard icon={<ReceiptText size={18} />} iconColor="var(--text-primary)" iconBg="var(--back-btn-bg)" label="Total" value={String(metrics.total)} />
-              <MetricCard icon={<Clock size={18} />} iconColor="#F59E0B" iconBg="rgba(245,158,11,0.1)" label="Ativos" value={String(metrics.active)} sub={metrics.active > 0 ? 'Em andamento' : 'Todos concluídos'} />
-              <MetricCard icon={<TrendingUp size={18} />} iconColor="#10B981" iconBg="rgba(16,185,129,0.1)" label="Total gasto" value={formatCurrency(metrics.totalSpent)} />
-              <MetricCard icon={<Star size={18} />} iconColor="#8B5CF6" iconBg="rgba(139,92,246,0.1)" label="Ticket médio" value={formatCurrency(metrics.avgTicket)} />
-            </div>
-          )}
 
           {/* ── Filter Panel ── */}
           {showFilters && (

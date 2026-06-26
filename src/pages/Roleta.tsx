@@ -865,7 +865,14 @@ export const Roleta: React.FC = () => {
                         <span style={{ fontSize: 12 }}>{config.icon}</span>
                         <span style={{ fontWeight: 700, color: h.won ? config.color : 'var(--text-muted)' }}>{h.text}</span>
                       </div>
-                      <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>{h.date}</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>
+                        {typeof h.date === 'string' 
+                          ? h.date 
+                          : (h.date && (h.date as any).seconds 
+                              ? new Date((h.date as any).seconds * 1000).toLocaleTimeString('pt-BR') 
+                              : String(h.date))
+                        }
+                      </span>
                     </div>
                   );
                 })}
