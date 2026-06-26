@@ -582,7 +582,6 @@ export const Roleta: React.FC = () => {
 
       {/* HEADER */}
       <header className="clube-topbar" style={{ zIndex: 200 }}>
-        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div className="clube-topbar-content">
           <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
             <ArrowLeft size={16} />

@@ -450,7 +450,6 @@ export const ProductDetail = () => {
     <main className="app product-detail-page">
       {/* TOP HEADER */}
       <header className="product-detail-header">
-        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div className="product-detail-header-content">
           <button onClick={() => navigate(-1)} className="header-icon-btn">
             <ArrowLeft size={20} color="currentColor" />

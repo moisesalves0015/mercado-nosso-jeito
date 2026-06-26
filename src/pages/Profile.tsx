@@ -283,12 +283,11 @@ export const Profile: React.FC = () => {
           WebkitBackdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--border-gold)',
         }}>
-          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 16px 12px',
+            padding: '8px 16px',
           }}>
             <button
               onClick={() => navigate('/')}

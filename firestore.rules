@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      // Basic role-based access based on a field in the user document.
+      // In a strict production environment, this should ideally rely on Custom Claims (request.auth.token.admin == true)
+      // but to maintain compatibility with the existing architecture, we check the user doc.
+      // Note: A user cannot change their own role due to the write rules on the user document.
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Products ---
+    match /products/{productId} {
+      // Anyone can read active products. Only admins can write.
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      // Stock history subcollection (new structure)
+      match /stock_history/{historyId} {
+        allow read: if isAdmin();
+        allow write: if isAdmin() || isAuthenticated(); // Authenticated users write to this during checkout via transaction
+      }
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      // Users can read their own profile. Admins can read all.
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can create/update their profile, but CANNOT escalate their role.
+      allow create: if isOwner(userId) && request.resource.data.role == 'client';
+      allow update: if isOwner(userId) 
+                    // Prevent user from changing their own role to admin
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'telefone', 'cpf', 'foto', 'unlockedBadges', 'firstOrderPlaced', 'referralRewarded', 'updatedAt', 'lastLogin'])
+                    // Allow admin to update anything
+                    || isAdmin();
+      allow delete: if isAdmin();
+
+      // Clube VIP Subcollection
+      match /clube/{docId} {
+        // Only read/write via Cloud Functions is recommended for diamonds, 
+        // but we allow read for the owner to see their balance.
+        allow read: if isOwner(userId) || isAdmin();
+        // Client cannot write to their club profile to fake diamonds.
+        // It must be updated via Cloud Functions or Admin.
+        allow write: if isAdmin(); 
+      }
+    }
+
+    // --- Orders ---
+    match /orders/{orderId} {
+      // Users can only read their own orders. Admins can read all.
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid) || isAdmin();
+      
+      // Users can create orders if the UID matches.
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      
+      // Only admins can update or delete orders
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Configs / System ---
+    match /configs/{configId} {
+      // e.g. roulette items
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Diamond Transactions (Audit) ---
+    match /diamond_transactions/{transactionId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.user_id == request.auth.uid);
+      allow write: if false; // Only written by Cloud Functions
+    }
+
+  }
+}
