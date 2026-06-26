@@ -7707,3 +7707,158 @@ body.light-mode .category-item:hover .category-3d-icon {
   color: #FFDF73;
 }
 
+/* Page Route Transitions */
+.route-transition-wrapper {
+  animation: routeFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Error Boundary Fallback Page */
+.error-boundary-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Manrope', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.error-boundary-backdrop {
+  position: absolute;
+  inset: 0;
+  background-image: url("/bg-supermercado.jpeg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(4px) brightness(0.35);
+  z-index: 0;
+}
+body.light-mode .error-boundary-backdrop {
+  filter: blur(4px) brightness(0.95) opacity(0.12) grayscale(0.5);
+}
+
+.error-boundary-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+  padding: 32px 24px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--card-shadow);
+  animation: fadeInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.error-boundary-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  color: #EF4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+.error-boundary-title {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0 0 10px;
+  background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+body.light-mode .error-boundary-title {
+  background: none;
+  -webkit-text-fill-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.error-boundary-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 28px;
+}
+
+.error-boundary-btn {
+  width: 100%;
+  height: 48px;
+  background: linear-gradient(135deg, #D4AF37, #FFDF73);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(212,175,55,0.35);
+  font-family: inherit;
+}
+.error-boundary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212,175,55,0.5);
+}
+
+.error-boundary-details-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+}
+.error-boundary-details-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.error-boundary-details {
+  margin-top: 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: left;
+  max-height: 150px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 10.5px;
+  color: #fecaca;
+  line-height: 1.4;
+}
+body.light-mode .error-boundary-details {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+

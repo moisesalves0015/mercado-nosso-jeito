@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { db } from './firebase';
 import { AuthProvider } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
@@ -30,6 +31,15 @@ import { Addresses } from './pages/Addresses';
 import { Coupons } from './pages/Coupons';
 import { Support } from './pages/Support';
 import { BadgesCenter } from './pages/BadgesCenter';
+
+function PageTransitionLayout() {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="route-transition-wrapper">
+      <Outlet />
+    </div>
+  );
+}
 
 function AppContent() {
   const location = useLocation();
@@ -99,74 +109,76 @@ function AppContent() {
       />
 
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/promotions" element={<Promotions />} />
-        <Route path="/clube" element={<Clube />} />
-        <Route path="/tabacaria" element={<Tabacaria />} />
-        <Route path="/bebidas" element={<Bebidas />} />
-        <Route path="/eletronicos" element={<Eletronicos />} />
-        <Route path="/padaria" element={<Padaria />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/product/:productId" element={<ProductDetail />} />
-        <Route path="/roleta" element={<Roleta />} />
-        
-        {/* Auth Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        
-        {/* Protected Client Routes */}
-        <Route path="/checkout" element={
-          <ProtectedRoute>
-            <Checkout />
-          </ProtectedRoute>
-        } />
-        <Route path="/orders" element={
-          <ProtectedRoute>
-            <Orders />
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
-        <Route path="/colecoes" element={
-          <ProtectedRoute>
-            <BadgesCenter />
-          </ProtectedRoute>
-        } />
-        <Route path="/addresses" element={
-          <ProtectedRoute>
-            <Addresses />
-          </ProtectedRoute>
-        } />
-        <Route path="/coupons" element={
-          <ProtectedRoute>
-            <Coupons />
-          </ProtectedRoute>
-        } />
-        <Route path="/support" element={<Support />} />
-        
-        {/* Protected Admin Route */}
-        <Route path="/admin" element={
-          <ProtectedRoute adminOnly>
-            <Admin />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/:tab" element={
-          <ProtectedRoute adminOnly>
-            <Admin />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/produto/:id" element={
-          <ProtectedRoute adminOnly>
-            <AdminProductDetail />
-          </ProtectedRoute>
-        } />
+        <Route element={<PageTransitionLayout />}>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/promotions" element={<Promotions />} />
+          <Route path="/clube" element={<Clube />} />
+          <Route path="/tabacaria" element={<Tabacaria />} />
+          <Route path="/bebidas" element={<Bebidas />} />
+          <Route path="/eletronicos" element={<Eletronicos />} />
+          <Route path="/padaria" element={<Padaria />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/product/:productId" element={<ProductDetail />} />
+          <Route path="/roleta" element={<Roleta />} />
+          
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          {/* Protected Client Routes */}
+          <Route path="/checkout" element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          } />
+          <Route path="/orders" element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/colecoes" element={
+            <ProtectedRoute>
+              <BadgesCenter />
+            </ProtectedRoute>
+          } />
+          <Route path="/addresses" element={
+            <ProtectedRoute>
+              <Addresses />
+            </ProtectedRoute>
+          } />
+          <Route path="/coupons" element={
+            <ProtectedRoute>
+              <Coupons />
+            </ProtectedRoute>
+          } />
+          <Route path="/support" element={<Support />} />
+          
+          {/* Protected Admin Route */}
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly>
+              <Admin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/:tab" element={
+            <ProtectedRoute adminOnly>
+              <Admin />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/produto/:id" element={
+            <ProtectedRoute adminOnly>
+              <AdminProductDetail />
+            </ProtectedRoute>
+          } />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -206,20 +218,22 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
-          <style>{`
-            body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
-              font-family: 'Manrope', 'Outfit', sans-serif !important;
-            }
-          `}</style>
-          <AppContent />
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
+            <style>{`
+              body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
+                font-family: 'Manrope', 'Outfit', sans-serif !important;
+              }
+            `}</style>
+            <AppContent />
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
