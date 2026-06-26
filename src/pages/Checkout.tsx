@@ -193,7 +193,8 @@ export function Checkout() {
 
   if (cartItems.length === 0 && step !== 'success') {
     return (
-      <div className="app checkout-page" style={{ minHeight: '100vh', paddingBottom: 110, fontFamily: "'Manrope','Outfit',sans-serif", display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 110, display: 'flex', flexDirection: 'column' }}>
         {/* Topbar */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 20,
@@ -235,12 +236,13 @@ export function Checkout() {
           </button>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
-    <div className="app checkout-page" style={{ minHeight: '100vh', paddingBottom: 90, fontFamily: "'Manrope','Outfit',sans-serif" }}>
-      <div style={{ position: 'relative', zIndex: 1 }}>
+    <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
         {/* Topbar */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 20,

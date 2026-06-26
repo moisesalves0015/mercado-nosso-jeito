@@ -56,41 +56,43 @@ export function Cart() {
   };
 
   return (
-    <div className="app cart-page" style={{ minHeight: '100vh', paddingBottom: 90 }}>
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        background: 'var(--bg-secondary)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border-gold)',
-      }}>
+    <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
+        {/* Topbar */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 16px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          background: 'var(--bg-secondary)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border-gold)',
         }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              background: 'var(--back-btn-bg)',
-              border: '1px solid var(--border-primary)',
-              borderRadius: '50%',
-              width: '38px', height: '38px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
-            }}
-          >
-            <ArrowLeft size={18} />
-          </button>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 16px',
+          }}>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                background: 'var(--back-btn-bg)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '50%',
+                width: '38px', height: '38px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
+              }}
+            >
+              <ArrowLeft size={18} />
+            </button>
 
-          <MercadoLogo size="sm" />
+            <MercadoLogo size="sm" />
 
-          <div style={{ width: '38px' }} />
+            <div style={{ width: '38px' }} />
+          </div>
         </div>
-      </div>
 
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
@@ -262,6 +264,7 @@ export function Cart() {
             <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)' }}>R$ {prod.price.toFixed(2)}</span>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
