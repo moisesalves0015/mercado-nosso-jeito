@@ -116,6 +116,11 @@ const CONDO_FAVORITES: CondoFavorite[] = [
   { rank: 3, emoji: '🍺', name: 'Heineken Long Neck 330ml', id: 'heineken-330ml' },
   { rank: 4, emoji: '🧀', name: 'Pão de Queijo Tradicional 1kg', id: 'paodequeijo-novo' },
   { rank: 5, emoji: '☕', name: 'Café Melitta Tradicional 500g', id: 'cafe-novo' },
+  { rank: 6, emoji: '🍊', name: 'Suco de Laranja Integral 1L', id: 'suco-dobem' },
+  { rank: 7, emoji: '🍞', name: 'Pão de Forma Integral 500g', id: 'pao-de-forma' },
+  { rank: 8, emoji: '🧀', name: 'Queijo Minas Frescal 300g', id: 'queijo-minas' },
+  { rank: 9, emoji: '🧈', name: 'Manteiga Extra com Sal 200g', id: 'manteiga-itambe' },
+  { rank: 10, emoji: '🦃', name: 'Peito de Peru Fatiado 100g', id: 'peito-de-peru' },
 ];
 
 const MONTH_NAMES = [

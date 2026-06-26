@@ -461,7 +461,8 @@ export const AdminMarketing: React.FC = () => {
         { title: "Bomboniere", theme: "orange" as const, subtitle: "Guloseimas irresistíveis!" },
         { title: "Higiene", theme: "green" as const, subtitle: "Sua saúde e higiene pessoal em dia!" },
         { title: "Fitness", theme: "purple" as const, subtitle: "Itens para manter a energia e o foco!" },
-        { title: "Combos", theme: "orange" as const, subtitle: "Leve mais por muito menos!" }
+        { title: "Combos", theme: "orange" as const, subtitle: "Leve mais por muito menos!" },
+        { title: "Favoritos do Condomínio", theme: "orange" as const, subtitle: "Os preferidos da nossa comunidade!" }
       ];
 
       let order = vitrines.reduce((max, v) => Math.max(max, v.order ?? 0), 0) + 1;
@@ -470,16 +471,20 @@ export const AdminMarketing: React.FC = () => {
 
       for (const cat of targetCategories) {
         let matchedProductIds: string[] = [];
-        const categoryKey = Object.keys(productsByCategory).find(
-          k => normalizeStr(k) === normalizeStr(cat.title)
-        );
-        
-        if (categoryKey) {
-          matchedProductIds = productsByCategory[categoryKey];
+        if (cat.title === "Favoritos do Condomínio") {
+          matchedProductIds = ['coca-cola-350ml', 'monster-energy', 'heineken-330ml', 'paodequeijo-novo', 'cafe-novo', 'suco-dobem', 'pao-de-forma', 'queijo-minas', 'manteiga-itambe', 'peito-de-peru'];
         } else {
-          matchedProductIds = products
-            .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
-            .map(p => p.id);
+          const categoryKey = Object.keys(productsByCategory).find(
+            k => normalizeStr(k) === normalizeStr(cat.title)
+          );
+          
+          if (categoryKey) {
+            matchedProductIds = productsByCategory[categoryKey];
+          } else {
+            matchedProductIds = products
+              .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
+              .map(p => p.id);
+          }
         }
 
         const slug = cat.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
@@ -494,13 +499,13 @@ export const AdminMarketing: React.FC = () => {
             active: true,
             order: order++,
             layout: "horizontal",
-            maxProducts: 6,
-            productIds: matchedProductIds.slice(0, 6)
+            maxProducts: cat.title === "Favoritos do Condomínio" ? 10 : 6,
+            productIds: matchedProductIds.slice(0, cat.title === "Favoritos do Condomínio" ? 10 : 6)
           });
           createdCount++;
         } else {
           await updateDoc(docRef, {
-            productIds: matchedProductIds.slice(0, 6)
+            productIds: matchedProductIds.slice(0, cat.title === "Favoritos do Condomínio" ? 10 : 6)
           });
           updatedCount++;
         }
@@ -601,16 +606,20 @@ export const AdminMarketing: React.FC = () => {
 
       for (const cat of targetCategories) {
         let matchedProductIds: string[] = [];
-        const categoryKey = Object.keys(productsByCategory).find(
-          k => normalizeStr(k) === normalizeStr(cat.title)
-        );
-        
-        if (categoryKey) {
-          matchedProductIds = productsByCategory[categoryKey];
+        if (cat.title === "Favoritos do Condomínio") {
+          matchedProductIds = ['coca-cola-350ml', 'monster-energy', 'heineken-330ml', 'paodequeijo-novo', 'cafe-novo', 'suco-dobem', 'pao-de-forma', 'queijo-minas', 'manteiga-itambe', 'peito-de-peru'];
         } else {
-          matchedProductIds = allProds
-            .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
-            .map(p => p.id);
+          const categoryKey = Object.keys(productsByCategory).find(
+            k => normalizeStr(k) === normalizeStr(cat.title)
+          );
+          
+          if (categoryKey) {
+            matchedProductIds = productsByCategory[categoryKey];
+          } else {
+            matchedProductIds = allProds
+              .filter(p => normalizeStr(p.category || "") === normalizeStr(cat.title) || normalizeStr(p.title || "").includes(normalizeStr(cat.title)))
+              .map(p => p.id);
+          }
         }
 
         const slug = cat.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
@@ -625,13 +634,13 @@ export const AdminMarketing: React.FC = () => {
             active: true,
             order: order++,
             layout: "horizontal",
-            maxProducts: 6,
-            productIds: matchedProductIds.slice(0, 6)
+            maxProducts: cat.title === "Favoritos do Condomínio" ? 10 : 6,
+            productIds: matchedProductIds.slice(0, cat.title === "Favoritos do Condomínio" ? 10 : 6)
           });
           vitrinesCreated++;
         } else {
           await updateDoc(docRef, {
-            productIds: matchedProductIds.slice(0, 6)
+            productIds: matchedProductIds.slice(0, cat.title === "Favoritos do Condomínio" ? 10 : 6)
           });
           vitrinesUpdated++;
         }

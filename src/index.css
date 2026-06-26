@@ -5799,6 +5799,7 @@ body.light-mode .topbar-search-container {
   display: flex;
   gap: 12px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 0px 16px 16px 16px; /* Reduzido de 22px para 16px */
   position: relative;
   z-index: 2;
@@ -7861,4 +7862,42 @@ body.light-mode .error-boundary-details {
   color: #991b1b;
   border-color: #fecaca;
 }
+
+/* Keep period filter cards and drinks banner cards dark/transparent in light mode */
+body.light-mode .period-products-container .product-card,
+body.light-mode .promo-banner .product-card {
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --card-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --back-btn-bg: rgba(255, 255, 255, 0.07);
+}
+
+/* Keep period filter section header title white in light mode */
+body.light-mode .period-products-container {
+  --section-h2-color: #ffffff;
+}
+body.light-mode .period-products-container .section-header h2 {
+  color: #ffffff !important;
+}
+
+/* ---- CONDOMINIUM FAVORITES HORIZONTAL CAROUSEL ---- */
+.condo-favorites-scroll {
+  scrollbar-width: none;
+}
+.condo-favorites-scroll::-webkit-scrollbar {
+  display: none;
+}
+.condo-fav-card {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+.condo-fav-card:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+}
+
+
+
 

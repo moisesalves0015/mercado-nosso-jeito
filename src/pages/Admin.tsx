@@ -323,8 +323,20 @@ export const Admin: React.FC = () => {
     await updateDoc(doc(db, 'products', id), { active: !active });
   };
   
+  // Status label → semantic enum value mapping (must match OrderStatus in useOrders.ts)
+  const STATUS_LABEL_TO_ENUM: Record<Order['status'], string> = {
+    'Pendente':          'pending',
+    'Aprovado':          'confirmed',
+    'Saiu para Entrega': 'delivering',
+    'Entregue':          'delivered',
+  };
+
   const updateOrderStatus = async (id: string, status: Order['status']) => {
-    await updateDoc(doc(db, 'orders', id), { status });
+    const enumStatus = STATUS_LABEL_TO_ENUM[status] || status;
+    await updateDoc(doc(db, 'orders', id), { 
+      status: enumStatus,
+      updatedAt: new Date().toISOString(),
+    });
     if (selectedOrder?.id === id) setSelectedOrder({ ...selectedOrder, status });
   };
 

@@ -558,6 +558,7 @@ export const Home = () => {
 
 
       <div
+        className="period-products-container"
         style={{
           backgroundImage: `url(${periodBgs[activePeriod]})`,
           backgroundSize: 'cover',
@@ -839,63 +840,34 @@ export const Home = () => {
           </h2>
         </div>
         <div
+          className="condo-favorites-scroll"
           style={{
             display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
+            gap: '8px',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            scrollbarWidth: 'none',
+            padding: '16px 8px 24px',
+            marginLeft: '-8px',
+            marginRight: '-8px',
+            marginTop: '-12px',
+            marginBottom: '-16px',
           }}
         >
-          {condoFavorites.map((fav) => (
-            <Link
-              key={fav.id}
-              to={`/product/${fav.id}`}
-              style={{ textDecoration: 'none' }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '9px 12px',
-                  background: 'var(--card-gradient)',
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: 10,
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '13px',
-                    fontWeight: 900,
-                    color: fav.rank <= 3 ? '#D4AF37' : 'var(--text-muted)',
-                    width: 16,
-                    textAlign: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  {fav.rank <= 3 ? ['🥇','🥈','🥉'][fav.rank - 1] : `${fav.rank}º`}
-                </span>
-                <span style={{ fontSize: 18, flexShrink: 0 }}>{fav.emoji}</span>
-                <span
-                  style={{
-                    fontSize: '12.5px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    flex: 1,
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {fav.name}
-                </span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                  →
-                </span>
-              </div>
-            </Link>
-          ))}
+          {condoFavorites.map((fav) => {
+            const prod = allProducts.find(p => p.id === fav.id) || defaultProducts.find(p => p.id === fav.id);
+            if (!prod) return null;
+            return (
+              <PromoCard
+                key={fav.id}
+                title={prod.title}
+                price={prod.price}
+                image={prod.image}
+                rank={fav.rank}
+                category={prod.category}
+              />
+            );
+          })}
         </div>
       </div>
 

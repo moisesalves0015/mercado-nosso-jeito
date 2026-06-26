@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { createOrder } from '../hooks/useOrders';
+import { useToast } from '../contexts/ToastContext';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
@@ -18,6 +19,9 @@ export function Checkout() {
   const navigate = useNavigate();
   const { cartItems, totalPrice, clearCart, addToCart } = useCart();
   const { user } = useAuth();
+  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  // Idempotency guard: prevents duplicate orders from rapid/double clicks.
+  const submittingRef = useRef(false);
   
   const complementaryProducts = [
     { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
@@ -102,18 +106,26 @@ export function Checkout() {
   }, [step, user]);
 
   const applyCoupon = () => {
-    if (couponCode.toUpperCase() === 'NOSSOJEITO10') {
-      setDiscount(totalPrice * 0.1);
-      alert('Cupom aplicado!');
+    const code = couponCode.trim().toUpperCase();
+    // Recognised coupon codes — in production, validate via a Firestore collection.
+    const VALID_COUPONS: Record<string, number> = {
+      'NOSSOJEITO10': 0.10,
+    };
+    if (VALID_COUPONS[code] !== undefined) {
+      const discountAmount = totalPrice * VALID_COUPONS[code];
+      setDiscount(discountAmount);
+      toastSuccess('Cupom aplicado!', `Desconto de R$ ${discountAmount.toFixed(2)} adicionado.`);
+    } else if (!code) {
+      toastInfo('Campo vazio', 'Digite um código de cupom antes de aplicar.');
     } else {
-      alert('Cupom inválido.');
+      toastError('Cupom inválido', 'Código não encontrado ou expirado.');
     }
   };
 
   const handleNext = () => {
     if (step === 'delivery') {
       if (!address) {
-        alert('Selecione um endereço para entrega.');
+        toastError('Endereço obrigatório', 'Selecione um endereço para entrega.');
         return;
       }
       setStep('payment');
@@ -121,11 +133,15 @@ export function Checkout() {
   };
 
   const handleFinish = async () => {
+    // Idempotency: bail out if a submission is already in progress.
+    if (submittingRef.current) return;
+
     if (!user) {
       navigate('/login?returnUrl=/checkout');
       return;
     }
     
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -166,9 +182,12 @@ export function Checkout() {
       setStep('success');
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Erro ao processar o pedido. Tente novamente.');
+      const msg = err.message || 'Erro ao processar o pedido. Tente novamente.';
+      setError(msg);
+      toastError('Erro no pedido', msg);
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 

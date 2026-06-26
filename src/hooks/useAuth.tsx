@@ -129,14 +129,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         return profile;
       } else {
-        // Auto-heal: create doc for existing users
-        const emailLower = firebaseUser.email?.toLowerCase() || '';
-        const initialRole = emailLower.startsWith('admin@') ? 'admin' : 'client';
+        // Auto-heal: create Firestore doc for existing Firebase Auth users.
+        // Role is always 'client' — admin must be assigned manually via Firestore console.
         const profile: UserProfile = {
           uid: firebaseUser.uid,
           name: firebaseUser.displayName || 'Usuário',
           email: firebaseUser.email || '',
-          role: initialRole,
+          role: 'client',
           referredBy: null,
           firstOrderPlaced: false,
           referralRewarded: false,
@@ -147,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           telefone: '',
           cpf: '',
           foto: '',
-          role: initialRole,
+          role: 'client',
           unlockedBadges: [],
           referredBy: null,
           firstOrderPlaced: false,
@@ -256,7 +255,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update Firebase Auth display name
       await firebaseUpdateProfile(firebaseUser, { displayName: data.name });
 
-      // Create Firestore document
+      // Create Firestore document.
+      // Role is always 'client' on self-registration.
+      // To assign admin, use the Firestore console or an admin SDK script.
       const referredBy = localStorage.getItem('referred_by') || null;
       await setDoc(doc(db, 'users', firebaseUser.uid), {
         name: data.name,
@@ -264,7 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         telefone: data.telefone || '',
         cpf: data.cpf || '',
         foto: '',
-        role: data.email.toLowerCase().startsWith('admin@') ? 'admin' : 'client',
+        role: 'client',
         unlockedBadges: [],
         referredBy: referredBy,
         firstOrderPlaced: false,

@@ -259,7 +259,9 @@ export function useOrders(uid: string | null) {
 // createOrder — write to Firestore from Cart checkout
 // ──────────────────────────────────────────────────────────────
 export async function createOrder(payload: CreateOrderPayload): Promise<string> {
-  const orderNumber = `#MJ-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Generate a unique order number with timestamp-based suffix to minimise collision.
+  // Format: #MJ-XXXXXX (6 digits, last 6 of current ms timestamp)
+  const orderNumber = `#MJ-${String(Date.now()).slice(-6)}`;
   const now = serverTimestamp();
   const timelineNow = Timestamp.now();
 
@@ -271,7 +273,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
   };
 
   await runTransaction(db, async (transaction) => {
-    // 1. Read all product docs to check stock
+    // 1. Read all product docs to check stock AND authoritative prices
     const productRefs = payload.items.map(item => ({
       ref: doc(db, 'products', item.id),
       item
@@ -302,15 +304,37 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
       }
     }
 
-    // 2. Validate stock
+    // 2. Validate stock, product status, and re-price from Firestore.
+    //    The client-supplied prices are IGNORED — we use the authoritative
+    //    values from Firestore to prevent price manipulation.
     const updates: { ref: any, newStock: number, history: any[] }[] = [];
-    
+    let serverSubtotal = 0;
+    const verifiedItems: OrderItem[] = [];
+
     for (let i = 0; i < productDocs.length; i++) {
       const pDoc = productDocs[i];
       const { item, ref } = productRefs[i];
-      
+
       if (pDoc.exists()) {
         const data = pDoc.data();
+
+        // Block inactive products
+        if (data.active === false) {
+          throw new Error(`O produto "${item.title}" não está mais disponível.`);
+        }
+
+        // Use server price; fall back to client price only if not set in Firestore.
+        const serverPrice: number = data.promoActive && data.promoPrice && data.promoPrice > 0
+          ? Number(data.promoPrice)
+          : Number(data.price ?? item.price);
+
+        serverSubtotal += serverPrice * item.quantity;
+
+        verifiedItems.push({
+          ...item,
+          price: serverPrice, // override with authoritative price
+        });
+
         if (data.stock !== undefined && data.stock !== null) {
           if (data.stock < item.quantity) {
             throw new Error(`Estoque insuficiente para o produto: ${item.title}`);
@@ -326,10 +350,18 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
             ].slice(0, 20)
           });
         }
+      } else {
+        // Product doesn't exist in Firestore: reject the order to avoid ghost purchases.
+        throw new Error(`Produto não encontrado: ${item.title}. Atualize o carrinho e tente novamente.`);
       }
     }
 
-    // 3. Write updates and create order
+    // Recalculate the authoritative total using server prices.
+    // Discount is capped so total never goes below R$ 0.01.
+    const clampedDiscount = Math.min(payload.discount, serverSubtotal);
+    const serverTotal = Math.max(0.01, serverSubtotal + payload.deliveryFee - clampedDiscount);
+
+    // 3. Write stock updates
     for (const update of updates) {
       transaction.update(update.ref, {
         stock: update.newStock,
@@ -384,11 +416,12 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
       uid: payload.uid,
       orderNumber,
       status: 'pending' as OrderStatus,
-      items: payload.items,
-      subtotal: payload.subtotal,
-      discount: payload.discount,
+      // Store the re-priced items verified against Firestore
+      items: verifiedItems,
+      subtotal: serverSubtotal,
+      discount: clampedDiscount,
       deliveryFee: payload.deliveryFee,
-      total: payload.total,
+      total: serverTotal,
       coupon: payload.coupon ?? null,
       paymentMethod: payload.paymentMethod ?? 'Não informado',
       paymentStatus: payload.paymentStatus ?? 'pending',
@@ -441,7 +474,12 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
     const orderData = orderSnap.data();
     if (orderData.status === 'cancelled') {
-      throw new Error('Pedido já cancelado');
+      throw new Error('Este pedido já foi cancelado.');
+    }
+
+    // Security: prevent cancellation of delivered orders — stock was already consumed.
+    if (orderData.status === 'delivered') {
+      throw new Error('Não é possível cancelar um pedido já entregue. Entre em contato com o suporte.');
     }
 
     // Process stock refund

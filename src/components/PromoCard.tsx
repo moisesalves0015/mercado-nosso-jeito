@@ -28,6 +28,7 @@ export const PromoCard = ({
   badge,
   diamondReward,
   category,
+  rank,
 }: {
   title: string;
   price: number | string;
@@ -36,6 +37,7 @@ export const PromoCard = ({
   badgeStyle?: 'light' | 'orange';
   diamondReward?: number;
   category?: string;
+  rank?: number;
 }) => {
   const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
 
@@ -304,7 +306,25 @@ export const PromoCard = ({
 
   return (
     <div className="product-card mega-oferta-wrapper" ref={cardRef}>
-      {badge && (
+      {rank !== undefined ? (
+        <div 
+          className="badge-promo-top-left badge-square"
+          style={{
+            width: '44px',
+            height: '44px',
+            top: '-9px',
+            left: '-9px',
+            background: 'linear-gradient(135deg, #FFDF73, #D4AF37)',
+            color: '#000000',
+            border: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span style={{ fontSize: '26px', fontWeight: 900, lineHeight: 1 }}>{rank}</span>
+        </div>
+      ) : badge && (
         <div className={`badge-promo-top-left ${badge.includes('%') ? 'badge-square' : ''}`}>
           {badge.includes('% OFF') ? (
             <>

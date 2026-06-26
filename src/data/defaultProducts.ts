@@ -203,6 +203,32 @@ export const defaultProducts: Product[] = [
     stock: 100,
     minStock: 15
   },
+  {
+    id: 'paodequeijo-novo',
+    title: "Pão de Queijo Tradicional (1kg)",
+    description: "Delicioso pão de queijo mineiro tradicional, pacote de 1kg congelado para assar.",
+    price: 32.90,
+    costPrice: 19.50,
+    image: "/paodequeijo-novo.webp",
+    category: "Alimentos",
+    diamondReward: 18,
+    active: true,
+    stock: 80,
+    minStock: 10
+  },
+  {
+    id: 'cafe-novo',
+    title: "Café Melitta Tradicional (500g)",
+    description: "Café Melitta torrado e moído tradicional a vácuo, embalagem de 500g.",
+    price: 19.90,
+    costPrice: 11.50,
+    image: "/cafe-novo.png",
+    category: "Alimentos",
+    diamondReward: 15,
+    active: true,
+    stock: 90,
+    minStock: 15
+  },
 
   // ─── LIMPEZA (Limpeza) ──────────────────────────────────────────────────────
   {

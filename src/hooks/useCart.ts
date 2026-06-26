@@ -8,6 +8,18 @@ export interface CartItem {
   quantity: number;
 }
 
+// Security: limit quantity per item to prevent cart abuse and stock transaction crashes.
+const MAX_QUANTITY_PER_ITEM = 50;
+
+// Security: clamp price to a sensible range so manipulated localStorage values
+// don't silently pass through to createOrder.
+const sanitizePrice = (raw: unknown): number => {
+  const n = typeof raw === 'number' ? raw : parseFloat(String(raw));
+  if (isNaN(n) || n <= 0) return 0;
+  // Upper bound: R$ 9 999,99 — any value above this is almost certainly manipulation.
+  return Math.min(Math.max(n, 0), 9999.99);
+};
+
 export function useCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
@@ -44,21 +56,24 @@ export function useCart() {
   };
 
   const addToCart = (product: any, quantity: number = 1) => {
+    const sanitizedPrice = sanitizePrice(product.price ?? product.currentPrice);
     const existing = cartItems.find((item) => item.id === product.id);
     let updated: CartItem[];
     if (existing) {
+      const newQty = Math.min(existing.quantity + quantity, MAX_QUANTITY_PER_ITEM);
       updated = cartItems.map((item) =>
-        item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+        item.id === product.id ? { ...item, quantity: newQty } : item
       );
     } else {
+      const clampedQty = Math.min(Math.max(quantity, 1), MAX_QUANTITY_PER_ITEM);
       updated = [
         ...cartItems,
         {
           id: product.id,
           title: product.title,
-          price: product.price || product.currentPrice || 0,
+          price: sanitizedPrice,
           image: product.image,
-          quantity: quantity,
+          quantity: clampedQty,
         },
       ];
     }
@@ -75,8 +90,9 @@ export function useCart() {
       removeFromCart(productId);
       return;
     }
+    const clampedQty = Math.min(quantity, MAX_QUANTITY_PER_ITEM);
     const updated = cartItems.map((item) =>
-      item.id === productId ? { ...item, quantity } : item
+      item.id === productId ? { ...item, quantity: clampedQty } : item
     );
     saveCart(updated);
   };
