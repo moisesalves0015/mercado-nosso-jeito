@@ -56,7 +56,7 @@ export function Cart() {
   };
 
   return (
-    <div className="clube-page" style={{ minHeight: '100vh', paddingBottom: 90 }}>
+    <div className="app cart-page" style={{ minHeight: '100vh', paddingBottom: 90 }}>
       <div style={{
         position: 'sticky',
         top: 0,
