@@ -34,6 +34,118 @@
     <style>
       /* Prevent FOUC on body before React loads */
       html.light-mode-pending { background: #f8fafc !important; }
+      
+      .pwa-splash-container {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #090705;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        font-family: 'Manrope', 'Outfit', sans-serif;
+      }
+      .pwa-splash-container.fade-out {
+        opacity: 0;
+        visibility: hidden;
+      }
+      html.light-mode-pending .pwa-splash-container,
+      body.light-mode .pwa-splash-container {
+        background: #f8fafc;
+      }
+      .pwa-splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .pwa-logo-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        animation: pwaPulse 3s ease-in-out infinite;
+        transform-origin: center;
+        will-change: transform, opacity;
+      }
+      .pwa-logo-main {
+        font-family: 'Manrope', 'Outfit', sans-serif !important;
+        font-size: 19px;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.1;
+        letter-spacing: -0.3px;
+        margin: 0;
+        text-transform: lowercase;
+      }
+      html.light-mode-pending .pwa-logo-main,
+      body.light-mode .pwa-logo-main {
+        color: #0f172a;
+      }
+      .pwa-logo-sub {
+        font-family: 'Granesta', cursive !important;
+        font-size: 36px;
+        font-weight: normal;
+        line-height: 1.0;
+        letter-spacing: 0.5px;
+        text-transform: lowercase;
+        padding: 0 6px;
+        background: linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B, #FFDF73, #D4AF37) !important;
+        background-size: 200% auto !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        animation: pwaGoldShine 3s linear infinite !important;
+        display: inline-block;
+        margin-top: 2px;
+      }
+      .pwa-splash-loader {
+        margin-top: 32px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pwa-spinner {
+        width: 26px;
+        height: 26px;
+        border: 2.5px solid rgba(255, 255, 255, 0.08);
+        border-top-color: #D4AF37;
+        border-radius: 50%;
+        animation: pwaSpin 0.9s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+      }
+      html.light-mode-pending .pwa-spinner,
+      body.light-mode .pwa-spinner {
+        border-color: rgba(15, 23, 42, 0.06);
+        border-top-color: #D4AF37;
+      }
+      @keyframes pwaSpin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pwaGoldShine {
+        0% { background-position: 0% center; }
+        100% { background-position: 200% center; }
+      }
+      @keyframes pwaPulse {
+        0% { transform: scale(0.82); opacity: 0.75; }
+        45% { transform: scale(1.05); opacity: 1; }
+        70% { transform: scale(0.98); opacity: 1; }
+        100% { transform: scale(0.82); opacity: 0.75; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pwa-logo-wrapper {
+          animation: pwaFadeIn 1.5s ease-out forwards;
+        }
+        @keyframes pwaFadeIn {
+          from { opacity: 0.6; }
+          to { opacity: 1; }
+        }
+      }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#090705" />
@@ -49,6 +161,18 @@
     <title>Mercado do Nosso Jeito</title>
   </head>
   <body>
+    <!-- PWA Splash Screen -->
+    <div id="pwa-splash-screen" class="pwa-splash-container">
+      <div class="pwa-splash-content">
+        <div class="pwa-logo-wrapper">
+          <h1 class="pwa-logo-main">mercado do</h1>
+          <span class="pwa-logo-sub">nosso jeito</span>
+        </div>
+        <div class="pwa-splash-loader">
+          <div class="pwa-spinner"></div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>

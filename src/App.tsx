@@ -59,6 +59,21 @@ function AppContent() {
     return () => window.removeEventListener('theme-changed', handleThemeChange);
   }, [theme]);
 
+  useEffect(() => {
+    const splash = document.getElementById('pwa-splash-screen');
+    if (splash) {
+      // Small delay to ensure the DOM has fully rendered
+      const timeout = setTimeout(() => {
+        splash.classList.add('fade-out');
+        const removeTimeout = setTimeout(() => {
+          splash.remove();
+        }, 400); // matches the CSS transition duration
+        return () => clearTimeout(removeTimeout);
+      }, 300);
+      return () => clearTimeout(timeout);
+    }
+  }, []);
+
   // Capture referral code from URL query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
