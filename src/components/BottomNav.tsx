@@ -1,9 +1,11 @@
 import { Home, Search, Star, Gem, ShoppingBag, User, Truck } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
+import { useShippingConfig } from '../hooks/useShippingConfig';
 
 export const BottomNav = () => {
   const { totalItems, totalPrice } = useCart();
+  const { config: shippingConfig } = useShippingConfig();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -13,7 +15,7 @@ export const BottomNav = () => {
 
   const hiddenMiniCartRoutes = ['/cart', '/clube', '/profile', '/checkout'];
   const showMiniCart = totalItems > 0 && !hiddenMiniCartRoutes.includes(location.pathname);
-  const freeShippingThreshold = 60;
+  const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);
   const progressPercent = Math.min(100, (totalPrice / freeShippingThreshold) * 100);
 

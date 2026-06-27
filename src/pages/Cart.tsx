@@ -1,35 +1,43 @@
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
+import { useShippingConfig } from '../hooks/useShippingConfig';
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag } from 'lucide-react';
 import { useState } from 'react';
-import bannerEntregaRapida from '../assets/banners/bannerEntregaRapida.svg';
 import { MercadoLogo } from './Login';
 
 export function Cart() {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice, addToCart } = useCart();
   const { user } = useAuth();
+  const { config: shippingConfig } = useShippingConfig();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const checkoutLoading = false;
+
+  const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
+  const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
+  const isFreeShipping = totalPrice >= freeShippingThreshold;
+  const deliveryFee = isFreeShipping ? 0 : baseShippingFee;
+  const estimatedTotal = totalPrice - discount + deliveryFee;
+
   // Recommended related items
   const recommendations = [
     {
       id: 'prod-danone',
-      title: 'Danone Grego Tradicional 400g',
+      title: 'Danone Grego',
       price: 18.90,
       image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80',
     },
     {
       id: 'prod-melitta',
-      title: 'Café Torrado Melitta Especial 500g',
+      title: 'Café Melitta',
       price: 24.50,
       image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80',
     },
     {
       id: 'prod-dobem',
-      title: 'Suco de Laranja Integral Do Bem 1L',
+      title: 'Suco Do Bem',
       price: 12.90,
       image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=150&q=80',
     }
@@ -119,13 +127,24 @@ export function Cart() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           
-          {/* ENTREGA RÁPIDA BANNER */}
-          <div style={{ width: '100%', marginBottom: 20 }}>
-            <img 
-              src={bannerEntregaRapida} 
-              alt="Entrega Rápida" 
-              style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} 
-            />
+          {/* NATIVE ENTREGA RÁPIDA BANNER */}
+          <div style={{ padding: '0 16px', marginBottom: 12 }}>
+            <div className="promo-banner" style={{ 
+              background: 'var(--card-gradient)', 
+              border: '1px solid var(--border-gold)',
+              boxShadow: 'var(--card-shadow)',
+              padding: '12px 16px',
+              margin: '0 0 8px 0'
+            }}>
+              <div className="promo-text">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                  <span style={{ color: '#D4AF37', fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3px' }}>⚡ Envio Condomínio</span>
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>Entrega Rápida</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Seus produtos entregues em até 20 minutos direto na sua porta!</p>
+              </div>
+              <span style={{ fontSize: '30px' }}>⚡</span>
+            </div>
           </div>
 
           <div style={{ padding: '0 16px' }}>
@@ -224,12 +243,16 @@ export function Cart() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-secondary)' }}>
               <span>Taxa de Entrega</span>
-              <span style={{ color: '#34C759', fontWeight: 800 }}>GRÁTIS</span>
+              {isFreeShipping ? (
+                <span style={{ color: '#2ecc71', fontWeight: 800 }}>GRÁTIS</span>
+              ) : (
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>R$ {baseShippingFee.toFixed(2)}</span>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', borderTop: '1px dashed var(--border-primary)', paddingTop: 10, marginTop: 4 }}>
               <span>Total Estimado</span>
-              <span style={{ color: 'var(--text-primary)' }}>R$ {(totalPrice - discount).toFixed(2)}</span>
+              <span style={{ color: 'var(--text-primary)' }}>R$ {estimatedTotal.toFixed(2)}</span>
             </div>
 
             <button
@@ -238,7 +261,7 @@ export function Cart() {
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >
-              {checkoutLoading ? 'Processando...' : 'Concluir Compra 💳'}
+              {checkoutLoading ? 'Processando...' : 'Seguir com a Compra 💳'}
             </button>
           </div>
         </div>
@@ -246,22 +269,24 @@ export function Cart() {
       )}
 
       {/* RECOMMENDED OFFERS CAROUSEL ROW */}
-      <div className="clube-section-title-row" style={{ marginTop: 10 }}>
-        <h3>Recomendações Especiais</h3>
-      </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 16px 20px', scrollbarWidth: 'none' }}>
+      <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 8, padding: '0 16px', textAlign: 'left' }}>Leve também</h3>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 16px 20px', scrollbarWidth: 'none' }}>
         {recommendations.map((prod) => (
           <div 
             key={prod.id}
-            style={{ width: 115, flexShrink: 0, padding: '12px 10px', background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}
+            style={{ minWidth: 105, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}
           >
-            <div style={{ width: 36, height: 36, background: '#fff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
             </div>
-            <h4 style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1.15, height: 22, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              {prod.title}
-            </h4>
-            <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text-primary)' }}>R$ {prod.price.toFixed(2)}</span>
+            <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 24, overflow: 'hidden' }}>{prod.title}</span>
+            <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
+            <button 
+              onClick={() => addToCart({ id: prod.id, title: prod.title, price: prod.price, image: prod.image }, 1)} 
+              style={{ background: 'var(--input-bg)', border: '1px solid #D4AF37', color: '#D4AF37', borderRadius: 5, padding: '3px 0', width: '100%', fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3 }}
+            >
+              <Plus size={10} /> Aproveite
+            </button>
           </div>
         ))}
       </div>

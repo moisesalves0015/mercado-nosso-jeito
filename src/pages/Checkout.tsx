@@ -4,6 +4,7 @@ import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { createOrder } from '../hooks/useOrders';
 import { useToast } from '../contexts/ToastContext';
+import { useShippingConfig } from '../hooks/useShippingConfig';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
@@ -20,6 +21,7 @@ export function Checkout() {
   const { cartItems, totalPrice, clearCart, addToCart } = useCart();
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const { config: shippingConfig } = useShippingConfig();
   // Idempotency guard: prevents duplicate orders from rapid/double clicks.
   const submittingRef = useRef(false);
   
@@ -27,17 +29,50 @@ export function Checkout() {
     { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
     { id: 'prod-melitta', title: 'Café Melitta', price: 24.50, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80' }
   ];
-  const freeShippingThreshold = 100;
+
+  // Delivery State
+  const [deliveryMethod, setDeliveryMethod] = useState<'apartment' | 'lobby'>('apartment');
+  const [address, setAddress] = useState<any>(null);
+  const [addresses, setAddresses] = useState<any[]>([]);
+
+  const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
+  const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
   const progressPercent = Math.min((totalPrice / freeShippingThreshold) * 100, 100);
+
+  const getDeliveryFee = () => {
+    if (totalPrice >= freeShippingThreshold) return 0;
+    if (!address) return baseShippingFee;
+
+    const streetLower = (address.street || '').toLowerCase();
+    const neighborhoodLower = (address.neighborhood || '').toLowerCase();
+    const cityLower = (address.city || '').toLowerCase();
+    const complementLower = (address.complement || '').toLowerCase();
+    const labelLower = (address.label || '').toLowerCase();
+
+    const condos = shippingConfig?.condos || {};
+    for (const [condoName, fee] of Object.entries(condos)) {
+      const nameLower = condoName.toLowerCase();
+      if (
+        streetLower.includes(nameLower) ||
+        neighborhoodLower.includes(nameLower) ||
+        cityLower.includes(nameLower) ||
+        complementLower.includes(nameLower) ||
+        labelLower.includes(nameLower)
+      ) {
+        return fee;
+      }
+    }
+
+    return baseShippingFee;
+  };
+
+  const deliveryFee = getDeliveryFee();
   
   const [step, setStep] = useState<CheckoutStep>('summary');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Delivery State
-  const [deliveryMethod, setDeliveryMethod] = useState<'apartment' | 'lobby'>('apartment');
-  const [address, setAddress] = useState<any>(null);
-  const [addresses, setAddresses] = useState<any[]>([]);
+
   
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'on_delivery'>('pix');
@@ -51,6 +86,8 @@ export function Checkout() {
 
   // Countdown timer for payment (10 minutes)
   const [timeLeft, setTimeLeft] = useState(600);
+
+  const finalTotal = totalPrice - discount + deliveryFee;
 
   useEffect(() => {
     if (step === 'success' && timeLeft > 0) {
@@ -145,8 +182,6 @@ export function Checkout() {
     setLoading(true);
     setError(null);
     try {
-      const finalTotal = totalPrice - discount;
-      
       const newOrderId = await createOrder({
         uid: user.uid,
         items: cartItems.map(item => ({
@@ -158,7 +193,7 @@ export function Checkout() {
         })),
         subtotal: totalPrice,
         discount: discount,
-        deliveryFee: 0,
+        deliveryFee: deliveryFee,
         total: finalTotal,
         paymentMethod: paymentMethod === 'pix' ? 'Pix' : paymentMethod === 'credit_card' ? 'Cartão de Crédito' : 'Pagamento na Entrega',
         paymentStatus: 'pending',
@@ -351,7 +386,7 @@ export function Checkout() {
                     </div>
                     <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 24, overflow: 'hidden' }}>{prod.title}</span>
                     <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
-                    <button onClick={() => addToCart(prod, 1)} style={{ background: 'var(--input-bg)', border: '1px solid #D4AF37', color: '#D4AF37', borderRadius: 5, padding: '3px 0', width: '100%', fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3 }}><Plus size={10} /> Add</button>
+                    <button onClick={() => addToCart(prod, 1)} style={{ background: 'var(--input-bg)', border: '1px solid #D4AF37', color: '#D4AF37', borderRadius: 5, padding: '3px 0', width: '100%', fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3 }}><Plus size={10} /> Aproveite</button>
                   </div>
                 ))}
               </div>
@@ -471,11 +506,11 @@ export function Checkout() {
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
                   <span>Entrega</span>
-                  <span>Grátis</span>
+                  <span>{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2)}`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', fontSize: 15 }}>
                   <span>Total a Pagar</span>
-                  <span>R$ {(totalPrice - discount).toFixed(2)}</span>
+                  <span>R$ {finalTotal.toFixed(2)}</span>
                 </div>
 
                 {/* Coupon input */}

@@ -6,7 +6,7 @@ import {
   Store, Search, Filter, Award, X, Package, BarChart2, ChevronDown,
   CheckCircle, Clock, Truck, AlertCircle, Shield, Ban, RefreshCw,
   Star, Zap, ArrowUp, ArrowDown, Eye, EyeOff, DollarSign,
-  Percent, Target, Layers
+  Percent, Target, Layers, Settings
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -52,7 +52,7 @@ interface FirestoreClient {
   id: string; name: string; email: string; role: string;
   diamonds?: number; createdAt?: any;
 }
-type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing' | 'clube';
+type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing' | 'clube' | 'configuracoes';
 // ─── VIP LEVELS ──────────────────────────────────────────────────────────────
 const getVipLevel = (diamonds: number = 0) => {
   if (diamonds >= 5000) return { label: 'Black', emoji: '⬛', color: '#e2e8f0', border: 'rgba(226,232,240,0.3)', bg: 'rgba(255,255,255,0.07)' };
@@ -217,6 +217,21 @@ export const Admin: React.FC = () => {
   const [savingRoulette, setSavingRoulette] = useState(false);
   const [loadingRoulette, setLoadingRoulette] = useState(false);
 
+  // ── Shipping Config ──
+  const [shippingConfig, setShippingConfig] = useState<{
+    freeShippingThreshold: number;
+    baseShippingFee: number;
+    condos: { name: string; fee: number }[];
+  }>({
+    freeShippingThreshold: 60,
+    baseShippingFee: 5.00,
+    condos: []
+  });
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [savingShipping, setSavingShipping] = useState(false);
+  const [newCondoName, setNewCondoName] = useState('');
+  const [newCondoFee, setNewCondoFee] = useState('0');
+
   // ─── Load from Firestore ───────────────────────────────────────────────
   useEffect(() => {
     const unsubP = onSnapshot(collection(db, 'products'), async (snap) => {
@@ -306,9 +321,54 @@ export const Admin: React.FC = () => {
     finally { setLoadingRoulette(false); }
   };
 
+  const fetchShippingConfig = async () => {
+    setLoadingShipping(true);
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'shipping'));
+      if (snap.exists()) {
+        const data = snap.data();
+        const condosArray = Object.entries(data.condos || {}).map(([name, fee]) => ({
+          name,
+          fee: Number(fee)
+        }));
+        setShippingConfig({
+          freeShippingThreshold: data.freeShippingThreshold ?? 60,
+          baseShippingFee: data.baseShippingFee ?? 5.00,
+          condos: condosArray
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  const handleSaveShippingConfig = async () => {
+    setSavingShipping(true);
+    try {
+      const condosMap: Record<string, number> = {};
+      shippingConfig.condos.forEach(c => {
+        condosMap[c.name.trim()] = c.fee;
+      });
+      await setDoc(doc(db, 'settings', 'shipping'), {
+        freeShippingThreshold: Number(shippingConfig.freeShippingThreshold),
+        baseShippingFee: Number(shippingConfig.baseShippingFee),
+        condos: condosMap,
+        updatedAt: new Date().toISOString()
+      });
+      alert('Configurações de frete salvas com sucesso! 🎉');
+    } catch (err: any) {
+      alert('Erro ao salvar: ' + err.message);
+    } finally {
+      setSavingShipping(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'clientes') fetchClients();
     if (activeTab === 'roleta') fetchRoulette();
+    if (activeTab === 'configuracoes') fetchShippingConfig();
   }, [activeTab]);
 
   const handleLogout = async () => { try { await logout(); navigate('/login'); } catch (e) { console.error(e); } };
@@ -435,6 +495,7 @@ export const Admin: React.FC = () => {
     { key: 'marketing',  label: 'Marketing',  icon: Layers },
     { key: 'roleta',     label: 'Roleta',     icon: RefreshCw },
     { key: 'clube',      label: 'Clube Vip',  icon: Gem },
+    { key: 'configuracoes', label: 'Frete & Config', icon: Settings },
   ];
 
   // ═══════ RENDER ═══════════════════════════════════════════════════════════
@@ -929,6 +990,144 @@ export const Admin: React.FC = () => {
 
         {/* ══ TAB: MARKETING ════════════════════════════════════════════════ */}
         {activeTab === 'marketing' && <AdminMarketing />}
+
+        {/* ══ TAB: CONFIGURACOES ════════════════════════════════════════════ */}
+        {activeTab === 'configuracoes' && (
+          <div style={sectionCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={15} color={crmTheme.primary} /> Configurações Gerais de Frete</h3>
+                <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '4px 0 0' }}>Gerencie o frete grátis e a taxa de entrega específica por condomínio.</p>
+              </div>
+              <button onClick={handleSaveShippingConfig} disabled={savingShipping || loadingShipping} style={{ background: crmTheme.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 18px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}>
+                {savingShipping ? 'Salvando...' : '💾 Salvar Configurações'}
+              </button>
+            </div>
+
+            {loadingShipping ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: crmTheme.textMuted, fontSize: 12 }}>Carregando configurações...</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Free Shipping & Base Fee fields */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  <div>
+                    <label style={labelStyle}>Valor para Frete Grátis (R$)</label>
+                    <input 
+                      type="number" 
+                      value={shippingConfig.freeShippingThreshold} 
+                      onChange={e => setShippingConfig({ ...shippingConfig, freeShippingThreshold: parseFloat(e.target.value) || 0 })} 
+                      style={inputStyle} 
+                      placeholder="Ex: 60"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Taxa de Entrega Padrão (R$)</label>
+                    <input 
+                      type="number" 
+                      value={shippingConfig.baseShippingFee} 
+                      onChange={e => setShippingConfig({ ...shippingConfig, baseShippingFee: parseFloat(e.target.value) || 0 })} 
+                      style={inputStyle} 
+                      placeholder="Ex: 5.00"
+                    />
+                  </div>
+                </div>
+
+                {/* Condominium Custom Fees list */}
+                <div style={{ borderTop: `1px solid ${crmTheme.border}`, paddingTop: 16 }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 900, color: crmTheme.textPrimary, marginBottom: 12 }}>Taxas por Condomínio</h4>
+                  
+                  {/* Add condominium form */}
+                  <div style={{ display: 'flex', gap: 8, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, padding: 10, borderRadius: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                    <input 
+                      type="text" 
+                      value={newCondoName} 
+                      onChange={e => setNewCondoName(e.target.value)} 
+                      placeholder="Nome do Condomínio (Ex: Condomínio Vitória)" 
+                      style={{ ...inputStyle, flex: 1, minWidth: 200 }} 
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>Taxa: R$</span>
+                      <input 
+                        type="number" 
+                        value={newCondoFee} 
+                        onChange={e => setNewCondoFee(e.target.value)} 
+                        placeholder="0.00" 
+                        style={{ ...inputStyle, width: 80, textAlign: 'center' }} 
+                      />
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const name = newCondoName.trim();
+                        if (!name) return;
+                        const fee = parseFloat(newCondoFee) || 0;
+                        if (shippingConfig.condos.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                          alert('Este condomínio já está configurado.');
+                          return;
+                        }
+                        setShippingConfig({
+                          ...shippingConfig,
+                          condos: [...shippingConfig.condos, { name, fee }]
+                        });
+                        setNewCondoName('');
+                        setNewCondoFee('0');
+                      }} 
+                      style={{ background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, color: crmTheme.primary, padding: '0 18px', height: 40, borderRadius: 10, fontSize: 12, fontWeight: 850, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+
+                  {/* Condos list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px', padding: '0 12px', fontSize: 10.5, fontWeight: 800, color: crmTheme.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <span>Condomínio</span><span>Taxa de Entrega</span><span style={{ textAlign: 'right' }}>Ações</span>
+                    </div>
+
+                    {shippingConfig.condos.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '24px 0', border: `1px dashed ${crmTheme.border}`, borderRadius: 12, color: crmTheme.textMuted, fontSize: 12 }}>
+                        Nenhum condomínio personalizado cadastrado. A taxa padrão será aplicada.
+                      </div>
+                    ) : (
+                      shippingConfig.condos.map((c, index) => (
+                        <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px', alignItems: 'center', gap: 12, background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, padding: '10px 12px', borderRadius: 12 }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 800, color: crmTheme.textPrimary }}>{c.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>R$</span>
+                            <input 
+                              type="number" 
+                              value={c.fee} 
+                              onChange={e => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setShippingConfig({
+                                  ...shippingConfig,
+                                  condos: shippingConfig.condos.map((co, idx) => idx === index ? { ...co, fee: val } : co)
+                                });
+                              }} 
+                              style={{ ...inputStyle, height: 32, fontSize: 12, padding: '0 6px', background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, width: 80, textAlign: 'center' }} 
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => {
+                                setShippingConfig({
+                                  ...shippingConfig,
+                                  condos: shippingConfig.condos.filter((_, idx) => idx !== index)
+                                });
+                              }} 
+                              style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${crmTheme.danger}`, background: crmTheme.dangerLight, color: crmTheme.danger, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* ═══ MODAL: ORDER DETAIL ══════════════════════════════════════════════ */}
