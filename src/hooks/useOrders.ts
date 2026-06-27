@@ -12,6 +12,7 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { defaultProducts } from '../data/defaultProducts';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -355,8 +356,38 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
           });
         }
       } else {
-        // Product doesn't exist in Firestore: reject the order to avoid ghost purchases.
-        throw new Error(`Produto não encontrado: ${item.title}. Atualize o carrinho e tente novamente.`);
+        // If the product exists in defaultProducts, we can dynamically write/insert it during the transaction!
+        const defaultProd = defaultProducts.find(p => p.id === item.id);
+        if (defaultProd) {
+          transaction.set(ref, {
+            ...defaultProd,
+            createdAt: now,
+            updatedAt: now
+          });
+          serverSubtotal += defaultProd.price * item.quantity;
+          verifiedItems.push({
+            ...item,
+            price: defaultProd.price
+          });
+          if (defaultProd.stock !== undefined && defaultProd.stock !== null) {
+            const newStock = Math.max(0, defaultProd.stock - item.quantity);
+            updates.push({
+              ref,
+              newStock,
+              logRef: doc(collection(db, 'inventory_logs')),
+              logData: {
+                productId: item.id,
+                productName: item.title,
+                delta: -item.quantity,
+                note: `Venda Auto-Criada Pedido ${orderNumber}`,
+                date: new Date().toISOString(),
+                timestamp: now
+              }
+            });
+          }
+        } else {
+          throw new Error(`Produto não encontrado: ${item.title}. Atualize o carrinho e tente novamente.`);
+        }
       }
     }
 
