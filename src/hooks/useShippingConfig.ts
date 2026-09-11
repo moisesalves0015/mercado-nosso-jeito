@@ -91,10 +91,9 @@ export const useShippingConfig = () => {
         }
         setLoading(false);
       }
-    }, async (error) => {
+    }, (error) => {
       console.warn("Could not subscribe to settings/shipping, trying configs/shipping fallback:", error);
-      try {
-        const fallbackSnap = await getDoc(doc(db, 'configs', 'shipping'));
+      getDoc(doc(db, 'configs', 'shipping')).then(fallbackSnap => {
         if (fallbackSnap.exists()) {
           const data = fallbackSnap.data();
           const normalized: ShippingConfig = {
@@ -105,10 +104,11 @@ export const useShippingConfig = () => {
           setConfig(normalized);
           localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
         }
-      } catch (e) {
+      }).catch(e => {
         console.error("Fallback error:", e);
-      }
-      setLoading(false);
+      }).finally(() => {
+        setLoading(false);
+      });
     });
 
     return () => unsub();

@@ -226,17 +226,6 @@ export const initClubeProfile = functions.https.onCall(async (_data, context) =>
   const idempotencyKey = `welcome-bonus:${uid}`;
 
   await db.runTransaction(async (transaction) => {
-    transaction.set(profileRef, {
-      diamonds: 0,
-      streak: 0,
-      current_day: 0,
-      history: [],
-      freeSpinUsed: false,
-      freeSpinDate: '',
-      missions: { order: false, refer: false, combo: false },
-      completedAds: [],
-    });
-
     await grantReward(transaction, {
       uid,
       type: 'WELCOME_BONUS',
