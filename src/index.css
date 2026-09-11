@@ -11,10 +11,21 @@
 }
 
 :root {
-  /* Core backgrounds */
-  --bg-primary: #090705;
-  --bg-secondary: #000000;
-  --bg-tertiary: rgba(255, 255, 255, 0.03);
+  /* ── Feira Urbana Brand Tokens ── */
+  --color-primary: #22c55e;
+  --color-primary-hover: #16a34a;
+  --color-primary-muted: rgba(34, 197, 94, 0.12);
+  --color-primary-border: rgba(34, 197, 94, 0.25);
+  --color-accent-gold: #D4AF37;
+  --color-accent-amber: #FFDF73;
+  --color-accent-orange: #f97316;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+
+  /* Core backgrounds — Feira Urbana dark green */
+  --bg-primary: #0d1a12;
+  --bg-secondary: #0a1510;
+  --bg-tertiary: rgba(34, 197, 94, 0.04);
   /* Text */
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.7);
@@ -24,9 +35,10 @@
   --border-primary: rgba(255, 255, 255, 0.1);
   --border-gold: rgba(212, 175, 55, 0.18);
   --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-green: rgba(34, 197, 94, 0.2);
   /* Cards */
   --card-bg: rgba(255, 255, 255, 0.06);
-  --card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  --card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
   --card-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   /* Inputs */
   --input-bg: rgba(255, 255, 255, 0.05);
@@ -34,22 +46,22 @@
   --input-text: #ffffff;
   --input-placeholder: rgba(255, 255, 255, 0.35);
   /* Misc */
-  --overlay-bg: linear-gradient(160deg, rgba(9, 7, 5, 0.55) 0%, rgba(9, 7, 5, 0.82) 60%, rgba(9, 7, 5, 0.97) 100%);
+  --overlay-bg: linear-gradient(160deg, rgba(13, 26, 18, 0.55) 0%, rgba(13, 26, 18, 0.82) 60%, rgba(13, 26, 18, 0.97) 100%);
   --back-btn-bg: rgba(255, 255, 255, 0.07);
   --logo-text-color: #ffffff;
   /* Glass panel */
-  --glass-panel-bg: linear-gradient(145deg, rgba(30, 30, 30, 0.7), rgba(15, 15, 15, 0.85));
-  --glass-panel-border: rgba(255, 255, 255, 0.15);
+  --glass-panel-bg: linear-gradient(145deg, rgba(20, 40, 28, 0.7), rgba(10, 21, 15, 0.85));
+  --glass-panel-border: rgba(34, 197, 94, 0.12);
   /* Section headers */
   --section-title-color: #ffffff;
   /* Toast */
-  --toast-bg: rgba(10, 15, 30, 0.95);
+  --toast-bg: rgba(8, 18, 12, 0.97);
   --toast-text: #ffffff;
   --toast-text-secondary: rgba(255, 255, 255, 0.55);
   --toast-close-color: rgba(255, 255, 255, 0.6);
   /* Modal overlay */
   --modal-overlay-bg: rgba(0, 0, 0, 0.85);
-  --modal-content-bg: rgba(9, 7, 5, 0.95);
+  --modal-content-bg: rgba(13, 26, 18, 0.98);
   /* Skeleton */
   --skeleton-base: rgba(255, 255, 255, 0.03);
   --skeleton-highlight: rgba(255, 255, 255, 0.08);
@@ -57,15 +69,15 @@
   --footer-text: rgba(255, 255, 255, 0.4);
   --footer-heading: rgba(255, 255, 255, 0.6);
   /* Search bar */
-  --search-bar-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  --search-bar-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   --search-bar-border: rgba(255, 255, 255, 0.1);
   --search-bar-hover-bg: rgba(255, 255, 255, 0.08);
   --search-bar-hover-border: rgba(255, 255, 255, 0.25);
   /* Info cards */
-  --info-card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  --info-card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   --info-card-border: rgba(255, 255, 255, 0.1);
   /* Product detail */
-  --product-detail-header-bg: rgba(9, 7, 5, 0.85);
+  --product-detail-header-bg: rgba(13, 26, 18, 0.9);
   --product-detail-header-border: rgba(255, 255, 255, 0.08);
   /* Rating */
   --rating-text: #ffffff;
@@ -83,9 +95,9 @@
   --custom-select-text: #fff;
   --custom-select-arrow: rgba(255, 255, 255, 0.5);
   /* Super promo */
-  --super-promo-bg: rgba(9, 7, 5, 0.95);
+  --super-promo-bg: rgba(13, 26, 18, 0.97);
   /* Mega oferta card */
-  --mega-card-bg: rgba(9, 7, 5, 0.95);
+  --mega-card-bg: rgba(13, 26, 18, 0.97);
   /* Weekly calendar */
   --weekly-cal-bg: rgba(255, 255, 255, 0.03);
   --weekly-cal-border: rgba(255, 255, 255, 0.06);
@@ -98,29 +110,29 @@
   --promo-card-border: rgba(255, 255, 255, 0.1);
   --promo-card-title: rgba(255, 255, 255, 0.9);
   /* Quick gold cards */
-  --quick-gold-card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  --quick-gold-card-border: rgba(255, 255, 255, 0.1);
-  --quick-gold-label-color: rgba(255, 255, 255, 0.75);
+  --quick-gold-card-bg: linear-gradient(145deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02));
+  --quick-gold-card-border: rgba(34, 197, 94, 0.15);
+  --quick-gold-label-color: rgba(255, 255, 255, 0.8);
   /* Quick search */
-  --quick-search-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  --quick-search-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   --quick-search-border: rgba(255, 255, 255, 0.1);
   --quick-search-text: #ffffff;
   --quick-search-placeholder: rgba(255, 255, 255, 0.35);
   /* Categories page */
-  --categories-page-card-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  --categories-page-card-border: rgba(255, 255, 255, 0.1);
+  --categories-page-card-bg: linear-gradient(145deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.02));
+  --categories-page-card-border: rgba(34, 197, 94, 0.15);
   /* Club missions */
   --mission-details-text: #ffffff;
   --mission-details-sub: rgba(255, 255, 255, 0.45);
   --mission-row-bg: rgba(255, 255, 255, 0.02);
   --mission-row-border: rgba(255, 255, 255, 0.05);
   /* Club ad completed overlay */
-  --ad-completed-overlay-bg: rgba(9, 7, 5, 0.72);
+  --ad-completed-overlay-bg: rgba(13, 26, 18, 0.72);
   --ad-completed-overlay-text: rgba(255, 255, 255, 0.8);
   /* Club ad theater */
-  --ad-theater-overlay-bg: rgba(2, 2, 2, 0.94);
+  --ad-theater-overlay-bg: rgba(2, 5, 3, 0.94);
   /* Reward modal */
-  --reward-modal-bg: rgba(9, 7, 5, 0.95);
+  --reward-modal-bg: rgba(13, 26, 18, 0.98);
   --reward-modal-desc: rgba(255, 255, 255, 0.75);
   /* Period button */
   --period-btn-bg: transparent;
@@ -132,7 +144,7 @@
   --search-container-border: rgba(255, 255, 255, 0.15);
   --search-input-color: #ffffff;
   --search-placeholder-color: rgba(255, 255, 255, 0.45);
-  --search-btn-bg: #000000;
+  --search-btn-bg: #0a1510;
   --search-btn-color: #ffffff;
   /* Section & category text */
   --section-h2-color: #ffffff;
@@ -140,7 +152,7 @@
   --info-card-h4-color: #ffffff;
   --info-card-p-color: rgba(255, 255, 255, 0.65);
   /* Product detail header */
-  --detail-header-bg: rgba(9, 7, 5, 0.88);
+  --detail-header-bg: rgba(13, 26, 18, 0.92);
   --detail-header-border: rgba(255, 255, 255, 0.08);
   --detail-header-title: #ffffff;
   /* Header icon active */
@@ -159,13 +171,13 @@
   /* Product main title */
   --product-main-title-color: #ffffff;
   /* Glass panel */
-  --glass-panel-bg-full: linear-gradient(145deg, rgba(30, 30, 30, 0.7), rgba(15, 15, 15, 0.85));
-  --glass-panel-border-full: rgba(255, 255, 255, 0.15);
-  --glass-panel-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.5);
+  --glass-panel-bg-full: linear-gradient(145deg, rgba(20, 40, 28, 0.7), rgba(10, 21, 15, 0.85));
+  --glass-panel-border-full: rgba(34, 197, 94, 0.12);
+  --glass-panel-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.5);
   /* Super promo background */
-  --super-promo-inner-bg: rgba(9, 7, 5, 0.95);
+  --super-promo-inner-bg: rgba(13, 26, 18, 0.97);
   /* Mega oferta background */
-  --mega-oferta-inner-bg: rgba(9, 7, 5, 0.95);
+  --mega-oferta-inner-bg: rgba(13, 26, 18, 0.97);
   /* Promo card title/text */
   --promo-card-content-title: rgba(255, 255, 255, 0.9);
   /* App footer */
@@ -182,14 +194,14 @@
   --rating-value-color: #ffffff;
   --rating-count-color: rgba(255, 255, 255, 0.5);
   /* Quick search / gold cards (extras) */
-  --quick-search-focus-border: rgba(255, 255, 255, 0.25);
-  --quick-search-focus-bg: rgba(255, 255, 255, 0.08);
-  --quick-card-hover-bg: rgba(255, 255, 255, 0.08);
-  --quick-card-hover-border: rgba(255, 255, 255, 0.25);
-  /* Skeleton base already exists but add shimmer gradient token */
+  --quick-search-focus-border: rgba(34, 197, 94, 0.4);
+  --quick-search-focus-bg: rgba(34, 197, 94, 0.05);
+  --quick-card-hover-bg: rgba(34, 197, 94, 0.08);
+  --quick-card-hover-border: rgba(34, 197, 94, 0.3);
+  /* Skeleton shimmer gradient */
   --skeleton-shimmer-gradient: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
   /* Weekly calendar hover */
-  --weekly-slot-hover-bg: rgba(255, 255, 255, 0.05);
+  --weekly-slot-hover-bg: rgba(34, 197, 94, 0.05);
   /* Section header sub/link color */
   --section-sub-color: #D4AF37;
   /* Club missions row */
@@ -406,15 +418,31 @@ body {
   min-height: 100%;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family:
+    'Inter',
     'Manrope',
-    'Outfit',
     sans-serif;
   background: var(--bg-primary);
   overflow-x: hidden;
   color: var(--text-primary);
   transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Feira Urbana typography — Outfit for headings, prices, brand elements */
+h1, h2, h3, .logo-main, .logo-sub, .product-price,
+.price-pill, .product-price, .hero-badge,
+.super-promo-title, .period-button-title {
+  font-family: 'Outfit', 'Manrope', sans-serif;
+}
+
+/* Quick gold icon uses Outfit for category labels */
+.quick-gold-label {
+  font-family: 'Inter', 'Manrope', sans-serif;
 }
 
 /* =========================================================
@@ -447,15 +475,15 @@ body {
   z-index: 10;
   width: min(414px, 100%);
   margin: auto;
-  padding: 0px 8px 80px 8px;
-  /* Narrower side margins, no top padding */
+  padding: 0px 0px 80px 0px;
+  /* Removed side padding so headers and scrolls bleed naturally */
 }
 
 @media (min-width: 768px) {
   .app {
     width: 100%;
     max-width: 960px;
-    padding: 0px 20px 100px 20px;
+    padding: 0px 0px 100px 0px;
   }
 }
 
@@ -479,9 +507,7 @@ body {
   z-index: 1000;
   background: var(--bg-secondary);
   margin-top: 0;
-  margin-left: -8px;
-  margin-right: -8px;
-  width: calc(100% + 16px);
+  width: 100%;
   margin-bottom: 0px;
   border-bottom: 1px solid var(--border-gold);
 }
@@ -919,9 +945,9 @@ body.light-mode .topbar-search-container {
   background-position: center center !important;
   border-top-left-radius: 24px !important;
   border-top-right-radius: 24px !important;
-  margin-left: -8px !important;
-  margin-right: -8px !important;
-  width: calc(100% + 16px) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1168,15 +1194,20 @@ body.light-mode .topbar-search-container {
 ========================================================= */
 .category-row {
   display: flex;
-  gap: 0px;
+  gap: 12px;
   overflow-x: auto;
-  padding: 16px 16px 8px 16px;
+  overflow-y: visible;
+  padding: 16px 0 16px 0;
   margin-top: 2px;
   margin-bottom: 0px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  margin-left: -16px;
-  margin-right: -16px;
+}
+
+.category-row::before,
+.category-row::after {
+  content: '';
+  flex: 0 0 8px;
 }
 
 .category-row::-webkit-scrollbar {
@@ -1436,7 +1467,7 @@ body.light-mode .topbar-search-container {
   display: flex;
   gap: 4px;
   width: 100%;
-  padding: 4px 0;
+  padding: 4px 8px;
   margin-bottom: 4px;
   margin-top: 6px;
 }
@@ -1514,12 +1545,10 @@ body.light-mode .topbar-search-container {
    HERO PROMO BANNER (PREMIUM STYLED BANNER)
 ========================================================= */
 .hero-banner {
-  width: calc(100% + 16px);
+  width: 100%;
   height: 180px;
   border-radius: 0px;
   margin-top: 0px;
-  margin-left: -8px;
-  margin-right: -8px;
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
@@ -1873,16 +1902,41 @@ body.light-mode .topbar-search-container {
 
 .products {
   display: flex;
-  gap: 4px;
-  /* Space bem fino entre os produtos */
+  gap: 12px;
+  /* Espaçamento maior para a sombra não quebrar abruptamente */
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   scrollbar-width: none;
   padding-top: 14px;
-  /* Reduced to bring cards closer to titles */
-  padding-bottom: 4px;
-  padding-right: 8px;
-  padding-left: 8px;
+  padding-bottom: 24px;
+  padding-right: 0px;
+  padding-left: 0px;
+}
+
+.products::before,
+.products::after {
+  content: '';
+  flex: 0 0 8px;
+}
+
+.condo-favorites-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  padding-top: 16px;
+  padding-bottom: 24px;
+  margin-top: -12px;
+  margin-bottom: -16px;
+}
+.condo-favorites-scroll::before,
+.condo-favorites-scroll::after {
+  content: '';
+  flex: 0 0 8px;
+}
+.condo-favorites-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .products::-webkit-scrollbar {
@@ -2685,10 +2739,7 @@ body.light-mode .topbar-search-container {
 /* PRODUCT IMAGE SUPERMERCADO BLURRED HERO BACKGROUND */
 .product-hero-container {
   position: relative;
-  width: calc(100% + 16px);
-  /* Full-width edge to edge, offsetting parent padding */
-  margin-left: -8px;
-  margin-right: -8px;
+  width: 100%;
   height: 290px;
   /* Increased from 240px */
   overflow: hidden;
@@ -6228,12 +6279,17 @@ body.light-mode .topbar-search-container {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0px 16px 16px 16px;
-  /* Reduzido de 22px para 16px */
+  overflow-y: visible;
+  padding: 0px 0px 16px 0px;
   position: relative;
   z-index: 2;
   scroll-snap-type: x mandatory;
+}
+
+.super-promo-scroll::before,
+.super-promo-scroll::after {
+  content: '';
+  flex: 0 0 8px;
 }
 
 .super-promo-scroll::-webkit-scrollbar {
@@ -7029,7 +7085,7 @@ body.light-mode .topbar-search-container {
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   margin: 10px 0;
-  padding: 0 2px;
+  padding: 0 8px;
 }
 
 .quick-gold-card {

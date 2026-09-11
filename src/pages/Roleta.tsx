@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, ArrowLeft, Award, Clock, Coins, Zap, TrendingUp, Flame, Gift, Volume2, VolumeX } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { Gem, ArrowLeft, Award, Clock, Zap, TrendingUp, Flame, Gift, Volume2, VolumeX } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
 import confetti from 'canvas-confetti';
@@ -100,15 +101,19 @@ export const Roleta: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [diamonds, setDiamonds] = useState<number>(() => {
-    const saved = localStorage.getItem('user_diamonds');
-    return saved ? parseInt(saved, 10) : 320;
-  });
+  // Diamonds: read from Firestore clube/profile via realtime subscription
+  // NEVER from localStorage — localStorage is an untrusted client-side store
+  const [diamonds, setDiamonds] = useState<number>(0);
+
+  // freeSpinUsed: derived from Firestore profile, not localStorage
+  const [freeSpinUsedToday, setFreeSpinUsedToday] = useState<boolean>(false);
 
   const [multiplier, setMultiplier] = useState<number>(1);
   const [combo, setCombo] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
-  
+  const audioContext = useRef<AudioContext | null>(null);
+  const particleIdRef = useRef(0);
+
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem('roulette_sound') !== 'false';
   });
@@ -117,23 +122,24 @@ export const Roleta: React.FC = () => {
   const [showJackpot, setShowJackpot] = useState(false);
   const [popBadge, setPopBadge] = useState<boolean>(false);
 
-  const [freeSpinsLeft, setFreeSpinsLeft] = useState<number>(() => {
-    const saved = localStorage.getItem('free_spins_left_v2');
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  const [lastFreeSpin, setLastFreeSpin] = useState<number>(() => {
-    const saved = localStorage.getItem('last_free_spin_v2');
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  const audioContext = useRef<AudioContext | null>(null);
-  const particleIdRef = useRef(0);
-
-  // Persist free spins left
+  // Subscribe to diamonds and freeSpinUsed from Firestore clube/profile
+  // This is the authoritative source — localStorage is no longer used for balance
   useEffect(() => {
-    localStorage.setItem('free_spins_left_v2', freeSpinsLeft.toString());
-  }, [freeSpinsLeft]);
+    if (!user) return;
+    const profileRef = doc(db, 'users', user.uid, 'clube', 'profile');
+    const unsub = onSnapshot(profileRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setDiamonds(data.diamonds ?? 0);
+        window.dispatchEvent(new Event('diamonds_updated'));
+        
+        // Check if free spin was already used today (BRT)
+        const todayBRT = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().split('T')[0];
+        setFreeSpinUsedToday(data.freeSpinDate === todayBRT && !!data.freeSpinUsed);
+      }
+    });
+    return () => unsub();
+  }, [user]);
 
   // Lock scrolling when reward result modal is open
   useEffect(() => {
@@ -246,32 +252,16 @@ export const Roleta: React.FC = () => {
     }
   }, []);
 
-  // Sync with Firestore diamonds if user is logged in
-  useEffect(() => {
-    if (user) {
-      const fetchUserDiamonds = async () => {
-        try {
-          const userSnap = await getDoc(doc(db, 'users', user.uid));
-          if (userSnap.exists()) {
-            const data = userSnap.data();
-            if (data.diamonds !== undefined) {
-              setDiamonds(data.diamonds);
-              localStorage.setItem('user_diamonds', data.diamonds.toString());
-              window.dispatchEvent(new Event('diamonds_updated'));
-            }
-          }
-        } catch (e) {
-          console.error("Erro ao ler diamantes do Firestore:", e);
-        }
-      };
-      fetchUserDiamonds();
-    }
-  }, [user]);
+  // Removed: stale useEffect using getDoc from users root (Roleta now reads from clube/profile via onSnapshot above)
+  // Removed: stale useEffect for freeSpinsLeft/lastFreeSpin using localStorage (controlled by Firestore profile)
 
-  // Load configuration from Firestore configs/roulette
+  // Load roulette wheel visual items from Firestore configs/roulette
+  // Note: the actual PRIZE is determined by the backend (spinRoulette CF).
+  // These items are used only for the wheel visual and probability display.
   useEffect(() => {
     const fetchConfig = async () => {
       try {
+        const { getDoc } = await import('firebase/firestore');
         const docSnap = await getDoc(doc(db, 'configs', 'roulette'));
         if (docSnap.exists() && docSnap.data().items) {
           const loadedItems = docSnap.data().items.map((item: any) => ({
@@ -290,66 +280,35 @@ export const Roleta: React.FC = () => {
     fetchConfig();
   }, []);
 
-  // Check and update free spins left (3 per day)
-  useEffect(() => {
-    const now = Date.now();
-    const diff = now - lastFreeSpin;
-    const hours24 = 24 * 60 * 60 * 1000;
-    if (diff >= hours24) {
-      setFreeSpinsLeft(3);
-      setLastFreeSpin(now);
-      localStorage.setItem('last_free_spin_v2', now.toString());
-    }
-  }, [lastFreeSpin]);
-
-  const handleDiamondsUpdate = async (amount: number) => {
-    const newTotal = Math.max(0, diamonds + amount);
-    setDiamonds(newTotal);
-    localStorage.setItem('user_diamonds', newTotal.toString());
-    window.dispatchEvent(new Event('diamonds_updated'));
-
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { diamonds: newTotal });
-      } catch (e) {
-        console.error("Erro ao atualizar diamantes no Firestore:", e);
-      }
-    }
-  };
-
-  const handleEarnDiamonds = async (amount: number) => {
+  /**
+   * handleEarnDiamonds — animates a count-up from current to new balance.
+   * Called after receiving newBalance from the backend spin result.
+   */
+  const handleEarnDiamonds = (newBalance: number) => {
     const startDiamonds = diamonds;
-    const targetDiamonds = Math.max(0, startDiamonds + amount);
-    let tempDiamonds = startDiamonds;
+    const diff = newBalance - startDiamonds;
+    if (diff <= 0) {
+      setDiamonds(newBalance);
+      return;
+    }
     
     setPopBadge(true);
     
-    // Smooth count-up duration: 2.4s (2400ms) for enhanced readability
     const durationMs = 2400;
     const stepTimeMs = 60;
     const totalSteps = durationMs / stepTimeMs;
-    const increment = Math.max(1, Math.round(amount / totalSteps));
+    const increment = Math.max(1, Math.round(diff / totalSteps));
+    let tempDiamonds = startDiamonds;
     
     const counterInterval = setInterval(() => {
       tempDiamonds += increment;
-      if (tempDiamonds >= targetDiamonds) {
-        tempDiamonds = targetDiamonds;
+      if (tempDiamonds >= newBalance) {
+        tempDiamonds = newBalance;
         clearInterval(counterInterval);
         setPopBadge(false);
       }
       setDiamonds(tempDiamonds);
     }, stepTimeMs);
-
-    localStorage.setItem('user_diamonds', targetDiamonds.toString());
-    window.dispatchEvent(new Event('diamonds_updated'));
-
-    if (user) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { diamonds: targetDiamonds });
-      } catch (e) {
-        console.error("Erro ao atualizar diamantes no Firestore:", e);
-      }
-    }
   };
 
   const triggerRewardConfetti = () => {
@@ -400,10 +359,16 @@ export const Roleta: React.FC = () => {
     }, 200);
   };
 
-  const spin = (isFree: boolean) => {
-    if (spinning || items.length === 0) return;
-    if (!isFree && diamonds < 30 && freeSpinsLeft === 0) {
-      alert("💎 Você precisa de 30 diamantes ou usar um giro grátis!");
+  const spin = async (isFree: boolean) => {
+    if (spinning || items.length === 0 || !user) return;
+
+    // Quick local guard before calling backend
+    if (!isFree && diamonds < 30 && freeSpinUsedToday) {
+      alert("💎 Você precisa de 30 diamantes ou aguardar o giro grátis de amanhã!");
+      return;
+    }
+    if (isFree && freeSpinUsedToday) {
+      alert("💎 Giro grátis já utilizado hoje. Volte amanhã!");
       return;
     }
 
@@ -411,95 +376,72 @@ export const Roleta: React.FC = () => {
     setResult(null);
     playSound('spin');
 
-    if (isFree && freeSpinsLeft > 0) {
-      setFreeSpinsLeft(prev => prev - 1);
-    } else if (!isFree) {
-      handleDiamondsUpdate(-30);
-    }
-
+    // Determine rotation for animation (visual only — actual prize comes from backend)
     const n = items.length;
-    let randomIndex = 0;
-    
-    // Calculate total probability of configured items
-    const totalProb = items.reduce((acc, item) => acc + (item.probability || 0), 0);
-    
-    if (totalProb > 0) {
-      const randomVal = Math.random() * totalProb;
-      let cumulative = 0;
-      for (let i = 0; i < n; i++) {
-        cumulative += items[i].probability || 0;
-        if (randomVal <= cumulative) {
-          randomIndex = i;
-          break;
-        }
-      }
-    } else {
-      randomIndex = Math.floor(Math.random() * n);
-      // Weighted rarity validation as fallback
-      const selectedRarity = items[randomIndex].rarity;
-      if (selectedRarity === 'legendary' && Math.random() > 0.08) {
-        randomIndex = Math.floor(Math.random() * n);
-      } else if (selectedRarity === 'epic' && Math.random() > 0.20) {
-        randomIndex = Math.floor(Math.random() * n);
-      }
-    }
-
-    const degPerSlice = 360 / n;
-    // stop exact center of the winning slice
-    const stopRotation = 360 - (randomIndex + 0.5) * degPerSlice;
+    const deg = n > 0 ? 360 / n : 360;
+    const randomVisualIndex = Math.floor(Math.random() * n);
+    const stopRotation = 360 - (randomVisualIndex + 0.5) * deg;
     const nextRotation = rotation + (360 * 12) + stopRotation - (rotation % 360);
     setRotation(nextRotation);
-    
-    setTimeout(() => {
-      const wonItem = items[randomIndex];
-      const rarity = wonItem.rarity || 'common';
-      
-      let finalText = wonItem.text;
-      let isWin = true;
-      let amountGained: number | undefined;
-      
-      if (finalText.toLowerCase().includes("tente de novo") || finalText.includes("😢")) {
-        isWin = false;
-        setCombo(0);
-        setStreak(prev => Math.max(0, prev - 1));
-        playSound('lose');
-      } else {
-        // Tolerant regex matching both '💎' and 'Diamante/s'
-        const diamondMatch = finalText.match(/(\d+)\s*(?:Diamante|Diamantes|💎)/i);
-        if (diamondMatch) {
-          amountGained = Math.floor(parseInt(diamondMatch[1], 10) * multiplier);
-          finalText = `${amountGained} 💎 ${multiplier > 1 ? `(x${multiplier} Bônus!)` : ''}`;
-          // Defer the points update until the user clicks Sensacional! to match daily check-in behavior
+
+    // Call backend after animation starts
+    try {
+      const functions = getFunctions();
+      const spinRoulette = httpsCallable<
+        { type: 'free' | 'premium' },
+        { prizeText: string; prizeType: string; rarity: string; diamondsGained: number; newBalance: number }
+      >(functions, 'spinRoulette');
+
+      const res = await spinRoulette({ type: isFree ? 'free' : 'premium' });
+      const { prizeText, rarity, diamondsGained, newBalance } = res.data;
+
+      setTimeout(() => {
+        const isWin = !prizeText.toLowerCase().includes('tente de novo');
+
+        if (!isWin) {
+          setCombo(0);
+          setStreak(prev => Math.max(0, prev - 1));
+          playSound('lose');
+        } else {
+          setCombo(prev => prev + 1);
+          setStreak(prev => prev + 1);
+          if (multiplier < 10 && combo >= 2) {
+            setMultiplier(prev => Math.min(10, prev + 0.5));
+          }
+          playSound(rarity as any);
+          if (rarity === 'legendary') {
+            setShowJackpot(true);
+            setTimeout(() => setShowJackpot(false), 3000);
+          }
         }
-        
-        setCombo(prev => prev + 1);
-        setStreak(prev => prev + 1);
-        
-        if (multiplier < 10 && combo >= 2) {
-          setMultiplier(prev => Math.min(10, prev + 0.5));
+
+        const dateStr = new Date().toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const newHistory = [{ text: prizeText, date: dateStr, rarity, won: isWin }, ...history].slice(0, 50);
+        setHistory(newHistory);
+        localStorage.setItem('roulette_history_v2', JSON.stringify(newHistory));
+
+        setResult({ text: prizeText, rarity, amountGained: diamondsGained > 0 ? diamondsGained : undefined });
+        setSpinning(false);
+
+        // Animate balance count-up to new authoritative value from backend
+        if (isWin && diamondsGained > 0) {
+          handleEarnDiamonds(newBalance);
+          triggerRewardConfetti();
         }
-        
-        playSound(rarity as any);
-        
-        if (rarity === 'legendary') {
-          setShowJackpot(true);
-          setTimeout(() => setShowJackpot(false), 3000);
-        }
-      }
-      
-      const dateStr = new Date().toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const newHistory = [{ text: finalText, date: dateStr, rarity, won: isWin }, ...history].slice(0, 50);
-      setHistory(newHistory);
-      localStorage.setItem('roulette_history_v2', JSON.stringify(newHistory));
-      
-      setResult({ text: finalText, rarity, amountGained });
+        addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
+      }, 10200); // match ease-out transition
+    } catch (e: any) {
       setSpinning(false);
-      
-      if (isWin) {
-        triggerRewardConfetti();
+      const msg = e?.message || 'Erro ao girar a roleta.';
+      if (msg.includes('already-exists')) {
+        alert('Giro grátis já utilizado hoje. Volte amanhã!');
+      } else if (msg.includes('resource-exhausted')) {
+        alert('Diamantes insuficientes para girar. Ganhe mais diamantes primeiro!');
+      } else {
+        alert(msg);
       }
-      addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
-    }, 10200); // 10.2s matching the ease-out transition
+      console.error('spinRoulette error:', e);
+    }
   };
 
   const resetMultiplier = () => {
@@ -508,13 +450,7 @@ export const Roleta: React.FC = () => {
   };
 
   const getNextFreeSpinTimeLeft = () => {
-    const diff = Date.now() - lastFreeSpin;
-    const hours24 = 24 * 60 * 60 * 1000;
-    const timeLeft = hours24 - diff;
-    if (timeLeft <= 0 || freeSpinsLeft > 0) return "Disponível";
-    const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-    const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-    return `${hours}h ${minutes}m`;
+    return freeSpinUsedToday ? "Amanhã" : "Disponível";
   };
 
   const n = items.length;
@@ -647,7 +583,7 @@ export const Roleta: React.FC = () => {
                 <button 
                   type="button" 
                   className="btnStart"
-                  onClick={() => spin(freeSpinsLeft > 0)}
+                  onClick={() => spin(!freeSpinUsedToday)}
                   disabled={spinning || items.length === 0}
                   style={{ background: 'radial-gradient(circle at 30% 30%, #D4AF37, #8B6914)', boxShadow: '0 0 20px rgba(212,175,55,0.45)' }}
                 >
@@ -655,9 +591,9 @@ export const Roleta: React.FC = () => {
                     <span style={{ fontSize: '9.5px', color: '#090705', fontWeight: 900, lineHeight: 1.1, textTransform: 'uppercase', textAlign: 'center' }}>
                       NOSSO<br/>CLUBE
                     </span>
-                  ) : freeSpinsLeft > 0 ? (
+                  ) : !freeSpinUsedToday ? (
                     <>
-                      <span style={{ fontSize: '8px', color: '#090705', fontWeight: 800 }}>{freeSpinsLeft} GRÁTIS</span>
+                      <span style={{ fontSize: '8px', color: '#090705', fontWeight: 800 }}>1 GRÁTIS</span>
                       <span style={{ fontSize: '11px', color: '#090705', fontWeight: 900 }}>GIRAR</span>
                     </>
                   ) : (
@@ -768,7 +704,7 @@ export const Roleta: React.FC = () => {
             {/* Action Controls */}
             <div className="roulette-controls" style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300, margin: '24px auto 0' }}>
               
-              {freeSpinsLeft > 0 ? (
+              {!freeSpinUsedToday ? (
                 <button 
                   className="roulette-spin-btn free-spin animate-pulse"
                   onClick={() => spin(true)}
@@ -776,7 +712,7 @@ export const Roleta: React.FC = () => {
                   style={{ flex: 1, background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', padding: '12px 8px', borderRadius: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   <Gift size={14} />
-                  <span>{freeSpinsLeft} Grátis</span>
+                  <span>1 Grátis</span>
                 </button>
               ) : (
                 <button 
@@ -822,7 +758,7 @@ export const Roleta: React.FC = () => {
                   gap: 6
                 }}
               >
-                <Coins size={14} />
+                <Gem size={14} />
                 <span>30 💎</span>
               </button>
             </div>

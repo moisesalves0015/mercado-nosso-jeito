@@ -45,6 +45,7 @@ export interface UserProfile {
   createdAt?: Date;
   updatedAt?: Date;
   lastLogin?: Date;
+  onboardingComplete?: boolean;
 }
 
 interface AuthContextType {
@@ -61,7 +62,7 @@ interface AuthContextType {
   sendPasswordReset: (email: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   // Profile actions
-  updateUserProfile: (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges'>>) => Promise<void>;
+  updateUserProfile: (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges' | 'onboardingComplete'>>) => Promise<void>;
   uploadProfilePhoto: (file: File) => Promise<string>;
   refreshProfile: () => Promise<void>;
   // Legacy compat
@@ -126,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: toDate(data.createdAt),
           updatedAt: toDate(data.updatedAt),
           lastLogin: toDate(data.lastLogin),
+          onboardingComplete: !!data.onboardingComplete,
         };
         return profile;
       } else {
@@ -154,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
+          onboardingComplete: false,
         });
         return profile;
       }
@@ -237,6 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
+        onboardingComplete: false,
       });
     } else {
       await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
@@ -273,6 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
+        onboardingComplete: false,
       });
 
       setUserName(data.name);
@@ -304,7 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ── Update Profile in Firestore ──────────────────────────
-  const updateUserProfile = async (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges'>>): Promise<void> => {
+  const updateUserProfile = async (data: Partial<Pick<UserProfile, 'name' | 'telefone' | 'cpf' | 'unlockedBadges' | 'onboardingComplete'>>): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
 
     const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
@@ -312,6 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (data.telefone !== undefined) updates.telefone = data.telefone;
     if (data.cpf !== undefined) updates.cpf = data.cpf;
     if (data.unlockedBadges !== undefined) updates.unlockedBadges = data.unlockedBadges;
+    if (data.onboardingComplete !== undefined) updates.onboardingComplete = data.onboardingComplete;
 
     await updateDoc(doc(db, 'users', user.uid), updates);
 

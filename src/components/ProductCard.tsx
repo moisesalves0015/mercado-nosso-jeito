@@ -381,9 +381,9 @@ export const ProductCard = ({
           <div className="club-only-flash">SÓ NO CLUBE!</div>
         ) : currentQuantity > 0 ? (
           <div className="quantity-control-wrapper">
-             <button className="minus-btn" onClick={handleMinus}>-</button>
-             <span className="current-quantity">{currentQuantity}</span>
-             <button className="add-btn" onClick={handlePlus}>+</button>
+             <button className="minus-btn" onClick={handleMinus} aria-label={`Reduzir quantidade de ${title}`}>-</button>
+             <span className="current-quantity" aria-live="polite" aria-label={`${currentQuantity} no carrinho`}>{currentQuantity}</span>
+             <button className="add-btn" onClick={handlePlus} aria-label={`Aumentar quantidade de ${title}`}>+</button>
           </div>
         ) : (
           <>
@@ -398,7 +398,7 @@ export const ProductCard = ({
                 ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
                 : formattedPrice}
             </div>
-            <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd}>+</button>
+            <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd} aria-label={`Adicionar ${title} ao carrinho`}>+</button>
           </>
         )}
       </div>

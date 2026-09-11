@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { SeasonRanking } from '../components/SeasonRanking';
 import { db } from '../firebase';
-import { doc, setDoc, onSnapshot, updateDoc, arrayUnion, increment, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, collection, getDocs, query, where, arrayUnion } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { performCheckinTransaction } from '../services/checkinService';
 import { useOrders } from '../hooks/useOrders';
@@ -158,18 +159,15 @@ export const Clube = () => {
     
     const unsubscribe = onSnapshot(clubeRef, async (snap) => {
       if (!snap.exists()) {
-        await setDoc(clubeRef, {
-          diamonds: 320,
-          streak: 1,
-          lastCheckinDate: '',
-          freeSpinUsed: false,
-          freeSpinDate: '',
-          history: [
-            { id: '1', desc: 'Bem-vindo ao Clube!', date: 'Hoje', value: '+320', isPlus: true }
-          ],
-          missions: { order: false, refer: false, combo: false },
-          completedAds: []
-        });
+        // Profile doesn't exist yet — call backend to initialise with welcome bonus
+        // This replaces the direct setDoc({ diamonds: 320 }) which bypassed the ledger
+        try {
+          const functions = getFunctions();
+          const initProfile = httpsCallable(functions, 'initClubeProfile');
+          await initProfile({});
+        } catch (e) {
+          console.error('Erro ao inicializar perfil do clube:', e);
+        }
       } else {
         const data = snap.data();
         setCoins(data.diamonds || 0);
@@ -365,25 +363,33 @@ export const Clube = () => {
     };
   }, [successModal, isAdPlaying]);
 
-  const updateFirebaseDoc = async (updates: any) => {
+  // updateFirebaseDoc — kept only for non-financial fields (completedAds, etc.)
+  // IMPORTANT: Do NOT use this for diamonds, history, or mission completion.
+  // Those are exclusively updated via Cloud Functions (grantReward, claimMissionReward).
+  const updateFirebaseDocNonFinancial = async (updates: Record<string, unknown>) => {
     if (!user) return;
     const clubeRef = doc(db, 'users', user.uid, 'clube', 'profile');
     try {
+      const { updateDoc } = await import('firebase/firestore');
       await updateDoc(clubeRef, updates);
     } catch (e) {
       console.error(e);
     }
   };
 
+  // Kept for backward-compat of completedAds marking
+  const updateFirebaseDoc = updateFirebaseDocNonFinancial;
+
   const handleEarnCoins = async (amount: number, description: string) => {
-    // Progressive Count-Up Ticker Animation for Coins Balance
+    // This path is kept for ad rewards (non-financial for now).
+    // TODO P1: migrate to a backend `claimAdReward` function with idempotency.
+    // For now, optimistic UI update; backend validation pending.
     const startCoins = coins;
     const targetCoins = startCoins + amount;
     let tempCoins = startCoins;
     
     setPopBadge(true);
     
-    // Smooth count-up duration: 2.4s (2400ms) for enhanced readability
     const durationMs = 2400;
     const stepTimeMs = 60;
     const totalSteps = durationMs / stepTimeMs;
@@ -399,19 +405,7 @@ export const Clube = () => {
       setCoins(tempCoins);
     }, stepTimeMs);
 
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    
-    await updateFirebaseDoc({
-      diamonds: increment(amount),
-      history: arrayUnion({
-        id: Math.random().toString(),
-        desc: description,
-        date: `Hoje, ${timeStr}`,
-        value: `+${amount}`,
-        isPlus: true
-      })
-    });
+    console.log(`[AD REWARD] Pending backend validation: +${amount} for "${description}"`);
   };
 
   const handleCheckin = async () => {
@@ -452,57 +446,57 @@ export const Clube = () => {
   };
 
   const handleReferReferralReward = async () => {
-    if (profileMissions.refer) return;
+    if (profileMissions.refer || !user) return;
     
-    setSuccessModal({
-      title: 'Indicações Concluídas!',
-      desc: 'Parabéns por atingir a meta de 3 indicações qualificadas! Seus diamantes bônus foram ativados com sucesso!',
-      coupon: 'CREDITADO',
-      amountGained: 80,
-      description: 'Missão: Indicar Amigo'
-    });
-    
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    
-    await updateFirebaseDoc({
-      'missions.refer': true,
-      diamonds: increment(80),
-      history: arrayUnion({
-        id: Math.random().toString(),
-        desc: 'Missão: Indicar Amigos (3/3)',
-        date: `Hoje, ${timeStr}`,
-        value: `+80`,
-        isPlus: true
-      })
-    });
+    try {
+      const functions = getFunctions();
+      const claimMission = httpsCallable<{ missionId: string }, { success: boolean; reward: number; newBalance: number }>(functions, 'claimMissionReward');
+      const result = await claimMission({ missionId: 'referral' });
+      
+      setSuccessModal({
+        title: 'Indicações Concluídas!',
+        desc: 'Parabéns por completar a missão de indicação! Seus diamantes bônus foram creditados no ledger.',
+        coupon: 'CREDITADO',
+        amountGained: result.data.reward,
+        description: 'Missão: Indicar Amigo'
+      });
+    } catch (e: any) {
+      const msg = e?.message || 'Erro ao completar missão de indicação.';
+      if (msg.includes('already-exists') || msg.includes('já foi completada')) {
+        alert('Esta missão já foi completada neste período.');
+      } else if (msg.includes('failed-precondition') || msg.includes('requisitos')) {
+        alert('Você ainda não completou os requisitos desta missão.');
+      } else {
+        alert(msg);
+      }
+    }
   };
 
   const handleCompleteOrder = async () => {
-    if (profileMissions.order) return;
+    if (profileMissions.order || !user) return;
     
-    setSuccessModal({
-      title: 'Pedido Concluído!',
-      desc: 'Parabéns por realizar o seu pedido! Seus diamantes bônus foram ativados com sucesso!',
-      coupon: 'CREDITADO',
-      amountGained: 100,
-      description: 'Missão: Fazer Pedido'
-    });
-    
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    
-    await updateFirebaseDoc({
-      'missions.order': true,
-      diamonds: increment(100),
-      history: arrayUnion({
-        id: Math.random().toString(),
-        desc: 'Missão: Fazer Pedido',
-        date: `Hoje, ${timeStr}`,
-        value: `+100`,
-        isPlus: true
-      })
-    });
+    try {
+      const functions = getFunctions();
+      const claimMission = httpsCallable<{ missionId: string }, { success: boolean; reward: number; newBalance: number }>(functions, 'claimMissionReward');
+      const result = await claimMission({ missionId: 'firstOrder' });
+      
+      setSuccessModal({
+        title: 'Pedido Concluído!',
+        desc: 'Parabéns por completar a missão de primeiro pedido! Seus diamantes bônus foram creditados.',
+        coupon: 'CREDITADO',
+        amountGained: result.data.reward,
+        description: 'Missão: Fazer Pedido'
+      });
+    } catch (e: any) {
+      const msg = e?.message || 'Erro ao completar missão.';
+      if (msg.includes('already-exists') || msg.includes('já foi completada')) {
+        alert('Esta missão já foi completada neste período.');
+      } else if (msg.includes('failed-precondition') || msg.includes('requisitos')) {
+        alert('Complete pelo menos um pedido que tenha sido entregue antes de coletar esta missão.');
+      } else {
+        alert(msg);
+      }
+    }
   };
 
   const handleRedeemReward = async (reward: RewardItem) => {
@@ -511,25 +505,18 @@ export const Clube = () => {
       return;
     }
     
+    // TODO P1: migrate to backend `redeemReward` callable function.
+    // This currently writes directly to the clube profile, which is blocked by
+    // the new Firestore rules. For now, this action requires Admin SDK or a
+    // dedicated Cloud Function to process the debit.
+    // Showing success modal optimistically until the function is implemented.
     setSuccessModal({
       title: 'Benefício Resgatado!',
       desc: `Parabéns! Você trocou seus diamantes por: ${reward.title}. Use o cupom abaixo no checkout.`,
       coupon: reward.code
     });
     
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-    
-    await updateFirebaseDoc({
-      diamonds: increment(-reward.cost),
-      history: arrayUnion({
-        id: Math.random().toString(),
-        desc: `Resgate: ${reward.title}`,
-        date: `Hoje, ${timeStr}`,
-        value: `-${reward.cost}`,
-        isPlus: false
-      })
-    });
+    console.warn('[REWARD REDEEM] Backend function pending — debit not applied yet.');
   };
 
   if (isLoading) {

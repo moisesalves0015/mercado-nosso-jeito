@@ -324,13 +324,29 @@ export const Admin: React.FC = () => {
   const fetchShippingConfig = async () => {
     setLoadingShipping(true);
     try {
-      const snap = await getDoc(doc(db, 'settings', 'shipping'));
+      let snap = await getDoc(doc(db, 'settings', 'shipping'));
+      if (!snap.exists()) {
+        snap = await getDoc(doc(db, 'configs', 'shipping'));
+      }
       if (snap.exists()) {
         const data = snap.data();
-        const condosArray = Object.entries(data.condos || {}).map(([name, fee]) => ({
-          name,
-          fee: Number(fee)
-        }));
+        let condosArray: { name: string; fee: number }[] = [];
+        if (Array.isArray(data.condosList) && data.condosList.length > 0) {
+          condosArray = data.condosList.map((c: any) => ({
+            name: typeof c === 'string' ? c : (c.name || ''),
+            fee: Number(c.fee) || 0
+          })).filter((c: any) => c.name);
+        } else if (Array.isArray(data.condos)) {
+          condosArray = data.condos.map((c: any) => ({
+            name: typeof c === 'string' ? c : (c.name || ''),
+            fee: Number(c.fee) || 0
+          })).filter((c: any) => c.name);
+        } else if (data.condos && typeof data.condos === 'object') {
+          condosArray = Object.entries(data.condos).map(([name, fee]) => ({
+            name,
+            fee: Number(fee) || 0
+          }));
+        }
         setShippingConfig({
           freeShippingThreshold: data.freeShippingThreshold ?? 60,
           baseShippingFee: data.baseShippingFee ?? 5.00,
@@ -348,15 +364,25 @@ export const Admin: React.FC = () => {
     setSavingShipping(true);
     try {
       const condosMap: Record<string, number> = {};
+      const condosArray: { name: string; fee: number }[] = [];
       shippingConfig.condos.forEach(c => {
-        condosMap[c.name.trim()] = c.fee;
+        const trimmedName = c.name.trim();
+        if (trimmedName) {
+          condosMap[trimmedName] = Number(c.fee) || 0;
+          condosArray.push({ name: trimmedName, fee: Number(c.fee) || 0 });
+        }
       });
-      await setDoc(doc(db, 'settings', 'shipping'), {
+      const payload = {
         freeShippingThreshold: Number(shippingConfig.freeShippingThreshold),
         baseShippingFee: Number(shippingConfig.baseShippingFee),
         condos: condosMap,
+        condosList: condosArray,
         updatedAt: new Date().toISOString()
-      });
+      };
+      await Promise.all([
+        setDoc(doc(db, 'settings', 'shipping'), payload),
+        setDoc(doc(db, 'configs', 'shipping'), payload)
+      ]);
       alert('Configurações de frete salvas com sucesso! 🎉');
     } catch (err: any) {
       alert('Erro ao salvar: ' + err.message);

@@ -4,37 +4,290 @@ import * as admin from 'firebase-admin';
 admin.initializeApp();
 const db = admin.firestore();
 
-// Helpers
-const REWARDS: Record<number, number> = { 1: 15, 2: 15, 3: 15, 4: 15, 5: 20, 6: 20, 7: 50 };
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+type TransactionType =
+  | 'DAILY_CHECKIN'
+  | 'FREE_SPIN'
+  | 'PREMIUM_SPIN_DEBIT'
+  | 'PREMIUM_SPIN_CREDIT'
+  | 'MISSION_REWARD'
+  | 'REFERRAL_BONUS'
+  | 'FIRST_ORDER_BONUS'
+  | 'WELCOME_BONUS';
 
-// Consistent UTC-3 (BRT) date string generator
+type RewardClaimStatus = 'PENDING' | 'ELIGIBLE' | 'GRANTED' | 'REVERSED' | 'EXPIRED';
+
+interface RoulettePrize {
+  id: string;
+  weight: number;
+  amount: number;
+  description: string;
+}
+
+interface CampaignConfig {
+  id: string;
+  version: number;
+  active: boolean;
+  roulette: {
+    premiumCost: number;
+    prizes: RoulettePrize[];
+  };
+  missions: {
+    firstOrder: { reward: number };
+    referral: { reward: number };
+    combo: { reward: number };
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const CHECKIN_REWARDS: Record<number, number> = { 1: 15, 2: 15, 3: 15, 4: 15, 5: 20, 6: 20, 7: 50 };
+
+const DEFAULT_CAMPAIGN: CampaignConfig = {
+  id: 'default',
+  version: 1,
+  active: true,
+  roulette: {
+    premiumCost: 50,
+    prizes: [
+      { id: 'none',   weight: 70, amount: 0,   description: 'Tente de Novo' },
+      { id: 'small',  weight: 25, amount: 15,  description: '15 Diamantes' },
+      { id: 'medium', weight: 3,  amount: 50,  description: '50 Diamantes' },
+      { id: 'large',  weight: 2,  amount: 100, description: '100 Diamantes' },
+    ],
+  },
+  missions: {
+    firstOrder: { reward: 100 },
+    referral:   { reward: 80  },
+    combo:      { reward: 50  },
+  },
+};
+
+/** Returns a BRT (UTC-3) date string: "YYYY-MM-DD" */
 const getBRTDateString = (date: Date = new Date()): string => {
   const brt = new Date(date.getTime() - 3 * 60 * 60 * 1000);
   return brt.toISOString().split('T')[0];
 };
 
-const formatTime = (date: Date) => {
+const formatTime = (date: Date): string => {
   const brt = new Date(date.getTime() - 3 * 60 * 60 * 1000);
   return `${brt.getUTCHours()}:${brt.getUTCMinutes().toString().padStart(2, '0')}`;
 };
 
-export const dailyCheckin = functions.https.onCall(async (data, context) => {
+/** Weighted random draw from a list of prizes. Throws if weights don't sum to 100. */
+function drawPrize(prizes: RoulettePrize[]): RoulettePrize {
+  const total = prizes.reduce((s, p) => s + p.weight, 0);
+  if (Math.abs(total - 100) > 0.01) {
+    throw new functions.https.HttpsError(
+      'internal',
+      `Configuração de roleta inválida: pesos somam ${total}, esperado 100.`,
+    );
+  }
+  const rand = Math.random() * 100;
+  let accumulated = 0;
+  for (const prize of prizes) {
+    accumulated += prize.weight;
+    if (rand < accumulated) return prize;
+  }
+  return prizes[prizes.length - 1];
+}
+
+/** Load the currently active campaign from Firestore, falling back to hardcoded default. */
+async function loadActiveCampaign(): Promise<CampaignConfig> {
+  try {
+    const snap = await db
+      .collection('campaign_configs')
+      .where('active', '==', true)
+      .orderBy('version', 'desc')
+      .limit(1)
+      .get();
+    if (!snap.empty) {
+      return snap.docs[0].data() as CampaignConfig;
+    }
+  } catch (_) {
+    // Fall through to default
+  }
+  return DEFAULT_CAMPAIGN;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grantReward — internal, never callable directly by clients
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Central function for all diamond credits and debits.
+ * - Checks idempotency key to prevent double-grants.
+ * - Reads current balance from the materialised profile.
+ * - Creates an immutable ledger entry in `diamond_transactions`.
+ * - Updates `profile.diamonds` (materialised balance).
+ * All operations run inside the caller's Firestore transaction.
+ */
+async function grantReward(
+  transaction: admin.firestore.Transaction,
+  opts: {
+    uid: string;
+    type: TransactionType;
+    amount: number;
+    sourceId: string;
+    idempotencyKey: string;
+    metadata?: Record<string, unknown>;
+    historyEntry?: { desc: string; date: string; value: string; isPlus: boolean } | null;
+  },
+): Promise<{ newBalance: number; alreadyProcessed: boolean }> {
+  const profileRef = db.collection('users').doc(opts.uid).collection('clube').doc('profile');
+
+  // Check idempotency before writing anything
+  const existingSnap = await db
+    .collection('diamond_transactions')
+    .where('idempotencyKey', '==', opts.idempotencyKey)
+    .limit(1)
+    .get();
+
+  if (!existingSnap.empty) {
+    const existingTxn = existingSnap.docs[0].data();
+    return { newBalance: existingTxn.balanceAfter as number, alreadyProcessed: true };
+  }
+
+  const profileSnap = await transaction.get(profileRef);
+  const profileData = profileSnap.exists
+    ? profileSnap.data()!
+    : { diamonds: 0, history: [] as unknown[] };
+
+  const balanceBefore: number = (profileData.diamonds as number) ?? 0;
+  const balanceAfter: number = balanceBefore + opts.amount;
+
+  if (balanceAfter < 0) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Saldo insuficiente para realizar esta operação.',
+    );
+  }
+
+  // Immutable ledger entry
+  const txnRef = db.collection('diamond_transactions').doc();
+  transaction.set(txnRef, {
+    userId: opts.uid,
+    type: opts.type,
+    amount: opts.amount,
+    balanceBefore,
+    balanceAfter,
+    sourceId: opts.sourceId,
+    idempotencyKey: opts.idempotencyKey,
+    metadata: opts.metadata ?? {},
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdBy: 'system',
+  });
+
+  // Materialised balance update
+  const updateData: Record<string, unknown> = { diamonds: balanceAfter };
+
+  if (opts.historyEntry) {
+    const currentHistory = (profileData.history as unknown[]) ?? [];
+    // Cap history at 100 items to prevent unbounded document growth
+    updateData.history = [opts.historyEntry, ...currentHistory].slice(0, 100);
+  }
+
+  if (profileSnap.exists) {
+    transaction.update(profileRef, updateData);
+  } else {
+    transaction.set(profileRef, {
+      diamonds: balanceAfter,
+      streak: 0,
+      current_day: 0,
+      history: opts.historyEntry ? [opts.historyEntry] : [],
+      freeSpinUsed: false,
+      freeSpinDate: '',
+      missions: { order: false, refer: false, combo: false },
+      completedAds: [],
+    });
+  }
+
+  return { newBalance: balanceAfter, alreadyProcessed: false };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// initClubeProfile — callable; creates profile without touching diamonds
+// ─────────────────────────────────────────────────────────────────────────────
+export const initClubeProfile = functions.https.onCall(async (_data, context) => {
   if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
   const uid = context.auth.uid;
   const profileRef = db.collection('users').doc(uid).collection('clube').doc('profile');
 
+  const snap = await profileRef.get();
+  if (snap.exists) {
+    return { alreadyExists: true };
+  }
+
+  const now = new Date();
+  const idempotencyKey = `welcome-bonus:${uid}`;
+
+  await db.runTransaction(async (transaction) => {
+    transaction.set(profileRef, {
+      diamonds: 0,
+      streak: 0,
+      current_day: 0,
+      history: [],
+      freeSpinUsed: false,
+      freeSpinDate: '',
+      missions: { order: false, refer: false, combo: false },
+      completedAds: [],
+    });
+
+    await grantReward(transaction, {
+      uid,
+      type: 'WELCOME_BONUS',
+      amount: 320,
+      sourceId: `welcome:${uid}`,
+      idempotencyKey,
+      historyEntry: {
+        desc: 'Bem-vindo ao Clube!',
+        date: `Hoje, ${formatTime(now)}`,
+        value: '+320',
+        isPlus: true,
+      },
+    });
+  });
+
+  return { alreadyExists: false, welcomeBonus: 320 };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// dailyCheckin — idempotent via idempotencyKey in diamond_transactions
+// ─────────────────────────────────────────────────────────────────────────────
+export const dailyCheckin = functions.https.onCall(async (_data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+  const uid = context.auth.uid;
+  const now = new Date();
+  const todayBRT = getBRTDateString(now);
+  const idempotencyKey = `daily-checkin:${uid}:${todayBRT}`;
+
+  // Pre-check before opening transaction for efficiency
+  const existingSnap = await db
+    .collection('diamond_transactions')
+    .where('idempotencyKey', '==', idempotencyKey)
+    .limit(1)
+    .get();
+  if (!existingSnap.empty) {
+    throw new functions.https.HttpsError('already-exists', 'Você já realizou o check-in de hoje.');
+  }
+
+  const profileRef = db.collection('users').doc(uid).collection('clube').doc('profile');
+
   return await db.runTransaction(async (transaction) => {
     const docSnap = await transaction.get(profileRef);
-    let profileData = docSnap.exists ? docSnap.data()! : { diamonds: 0, current_day: 0, streak: 0, history: [] };
+    const profileData = docSnap.exists
+      ? docSnap.data()!
+      : { diamonds: 0, current_day: 0, streak: 0, history: [], last_checkin_at: null };
 
-    const todayBRT = getBRTDateString(new Date());
-    const lastCheckinStr = profileData.last_checkin_at;
-
-    let currentDay = profileData.current_day || 0;
-    let streak = profileData.streak || 0;
-    let diamonds = profileData.diamonds || 0;
+    const lastCheckinStr: string | null = (profileData.last_checkin_at as string) ?? null;
+    let currentDay: number = (profileData.current_day as number) || 0;
+    let streak: number = (profileData.streak as number) || 0;
 
     if (lastCheckinStr) {
       const lastCheckinDate = new Date(lastCheckinStr);
@@ -45,135 +298,422 @@ export const dailyCheckin = functions.https.onCall(async (data, context) => {
       }
 
       const expectedNextDate = new Date(lastCheckinDate.getTime() + 24 * 60 * 60 * 1000);
-      const expectedNextBRT = getBRTDateString(expectedNextDate);
-
-      if (todayBRT === expectedNextBRT) {
+      if (todayBRT === getBRTDateString(expectedNextDate)) {
         currentDay = currentDay >= 7 ? 1 : currentDay + 1;
         streak += 1;
       } else {
         currentDay = 1;
-        streak = 1; // reset
+        streak = 1;
       }
     } else {
       currentDay = 1;
       streak = 1;
     }
 
-    const rewardAmount = REWARDS[currentDay];
-    diamonds += rewardAmount;
+    const rewardAmount = CHECKIN_REWARDS[currentDay] ?? 15;
 
-    // Registrar transação na coleção raiz `diamond_transactions`
-    const transactionRef = db.collection('diamond_transactions').doc();
-    transaction.set(transactionRef, {
-      user_id: uid,
-      type: 'CHECKIN_REWARD',
+    const { newBalance } = await grantReward(transaction, {
+      uid,
+      type: 'DAILY_CHECKIN',
       amount: rewardAmount,
-      balance_before: profileData.diamonds || 0,
-      balance_after: diamonds,
-      created_at: admin.firestore.FieldValue.serverTimestamp()
+      sourceId: `checkin:${todayBRT}`,
+      idempotencyKey,
+      metadata: { day: currentDay, streak },
+      historyEntry: {
+        desc: `Check-in Diário (Dia ${currentDay})`,
+        date: `Hoje, ${formatTime(now)}`,
+        value: `+${rewardAmount}`,
+        isPlus: true,
+      },
     });
 
-    // Atualizar perfil do usuário
-    const historyItem = {
-      id: Date.now().toString(),
-      desc: `Check-in Diário (Dia ${currentDay})`,
-      date: `Hoje, ${formatTime(now)}`,
-      value: `+${rewardAmount}`,
-      isPlus: true
-    };
-    
-    const history = profileData.history || [];
-    history.unshift(historyItem);
-
-    const now = new Date();
-    transaction.set(profileRef, {
+    // Update check-in tracking fields (separate from balance — grantReward handles diamonds)
+    transaction.update(profileRef, {
       current_day: currentDay,
       streak,
-      diamonds,
       last_checkin_at: now.toISOString(),
-      history
+    });
 
-    }, { merge: true });
+    // Gamification event for downstream processors
+    const eventRef = db.collection('gamification_events').doc();
+    transaction.set(eventRef, {
+      type: 'DAILY_CHECKIN_COMPLETED',
+      userId: uid,
+      entityId: idempotencyKey,
+      occurredAt: admin.firestore.FieldValue.serverTimestamp(),
+      payload: { day: currentDay, streak, reward: rewardAmount },
+    });
 
-    return { success: true, reward: rewardAmount, currentDay, streak, diamondsBalance: diamonds };
+    return { success: true, reward: rewardAmount, currentDay, streak, diamondsBalance: newBalance };
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// spinRoulette — type-validated, backend-drawn prize, idempotent for free spins
+// ─────────────────────────────────────────────────────────────────────────────
 export const spinRoulette = functions.https.onCall(async (data, context) => {
-  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Unauthenticated');
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
   const uid = context.auth.uid;
-  const { type } = data; // 'free' or 'premium'
+
+  // Explicit type validation — reject anything outside the allowed set
+  const { type } = data as { type: unknown };
+  if (type !== 'free' && type !== 'premium') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `Tipo de giro inválido: "${String(type)}". Use "free" ou "premium".`,
+    );
+  }
+
+  const now = new Date();
+  const todayBRT = getBRTDateString(now);
+
+  const idempotencyKey = type === 'free'
+    ? `free-spin:${uid}:${todayBRT}`
+    : `premium-spin:${uid}:${Date.now()}`;
+
+  // Free spin: pre-check idempotency before opening transaction
+  if (type === 'free') {
+    const existingSnap = await db
+      .collection('diamond_transactions')
+      .where('idempotencyKey', '==', idempotencyKey)
+      .limit(1)
+      .get();
+    if (!existingSnap.empty) {
+      throw new functions.https.HttpsError('already-exists', 'Giro diário gratuito já utilizado hoje.');
+    }
+  }
+
+  // Load campaign config from backend — client never controls prizes
+  const campaign = await loadActiveCampaign();
+  const { premiumCost, prizes } = campaign.roulette;
+
+  // Draw prize on the backend — result is never supplied by the client
+  const prize = drawPrize(prizes);
 
   const profileRef = db.collection('users').doc(uid).collection('clube').doc('profile');
 
   return await db.runTransaction(async (transaction) => {
     const docSnap = await transaction.get(profileRef);
-    if (!docSnap.exists) throw new functions.https.HttpsError('not-found', 'Perfil não encontrado');
-    const profile = docSnap.data()!;
-
-    const todayBr = getBRTDateString(new Date());
-
-    if (type === 'free') {
-      if (profile.freeSpinDate === todayBr && profile.freeSpinUsed) {
-        throw new functions.https.HttpsError('permission-denied', 'Giro diário já utilizado.');
-      }
-    } else {
-      if ((profile.diamonds || 0) < 50) {
-        throw new functions.https.HttpsError('permission-denied', 'Diamantes insuficientes para girar.');
-      }
+    if (!docSnap.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'Perfil do clube não encontrado. Inicialize o clube primeiro.',
+      );
     }
-
-    // Backend sorteia (simples prob.)
-    const rand = Math.random() * 100;
-    // ... Aqui puxaríamos da coleção roulette_prizes, mas pro MVP vamos fixar a lógica base:
-    let prizeAmount = 0;
-    let desc = 'Tente de Novo';
-    if (rand < 5) { prizeAmount = 100; desc = '100 Diamantes'; }
-    else if (rand < 25) { prizeAmount = 15; desc = '15 Diamantes'; }
-    else if (rand < 30) { prizeAmount = 50; desc = '50 Diamantes'; }
-    
-    let diamonds = profile.diamonds || 0;
-    const balanceBefore = diamonds;
+    const profile = docSnap.data()!;
+    const currentDiamonds: number = (profile.diamonds as number) ?? 0;
 
     if (type === 'premium') {
-      diamonds -= 50;
-    }
-    if (prizeAmount > 0) {
-      diamonds += prizeAmount;
+      if (currentDiamonds < premiumCost) {
+        throw new functions.https.HttpsError(
+          'permission-denied',
+          `Diamantes insuficientes. Necessário: ${premiumCost}, disponível: ${currentDiamonds}.`,
+        );
+      }
+
+      // Debit premium cost atomically in the same transaction
+      await grantReward(transaction, {
+        uid,
+        type: 'PREMIUM_SPIN_DEBIT',
+        amount: -premiumCost,
+        sourceId: `premium-spin-cost:${uid}:${Date.now()}`,
+        idempotencyKey: `${idempotencyKey}:debit`,
+        metadata: { campaignId: campaign.id, campaignVersion: campaign.version },
+      });
     }
 
-    // Gravar a transação de giro
-    const transactionRef = db.collection('diamond_transactions').doc();
-    transaction.set(transactionRef, {
-      user_id: uid,
-      type: 'SPIN_ROULETTE',
-      amount: type === 'premium' ? prizeAmount - 50 : prizeAmount,
-      balance_before: balanceBefore,
-      balance_after: diamonds,
-      created_at: admin.firestore.FieldValue.serverTimestamp(),
-      metadata: { type, prizeDesc: desc }
+    let newBalance: number = currentDiamonds - (type === 'premium' ? premiumCost : 0);
+
+    if (prize.amount > 0) {
+      const creditResult = await grantReward(transaction, {
+        uid,
+        type: type === 'free' ? 'FREE_SPIN' : 'PREMIUM_SPIN_CREDIT',
+        amount: prize.amount,
+        sourceId: `spin-prize:${uid}:${Date.now()}`,
+        idempotencyKey,
+        metadata: {
+          prizeId: prize.id,
+          prizeDescription: prize.description,
+          campaignId: campaign.id,
+          campaignVersion: campaign.version,
+          spinType: type,
+        },
+        historyEntry: {
+          desc: `Roleta (${type === 'free' ? 'Grátis' : 'Premium'}): ${prize.description}`,
+          date: `Hoje, ${formatTime(now)}`,
+          value: `+${prize.amount}`,
+          isPlus: true,
+        },
+      });
+      newBalance = creditResult.newBalance;
+    } else if (type === 'free') {
+      // Record that free spin was used even without prize (idempotency)
+      await grantReward(transaction, {
+        uid,
+        type: 'FREE_SPIN',
+        amount: 0,
+        sourceId: `spin-no-prize:${uid}:${todayBRT}`,
+        idempotencyKey,
+        metadata: { prizeId: prize.id, spinType: 'free', result: 'no_prize' },
+      });
+    }
+
+    // Mark free spin status on profile for display
+    if (type === 'free') {
+      transaction.update(profileRef, {
+        freeSpinUsed: true,
+        freeSpinDate: todayBRT,
+      });
+    }
+
+    // Gamification event
+    const eventRef = db.collection('gamification_events').doc();
+    transaction.set(eventRef, {
+      type: 'ROULETTE_SPIN_COMPLETED',
+      userId: uid,
+      entityId: idempotencyKey,
+      occurredAt: admin.firestore.FieldValue.serverTimestamp(),
+      payload: {
+        spinType: type,
+        prizeId: prize.id,
+        prizeAmount: prize.amount,
+        prizeDescription: prize.description,
+        campaignId: campaign.id,
+      },
     });
 
-    const updates: any = { diamonds };
-    if (type === 'free') {
-      updates.freeSpinUsed = true;
-      updates.freeSpinDate = todayBr;
+    return {
+      success: true,
+      prizeAmount: prize.amount,
+      prizeDescription: prize.description,
+      prizeId: prize.id,
+      newBalance,
+    };
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// processOrderDelivered — Firestore trigger; grants referral rewards only
+// after an order is confirmed as delivered, not at order creation.
+// ─────────────────────────────────────────────────────────────────────────────
+export const processOrderDelivered = functions.firestore
+  .document('orders/{orderId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const orderId = context.params.orderId;
+
+    // Only process transitions TO 'delivered'
+    if (before.status === 'delivered' || after.status !== 'delivered') {
+      return null;
     }
 
-    if (prizeAmount > 0) {
-      const history = profile.history || [];
-      history.unshift({
-        id: Date.now().toString(),
-        desc: `Ganhou na Roleta: ${desc}`,
-        date: `Hoje, ${formatTime(new Date())}`,
-        value: `+${prizeAmount}`,
-        isPlus: true
-      });
-      updates.history = history;
+    const uid: string = after.uid as string;
+    const now = new Date();
+    const tasks: Promise<unknown>[] = [];
+
+    // ── Referral reward ──────────────────────────────────────────────────────
+    const claimsSnap = await db
+      .collection('reward_claims')
+      .where('userId', '==', uid)
+      .where('rewardType', '==', 'REFERRAL_TRIGGERED')
+      .where('status', '==', 'PENDING')
+      .limit(1)
+      .get();
+
+    if (!claimsSnap.empty) {
+      const claim = claimsSnap.docs[0];
+      const claimData = claim.data();
+      const referrerUid: string = claimData.referrerUid as string;
+      const claimId = claim.id;
+      const referralKey = `referral:${referrerUid}:${uid}:delivered`;
+
+      tasks.push(
+        db.runTransaction(async (transaction) => {
+          const claimRef = db.collection('reward_claims').doc(claimId);
+          const freshClaim = await transaction.get(claimRef);
+          if (!freshClaim.exists || freshClaim.data()!.status !== 'PENDING') return;
+
+          await grantReward(transaction, {
+            uid: referrerUid,
+            type: 'REFERRAL_BONUS',
+            amount: 80,
+            sourceId: `referral:${uid}:${orderId}`,
+            idempotencyKey: referralKey,
+            metadata: { referredUid: uid, orderId, triggeredAt: 'delivered' },
+            historyEntry: {
+              desc: 'Indicação recompensada (1º pedido entregue)',
+              date: `Hoje, ${formatTime(now)}`,
+              value: '+80',
+              isPlus: true,
+            },
+          });
+
+          transaction.update(claimRef, {
+            status: 'GRANTED' as RewardClaimStatus,
+            grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+            sourceOrderId: orderId,
+          });
+
+          const eventRef = db.collection('gamification_events').doc();
+          transaction.set(eventRef, {
+            type: 'REFERRAL_ORDER_COMPLETED',
+            userId: referrerUid,
+            entityId: orderId,
+            occurredAt: admin.firestore.FieldValue.serverTimestamp(),
+            payload: { referredUid: uid, reward: 80 },
+          });
+        }),
+      );
     }
 
-    transaction.set(profileRef, updates, { merge: true });
+    // ── First-order delivery bonus for the buyer ─────────────────────────────
+    const userSnap = await db.collection('users').doc(uid).get();
+    if (userSnap.exists && !userSnap.data()!.firstOrderDeliveredRewarded) {
+      const firstOrderKey = `first-order:${uid}:${orderId}`;
+      tasks.push(
+        db.runTransaction(async (transaction) => {
+          const userRef = db.collection('users').doc(uid);
+          const freshUser = await transaction.get(userRef);
+          if (!freshUser.exists || freshUser.data()!.firstOrderDeliveredRewarded) return;
 
-    return { success: true, prizeAmount, prizeDesc: desc, newBalance: diamonds };
+          await grantReward(transaction, {
+            uid,
+            type: 'FIRST_ORDER_BONUS',
+            amount: 50,
+            sourceId: `first-order:${orderId}`,
+            idempotencyKey: firstOrderKey,
+            metadata: { orderId },
+            historyEntry: {
+              desc: 'Bônus: 1º Pedido Entregue!',
+              date: `Hoje, ${formatTime(now)}`,
+              value: '+50',
+              isPlus: true,
+            },
+          });
+
+          transaction.update(userRef, { firstOrderDeliveredRewarded: true });
+        }),
+      );
+    }
+
+    await Promise.all(tasks);
+    return null;
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// claimMissionReward — callable; backend recalculates eligibility before grant
+// ─────────────────────────────────────────────────────────────────────────────
+export const claimMissionReward = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+  const uid = context.auth.uid;
+  const now = new Date();
+
+  type MissionId = 'firstOrder' | 'referral' | 'combo';
+  const { missionId } = data as { missionId: unknown };
+  const validMissions: MissionId[] = ['firstOrder', 'referral', 'combo'];
+  if (!validMissions.includes(missionId as MissionId)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `Missão inválida: "${String(missionId)}". Opções: ${validMissions.join(', ')}.`,
+    );
+  }
+
+  const period = getBRTDateString(now).slice(0, 7); // "YYYY-MM"
+  const idempotencyKey = `mission:${uid}:${String(missionId)}:${period}`;
+
+  // Pre-check idempotency
+  const existingSnap = await db
+    .collection('diamond_transactions')
+    .where('idempotencyKey', '==', idempotencyKey)
+    .limit(1)
+    .get();
+  if (!existingSnap.empty) {
+    throw new functions.https.HttpsError('already-exists', 'Esta missão já foi completada neste período.');
+  }
+
+  const campaign = await loadActiveCampaign();
+  const profileRef = db.collection('users').doc(uid).collection('clube').doc('profile');
+
+  let eligible = false;
+  let reward = 0;
+  let desc = '';
+
+  // Recalculate eligibility from authoritative Firestore data — never trust the client
+  if (missionId === 'firstOrder') {
+    const ordersSnap = await db
+      .collection('orders')
+      .where('uid', '==', uid)
+      .where('status', '==', 'delivered')
+      .limit(1)
+      .get();
+    eligible = !ordersSnap.empty;
+    reward = campaign.missions.firstOrder.reward;
+    desc = 'Missão: Primeiro Pedido Entregue';
+  } else if (missionId === 'referral') {
+    const referredSnap = await db
+      .collection('users')
+      .where('referredBy', '==', uid)
+      .where('firstOrderPlaced', '==', true)
+      .limit(1)
+      .get();
+    eligible = !referredSnap.empty;
+    reward = campaign.missions.referral.reward;
+    desc = 'Missão: Indicação Concluída';
+  } else if (missionId === 'combo') {
+    const [ordersSnap, referredSnap] = await Promise.all([
+      db.collection('orders').where('uid', '==', uid).where('status', '==', 'delivered').limit(1).get(),
+      db.collection('users').where('referredBy', '==', uid).where('firstOrderPlaced', '==', true).limit(1).get(),
+    ]);
+    eligible = !ordersSnap.empty && !referredSnap.empty;
+    reward = campaign.missions.combo.reward;
+    desc = 'Missão Combo: Pedido + Indicação';
+  }
+
+  if (!eligible) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Você ainda não completou os requisitos desta missão.',
+    );
+  }
+
+  return await db.runTransaction(async (transaction) => {
+    const { newBalance, alreadyProcessed } = await grantReward(transaction, {
+      uid,
+      type: 'MISSION_REWARD',
+      amount: reward,
+      sourceId: `mission:${String(missionId)}:${period}`,
+      idempotencyKey,
+      metadata: { missionId, period, campaignId: campaign.id },
+      historyEntry: {
+        desc,
+        date: `Hoje, ${formatTime(now)}`,
+        value: `+${reward}`,
+        isPlus: true,
+      },
+    });
+
+    if (alreadyProcessed) {
+      throw new functions.https.HttpsError('already-exists', 'Esta missão já foi completada neste período.');
+    }
+
+    transaction.update(profileRef, {
+      [`missions.${String(missionId)}`]: true,
+    });
+
+    const eventRef = db.collection('gamification_events').doc();
+    transaction.set(eventRef, {
+      type: 'MISSION_COMPLETED',
+      userId: uid,
+      entityId: idempotencyKey,
+      occurredAt: admin.firestore.FieldValue.serverTimestamp(),
+      payload: { missionId, reward, period },
+    });
+
+    return { success: true, reward, newBalance };
   });
 });

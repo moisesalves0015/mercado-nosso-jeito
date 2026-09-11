@@ -134,12 +134,20 @@ export const Topbar = () => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <button className="topbar-icon-btn" title="Favoritos" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            className="topbar-icon-btn"
+            aria-label="Favoritos"
+            title="Favoritos"
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <Heart size={18} />
           </button>
-          <button 
-            className="topbar-hamburger-btn" 
-            title="Menu" 
+          <button
+            className="topbar-hamburger-btn"
+            title="Menu"
+            aria-label="Abrir menu"
+            aria-expanded={isMenuOpen}
+            aria-controls="topbar-drawer"
             style={{ padding: '4px' }}
             onClick={() => setIsMenuOpen(true)}
           >
@@ -155,15 +163,22 @@ export const Topbar = () => {
       />
 
       {/* SIDEBAR DRAWER MENU PANEL */}
-      <div className={`topbar-menu-drawer ${isMenuOpen ? 'open' : ''}`}>
+      <div
+        id="topbar-drawer"
+        role="dialog"
+        aria-label="Menu de navegação"
+        aria-modal="true"
+        className={`topbar-menu-drawer ${isMenuOpen ? 'open' : ''}`}
+      >
         <div className="topbar-menu-header">
           <div className="topbar-menu-logo">
             <h3 className="logo-main" style={{ margin: 0 }}>mercado do</h3>
             <span className="logo-sub" style={{ margin: 0 }}>nosso jeito</span>
           </div>
-          <button 
-            className="topbar-menu-close-btn" 
+          <button
+            className="topbar-menu-close-btn"
             onClick={() => setIsMenuOpen(false)}
+            aria-label="Fechar menu"
             title="Fechar menu"
           >
             <X size={18} />
@@ -268,10 +283,12 @@ export const Topbar = () => {
           )}
 
           {/* Theme switcher inside list */}
-          <div 
-            className="topbar-menu-nav-link" 
+          <button
+            className="topbar-menu-nav-link"
+            role="menuitem"
             onClick={toggleTheme}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+            aria-label={isLight ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-primary)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               {isLight ? <Sun size={16} color="#D4AF37" /> : <Moon size={16} color="#6366F1" />}
@@ -297,7 +314,7 @@ export const Topbar = () => {
                 transition: 'all 0.2s ease',
               }} />
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Footer with logout button */}

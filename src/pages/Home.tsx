@@ -398,18 +398,24 @@ export const Home = () => {
             </div>
 
             {/* SLIDER DOTS */}
-            <div className="hero-dots">
-              {[0, 1, 2].map((idx) => (
-                <span 
-                  key={idx} 
-                  className={`dot ${currentSlide === idx ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setCurrentSlide(idx);
-                  }}
-                />
-              ))}
+            <div className="hero-dots" role="tablist" aria-label="Navegar entre slides">
+              {[0, 1, 2].map((idx) => {
+                const labels = ['Ofertas do dia', 'Bebidas geladas', 'Tabacaria'];
+                return (
+                  <span
+                    key={idx}
+                    role="tab"
+                    aria-selected={currentSlide === idx}
+                    aria-label={`Slide ${idx + 1}: ${labels[idx]}`}
+                    className={`dot ${currentSlide === idx ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCurrentSlide(idx);
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -500,6 +506,8 @@ export const Home = () => {
           onClick={() => setActivePeriod('morning')}
           style={{ backgroundImage: `url(${periodBgs.morning})` }}
           type="button"
+          aria-label="Manhã: Essenciais do Café da Manhã"
+          aria-pressed={activePeriod === 'morning'}
         >
           <div className="period-button-text">
             <span className="period-button-title">Manhã</span>
@@ -512,6 +520,8 @@ export const Home = () => {
           onClick={() => setActivePeriod('lunch')}
           style={{ backgroundImage: `url(${periodBgs.lunch})` }}
           type="button"
+          aria-label="Almoço: Sugestões para o Almoço"
+          aria-pressed={activePeriod === 'lunch'}
         >
           <div className="period-button-text">
             <span className="period-button-title">Almoço</span>
@@ -524,6 +534,8 @@ export const Home = () => {
           onClick={() => setActivePeriod('afternoon')}
           style={{ backgroundImage: `url(${periodBgs.afternoon})` }}
           type="button"
+          aria-label="Tarde: Lanches da Tarde"
+          aria-pressed={activePeriod === 'afternoon'}
         >
           <div className="period-button-text">
             <span className="period-button-title">Tarde</span>
@@ -536,6 +548,8 @@ export const Home = () => {
           onClick={() => setActivePeriod('night')}
           style={{ backgroundImage: `url(${periodBgs.night})` }}
           type="button"
+          aria-label="Noite: Destaques para o Jantar"
+          aria-pressed={activePeriod === 'night'}
         >
           <div className="period-button-text">
             <span className="period-button-title">Noite</span>
@@ -548,6 +562,8 @@ export const Home = () => {
           onClick={() => setActivePeriod('dawn')}
           style={{ backgroundImage: `url(${periodBgs.dawn})` }}
           type="button"
+          aria-label="Madrugada: Essenciais da Madrugada"
+          aria-pressed={activePeriod === 'dawn'}
         >
           <div className="period-button-text">
             <span className="period-button-title">Madrugada</span>
@@ -564,8 +580,6 @@ export const Home = () => {
           backgroundSize: 'cover',
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
-          borderRadius: '6px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           paddingTop: '4px',
           paddingBottom: '4px',
           marginBottom: '16px',
@@ -839,21 +853,7 @@ export const Home = () => {
             Favoritos do Condomínio
           </h2>
         </div>
-        <div
-          className="condo-favorites-scroll"
-          style={{
-            display: 'flex',
-            gap: '8px',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            scrollbarWidth: 'none',
-            padding: '16px 8px 24px',
-            marginLeft: '-8px',
-            marginRight: '-8px',
-            marginTop: '-12px',
-            marginBottom: '-16px',
-          }}
-        >
+        <div className="condo-favorites-scroll">
           {condoFavorites.map((fav) => {
             const prod = allProducts.find(p => p.id === fav.id) || defaultProducts.find(p => p.id === fav.id);
             if (!prod) return null;

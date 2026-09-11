@@ -308,7 +308,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
     // 2. Validate stock, product status, and re-price from Firestore.
     //    The client-supplied prices are IGNORED — we use the authoritative
     //    values from Firestore to prevent price manipulation.
-    const updates: { ref: any, newStock: number, logRef: any, logData: any }[] = [];
+    const updates: { ref: any, newStock: number }[] = [];
     let serverSubtotal = 0;
     const verifiedItems: OrderItem[] = [];
 
@@ -343,16 +343,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
           const newStock = data.stock - item.quantity;
           updates.push({
             ref,
-            newStock,
-            logRef: doc(collection(db, 'inventory_logs')),
-            logData: {
-              productId: item.id,
-              productName: item.title,
-              delta: -item.quantity,
-              note: `Venda Pedido ${orderNumber}`,
-              date: new Date().toISOString(),
-              timestamp: now
-            }
+            newStock
           });
         }
       } else {
@@ -373,16 +364,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
             const newStock = Math.max(0, defaultProd.stock - item.quantity);
             updates.push({
               ref,
-              newStock,
-              logRef: doc(collection(db, 'inventory_logs')),
-              logData: {
-                productId: item.id,
-                productName: item.title,
-                delta: -item.quantity,
-                note: `Venda Auto-Criada Pedido ${orderNumber}`,
-                date: new Date().toISOString(),
-                timestamp: now
-              }
+              newStock
             });
           }
         } else {
@@ -396,12 +378,11 @@ export async function createOrder(payload: CreateOrderPayload): Promise<string> 
     const clampedDiscount = Math.min(payload.discount, serverSubtotal);
     const serverTotal = Math.max(0.01, serverSubtotal + payload.deliveryFee - clampedDiscount);
 
-    // 3. Write stock updates and audit logs
+    // 3. Write stock updates
     for (const update of updates) {
       transaction.update(update.ref, {
         stock: update.newStock
       });
-      transaction.set(update.logRef, update.logData);
     }
 
     // Update user firstOrderPlaced / referralRewarded flags
@@ -528,7 +509,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
       productRefs.map((p: any) => transaction.get(p.ref))
     );
 
-    const updates: { ref: any, newStock: number, logRef: any, logData: any }[] = [];
+    const updates: { ref: any, newStock: number }[] = [];
     
     for (let i = 0; i < productDocs.length; i++) {
       const pDoc = productDocs[i];
@@ -540,27 +521,17 @@ export async function cancelOrder(orderId: string): Promise<void> {
           const newStock = data.stock + item.quantity;
           updates.push({
             ref,
-            newStock,
-            logRef: doc(collection(db, 'inventory_logs')),
-            logData: {
-              productId: item.id,
-              productName: item.title,
-              delta: item.quantity,
-              note: `Estorno Pedido Cancelado`,
-              date: new Date().toISOString(),
-              timestamp: now
-            }
+            newStock
           });
         }
       }
     }
 
-    // Apply stock updates and audit logs
+    // Apply stock updates
     for (const update of updates) {
       transaction.update(update.ref, {
         stock: update.newStock
       });
-      transaction.set(update.logRef, update.logData);
     }
 
     // Update order status

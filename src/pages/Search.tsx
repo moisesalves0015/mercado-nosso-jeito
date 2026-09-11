@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal } from 'lucide-react';
+import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { MercadoLogo } from './Login';
@@ -28,6 +28,7 @@ interface Product {
 }
 
 const CATEGORIES = [
+  { id: '', label: 'Todas', icon: LayoutGrid, color: '#22c55e' },
   { id: 'Promoções', label: 'Promoções', icon: Flame, color: '#ec4899' },
   { id: 'Bebidas', label: 'Bebidas', icon: Wine, color: '#a78bfa' },
   { id: 'Alimentos', label: 'Alimentos', icon: Apple, color: '#f97316' },
@@ -127,6 +128,14 @@ export const Search = () => {
   };
 
   const handleCategorySelect = (catId: string) => {
+    if (catId === '') {
+      // 'Todas' chip — clear the category filter
+      setSelectedCategory('');
+      const newParams: Record<string, string> = {};
+      if (searchQuery) newParams.q = searchQuery;
+      setSearchParams(newParams);
+      return;
+    }
     const nextCat = selectedCategory === catId ? '' : catId;
     setSelectedCategory(nextCat);
     const newParams: Record<string, string> = {};
@@ -270,7 +279,9 @@ export const Search = () => {
             {/* Category selection chips */}
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }} className="no-scrollbar">
               {CATEGORIES.map(cat => {
-                const isActive = selectedCategory.toLowerCase() === cat.id.toLowerCase();
+                const isActive = cat.id === ''
+                  ? !selectedCategory  // 'Todas' active when no category selected
+                  : selectedCategory.toLowerCase() === cat.id.toLowerCase();
                 const Icon = cat.icon;
                 return (
                   <button

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outle
 import { collection, onSnapshot } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { db } from './firebase';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
@@ -23,6 +23,7 @@ import { Checkout } from './pages/Checkout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { Onboarding } from './pages/Onboarding';
 import { Admin } from './pages/Admin';
 import { AdminProductDetail } from './pages/AdminProductDetail';
 import { Roleta } from './pages/Roleta';
@@ -39,6 +40,21 @@ function PageTransitionLayout() {
       <Outlet />
     </div>
   );
+}
+
+function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { user, userProfile, loading, profileLoading, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (loading || profileLoading) return null; // Wait for profile
+
+  const isExemptRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
+
+  if (user && userProfile && !isAdmin && !userProfile.onboardingComplete && !isExemptRoute) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function AppContent() {
@@ -96,7 +112,7 @@ function AppContent() {
   }, []);
 
   // Ocultar gatilho na roleta, admin, login e register
-  const showTrigger = !['/login', '/register', '/roleta'].includes(location.pathname) && !location.pathname.startsWith('/admin');
+  const showTrigger = !['/login', '/register', '/roleta', '/onboarding'].includes(location.pathname) && !location.pathname.startsWith('/admin');
 
   // Determinar cor do status bar com base na rota e tema
   const isBlackHeader = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
@@ -123,9 +139,10 @@ function AppContent() {
         }} 
       />
 
-      <Routes>
-        <Route element={<PageTransitionLayout />}>
-          {/* Public Routes */}
+      <GlobalOnboardingGuard>
+        <Routes>
+          <Route element={<PageTransitionLayout />}>
+            {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/categories" element={<Categories />} />
@@ -143,6 +160,11 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          } />
           
           {/* Protected Client Routes */}
           <Route path="/checkout" element={
@@ -195,10 +217,11 @@ function AppContent() {
           } />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </GlobalOnboardingGuard>
 
-      <BottomNav />
+      {location.pathname !== '/onboarding' && <BottomNav />}
 
       {showTrigger && (
         <div 
@@ -238,12 +261,6 @@ function App() {
         <ToastProvider>
           <BrowserRouter>
             <ScrollToTop />
-            {/* RUNTIME CACHE BUSTER STYLE OVERRIDE FOR MANROPE */}
-            <style>{`
-              body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, a, div, section, main, header, footer {
-                font-family: 'Manrope', 'Outfit', sans-serif !important;
-              }
-            `}</style>
             <AppContent />
           </BrowserRouter>
         </ToastProvider>
