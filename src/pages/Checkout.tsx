@@ -4,11 +4,11 @@ import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { createOrderViaFunction, type CreateOrderResult } from '../hooks/useOrders';
 import { generatePaymentIntent, type PaymentIntentResponse } from '../services/paymentService';
-import confetti from 'canvas-confetti';
 import { useToast } from '../contexts/ToastContext';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { collection, query, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, fns } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 import {
   ArrowLeft, CheckCircle, MapPin,
   ChevronRight, AlertTriangle, ShieldCheck, Clock,
@@ -160,15 +160,31 @@ export function Checkout() {
   };
 
   /** Coupon is validated server-side on submission; this just marks intent. */
-  const applyCouponLocally = () => {
+  const applyCouponLocally = async () => {
     const code = couponCode.trim().toUpperCase();
     if (!code) {
       toastInfo('Campo vazio', 'Digite um código de cupom antes de aplicar.');
       return;
     }
-    // Visual preview only — actual validation happens in the Cloud Function.
-    setCouponApplied(true);
-    toastSuccess('Cupom registrado', 'O desconto será aplicado ao finalizar o pedido.');
+    
+    setLoading(true);
+    try {
+      const validateFn = httpsCallable<{ code: string }, { valid: boolean; error?: string; discountType?: string; discountValue?: number }>(fns, 'validateCoupon');
+      const res = await validateFn({ code });
+      
+      if (res.data.valid) {
+        setCouponApplied(true);
+        toastSuccess('Cupom registrado', 'O desconto será aplicado ao finalizar o pedido.');
+      } else {
+        setCouponApplied(false);
+        toastError('Cupom inválido', res.data.error || 'Não foi possível aplicar o cupom.');
+      }
+    } catch (e) {
+      setCouponApplied(false);
+      toastError('Erro', 'Ocorreu um erro ao validar o cupom.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = () => {
@@ -225,11 +241,14 @@ export function Checkout() {
       // Renew key so a revisit to the page generates a fresh order
       idempotencyKeyRef.current = crypto.randomUUID();
 
-      // Fire confetti
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
+      // Fire confetti (lazy loaded)
+      import('canvas-confetti').then((confettiModule) => {
+        const fireConfetti = confettiModule.default;
+        fireConfetti({
+          particleCount: 150,
+          spread: 80,
+          colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
+        });
       });
 
       setStep('success');

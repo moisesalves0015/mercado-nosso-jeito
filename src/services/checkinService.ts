@@ -31,7 +31,7 @@ export const performCheckinTransaction = async (userId: string) => {
 
     let currentDay = data.current_day || 0;
     let streak = data.streak || 0;
-    let diamonds = data.diamonds || 0;
+    const diamonds = data.diamonds || 0;
 
     if (lastCheckinStr) {
       const lastCheckinDate = new Date(lastCheckinStr);

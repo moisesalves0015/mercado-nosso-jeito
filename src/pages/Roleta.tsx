@@ -5,7 +5,6 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
-import confetti from 'canvas-confetti';
 
 interface RouletteItem {
   text: string;
@@ -88,10 +87,21 @@ const getTextColorForBackground = (colorGradient: string) => {
   return "#FFDF73";
 };
 
+const createDiamondDecorations = () => {
+  return Array.from({ length: 35 }).map((_, i) => ({
+    size: Math.random() * 26 + 18,
+    left: `${Math.random() * 96 + 2}%`,
+    animationDelay: `${Math.random() * 3.5}s`,
+    animationDuration: `${Math.random() * 2.5 + 1.5}s`,
+    color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF',
+    fill: i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'
+  }));
+};
+
 export const Roleta: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [items, setItems] = useState<RouletteItem[]>([]);
+  const [items, setItems] = useState<RouletteItem[]>(DEFAULT_ITEMS);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<{ text: string; rarity: string; amountGained?: number } | null>(null);
@@ -141,6 +151,8 @@ export const Roleta: React.FC = () => {
     return () => unsub();
   }, [user]);
 
+  const [diamondDecorations] = useState(createDiamondDecorations);
+
   // Lock scrolling when reward result modal is open
   useEffect(() => {
     if (result) {
@@ -162,7 +174,7 @@ export const Roleta: React.FC = () => {
     
     try {
       if (!audioContext.current) {
-        audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContext.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       }
       
       const ctx = audioContext.current;
@@ -264,9 +276,9 @@ export const Roleta: React.FC = () => {
         const { getDoc } = await import('firebase/firestore');
         const docSnap = await getDoc(doc(db, 'configs', 'roulette'));
         if (docSnap.exists() && docSnap.data().items) {
-          const loadedItems = docSnap.data().items.map((item: any) => ({
+          const loadedItems = docSnap.data().items.map((item: { text?: string; rarity?: string; [key: string]: unknown }) => ({
             ...item,
-            rarity: item.rarity || getRarityForText(item.text)
+            rarity: item.rarity || getRarityForText(item.text || '')
           }));
           setItems(loadedItems);
         } else {
@@ -313,50 +325,53 @@ export const Roleta: React.FC = () => {
 
   const triggerRewardConfetti = () => {
     const brandColors = ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF', '#FFF8DF'];
-    
-    // Left cannon
-    confetti({
-      particleCount: 180,
-      angle: 60,
-      spread: 75,
-      origin: { x: 0, y: 0.85 },
-      colors: brandColors,
-      ticks: 300,
-      scalar: 1.2
-    });
-    
-    // Right cannon
-    confetti({
-      particleCount: 180,
-      angle: 120,
-      spread: 75,
-      origin: { x: 1, y: 0.85 },
-      colors: brandColors,
-      ticks: 300,
-      scalar: 1.2
-    });
+    import('canvas-confetti').then((confettiModule) => {
+      const confetti = confettiModule.default;
+      
+      // Left cannon
+      confetti({
+        particleCount: 180,
+        angle: 60,
+        spread: 75,
+        origin: { x: 0, y: 0.85 },
+        colors: brandColors,
+        ticks: 300,
+        scalar: 1.2
+      });
+      
+      // Right cannon
+      confetti({
+        particleCount: 180,
+        angle: 120,
+        spread: 75,
+        origin: { x: 1, y: 0.85 },
+        colors: brandColors,
+        ticks: 300,
+        scalar: 1.2
+      });
 
-    // Staggered second blast
-    setTimeout(() => {
-      confetti({
-        particleCount: 100,
-        angle: 70,
-        spread: 60,
-        origin: { x: 0.1, y: 0.8 },
-        colors: brandColors,
-        ticks: 250,
-        scalar: 1.0
-      });
-      confetti({
-        particleCount: 100,
-        angle: 110,
-        spread: 60,
-        origin: { x: 0.9, y: 0.8 },
-        colors: brandColors,
-        ticks: 250,
-        scalar: 1.0
-      });
-    }, 200);
+      // Staggered second blast
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          angle: 70,
+          spread: 60,
+          origin: { x: 0.1, y: 0.8 },
+          colors: brandColors,
+          ticks: 250,
+          scalar: 1.0
+        });
+        confetti({
+          particleCount: 100,
+          angle: 110,
+          spread: 60,
+          origin: { x: 0.9, y: 0.8 },
+          colors: brandColors,
+          ticks: 250,
+          scalar: 1.0
+        });
+      }, 200);
+    });
   };
 
   const spin = async (isFree: boolean) => {
@@ -408,7 +423,7 @@ export const Roleta: React.FC = () => {
           if (multiplier < 10 && combo >= 2) {
             setMultiplier(prev => Math.min(10, prev + 0.5));
           }
-          playSound(rarity as any);
+          playSound(rarity as 'win' | 'rare' | 'epic' | 'legendary');
           if (rarity === 'legendary') {
             setShowJackpot(true);
             setTimeout(() => setShowJackpot(false), 3000);
@@ -430,9 +445,9 @@ export const Roleta: React.FC = () => {
         }
         addParticles(window.innerWidth / 2, window.innerHeight / 2, isWin ? 35 : 12);
       }, 10200); // match ease-out transition
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSpinning(false);
-      const msg = e?.message || 'Erro ao girar a roleta.';
+      const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes('already-exists')) {
         alert('Giro grátis já utilizado hoje. Volte amanhã!');
       } else if (msg.includes('resource-exhausted')) {
@@ -622,7 +637,7 @@ export const Roleta: React.FC = () => {
                       } as React.CSSProperties;
 
                       // Limpar emojis e encurtar textos de desconto
-                      let cleanText = item.text
+                      const cleanText = item.text
                         .replace(/de\s+desconto/gi, 'OFF')
                         .replace(/desconto/gi, 'OFF')
                         .replace(/([\uD800-\uDBFF][\uD800-\uDFFF]|\u00ae|\u00a9|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g, '')
@@ -634,7 +649,7 @@ export const Roleta: React.FC = () => {
                       if (isDiamond) {
                         const numMatch = item.text.match(/(\d+)/);
                         const num = numMatch ? numMatch[1] : '';
-                        let remaining = cleanText
+                        const remaining = cleanText
                           .replace(num, '')
                           .replace(/diamantes?/i, '')
                           .replace(/\s+/g, ' ')
@@ -803,8 +818,8 @@ export const Roleta: React.FC = () => {
                       <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>
                         {typeof h.date === 'string' 
                           ? h.date 
-                          : (h.date && (h.date as any).seconds 
-                              ? new Date((h.date as any).seconds * 1000).toLocaleTimeString('pt-BR') 
+                          : (h.date && (h.date as { seconds?: number }).seconds 
+                              ? new Date((h.date as { seconds?: number }).seconds! * 1000).toLocaleTimeString('pt-BR') 
                               : String(h.date))
                         }
                       </span>
@@ -822,19 +837,19 @@ export const Roleta: React.FC = () => {
         <div className="clube-modal-overlay">
           {/* FLOATING FALLING DIAMONDS CASCADE - Unconditional, like daily checkin */}
           <div className="falling-diamonds-container">
-            {[...Array(35)].map((_, i) => (
+            {diamondDecorations.map((d, i) => (
               <PremiumDiamondSVG 
                 key={i} 
                 className="falling-diamond" 
-                size={Math.random() * 26 + 18}
+                size={d.size}
                 style={{
-                  left: `${Math.random() * 96 + 2}%`,
-                  animationDelay: `${Math.random() * 3.5}s`,
-                  animationDuration: `${Math.random() * 2.5 + 1.5}s`,
+                  left: d.left,
+                  animationDelay: d.animationDelay,
+                  animationDuration: d.animationDuration,
                   filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.9))',
-                  color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF'
+                  color: d.color
                 }}
-                fill={i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'}
+                fill={d.fill}
               />
             ))}
           </div>
@@ -937,12 +952,15 @@ export const Roleta: React.FC = () => {
                   }
                   
                   // Instantly blow confetti when clicking Sensacional
-                  confetti({ 
-                    particleCount: 80, 
-                    angle: 90, 
-                    spread: 55, 
-                    origin: { y: 0.85 },
-                    colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
+                  import('canvas-confetti').then((confettiModule) => {
+                    const confetti = confettiModule.default;
+                    confetti({ 
+                      particleCount: 80, 
+                      angle: 90, 
+                      spread: 55, 
+                      origin: { y: 0.85 },
+                      colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF']
+                    });
                   });
                   
                   setResult(null);

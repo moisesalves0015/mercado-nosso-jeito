@@ -54,7 +54,7 @@ describe('Firestore Rules - Security & Hardening', () => {
   it('Allows clients to read their own orders', async () => {
     // Setup order created by backend
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context.firestore().collection('orders').doc('order_1').set({ userId: 'user_123' });
+      await context.firestore().collection('orders').doc('order_1').set({ uid: 'user_123' });
     });
 
     const authedDb = testEnv.authenticatedContext('user_123').firestore();
@@ -64,7 +64,7 @@ describe('Firestore Rules - Security & Hardening', () => {
 
   it('Denies clients from reading other users orders', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context.firestore().collection('orders').doc('order_2').set({ userId: 'user_999' });
+      await context.firestore().collection('orders').doc('order_2').set({ uid: 'user_999' });
     });
 
     const authedDb = testEnv.authenticatedContext('user_123').firestore();
@@ -93,6 +93,18 @@ describe('Firestore Rules - Security & Hardening', () => {
     
     // Read other users orders
     await assertSucceeds(adminDb.collection('orders').doc('order_2').get());
+  });
+
+  it('Denies clients from reading coupons', async () => {
+    const authedDb = testEnv.authenticatedContext('user_123').firestore();
+    const docRef = authedDb.collection('coupons').doc('CODE10');
+    await assertFails(docRef.get());
+  });
+
+  it('Denies clients from writing to stock history', async () => {
+    const authedDb = testEnv.authenticatedContext('user_123').firestore();
+    const docRef = authedDb.collection('products').doc('p1').collection('stock_history').doc('sh1');
+    await assertFails(docRef.set({ change: -1 }));
   });
 
 });

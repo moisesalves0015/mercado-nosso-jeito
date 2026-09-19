@@ -27,8 +27,11 @@ export const generatePaymentIntent = async (
 
   // Production flow
   // TODO: Implement integration with actual payment gateway (MercadoPago, Stripe, Pagar.me)
-  console.warn('Production payment flow is not implemented yet. Falling back to DEMO mode for safety.');
-  return simulateDemoPayment(orderId, amount, method);
+  console.warn('Production payment flow is not implemented yet.');
+  return {
+    success: false,
+    errorMessage: 'Gateway de pagamento indisponível no momento. Não é possível processar pagamentos reais.',
+  };
 };
 
 const simulateDemoPayment = async (

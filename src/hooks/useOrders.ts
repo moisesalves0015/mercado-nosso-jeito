@@ -4,12 +4,6 @@ import {
   query,
   where,
   onSnapshot,
-  updateDoc,
-  doc,
-  getDoc,
-  serverTimestamp,
-  Timestamp,
-  runTransaction,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, fns } from '../firebase';
@@ -64,7 +58,7 @@ export interface Order {
   coupon?: string;
   paymentMethod: string;
   paymentStatus?: 'pending' | 'approved' | 'rejected';
-  paymentDetails?: any;
+  paymentDetails?: Record<string, unknown>;
   deliveryMethod?: string;
   address?: OrderAddress;
   notes?: string;
@@ -124,25 +118,24 @@ export const TIMELINE_STEPS: OrderStatus[] = [
   'pending', 'confirmed', 'preparing', 'delivering', 'delivered',
 ];
 
-const TIMELINE_LABELS: Record<OrderStatus, string> = {
-  pending:    'Pedido criado',
-  confirmed:  'Pedido confirmado',
-  preparing:  'Em preparo',
-  delivering: 'Saiu para entrega',
-  delivered:  'Pedido entregue',
-  cancelled:  'Pedido cancelado',
-};
-
 const ACTIVE_STATUSES: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivering'];
 
 // ──────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────
-function toDate(ts: any): Date {
+function toDate(ts: unknown): Date {
   if (!ts) return new Date();
   if (ts instanceof Date) return ts;
-  if (typeof ts.toDate === 'function') return ts.toDate();
-  if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+  
+  if (typeof ts === 'object' && ts !== null) {
+    if ('toDate' in ts && typeof (ts as { toDate: unknown }).toDate === 'function') {
+      return (ts as { toDate: () => Date }).toDate();
+    }
+    if ('seconds' in ts && typeof (ts as { seconds: unknown }).seconds === 'number') {
+      return new Date((ts as { seconds: number }).seconds * 1000);
+    }
+  }
+
   if (typeof ts === 'string' || typeof ts === 'number') {
     const d = new Date(ts);
     return isNaN(d.getTime()) ? new Date() : d;
@@ -284,94 +277,16 @@ export async function createOrderViaFunction(
 // updateOrderStatus — for admin / future use
 // ──────────────────────────────────────────────────────────────
 export async function updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<void> {
-  const label = TIMELINE_LABELS[newStatus];
-  const now = serverTimestamp();
-
-  const orderRef = doc(db, 'orders', orderId);
-  const snap = await getDoc(orderRef);
-  if (!snap.exists()) throw new Error('Pedido não encontrado');
-
-  const existing = (snap.data().timeline as TimelineEvent[]) ?? [];
-  const newEvent = { status: newStatus, label, timestamp: now, actor: 'Sistema' };
-
-  await updateDoc(orderRef, {
-    status: newStatus,
-    updatedAt: now,
-    timeline: [...existing, newEvent],
-  });
+  const callFn = httpsCallable<{ orderId: string; status: OrderStatus }, void>(fns, 'updateOrderStatus');
+  await callFn({ orderId, status: newStatus });
 }
 
 // ──────────────────────────────────────────────────────────────
 // cancelOrder — for user/admin to cancel order and refund stock
 // ──────────────────────────────────────────────────────────────
 export async function cancelOrder(orderId: string): Promise<void> {
-  const now = serverTimestamp();
-  const orderRef = doc(db, 'orders', orderId);
-
-  await runTransaction(db, async (transaction) => {
-    const orderSnap = await transaction.get(orderRef);
-    if (!orderSnap.exists()) {
-      throw new Error('Pedido não encontrado');
-    }
-
-    const orderData = orderSnap.data();
-    if (orderData.status === 'cancelled') {
-      throw new Error('Este pedido já foi cancelado.');
-    }
-
-    // Security: prevent cancellation of delivered orders — stock was already consumed.
-    if (orderData.status === 'delivered') {
-      throw new Error('Não é possível cancelar um pedido já entregue. Entre em contato com o suporte.');
-    }
-
-    // Process stock refund
-    const items = (orderData.items ?? []) as OrderItem[];
-    const productRefs = items.map((item: OrderItem) => ({
-      ref: doc(db, 'products', item.id),
-      item,
-    }));
-
-    const productDocs = await Promise.all(
-      productRefs.map((p) => transaction.get(p.ref))
-    );
-
-    const updates: Array<{ ref: ReturnType<typeof doc>; newStock: number }> = [];
-    
-    for (let i = 0; i < productDocs.length; i++) {
-      const pDoc = productDocs[i];
-      const { item, ref } = productRefs[i];
-      
-      if (pDoc.exists()) {
-        const data = pDoc.data();
-        if (data['stock'] !== undefined && data['stock'] !== null) {
-          const newStock = Number(data['stock']) + item.quantity;
-          updates.push({ ref, newStock });
-        }
-      }
-    }
-
-    // Apply stock updates
-    for (const update of updates) {
-      transaction.update(update.ref, {
-        stock: update.newStock
-      });
-    }
-
-    // Update order status
-    const existingTimeline = orderData.timeline || [];
-    const newEvent = { 
-      status: 'cancelled', 
-      label: TIMELINE_LABELS['cancelled'], 
-      timestamp: Timestamp.now(), 
-      actor: 'Sistema' 
-    };
-
-    transaction.update(orderRef, {
-      status: 'cancelled',
-      updatedAt: now,
-      timeline: [...existingTimeline, newEvent],
-    });
-  });
+  const callFn = httpsCallable<{ orderId: string }, void>(fns, 'cancelOrder');
+  await callFn({ orderId });
 }
 
 // ──────────────────────────────────────────────────────────────

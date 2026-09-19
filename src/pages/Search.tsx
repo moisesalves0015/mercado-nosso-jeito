@@ -59,11 +59,18 @@ export const Search = () => {
     return () => window.removeEventListener('theme-changed', handleThemeChange);
   }, []);
 
-  // Sync state with URL parameter changes
-  useEffect(() => {
+  const [prevQueryParam, setPrevQueryParam] = useState(queryParam);
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+
+  if (queryParam !== prevQueryParam) {
+    setPrevQueryParam(queryParam);
     setSearchQuery(queryParam);
+  }
+
+  if (categoryParam !== prevCategoryParam) {
+    setPrevCategoryParam(categoryParam);
     setSelectedCategory(categoryParam);
-  }, [queryParam, categoryParam]);
+  }
 
   // Load products from localStorage or fallback to defaults
   useEffect(() => {
@@ -77,12 +84,12 @@ export const Search = () => {
         // Check for missing default products and add them
         defaultProducts.forEach(defP => {
           if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP as any);
+            allProds.push(defP as Product);
             updated = true;
           }
         });
       } else {
-        allProds = defaultProducts as any[];
+        allProds = defaultProducts as Product[];
         updated = true;
       }
 

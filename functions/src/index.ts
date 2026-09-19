@@ -796,7 +796,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     }
   }
 
-  const productItems = req.productItems as Array<{ productId: string; quantity: number }>;
+  const rawProductItems = req.productItems as Array<{ productId: string; quantity: number }>;
+  const consolidated = new Map<string, number>();
+  for (const item of rawProductItems) {
+    consolidated.set(item.productId, (consolidated.get(item.productId) ?? 0) + item.quantity);
+  }
+  const productItems = Array.from(consolidated.entries()).map(([productId, quantity]) => ({ productId, quantity }));
 
   if (typeof req.addressId !== 'string' || !req.addressId.trim() || req.addressId.length > 128) {
     throw new functions.https.HttpsError('invalid-argument', 'ID de endereço inválido.');
@@ -832,26 +837,34 @@ export const createOrder = functions.https.onCall(async (data, context) => {
   const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
 
   // ── 3. Idempotency check ──────────────────────────────────────────────────
-  const existingSnap = await db
-    .collection('orders')
-    .where('idempotencyKey', '==', idempotencyKey)
-    .limit(1)
-    .get();
-
-  if (!existingSnap.empty) {
-    const existing = existingSnap.docs[0];
-    const d = existing.data();
-    functions.logger.info('createOrder: idempotent return', { orderId: existing.id, uid });
-    return {
-      orderId: existing.id,
-      orderNumber: String(d['orderNumber'] ?? ''),
-      total: Number(d['total'] ?? 0),
-      subtotal: Number(d['subtotal'] ?? 0),
-      deliveryFee: Number(d['deliveryFee'] ?? 0),
-      discount: Number(d['discount'] ?? 0),
-      couponApplied: !!d['coupon'],
-      status: 'pending' as const,
-    };
+  // Use a deterministic document for idempotency to avoid race conditions.
+  const idempotencyRef = db.collection('users').doc(uid).collection('order_requests').doc(String(req.idempotencyKey));
+  
+  // We'll perform the idempotency check and creation inside the main transaction.
+  // However, we pre-check outside to fail fast if it's already there.
+  const existingReqSnap = await idempotencyRef.get();
+  if (existingReqSnap.exists) {
+    const existingReq = existingReqSnap.data();
+    functions.logger.info('createOrder: idempotent return (pre-check)', { orderId: existingReq?.orderId, uid });
+    if (!existingReq || !existingReq.orderId) {
+      throw new functions.https.HttpsError('aborted', 'Requisição anterior ainda em processamento.');
+    }
+    
+    // Fetch the actual order to return
+    const orderSnap = await db.collection('orders').doc(existingReq.orderId as string).get();
+    if (orderSnap.exists) {
+      const d = orderSnap.data()!;
+      return {
+        orderId: orderSnap.id,
+        orderNumber: String(d['orderNumber'] ?? ''),
+        total: Number(d['total'] ?? 0),
+        subtotal: Number(d['subtotal'] ?? 0),
+        deliveryFee: Number(d['deliveryFee'] ?? 0),
+        discount: Number(d['discount'] ?? 0),
+        couponApplied: !!d['coupon'],
+        status: 'pending' as const,
+      };
+    }
   }
 
   // ── 4. Load and validate address (must belong to this user) ───────────────
@@ -890,6 +903,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
 
   // ── 6. Transactional: validate products + stock + coupon → create order ───
   return await db.runTransaction(async (transaction) => {
+    // Re-check idempotency strictly inside the transaction
+    const txnIdempSnap = await transaction.get(idempotencyRef);
+    if (txnIdempSnap.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Idempotência: Pedido já foi criado ou está em processamento.');
+    }
+
     // 6a. Load all product docs
     const productRefs = productItems.map(item => db.collection('products').doc(item.productId));
     const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
@@ -1036,8 +1055,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     const clampedDiscount = Math.min(discount, serverSubtotal);
     const total = Math.max(0.01, serverSubtotal - clampedDiscount + deliveryFee);
 
-    // 6e. Generate order number on backend
-    const orderNumber = `#MJ-${String(Date.now()).slice(-6)}`;
+    // 6g. Create order document
+    const orderRef = db.collection('orders').doc();
+    const orderId = orderRef.id;
+    // Generate a secure, pseudo-random but clean order number based on the Firestore document ID to prevent collisions
+    const safeSuffix = orderId.slice(-6).toUpperCase();
+    const orderNumber = `MNJ-${Date.now().toString().slice(-4)}${safeSuffix}`;
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
     const timelineNow = admin.firestore.Timestamp.now();
 
@@ -1055,7 +1078,15 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     }
 
     // 6g. Create order document
-    const orderRef = db.collection('orders').doc();
+    // orderRef and orderId were already generated earlier (lines 1054-1055)
+    
+    // Write idempotency document atomically
+    transaction.set(idempotencyRef, {
+      orderId,
+      createdAt: nowTs,
+      payload: { ...req }
+    });
+
     transaction.set(orderRef, {
       uid,
       orderNumber,
@@ -1213,3 +1244,184 @@ export const setAdminClaim = functions.https.onCall(async (data, context) => {
 
   return { success: true, targetUid, isAdmin: makeAdmin };
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cancelOrder — Callable; allows a user to cancel their own order or admin to cancel
+// ─────────────────────────────────────────────────────────────────────────────
+export const cancelOrder = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const { orderId } = data as { orderId?: string };
+  if (!orderId || typeof orderId !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
+  }
+
+  const callerUid = context.auth.uid;
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(callerUid);
+
+  return await db.runTransaction(async (transaction) => {
+    const idempotencyRef = db.collection('orders').doc(orderId).collection('cancellation_requests').doc('cancel_req');
+    const idempSnap = await transaction.get(idempotencyRef);
+    if (idempSnap.exists) {
+       throw new functions.https.HttpsError('already-exists', 'O pedido já está sendo cancelado.');
+    }
+
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderSnap = await transaction.get(orderRef);
+
+    if (!orderSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Pedido não encontrado.');
+    }
+
+    const orderData = orderSnap.data()!;
+
+    if (orderData.uid !== callerUid && !isAdmin) {
+      throw new functions.https.HttpsError('permission-denied', 'Você não tem permissão para cancelar este pedido.');
+    }
+
+    if (orderData.status === 'cancelled') {
+      throw new functions.https.HttpsError('failed-precondition', 'Este pedido já foi cancelado.');
+    }
+
+    if (orderData.status !== 'pending' && orderData.status !== 'confirmed' && !isAdmin) {
+      throw new functions.https.HttpsError('failed-precondition', 'Não é possível cancelar um pedido em andamento.');
+    }
+
+    transaction.set(idempotencyRef, { requestedAt: admin.firestore.FieldValue.serverTimestamp(), by: callerUid });
+
+    // Refund stock
+    const items = (orderData.items ?? []) as Array<{ id: string; quantity: number }>;
+    for (const item of items) {
+      const productRef = db.collection('products').doc(item.id);
+      const productSnap = await transaction.get(productRef);
+      if (productSnap.exists) {
+        const pData = productSnap.data()!;
+        if (pData.stock !== undefined) {
+          transaction.update(productRef, { stock: Number(pData.stock) + item.quantity });
+        }
+      }
+    }
+
+    // Update order status
+    const existingTimeline = (orderData.timeline ?? []) as any[];
+    const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const newEvent = {
+      status: 'cancelled',
+      label: 'Pedido Cancelado',
+      timestamp: admin.firestore.Timestamp.now(),
+      actor: isAdmin ? 'Administrador' : 'Cliente',
+    };
+
+    transaction.update(orderRef, {
+      status: 'cancelled',
+      updatedAt: nowTs,
+      timeline: [...existingTimeline, newEvent],
+    });
+
+    return { success: true };
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// updateOrderStatus — Callable; admin only
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateOrderStatus = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  if (!isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem atualizar o status.');
+  }
+
+  const { orderId, status } = data as { orderId?: string; status?: string };
+  if (!orderId || !status) {
+    throw new functions.https.HttpsError('invalid-argument', 'orderId e status são obrigatórios.');
+  }
+
+  const validStatuses: Record<string, string> = {
+    pending: 'Pendente',
+    confirmed: 'Aprovado',
+    preparing: 'Em preparo',
+    delivering: 'Saiu para Entrega',
+    delivered: 'Entregue',
+    cancelled: 'Cancelado',
+  };
+
+  if (!validStatuses[status]) {
+    throw new functions.https.HttpsError('invalid-argument', 'Status inválido.');
+  }
+
+  const orderRef = db.collection('orders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Pedido não encontrado.');
+  }
+
+  const orderData = orderSnap.data()!;
+  const existingTimeline = (orderData.timeline ?? []) as any[];
+  const nowTs = admin.firestore.FieldValue.serverTimestamp();
+  const newEvent = {
+    status,
+    label: validStatuses[status],
+    timestamp: admin.firestore.Timestamp.now(),
+    actor: 'Administrador',
+  };
+
+  await orderRef.update({
+    status,
+    updatedAt: nowTs,
+    timeline: [...existingTimeline, newEvent],
+  });
+
+  return { success: true };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// validateCoupon — Callable; securely check a coupon without revealing the full document
+// ─────────────────────────────────────────────────────────────────────────────
+export const validateCoupon = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const { code } = data as { code?: string };
+  if (!code || typeof code !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Código de cupom inválido.');
+  }
+
+  const couponId = code.trim().toUpperCase();
+  const couponRef = db.collection('coupons').doc(couponId);
+  const snap = await couponRef.get();
+
+  if (!snap.exists) {
+    return { valid: false, error: 'Cupom não encontrado' };
+  }
+
+  const coupon = snap.data()!;
+  if (!coupon.active) {
+    return { valid: false, error: 'Cupom inativo' };
+  }
+
+  if (coupon.expiresAt && coupon.expiresAt.toDate() < new Date()) {
+    return { valid: false, error: 'Cupom expirado' };
+  }
+
+  if (coupon.maxUses && (coupon.usesCount ?? 0) >= coupon.maxUses) {
+    return { valid: false, error: 'Cupom esgotado' };
+  }
+
+  return {
+    valid: true,
+    discountType: coupon.discountType,
+    discountValue: coupon.discountValue,
+    minPurchase: coupon.minPurchase,
+  };
+});
+

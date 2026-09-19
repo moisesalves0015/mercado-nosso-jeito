@@ -90,9 +90,7 @@ service cloud.firestore {
     // info (e.g., "code NOSSOJEITO10 exists"). The Cloud Function always
     // re-validates the coupon server-side; this read is for UX only.
     match /coupons/{couponId} {
-      allow read: if isAuthenticated();
-      // Creation and modification are admin-only.
-      allow write: if isAdmin();
+      allow read, write: if false; // All coupon reads happen via backend validateCoupon function
     }
 
     // ─── Inventory Logs ───────────────────────────────────────────────────────
