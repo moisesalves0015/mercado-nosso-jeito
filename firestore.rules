@@ -1,8 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // ─── Default deny ────────────────────────────────────────────────────────
+    // Everything is denied unless explicitly allowed below.
     match /{document=**} {
       allow read, write: if false;
     }
@@ -11,38 +12,47 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
-    // NOTE: In production, prefer Custom Claims (request.auth.token.admin == true)
-    // to avoid a read-per-request. Kept as-is to preserve existing architecture.
+
+    // Prefer Custom Claim (set by setAdminClaim Cloud Function).
+    // Falls back to Firestore role for backward compatibility during rollout.
+    // Once all admins have claims, remove the get() fallback.
     function isAdmin() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // ─── Products ─────────────────────────────────────────────────────────────
+    // Public catalogue. Stock updates happen exclusively via Cloud Functions
+    // using the Admin SDK, which bypasses these rules — so write: isAdmin()
+    // still covers admin console use but NEVER allows clients to touch stock.
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin();
 
-      // Stock history written only by Admin SDK (Cloud Functions)
+      // Stock change history written exclusively by Cloud Functions
       match /stock_history/{historyId} {
         allow read: if isAdmin();
-        allow write: if false; // Only Admin SDK
+        allow write: if false; // Admin SDK only
       }
     }
 
     // ─── Users ────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
+      // Self-registration: role must be 'client' — admins are assigned via setAdminClaim.
       allow create: if isOwner(userId) && request.resource.data.role == 'client';
+      // Users can update their own safe profile fields only.
       allow update: if (
         isOwner(userId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'telefone', 'cpf', 'foto', 'unlockedBadges',
-          'firstOrderPlaced', 'referralRewarded', 'updatedAt', 'lastLogin',
-          'onboardingComplete'
+          'updatedAt', 'lastLogin', 'onboardingComplete', 'tokenRefreshTime'
         ])
       ) || isAdmin();
       allow delete: if isAdmin();
@@ -53,36 +63,43 @@ service cloud.firestore {
       }
 
       // ── Clube VIP subcollection ───────────────────────────────────────────
-      // Client can READ their own balance. All WRITES go through Cloud Functions
-      // via Admin SDK (which bypasses these rules). This prevents:
-      //   updateDoc(profileRef, { diamonds: 999999 })
+      // Client can READ their own balance.
+      // ALL WRITES go through Cloud Functions via Admin SDK (which bypasses rules).
+      // This prevents: updateDoc(profileRef, { diamonds: 999999 })
       match /clube/{docId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow write: if false; // Only Cloud Functions via Admin SDK
+        allow write: if false; // Cloud Functions (Admin SDK) only
       }
     }
 
     // ─── Orders ───────────────────────────────────────────────────────────────
+    // Orders are created exclusively by the createOrder Cloud Function
+    // using the Admin SDK. The client NEVER writes to this collection directly.
+    // This prevents price/discount/fee manipulation.
     match /orders/{orderId} {
-      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid) || isAdmin();
-
-      // Direct client creation is still allowed but validated.
-      // TODO P1: restrict to Admin SDK only once createOrder Function is deployed.
-      allow create: if isAuthenticated()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.keys().hasAll(['uid', 'status', 'items', 'total', 'createdAt']);
-
-      // Only admins can update or delete orders
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid)
+                  || isAdmin();
+      // No client create: createOrder Cloud Function handles this via Admin SDK.
+      allow create: if false;
+      // Only admins (or Cloud Functions) can update or delete orders.
       allow update, delete: if isAdmin();
+    }
+
+    // ─── Coupons ──────────────────────────────────────────────────────────────
+    // Clients can read individual coupon documents to surface basic availability
+    // info (e.g., "code NOSSOJEITO10 exists"). The Cloud Function always
+    // re-validates the coupon server-side; this read is for UX only.
+    match /coupons/{couponId} {
+      allow read: if isAuthenticated();
+      // Creation and modification are admin-only.
+      allow write: if isAdmin();
     }
 
     // ─── Inventory Logs ───────────────────────────────────────────────────────
     // Written exclusively by Cloud Functions / Admin SDK during order processing.
-    // Clients must never write here directly.
     match /inventory_logs/{logId} {
       allow read: if isAdmin();
-      allow write: if false; // Only Admin SDK
+      allow write: if false; // Admin SDK only
     }
 
     // ─── Configs / System ─────────────────────────────────────────────────────
@@ -97,34 +114,57 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ─── Home configuration (vitrines, mega-ofertas, hero-banners) ────────────
+    match /home-config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /{subCollection}/{subId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
     // ─── Campaign Configs ─────────────────────────────────────────────────────
-    // Read by authenticated users (for display). Written only by admins.
     match /campaign_configs/{configId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
     // ─── Diamond Transactions (Ledger) ────────────────────────────────────────
-    // Immutable ledger. Clients can read their own history. Only Admin SDK writes.
+    // Immutable ledger. Clients can read their own entries. Only Admin SDK writes.
     match /diamond_transactions/{transactionId} {
       allow read: if isAdmin()
-        || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow write: if false; // Only Cloud Functions via Admin SDK
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false; // Cloud Functions (Admin SDK) only
     }
 
     // ─── Reward Claims ────────────────────────────────────────────────────────
-    // Clients can view their own reward status. Only Admin SDK writes/updates.
     match /reward_claims/{claimId} {
       allow read: if isAdmin()
-        || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow write: if false; // Only Cloud Functions via Admin SDK
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false; // Cloud Functions (Admin SDK) only
     }
 
     // ─── Gamification Events ──────────────────────────────────────────────────
-    // Audit trail. Only admins read. Only Admin SDK writes.
     match /gamification_events/{eventId} {
       allow read: if isAdmin();
-      allow write: if false; // Only Cloud Functions via Admin SDK
+      allow write: if false; // Cloud Functions (Admin SDK) only
+    }
+
+    // ─── Community/Presence (read-only for clients) ────────────────────────────
+    match /community_presence/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ─── Support tickets ──────────────────────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid)
+                  || isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
   }

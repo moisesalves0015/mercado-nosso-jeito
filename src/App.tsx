@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -7,31 +7,49 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
+// Eager: small, always-needed pages
 import { Home } from './pages/Home';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Search } from './pages/Search';
-import { Promotions } from './pages/Promotions';
-import { Orders } from './pages/Orders';
-import { Profile } from './pages/Profile';
+import { Cart } from './pages/Cart';
+import { Onboarding } from './pages/Onboarding';
 import { ProductDetail } from './pages/ProductDetail';
-import { Clube } from './pages/Clube';
+import { Promotions } from './pages/Promotions';
+import { Categories } from './pages/Categories';
 import { Tabacaria } from './pages/Tabacaria';
 import { Bebidas } from './pages/Bebidas';
 import { Eletronicos } from './pages/Eletronicos';
 import { Padaria } from './pages/Padaria';
-import { Cart } from './pages/Cart';
-import { Checkout } from './pages/Checkout';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { Onboarding } from './pages/Onboarding';
-import { Admin } from './pages/Admin';
-import { AdminProductDetail } from './pages/AdminProductDetail';
-import { Roleta } from './pages/Roleta';
-import { Categories } from './pages/Categories';
-import { Addresses } from './pages/Addresses';
-import { Coupons } from './pages/Coupons';
-import { Support } from './pages/Support';
-import { BadgesCenter } from './pages/BadgesCenter';
+// Lazy: heavy pages — loaded only when navigated to
+const Orders          = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
+const Profile         = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const Checkout        = lazy(() => import('./pages/Checkout').then(m => ({ default: m.Checkout })));
+const Admin           = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+const AdminProductDetail = lazy(() => import('./pages/AdminProductDetail').then(m => ({ default: m.AdminProductDetail })));
+const Clube           = lazy(() => import('./pages/Clube').then(m => ({ default: m.Clube })));
+const Roleta          = lazy(() => import('./pages/Roleta').then(m => ({ default: m.Roleta })));
+const Addresses       = lazy(() => import('./pages/Addresses').then(m => ({ default: m.Addresses })));
+const Coupons         = lazy(() => import('./pages/Coupons').then(m => ({ default: m.Coupons })));
+const Support         = lazy(() => import('./pages/Support').then(m => ({ default: m.Support })));
+const BadgesCenter    = lazy(() => import('./pages/BadgesCenter').then(m => ({ default: m.BadgesCenter })));
+
+// Fallback shown while a lazy page is loading
+function PageLoader() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '60vh', color: 'var(--text-secondary)', fontSize: 14,
+      fontFamily: "'Manrope','Outfit',sans-serif",
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 28, height: 28, border: '2px solid var(--border-gold)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <span>Carregando...</span>
+      </div>
+    </div>
+  );
+}
 
 function PageTransitionLayout() {
   const location = useLocation();
@@ -140,6 +158,7 @@ function AppContent() {
       />
 
       <GlobalOnboardingGuard>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route element={<PageTransitionLayout />}>
             {/* Public Routes */}
@@ -219,6 +238,7 @@ function AppContent() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </GlobalOnboardingGuard>
 
       {location.pathname !== '/onboarding' && <BottomNav />}

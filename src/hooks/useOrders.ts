@@ -11,8 +11,9 @@ import {
   Timestamp,
   runTransaction,
 } from 'firebase/firestore';
-import { db } from '../firebase';
-import { defaultProducts } from '../data/defaultProducts';
+import { httpsCallable } from 'firebase/functions';
+import { db, fns } from '../firebase';
+
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -82,21 +83,30 @@ export interface OrderMetrics {
   lastOrderAt: Date | null;
 }
 
-export interface CreateOrderPayload {
-  uid: string;
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  deliveryFee: number;
-  total: number;
-  coupon?: string;
-  paymentMethod?: string;
-  paymentStatus?: 'pending' | 'approved' | 'rejected';
-  paymentDetails?: any;
-  deliveryMethod?: string;
-  address?: OrderAddress;
+export interface CreateOrderRequest {
+  /** Only product IDs and quantities — prices are authoritative on the backend */
+  productItems: Array<{ productId: string; quantity: number }>;
+  /** Firestore document ID from users/{uid}/addresses/{addressId} */
+  addressId: string;
+  deliveryMethod: 'apartment' | 'lobby';
+  paymentMethod: 'pix' | 'credit_card' | 'on_delivery';
+  couponCode?: string;
+  /** Client-generated UUID; prevents duplicate order submissions */
+  idempotencyKey: string;
   notes?: string;
 }
+
+export interface CreateOrderResult {
+  orderId: string;
+  orderNumber: string;
+  total: number;
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  couponApplied: boolean;
+  status: 'pending';
+}
+
 
 // ──────────────────────────────────────────────────────────────
 // Status helpers
@@ -166,8 +176,8 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
     total: Number(data.total ?? 0),
     coupon: data.coupon ? String(data.coupon) : undefined,
     paymentMethod: String(data.paymentMethod ?? 'Não informado'),
-    paymentStatus: data.paymentStatus as any,
-    paymentDetails: data.paymentDetails,
+    paymentStatus: (data.paymentStatus as Order['paymentStatus']) ?? undefined,
+    paymentDetails: data.paymentDetails as Record<string, unknown> | undefined,
     deliveryMethod: data.deliveryMethod ? String(data.deliveryMethod) : undefined,
     address: data.address as OrderAddress | undefined,
     notes: data.notes ? String(data.notes) : undefined,
@@ -257,202 +267,18 @@ export function useOrders(uid: string | null) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// createOrder — write to Firestore from Cart checkout
+// createOrderViaFunction — calls the backend Callable Cloud Function
+// The client sends ONLY identifiers (product IDs, address ID) and options.
+// All price/stock/coupon/shipping computation happens on the server.
 // ──────────────────────────────────────────────────────────────
-export async function createOrder(payload: CreateOrderPayload): Promise<string> {
-  // Generate a unique order number with timestamp-based suffix to minimise collision.
-  // Format: #MJ-XXXXXX (6 digits, last 6 of current ms timestamp)
-  const orderNumber = `#MJ-${String(Date.now()).slice(-6)}`;
-  const now = serverTimestamp();
-  const timelineNow = Timestamp.now();
-
-  const timeline = {
-    status: 'pending' as OrderStatus,
-    label: TIMELINE_LABELS.pending,
-    timestamp: timelineNow,
-    actor: 'Sistema',
-  };
-
-  await runTransaction(db, async (transaction) => {
-    // 1. Read all product docs to check stock AND authoritative prices
-    const productRefs = payload.items.map(item => ({
-      ref: doc(db, 'products', item.id),
-      item
-    }));
-
-    const productDocs = await Promise.all(
-      productRefs.map(p => transaction.get(p.ref))
-    );
-
-    // Read user profile and potentially referrer profile
-    const userRef = doc(db, 'users', payload.uid);
-    const userSnap = await transaction.get(userRef);
-
-    let referrerClubeRef: any = null;
-    let referrerClubeSnap: any = null;
-    let referrerUid: string | null = null;
-    let userName = 'Amigo';
-    let shouldRewardReferral = false;
-
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      userName = userData.name || 'Amigo';
-      if (!userData.firstOrderPlaced && userData.referredBy) {
-        referrerUid = userData.referredBy;
-        referrerClubeRef = doc(db, 'users', referrerUid!, 'clube', 'profile');
-        referrerClubeSnap = await transaction.get(referrerClubeRef);
-        shouldRewardReferral = true;
-      }
-    }
-
-    // 2. Validate stock, product status, and re-price from Firestore.
-    //    The client-supplied prices are IGNORED — we use the authoritative
-    //    values from Firestore to prevent price manipulation.
-    const updates: { ref: any, newStock: number }[] = [];
-    let serverSubtotal = 0;
-    const verifiedItems: OrderItem[] = [];
-
-    for (let i = 0; i < productDocs.length; i++) {
-      const pDoc = productDocs[i];
-      const { item, ref } = productRefs[i];
-
-      if (pDoc.exists()) {
-        const data = pDoc.data();
-
-        // Block inactive products
-        if (data.active === false) {
-          throw new Error(`O produto "${item.title}" não está mais disponível.`);
-        }
-
-        // Use server price; fall back to client price only if not set in Firestore.
-        const serverPrice: number = data.promoActive && data.promoPrice && data.promoPrice > 0
-          ? Number(data.promoPrice)
-          : Number(data.price ?? item.price);
-
-        serverSubtotal += serverPrice * item.quantity;
-
-        verifiedItems.push({
-          ...item,
-          price: serverPrice, // override with authoritative price
-        });
-
-        if (data.stock !== undefined && data.stock !== null) {
-          if (data.stock < item.quantity) {
-            throw new Error(`Estoque insuficiente para o produto: ${item.title}`);
-          }
-          const newStock = data.stock - item.quantity;
-          updates.push({
-            ref,
-            newStock
-          });
-        }
-      } else {
-        // If the product exists in defaultProducts, we can dynamically write/insert it during the transaction!
-        const defaultProd = defaultProducts.find(p => p.id === item.id);
-        if (defaultProd) {
-          transaction.set(ref, {
-            ...defaultProd,
-            createdAt: now,
-            updatedAt: now
-          });
-          serverSubtotal += defaultProd.price * item.quantity;
-          verifiedItems.push({
-            ...item,
-            price: defaultProd.price
-          });
-          if (defaultProd.stock !== undefined && defaultProd.stock !== null) {
-            const newStock = Math.max(0, defaultProd.stock - item.quantity);
-            updates.push({
-              ref,
-              newStock
-            });
-          }
-        } else {
-          throw new Error(`Produto não encontrado: ${item.title}. Atualize o carrinho e tente novamente.`);
-        }
-      }
-    }
-
-    // Recalculate the authoritative total using server prices.
-    // Discount is capped so total never goes below R$ 0.01.
-    const clampedDiscount = Math.min(payload.discount, serverSubtotal);
-    const serverTotal = Math.max(0.01, serverSubtotal + payload.deliveryFee - clampedDiscount);
-
-    // 3. Write stock updates
-    for (const update of updates) {
-      transaction.update(update.ref, {
-        stock: update.newStock
-      });
-    }
-
-    // Update user firstOrderPlaced / referralRewarded flags
-    if (userSnap.exists() && !userSnap.data().firstOrderPlaced) {
-      transaction.update(userRef, {
-        firstOrderPlaced: true,
-        referralRewarded: shouldRewardReferral
-      });
-    }
-
-    // Reward referrer if applicable
-    if (shouldRewardReferral && referrerClubeRef) {
-      const nowTime = new Date();
-      const timeStr = `${nowTime.getHours()}:${nowTime.getMinutes() < 10 ? '0' + nowTime.getMinutes() : nowTime.getMinutes()}`;
-      const newHistoryItem = {
-        id: Math.random().toString(),
-        desc: `Indicação: ${userName} (1º Pedido)`,
-        date: `Hoje, ${timeStr}`,
-        value: `+80`,
-        isPlus: true
-      };
-
-      if (referrerClubeSnap && referrerClubeSnap.exists()) {
-        const referrerData = referrerClubeSnap.data();
-        const currentDiamonds = referrerData.diamonds || 0;
-        const currentHistory = referrerData.history || [];
-        transaction.update(referrerClubeRef, {
-          diamonds: currentDiamonds + 80,
-          history: [newHistoryItem, ...currentHistory]
-        });
-      } else {
-        transaction.set(referrerClubeRef, {
-          diamonds: 80,
-          streak: 1,
-          lastCheckinDate: '',
-          freeSpinUsed: false,
-          freeSpinDate: '',
-          history: [newHistoryItem],
-          missions: { order: false, refer: false, combo: false },
-          completedAds: []
-        });
-      }
-    }
-
-    const orderRef = doc(collection(db, 'orders'));
-    transaction.set(orderRef, {
-      uid: payload.uid,
-      orderNumber,
-      status: 'pending' as OrderStatus,
-      // Store the re-priced items verified against Firestore
-      items: verifiedItems,
-      subtotal: serverSubtotal,
-      discount: clampedDiscount,
-      deliveryFee: payload.deliveryFee,
-      total: serverTotal,
-      coupon: payload.coupon ?? null,
-      paymentMethod: payload.paymentMethod ?? 'Não informado',
-      paymentStatus: payload.paymentStatus ?? 'pending',
-      paymentDetails: payload.paymentDetails ?? null,
-      deliveryMethod: payload.deliveryMethod ?? null,
-      address: payload.address ?? null,
-      notes: payload.notes ?? null,
-      createdAt: now,
-      updatedAt: now,
-      timeline: [timeline],
-    });
-  });
-
-  return orderNumber;
+export async function createOrderViaFunction(
+  payload: CreateOrderRequest
+): Promise<CreateOrderResult> {
+  const callFn = httpsCallable<CreateOrderRequest, CreateOrderResult>(fns, 'createOrder');
+  const result = await callFn(payload);
+  return result.data;
 }
+
 
 // ──────────────────────────────────────────────────────────────
 // updateOrderStatus — for admin / future use
@@ -499,17 +325,17 @@ export async function cancelOrder(orderId: string): Promise<void> {
     }
 
     // Process stock refund
-    const items = orderData.items || [];
-    const productRefs = items.map((item: any) => ({
+    const items = (orderData.items ?? []) as OrderItem[];
+    const productRefs = items.map((item: OrderItem) => ({
       ref: doc(db, 'products', item.id),
-      item
+      item,
     }));
 
     const productDocs = await Promise.all(
-      productRefs.map((p: any) => transaction.get(p.ref))
+      productRefs.map((p) => transaction.get(p.ref))
     );
 
-    const updates: { ref: any, newStock: number }[] = [];
+    const updates: Array<{ ref: ReturnType<typeof doc>; newStock: number }> = [];
     
     for (let i = 0; i < productDocs.length; i++) {
       const pDoc = productDocs[i];
@@ -517,12 +343,9 @@ export async function cancelOrder(orderId: string): Promise<void> {
       
       if (pDoc.exists()) {
         const data = pDoc.data();
-        if (data.stock !== undefined && data.stock !== null) {
-          const newStock = data.stock + item.quantity;
-          updates.push({
-            ref,
-            newStock
-          });
+        if (data['stock'] !== undefined && data['stock'] !== null) {
+          const newStock = Number(data['stock']) + item.quantity;
+          updates.push({ ref, newStock });
         }
       }
     }

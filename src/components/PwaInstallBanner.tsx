@@ -2,26 +2,21 @@ import { Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function PwaInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<{ prompt: () => void, userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> } | null>(null);
+  const [isVisible, setIsVisible] = useState(() => !window.matchMedia('(display-mode: standalone)').matches);
 
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as unknown as { prompt: () => void, userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> });
       setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Show by default to test or if not standalone
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (!isStandalone) {
-      setIsVisible(true);
-    }
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {

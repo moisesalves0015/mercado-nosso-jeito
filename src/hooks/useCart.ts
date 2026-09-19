@@ -21,7 +21,14 @@ const sanitizePrice = (raw: unknown): number => {
 };
 
 export function useCart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const stored = localStorage.getItem('app-cart');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const loadCart = () => {
     try {
@@ -37,8 +44,6 @@ export function useCart() {
   };
 
   useEffect(() => {
-    loadCart();
-
     const handleStorageChange = () => {
       loadCart();
     };
@@ -55,7 +60,7 @@ export function useCart() {
     window.dispatchEvent(new Event('app-cart-updated'));
   };
 
-  const addToCart = (product: any, quantity: number = 1) => {
+  const addToCart = (product: { id: string; title: string; price?: number; currentPrice?: number; image?: string }, quantity: number = 1) => {
     const sanitizedPrice = sanitizePrice(product.price ?? product.currentPrice);
     const existing = cartItems.find((item) => item.id === product.id);
     let updated: CartItem[];
@@ -72,7 +77,7 @@ export function useCart() {
           id: product.id,
           title: product.title,
           price: sanitizedPrice,
-          image: product.image,
+          image: product.image ?? '',
           quantity: clampedQty,
         },
       ];

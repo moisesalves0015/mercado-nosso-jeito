@@ -15,7 +15,8 @@ type TransactionType =
   | 'MISSION_REWARD'
   | 'REFERRAL_BONUS'
   | 'FIRST_ORDER_BONUS'
-  | 'WELCOME_BONUS';
+  | 'WELCOME_BONUS'
+  | 'ADMIN_GRANT';
 
 type RewardClaimStatus = 'PENDING' | 'ELIGIBLE' | 'GRANTED' | 'REVERSED' | 'EXPIRED';
 
@@ -107,7 +108,7 @@ async function loadActiveCampaign(): Promise<CampaignConfig> {
     if (!snap.empty) {
       return snap.docs[0].data() as CampaignConfig;
     }
-  } catch (_) {
+  } catch {
     // Fall through to default
   }
   return DEFAULT_CAMPAIGN;
@@ -705,4 +706,510 @@ export const claimMissionReward = functions.https.onCall(async (data, context) =
 
     return { success: true, reward, newBalance };
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared helpers (server-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Normalises condos map from various Firestore shapes into Record<name, fee>. */
+function normalizeCondosServer(rawCondos: unknown): Record<string, number> {
+  if (!rawCondos) return {};
+  if (Array.isArray(rawCondos)) {
+    const result: Record<string, number> = {};
+    for (const item of rawCondos) {
+      if (typeof item === 'string' && item.trim()) {
+        result[item.trim()] = 0;
+      } else if (item && typeof item === 'object' && 'name' in item) {
+        const o = item as { name: unknown; fee?: unknown };
+        result[String(o.name).trim()] = Math.max(0, Number(o.fee) || 0);
+      }
+    }
+    return result;
+  }
+  if (typeof rawCondos === 'object') {
+    const result: Record<string, number> = {};
+    for (const [k, v] of Object.entries(rawCondos as Record<string, unknown>)) {
+      if (k && k.trim()) {
+        result[k.trim()] = Math.max(0, Number(v) || 0);
+      }
+    }
+    return result;
+  }
+  return {};
+}
+
+/**
+ * Checks whether a UID holds admin role via Firestore `users/{uid}.role`.
+ * Used as a fallback while Custom Claims are being rolled out.
+ */
+async function checkIsAdminByRole(uid: string): Promise<boolean> {
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    return snap.exists && snap.data()?.role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createOrder — Callable; all price/stock/coupon/shipping logic runs server-side
+// ─────────────────────────────────────────────────────────────────────────────
+export const createOrder = functions.https.onCall(async (data, context) => {
+  // ── 1. Authentication ──────────────────────────────────────────────────────
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+  const uid = context.auth.uid;
+
+  // ── 2. Payload validation ─────────────────────────────────────────────────
+  const req = data as {
+    productItems?: unknown;
+    addressId?: unknown;
+    deliveryMethod?: unknown;
+    paymentMethod?: unknown;
+    couponCode?: unknown;
+    idempotencyKey?: unknown;
+    notes?: unknown;
+  };
+
+  if (typeof req.idempotencyKey !== 'string' || req.idempotencyKey.length < 8 || req.idempotencyKey.length > 128) {
+    throw new functions.https.HttpsError('invalid-argument', 'Chave de idempotência inválida (8–128 caracteres).');
+  }
+
+  if (!Array.isArray(req.productItems) || req.productItems.length === 0 || req.productItems.length > 50) {
+    throw new functions.https.HttpsError('invalid-argument', 'Lista de produtos inválida (1–50 itens).');
+  }
+
+  for (const item of req.productItems) {
+    const it = item as { productId?: unknown; quantity?: unknown };
+    if (typeof it.productId !== 'string' || !it.productId.trim() || it.productId.length > 128) {
+      throw new functions.https.HttpsError('invalid-argument', 'ID de produto inválido.');
+    }
+    if (
+      typeof it.quantity !== 'number' ||
+      !Number.isInteger(it.quantity) ||
+      it.quantity < 1 ||
+      it.quantity > 50
+    ) {
+      throw new functions.https.HttpsError('invalid-argument', `Quantidade inválida para produto ${String(it.productId)}.`);
+    }
+  }
+
+  const productItems = req.productItems as Array<{ productId: string; quantity: number }>;
+
+  if (typeof req.addressId !== 'string' || !req.addressId.trim() || req.addressId.length > 128) {
+    throw new functions.https.HttpsError('invalid-argument', 'ID de endereço inválido.');
+  }
+
+  const validDelivery = ['apartment', 'lobby'];
+  if (!validDelivery.includes(String(req.deliveryMethod))) {
+    throw new functions.https.HttpsError('invalid-argument', 'Método de entrega inválido.');
+  }
+
+  const validPayment = ['pix', 'credit_card', 'on_delivery'];
+  if (!validPayment.includes(String(req.paymentMethod))) {
+    throw new functions.https.HttpsError('invalid-argument', 'Método de pagamento inválido.');
+  }
+
+  if (req.couponCode !== undefined) {
+    if (typeof req.couponCode !== 'string' || req.couponCode.length > 50) {
+      throw new functions.https.HttpsError('invalid-argument', 'Código de cupom inválido.');
+    }
+  }
+
+  if (req.notes !== undefined) {
+    if (typeof req.notes !== 'string' || req.notes.length > 500) {
+      throw new functions.https.HttpsError('invalid-argument', 'Observações devem ter no máximo 500 caracteres.');
+    }
+  }
+
+  const addressId = String(req.addressId);
+  const deliveryMethod = req.deliveryMethod as 'apartment' | 'lobby';
+  const paymentMethod = req.paymentMethod as 'pix' | 'credit_card' | 'on_delivery';
+  const couponCode = req.couponCode ? String(req.couponCode).trim().toUpperCase() : undefined;
+  const notes = req.notes ? String(req.notes).trim() : undefined;
+  const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
+
+  // ── 3. Idempotency check ──────────────────────────────────────────────────
+  const existingSnap = await db
+    .collection('orders')
+    .where('idempotencyKey', '==', idempotencyKey)
+    .limit(1)
+    .get();
+
+  if (!existingSnap.empty) {
+    const existing = existingSnap.docs[0];
+    const d = existing.data();
+    functions.logger.info('createOrder: idempotent return', { orderId: existing.id, uid });
+    return {
+      orderId: existing.id,
+      orderNumber: String(d['orderNumber'] ?? ''),
+      total: Number(d['total'] ?? 0),
+      subtotal: Number(d['subtotal'] ?? 0),
+      deliveryFee: Number(d['deliveryFee'] ?? 0),
+      discount: Number(d['discount'] ?? 0),
+      couponApplied: !!d['coupon'],
+      status: 'pending' as const,
+    };
+  }
+
+  // ── 4. Load and validate address (must belong to this user) ───────────────
+  const addressRef = db.collection('users').doc(uid).collection('addresses').doc(addressId);
+  const addressSnap = await addressRef.get();
+  if (!addressSnap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Endereço não encontrado.');
+  }
+  const ad = addressSnap.data()!;
+  const address = {
+    street:       String(ad['street']       ?? ''),
+    number:       String(ad['number']       ?? ''),
+    complement:   ad['complement'] ? String(ad['complement']) : undefined,
+    neighborhood: String(ad['neighborhood'] ?? ''),
+    city:         String(ad['city']         ?? ''),
+    state:        String(ad['state']        ?? ''),
+    zipCode:      String(ad['zipCode']      ?? ''),
+    label:        ad['label'] ? String(ad['label']) : undefined,
+  };
+
+  // ── 5. Load shipping config from Firestore ────────────────────────────────
+  let shippingThreshold = 60;
+  let baseShippingFee = 5;
+  let condos: Record<string, number> = {};
+  try {
+    const shippingSnap = await db.collection('settings').doc('shipping').get();
+    if (shippingSnap.exists) {
+      const sd = shippingSnap.data()!;
+      shippingThreshold = Math.max(0, Number(sd['freeShippingThreshold'] ?? 60));
+      baseShippingFee   = Math.max(0, Number(sd['baseShippingFee']       ?? 5));
+      condos = normalizeCondosServer(sd['condos'] || sd['condosList'] || {});
+    }
+  } catch (e) {
+    functions.logger.warn('createOrder: could not load shipping config, using defaults', { error: String(e) });
+  }
+
+  // ── 6. Transactional: validate products + stock + coupon → create order ───
+  return await db.runTransaction(async (transaction) => {
+    // 6a. Load all product docs
+    const productRefs = productItems.map(item => db.collection('products').doc(item.productId));
+    const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+    let serverSubtotal = 0;
+    const verifiedItems: Array<{
+      id: string; title: string; price: number; quantity: number; image: string;
+    }> = [];
+    const stockUpdates: Array<{ ref: admin.firestore.DocumentReference; newStock: number }> = [];
+
+    for (let i = 0; i < productItems.length; i++) {
+      const { productId, quantity } = productItems[i];
+      const pDoc = productDocs[i];
+
+      if (!pDoc.exists) {
+        throw new functions.https.HttpsError(
+          'not-found',
+          `Produto não encontrado: ${productId}. Atualize o carrinho e tente novamente.`,
+        );
+      }
+
+      const pData = pDoc.data()!;
+
+      if (pData['active'] === false) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `O produto "${String(pData['title'] ?? productId)}" não está mais disponível.`,
+        );
+      }
+
+      // Authoritative price — never trust client
+      const serverPrice: number =
+        pData['promoActive'] && pData['promoPrice'] && Number(pData['promoPrice']) > 0
+          ? Number(pData['promoPrice'])
+          : Number(pData['price'] ?? 0);
+
+      if (serverPrice <= 0) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `Preço inválido para "${String(pData['title'] ?? productId)}".`,
+        );
+      }
+
+      serverSubtotal += serverPrice * quantity;
+
+      verifiedItems.push({
+        id:       productId,
+        title:    String(pData['title']  ?? ''),
+        price:    serverPrice,
+        quantity,
+        image:    String(pData['image']  ?? ''),
+      });
+
+      // Stock check
+      const currentStock = pData['stock'];
+      if (currentStock !== undefined && currentStock !== null) {
+        if (Number(currentStock) < quantity) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            `Estoque insuficiente para "${String(pData['title'] ?? productId)}". Disponível: ${String(currentStock)}.`,
+          );
+        }
+        stockUpdates.push({ ref: productRefs[i], newStock: Number(currentStock) - quantity });
+      }
+    }
+
+    // 6b. Validate coupon
+    let discount = 0;
+    let appliedCoupon: string | null = null;
+
+    if (couponCode) {
+      const couponRef = db.collection('coupons').doc(couponCode);
+      const couponSnap = await transaction.get(couponRef);
+
+      if (!couponSnap.exists) {
+        throw new functions.https.HttpsError('not-found', `Cupom "${couponCode}" não encontrado.`);
+      }
+
+      const cd = couponSnap.data()!;
+
+      if (!cd['active']) {
+        throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" não está ativo.`);
+      }
+
+      const expiresAt = cd['expiresAt'] as admin.firestore.Timestamp | undefined;
+      if (expiresAt && expiresAt.toDate() < new Date()) {
+        throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" expirado.`);
+      }
+
+      const maxUses   = cd['maxUses']   !== undefined ? Number(cd['maxUses'])   : undefined;
+      const usesCount = cd['usesCount'] !== undefined ? Number(cd['usesCount']) : 0;
+      if (maxUses !== undefined && usesCount >= maxUses) {
+        throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" atingiu o limite de usos.`);
+      }
+
+      const minOrder = cd['minOrderValue'] !== undefined ? Number(cd['minOrderValue']) : undefined;
+      if (minOrder !== undefined && serverSubtotal < minOrder) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `Pedido mínimo para este cupom: R$ ${minOrder.toFixed(2)}.`,
+        );
+      }
+
+      const couponType  = String(cd['type']  ?? 'fixed');
+      const couponValue = Number(cd['value'] ?? 0);
+
+      if (couponType === 'percentage') {
+        discount = serverSubtotal * Math.min(Math.max(couponValue, 0), 1);
+      } else {
+        discount = Math.min(couponValue, serverSubtotal);
+      }
+      discount = Math.max(0, discount);
+      appliedCoupon = couponCode;
+
+      // Increment usage atomically
+      transaction.update(couponRef, {
+        usesCount: admin.firestore.FieldValue.increment(1),
+      });
+    }
+
+    // 6c. Calculate delivery fee — server-side only, cannot be set by client
+    const afterDiscount = serverSubtotal - discount;
+    let deliveryFee = 0;
+    if (afterDiscount < shippingThreshold) {
+      const streetLower  = address.street.toLowerCase();
+      const neighLower   = address.neighborhood.toLowerCase();
+      const labelLower   = (address.label ?? '').toLowerCase();
+      let matchedCondo   = false;
+
+      for (const [condoName, fee] of Object.entries(condos)) {
+        const nl = condoName.toLowerCase();
+        if (streetLower.includes(nl) || neighLower.includes(nl) || labelLower.includes(nl)) {
+          deliveryFee = Math.max(0, fee);
+          matchedCondo = true;
+          break;
+        }
+      }
+      if (!matchedCondo) {
+        deliveryFee = Math.max(0, baseShippingFee);
+      }
+    }
+
+    // 6d. Final totals
+    const clampedDiscount = Math.min(discount, serverSubtotal);
+    const total = Math.max(0.01, serverSubtotal - clampedDiscount + deliveryFee);
+
+    // 6e. Generate order number on backend
+    const orderNumber = `#MJ-${String(Date.now()).slice(-6)}`;
+    const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const timelineNow = admin.firestore.Timestamp.now();
+
+    const paymentLabel = paymentMethod === 'pix'         ? 'Pix'
+                       : paymentMethod === 'credit_card' ? 'Cartão de Crédito'
+                       : 'Pagamento na Entrega';
+
+    const deliveryLabel = deliveryMethod === 'apartment'
+      ? 'Entrega no Apartamento'
+      : 'Entrega na Portaria';
+
+    // 6f. Apply stock updates
+    for (const upd of stockUpdates) {
+      transaction.update(upd.ref, { stock: upd.newStock });
+    }
+
+    // 6g. Create order document
+    const orderRef = db.collection('orders').doc();
+    transaction.set(orderRef, {
+      uid,
+      orderNumber,
+      status: 'pending',
+      items: verifiedItems,
+      subtotal:      serverSubtotal,
+      discount:      clampedDiscount,
+      deliveryFee,
+      total,
+      coupon:        appliedCoupon,
+      paymentMethod: paymentLabel,
+      paymentStatus: 'pending',
+      paymentDetails: null,
+      deliveryMethod: deliveryLabel,
+      address,
+      notes:          notes ?? null,
+      idempotencyKey,
+      createdAt:      nowTs,
+      updatedAt:      nowTs,
+      timeline: [{
+        status:    'pending',
+        label:     'Pedido criado',
+        timestamp: timelineNow,
+        actor:     'Sistema',
+      }],
+    });
+
+    functions.logger.info('createOrder: success', { orderId: orderRef.id, uid, total });
+
+    return {
+      orderId:      orderRef.id,
+      orderNumber,
+      total,
+      subtotal:     serverSubtotal,
+      deliveryFee,
+      discount:     clampedDiscount,
+      couponApplied: !!appliedCoupon,
+      status: 'pending' as const,
+    };
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminGrantDiamonds — Callable; routes all admin diamond grants through ledger
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminGrantDiamonds = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  // Accept Custom Claim (preferred) OR Firestore role (backward compat)
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  if (!hasRoleAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder diamantes.');
+  }
+
+  const req = data as { targetUid?: unknown; amount?: unknown; reason?: unknown };
+
+  if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
+    throw new functions.https.HttpsError('invalid-argument', 'targetUid inválido.');
+  }
+  if (
+    typeof req.amount !== 'number' ||
+    !Number.isInteger(req.amount) ||
+    req.amount === 0 ||
+    Math.abs(req.amount) > 10_000
+  ) {
+    throw new functions.https.HttpsError('invalid-argument', 'amount deve ser inteiro ≠ 0 no intervalo [-10000, 10000].');
+  }
+  if (typeof req.reason !== 'string' || !req.reason.trim() || req.reason.length > 200) {
+    throw new functions.https.HttpsError('invalid-argument', 'reason inválido (1–200 caracteres).');
+  }
+
+  const targetUid = req.targetUid.trim();
+  const amount    = req.amount as number;
+  const reason    = req.reason.trim();
+  const now       = new Date();
+  const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${Date.now()}`;
+
+  const result = await db.runTransaction(async (transaction) => {
+    return grantReward(transaction, {
+      uid: targetUid,
+      type: 'ADMIN_GRANT',
+      amount,
+      sourceId:        `admin:${context.auth!.uid}`,
+      idempotencyKey,
+      metadata: { adminUid: context.auth!.uid, reason },
+      historyEntry: {
+        desc:   `Ajuste administrativo: ${reason}`,
+        date:   `Hoje, ${formatTime(now)}`,
+        value:  amount > 0 ? `+${amount}` : String(amount),
+        isPlus: amount > 0,
+      },
+    });
+  });
+
+  functions.logger.info('adminGrantDiamonds', { targetUid, amount, adminUid: context.auth.uid, reason });
+
+  return { success: true, newBalance: result.newBalance };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// setAdminClaim — Callable; grants/revokes Firebase Custom Claim "admin: true"
+//
+// Usage (from a privileged client or admin panel):
+//   const setAdmin = httpsCallable(functions, 'setAdminClaim');
+//   await setAdmin({ targetUid: '<uid>', isAdmin: true });
+//
+// After this call, the target user must sign out and sign back in (or call
+// firebase.auth().currentUser?.getIdToken(true)) for the new claim to apply.
+// ─────────────────────────────────────────────────────────────────────────────
+export const setAdminClaim = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  if (!hasRoleAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder privilégios administrativos.');
+  }
+
+  const req = data as { targetUid?: unknown; isAdmin?: unknown };
+
+  if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
+    throw new functions.https.HttpsError('invalid-argument', 'targetUid inválido.');
+  }
+  if (typeof req.isAdmin !== 'boolean') {
+    throw new functions.https.HttpsError('invalid-argument', 'isAdmin deve ser boolean.');
+  }
+
+  const targetUid    = req.targetUid.trim();
+  const makeAdmin    = req.isAdmin as boolean;
+  const callerUid    = context.auth.uid;
+
+  // Prevent self-demotion to avoid accidental lockout
+  if (targetUid === callerUid && !makeAdmin) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Você não pode remover seus próprios privilégios de administrador.',
+    );
+  }
+
+  // Set Custom Claim — takes effect on next token refresh
+  await admin.auth().setCustomUserClaims(targetUid, { admin: makeAdmin });
+
+  // Also sync the role field for backward compatibility with isAdmin() in rules
+  await db.collection('users').doc(targetUid).update({
+    role:      makeAdmin ? 'admin' : 'client',
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  functions.logger.info('setAdminClaim', { targetUid, makeAdmin, callerUid });
+
+  return { success: true, targetUid, isAdmin: makeAdmin };
 });

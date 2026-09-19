@@ -158,24 +158,25 @@ export const PromoCard = ({
 
     // Stagger the initial start
     const initialDelay = Math.random() * 12000 + 6000; // 6s to 18s stagger (slower)
-    let timer: any;
-    let loopInterval: any;
+    let timer: ReturnType<typeof setTimeout>;
+    let loopInterval: ReturnType<typeof setInterval>;
     const channel = category || 'global';
+    const globalWindow = window as unknown as { activeAnimations?: Record<string, string> };
 
     const runAnimation = () => {
       // Coordinate animations per category using a global window registry
-      if (!(window as any).activeAnimations) {
-        (window as any).activeAnimations = {};
+      if (!globalWindow.activeAnimations) {
+        globalWindow.activeAnimations = {};
       }
 
       // If another product in this category is currently animating, postpone by 5-10s
-      if ((window as any).activeAnimations[channel] && (window as any).activeAnimations[channel] !== title) {
+      if (globalWindow.activeAnimations[channel] && globalWindow.activeAnimations[channel] !== title) {
         timer = setTimeout(runAnimation, Math.random() * 5000 + 5000);
         return;
       }
 
       // Claim the channel
-      (window as any).activeAnimations[channel] = title;
+      globalWindow.activeAnimations[channel] = title;
 
       // 1. Start reducing (color is green in CSS)
       setAnimationState('reducing');
@@ -213,8 +214,8 @@ export const PromoCard = ({
               setCurrentPrice(numericPrice);
               
               // Release the channel
-              if ((window as any).activeAnimations) {
-                delete (window as any).activeAnimations[channel];
+              if (globalWindow.activeAnimations) {
+                delete globalWindow.activeAnimations[channel];
               }
             }, 8000);
           }, 7000);
@@ -233,8 +234,8 @@ export const PromoCard = ({
       clearTimeout(timer);
       clearInterval(loopInterval);
       // Clean up global channel reservation on unmount
-      if ((window as any).activeAnimations && (window as any).activeAnimations[channel] === title) {
-        delete (window as any).activeAnimations[channel];
+      if (globalWindow.activeAnimations && globalWindow.activeAnimations[channel] === title) {
+        delete globalWindow.activeAnimations[channel];
       }
     };
   }, [numericPrice, category, title]);

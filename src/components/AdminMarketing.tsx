@@ -114,6 +114,35 @@ const btnIconSm = (color = crmTheme.textSecondary): React.CSSProperties => ({
   boxShadow: crmTheme.shadowSm,
 });
 
+// ─── SubTabBtn — module-level to prevent recreation on every render ────────────
+interface SubTabBtnProps {
+  id: SubTab;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+  activeSubTab: SubTab;
+  setActiveSubTab: (id: SubTab) => void;
+}
+function SubTabBtn({ id, label, icon: Icon, badge, activeSubTab, setActiveSubTab }: SubTabBtnProps) {
+  const active = activeSubTab === id;
+  return (
+    <button onClick={() => setActiveSubTab(id)} style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+      background: active ? crmTheme.primaryLight : 'transparent',
+      color: active ? crmTheme.primary : crmTheme.textSecondary,
+      fontWeight: 800, fontSize: 12, fontFamily: 'Manrope, sans-serif',
+      flexShrink: 0, position: 'relative',
+      borderBottom: active ? `2px solid ${crmTheme.primary}` : '2px solid transparent',
+    }}>
+      <Icon size={14} /> {label}
+      {badge !== undefined && badge > 0 && (
+        <span style={{ background: crmTheme.primary, color: '#fff', fontSize: 9, fontWeight: 900, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{badge}</span>
+      )}
+    </button>
+  );
+}
+
 const toggle = (active: boolean): React.CSSProperties => ({
   width: 38, height: 22, borderRadius: 99, border: 'none', cursor: 'pointer',
   background: active ? crmTheme.success : '#cbd5e1',
@@ -247,7 +276,7 @@ const VitrineForm: React.FC<{
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelSt}>Tema / Cor</label>
-          <select value={theme} onChange={e => setTheme(e.target.value as any)}
+          <select value={theme} onChange={e => setTheme(e.target.value as VitrineConfig['theme'])}
             style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}>
             {THEME_OPTIONS.map(t => <option key={t.value} value={t.value} style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>{t.label}</option>)}
           </select>
@@ -378,7 +407,7 @@ export const AdminMarketing: React.FC = () => {
       }),
       onSnapshot(collection(db, 'home-config', 'data', 'period-config'), snap => {
         const data: Record<string, PeriodConfig> = {};
-        snap.docs.forEach(d => { data[d.id] = { id: d.id as any, ...d.data() } as PeriodConfig; });
+        snap.docs.forEach(d => { data[d.id] = { id: d.id as string, ...d.data() } as PeriodConfig; });
         setPeriodConfig(data);
       }),
       onSnapshot(collection(db, 'home-config', 'data', 'hero-banners'), snap => {
@@ -393,13 +422,13 @@ export const AdminMarketing: React.FC = () => {
     setSaving(true);
     try {
       if (id) {
-        await updateDoc(doc(db, 'home-config', 'data', 'vitrines', id), data as any);
+        await updateDoc(doc(db, 'home-config', 'data', 'vitrines', id), data as Record<string, unknown>);
       } else {
         await addDoc(collection(db, 'home-config', 'data', 'vitrines'), data);
       }
       setEditingVitrineId(null);
       setCreatingVitrine(false);
-    } catch (e: any) { alert('Erro: ' + e.message); }
+    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
     finally { setSaving(false); }
   }, []);
 
@@ -512,8 +541,8 @@ export const AdminMarketing: React.FC = () => {
       }
 
       alert(`${createdCount} vitrines criadas e ${updatedCount} vitrines atualizadas com sucesso!`);
-    } catch (e: any) {
-      alert('Erro ao criar vitrines: ' + e.message);
+    } catch (e: unknown) {
+      alert('Erro ao criar vitrines: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(false);
     }
@@ -600,7 +629,7 @@ export const AdminMarketing: React.FC = () => {
         { title: "Combos", theme: "orange" as const, subtitle: "Leve mais por muito menos!" }
       ];
 
-      let order = existingVitrines.reduce((max, v) => Math.max(max, (v as any).order ?? 0), 0) + 1;
+      let order = existingVitrines.reduce((max, v) => Math.max(max, v.order ?? 0), 0) + 1;
       let vitrinesCreated = 0;
       let vitrinesUpdated = 0;
 
@@ -652,8 +681,8 @@ export const AdminMarketing: React.FC = () => {
       window.dispatchEvent(new Event('app-products-updated'));
 
       alert(`Sucesso! ${productsCreated} produtos criados, ${productsUpdated} atualizados. ${vitrinesCreated} vitrines criadas e ${vitrinesUpdated} vitrines populadas.`);
-    } catch (e: any) {
-      alert('Erro: ' + e.message);
+    } catch (e: unknown) {
+      alert('Erro: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(false);
     }
@@ -672,7 +701,7 @@ export const AdminMarketing: React.FC = () => {
         validUntil: moValidUntil || null,
       });
       setMoSelectedId(''); setMoBadge(''); setMoValidUntil('');
-    } catch (e: any) { alert('Erro: ' + e.message); }
+    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
     finally { setSaving(false); }
   }, [moSelectedId, moBadge, moBadgeStyle, moValidUntil, megaOfertas.length]);
 
@@ -700,7 +729,7 @@ export const AdminMarketing: React.FC = () => {
         { merge: true }
       );
       setEditingPeriod(null);
-    } catch (e: any) { alert('Erro: ' + e.message); }
+    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
     finally { setSaving(false); }
   }, [periodDraft, periodConfig]);
 
@@ -754,7 +783,7 @@ export const AdminMarketing: React.FC = () => {
         await addDoc(collection(db, 'home-config', 'data', 'hero-banners'), data);
       }
       setEditingBannerId(null); setCreatingBanner(false); setBannerDraft({});
-    } catch (e: any) { alert('Erro: ' + e.message); }
+    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
     finally { setSaving(false); }
   }, [bannerDraft, editingBannerId, heroBanners.length]);
 
@@ -763,26 +792,8 @@ export const AdminMarketing: React.FC = () => {
     await deleteDoc(doc(db, 'home-config', 'data', 'hero-banners', id));
   }, []);
 
-  // ─── RENDER ─────────────────────────────────────────────────────────────────
-  const SubTabBtn = ({ id, label, icon: Icon, badge }: { id: SubTab; label: string; icon: React.ElementType; badge?: number }) => {
-    const active = activeSubTab === id;
-    return (
-      <button onClick={() => setActiveSubTab(id)} style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-        background: active ? crmTheme.primaryLight : 'transparent',
-        color: active ? crmTheme.primary : crmTheme.textSecondary,
-        fontWeight: 800, fontSize: 12, fontFamily: 'Manrope, sans-serif',
-        flexShrink: 0, position: 'relative',
-        borderBottom: active ? `2px solid ${crmTheme.primary}` : '2px solid transparent',
-      }}>
-        <Icon size={14} /> {label}
-        {badge !== undefined && badge > 0 && (
-          <span style={{ background: crmTheme.primary, color: '#fff', fontSize: 9, fontWeight: 900, width: 16, height: 16, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{badge}</span>
-        )}
-      </button>
-    );
-  };
+
+  // SubTabBtn is defined at module level to satisfy react-hooks/static-components.
 
   const moSearchFiltered = products
     .filter(p => p.title.toLowerCase().includes(moSearch.toLowerCase()) && !megaOfertas.find(m => m.productId === p.id))
@@ -793,11 +804,11 @@ export const AdminMarketing: React.FC = () => {
 
       {/* ── Sub Tab Nav ── */}
       <div style={{ display: 'flex', gap: 4, background: crmTheme.cardBg, padding: '8px 12px', borderRadius: 14, border: `1px solid ${crmTheme.border}`, overflowX: 'auto', scrollbarWidth: 'none', boxShadow: crmTheme.shadowSm }}>
-        <SubTabBtn id="vitrines"    label="Vitrines"     icon={Layers}     badge={vitrines.length} />
-        <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} />
-        <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}       />
-        <SubTabBtn id="heroBanners" label="Hero Banners" icon={Image}       badge={heroBanners.length} />
-        <SubTabBtn id="campanhas"   label="Campanhas"    icon={Megaphone}   />
+        <SubTabBtn id="vitrines"    label="Vitrines"     icon={Layers}     badge={vitrines.length}    activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}                                  activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="heroBanners" label="Hero Banners" icon={Image}       badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="campanhas"   label="Campanhas"    icon={Megaphone}                              activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
@@ -954,7 +965,7 @@ export const AdminMarketing: React.FC = () => {
               </div>
               <div>
                 <label style={labelSt}>Estilo do badge</label>
-                <select value={moBadgeStyle} onChange={e => setMoBadgeStyle(e.target.value as any)}
+                <select value={moBadgeStyle} onChange={e => setMoBadgeStyle(e.target.value as 'orange' | 'light')}
                   style={{ ...inputSt, appearance: 'auto', background: crmTheme.cardBg }}>
                   <option value="orange" style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>🟠 Orange</option>
                   <option value="light" style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>⬜ Light</option>

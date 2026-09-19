@@ -2,19 +2,63 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
-import { createOrder } from '../hooks/useOrders';
+import { createOrderViaFunction, type CreateOrderResult } from '../hooks/useOrders';
+import { generatePaymentIntent, type PaymentIntentResponse } from '../services/paymentService';
+import confetti from 'canvas-confetti';
 import { useToast } from '../contexts/ToastContext';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import { 
-  ArrowLeft, CheckCircle, MapPin, 
+import {
+  ArrowLeft, CheckCircle, MapPin,
   ChevronRight, AlertTriangle, ShieldCheck, Clock,
   Plus, Lock, Award, ShoppingCart
 } from 'lucide-react';
 import { MercadoLogo } from './Login';
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type CheckoutStep = 'summary' | 'delivery' | 'payment' | 'success';
+
+interface SavedAddress {
+  id: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  label?: string;
+  isDefault?: boolean;
+}
+
+/** Maps Cloud Function HttpsError codes to user-friendly messages. */
+function parseOrderError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { code?: string; message?: string };
+    // FirebaseError from httpsCallable wraps HttpsError
+    if (typeof e.message === 'string') {
+      const msg = e.message;
+      // Strip "internal: " prefix that firebase adds sometimes
+      const stripped = msg.replace(/^(internal|functions\/[a-z-]+):\s*/i, '');
+      return stripped || 'Erro ao processar o pedido. Tente novamente.';
+    }
+  }
+  return 'Erro ao processar o pedido. Tente novamente.';
+}
+
+// ── Complementary products shown in summary step ───────────────────────────────
+const COMPLEMENTARY_PRODUCTS = [
+  { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
+  { id: 'prod-melitta', title: 'Café Melitta', price: 24.50, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80' },
+];
+
+/**
+ * PAYMENT_MODE controls whether the Pix flow is real or simulated.
+ * Set VITE_PAYMENT_MODE=production in your environment to enable real payments.
+ * In demo mode a visible banner is shown and paymentStatus stays 'pending'.
+ */
+const PAYMENT_MODE = (import.meta.env.VITE_PAYMENT_MODE as string | undefined) ?? 'demo';
 
 export function Checkout() {
   const navigate = useNavigate();
@@ -22,78 +66,65 @@ export function Checkout() {
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
   const { config: shippingConfig } = useShippingConfig();
-  // Idempotency guard: prevents duplicate orders from rapid/double clicks.
+
+  // Idempotency key: generated once per checkout session mount.
+  // If the user navigates away and returns, a new key is generated.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  // Double-click guard
   const submittingRef = useRef(false);
-  
-  const complementaryProducts = [
-    { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
-    { id: 'prod-melitta', title: 'Café Melitta', price: 24.50, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80' }
-  ];
 
-  // Delivery State
+  // Delivery
   const [deliveryMethod, setDeliveryMethod] = useState<'apartment' | 'lobby'>('apartment');
-  const [address, setAddress] = useState<any>(null);
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [address, setAddress] = useState<SavedAddress | null>(null);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
 
+  // Preview totals (display only — authoritative values come from backend)
   const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
   const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
   const progressPercent = Math.min((totalPrice / freeShippingThreshold) * 100, 100);
 
-  const getDeliveryFee = () => {
+  const getPreviewDeliveryFee = (): number => {
     if (totalPrice >= freeShippingThreshold) return 0;
     if (!address) return baseShippingFee;
-
-    const streetLower = (address.street || '').toLowerCase();
-    const neighborhoodLower = (address.neighborhood || '').toLowerCase();
-    const cityLower = (address.city || '').toLowerCase();
-    const complementLower = (address.complement || '').toLowerCase();
-    const labelLower = (address.label || '').toLowerCase();
-
-    const condos = shippingConfig?.condos || {};
+    const streetLower = (address.street ?? '').toLowerCase();
+    const neighborhoodLower = (address.neighborhood ?? '').toLowerCase();
+    const labelLower = (address.label ?? '').toLowerCase();
+    const condos = shippingConfig?.condos ?? {};
     for (const [condoName, fee] of Object.entries(condos)) {
-      const nameLower = condoName.toLowerCase();
-      if (
-        streetLower.includes(nameLower) ||
-        neighborhoodLower.includes(nameLower) ||
-        cityLower.includes(nameLower) ||
-        complementLower.includes(nameLower) ||
-        labelLower.includes(nameLower)
-      ) {
+      const nl = condoName.toLowerCase();
+      if (streetLower.includes(nl) || neighborhoodLower.includes(nl) || labelLower.includes(nl)) {
         return fee;
       }
     }
-
     return baseShippingFee;
   };
 
-  const deliveryFee = getDeliveryFee();
-  
+  const previewDeliveryFee = getPreviewDeliveryFee();
+
+  // Step / UI
   const [step, setStep] = useState<CheckoutStep>('summary');
   const [loading, setLoading] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<CreateOrderResult | null>(null);
+  const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
 
-  
-  // Payment State
+  // Payment
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'on_delivery'>('pix');
-  
-  // Order State
-  const [orderId, setOrderId] = useState<string | null>(null);
 
-  // Discount
+  // Coupon (sent to backend for authoritative validation — no discount computed client-side)
   const [couponCode, setCouponCode] = useState('');
-  const [discount, setDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState(false);
 
-  // Countdown timer for payment (10 minutes)
+  // Preview discount shown before order is placed (not authoritative)
+  const previewDiscount = couponApplied ? totalPrice * 0.1 : 0; // visual only
+  const previewTotal = totalPrice - previewDiscount + previewDeliveryFee;
+
+  // Countdown for payment (10 minutes)
   const [timeLeft, setTimeLeft] = useState(600);
-
-  const finalTotal = totalPrice - discount + deliveryFee;
 
   useEffect(() => {
     if (step === 'success' && timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
+      const timer = setTimeout(() => setTimeLeft((p) => p - 1), 1000);
       return () => clearTimeout(timer);
     }
   }, [step, timeLeft]);
@@ -104,59 +135,40 @@ export function Checkout() {
     }
   }, [deliveryMethod, paymentMethod]);
 
-  useEffect(() => {
-    if (cartItems.length > 0) {
-      localStorage.setItem('mercado_checkout_recovery', JSON.stringify({
-        step, cartItems, totalPrice, lastUpdated: new Date().toISOString()
-      }));
-    }
-  }, [step, cartItems, totalPrice]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Load addresses when reaching delivery step
   useEffect(() => {
-    if (step === 'delivery' && user) {
-      const loadAddresses = async () => {
-        try {
-          const q = query(collection(db, 'users', user.uid, 'addresses'));
-          const snap = await getDocs(q);
-          const userAddresses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setAddresses(userAddresses);
-          
-          const defaultAddr = userAddresses.find((a: any) => a.isDefault);
-          if (defaultAddr) {
-            setAddress(defaultAddr);
-          } else if (userAddresses.length > 0) {
-            setAddress(userAddresses[0]);
-          }
-        } catch (err) {
-          console.error("Error loading addresses", err);
-        }
-      };
-      loadAddresses();
-    }
+    if (step !== 'delivery' || !user) return;
+    const loadAddresses = async () => {
+      try {
+        const q = query(collection(db, 'users', user.uid, 'addresses'));
+        const snap = await getDocs(q);
+        const loaded = snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedAddress));
+        setAddresses(loaded);
+        const defaultAddr = loaded.find((a) => a.isDefault) ?? loaded[0] ?? null;
+        setAddress(defaultAddr);
+      } catch (err) {
+        console.error('Error loading addresses', err);
+      }
+    };
+    void loadAddresses();
   }, [step, user]);
 
-  const applyCoupon = () => {
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  /** Coupon is validated server-side on submission; this just marks intent. */
+  const applyCouponLocally = () => {
     const code = couponCode.trim().toUpperCase();
-    // Recognised coupon codes — in production, validate via a Firestore collection.
-    const VALID_COUPONS: Record<string, number> = {
-      'NOSSOJEITO10': 0.10,
-    };
-    if (VALID_COUPONS[code] !== undefined) {
-      const discountAmount = totalPrice * VALID_COUPONS[code];
-      setDiscount(discountAmount);
-      toastSuccess('Cupom aplicado!', `Desconto de R$ ${discountAmount.toFixed(2)} adicionado.`);
-    } else if (!code) {
+    if (!code) {
       toastInfo('Campo vazio', 'Digite um código de cupom antes de aplicar.');
-    } else {
-      toastError('Cupom inválido', 'Código não encontrado ou expirado.');
+      return;
     }
+    // Visual preview only — actual validation happens in the Cloud Function.
+    setCouponApplied(true);
+    toastSuccess('Cupom registrado', 'O desconto será aplicado ao finalizar o pedido.');
   };
 
   const handleNext = () => {
@@ -170,56 +182,64 @@ export function Checkout() {
   };
 
   const handleFinish = async () => {
-    // Idempotency: bail out if a submission is already in progress.
     if (submittingRef.current) return;
-
     if (!user) {
       navigate('/login?returnUrl=/checkout');
       return;
     }
-    
+    if (!address) {
+      toastError('Endereço obrigatório', 'Selecione um endereço de entrega.');
+      return;
+    }
+
     submittingRef.current = true;
     setLoading(true);
     setError(null);
+
     try {
-      const newOrderId = await createOrder({
-        uid: user.uid,
-        items: cartItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
+      const result = await createOrderViaFunction({
+        productItems: cartItems.map((item) => ({
+          productId: item.id,
           quantity: item.quantity,
-          image: item.image ?? ''
         })),
-        subtotal: totalPrice,
-        discount: discount,
-        deliveryFee: deliveryFee,
-        total: finalTotal,
-        paymentMethod: paymentMethod === 'pix' ? 'Pix' : paymentMethod === 'credit_card' ? 'Cartão de Crédito' : 'Pagamento na Entrega',
-        paymentStatus: 'pending',
-        deliveryMethod: deliveryMethod === 'apartment' ? 'Entrega no Apartamento' : 'Entrega na Portaria',
-        address: address,
-        coupon: couponCode || undefined
+        addressId: address.id,
+        deliveryMethod,
+        paymentMethod,
+        couponCode: couponApplied && couponCode ? couponCode.trim().toUpperCase() : undefined,
+        idempotencyKey: idempotencyKeyRef.current,
+        notes: undefined,
       });
-      
-      setOrderId(newOrderId);
+
+      let paymentRes: PaymentIntentResponse | null = null;
+      if (paymentMethod === 'pix' || paymentMethod === 'credit_card') {
+        paymentRes = await generatePaymentIntent(result.orderId, result.total, paymentMethod);
+        if (!paymentRes.success) {
+          toastError('Erro no pagamento', paymentRes.errorMessage || 'Falha na geração do pagamento');
+        } else {
+          setPaymentData(paymentRes);
+        }
+      }
+
+      setConfirmedOrder(result);
       clearCart();
-      
+      // Renew key so a revisit to the page generates a fresh order
+      idempotencyKeyRef.current = crypto.randomUUID();
+
       // Fire confetti
-      import('canvas-confetti').then((confettiModule) => {
-        confettiModule.default({
-          particleCount: 150,
-          spread: 80,
-          colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
-        });
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        colors: ['#FFDF73', '#D4AF37', '#E7BC79', '#FFFFFF'],
       });
-      
+
       setStep('success');
-    } catch (err: any) {
-      console.error(err);
-      const msg = err.message || 'Erro ao processar o pedido. Tente novamente.';
+    } catch (err: unknown) {
+      console.error('createOrderViaFunction error:', err);
+      const msg = parseOrderError(err);
       setError(msg);
       toastError('Erro no pedido', msg);
+      // Renew idempotency key so the user can retry
+      idempotencyKeyRef.current = crypto.randomUUID();
     } finally {
       setLoading(false);
       submittingRef.current = false;
@@ -230,47 +250,28 @@ export function Checkout() {
     return (
       <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
         <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 110, display: 'flex', flexDirection: 'column' }}>
-        {/* Topbar */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 20,
-          background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-gold)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
-            <button onClick={() => navigate(-1)} 
-              style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
-              <ArrowLeft size={16} />
+          <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-gold)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
+              <button onClick={() => navigate(-1)} style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
+                <ArrowLeft size={16} />
+              </button>
+              <MercadoLogo size="sm" />
+              <div style={{ width: 34 }} />
+            </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', gap: 16 }}>
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShoppingCart size={32} color="#D4AF37" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Seu carrinho está vazio</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 260, lineHeight: 1.5 }}>Que tal dar uma olhada em nossas ofertas e encher o carrinho?</p>
+            </div>
+            <button onClick={() => navigate('/')} style={{ marginTop: 8, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 14, color: '#090705', fontSize: 14, fontWeight: 900, padding: '14px 32px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Explorar produtos 🛍️
             </button>
-            <MercadoLogo size="sm" />
-            <div style={{ width: 34 }} />
           </div>
         </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', gap: 16 }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: 24,
-            background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <ShoppingCart size={32} color="#D4AF37" />
-          </div>
-          <div>
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
-              Seu carrinho está vazio
-            </h3>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 260, lineHeight: 1.5 }}>
-              Que tal dar uma olhada em nossas ofertas e encher o carrinho?
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            style={{ marginTop: 8, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 14, color: '#090705', fontSize: 14, fontWeight: 900, padding: '14px 32px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: 8 }}
-          >
-            Explorar produtos 🛍️
-          </button>
-        </div>
-      </div>
       </div>
     );
   }
@@ -279,19 +280,13 @@ export function Checkout() {
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
         {/* Topbar */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 20,
-          background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-gold)'
-        }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-gold)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
             <button onClick={() => {
               if (step === 'payment') setStep('delivery');
               else if (step === 'delivery') setStep('summary');
               else navigate('/cart');
-            }} 
-              style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
+            }} style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
               <ArrowLeft size={16} />
             </button>
             <MercadoLogo size="sm" />
@@ -304,7 +299,7 @@ export function Checkout() {
         </div>
 
         <div style={{ padding: '10px 16px', maxWidth: 600, margin: '0 auto' }}>
-          
+
           {/* Progress Bar */}
           {step !== 'success' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '0 10px' }}>
@@ -334,7 +329,7 @@ export function Checkout() {
           {/* STEP 1: SUMMARY */}
           {step === 'summary' && (
             <div className="checkout-step">
-              {/* PROGRESSO DE BENEFÍCIOS */}
+              {/* Free shipping progress */}
               <div style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid var(--border-gold)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                   <span style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)' }}>
@@ -346,28 +341,25 @@ export function Checkout() {
                 </div>
               </div>
 
-              {/* RESUMO DE ECONOMIA */}
-              {discount > 0 && (
+              {couponApplied && (
                 <div style={{ background: 'rgba(52,199,89,0.1)', border: '1px solid rgba(52,199,89,0.3)', borderRadius: 10, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Award size={16} color="#34C759" />
                   <span style={{ color: '#34C759', fontSize: 12, fontWeight: 'bold' }}>
-                    Você economiza R$ {discount.toFixed(2)} nesta compra.
+                    Cupom registrado — desconto confirmado ao finalizar.
                   </span>
                 </div>
               )}
 
               <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 8, marginTop: 4 }}>Resumo do Pedido</h2>
               <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
-                {cartItems.map(item => (
+                {cartItems.map((item) => (
                   <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-primary)' }}>
                     <div style={{ width: 40, height: 40, borderRadius: 7, background: 'var(--input-bg)', backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 12 }}>{item.title}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.quantity}x R$ {item.price.toFixed(2)}</div>
                     </div>
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 13 }}>
-                      R$ {(item.quantity * item.price).toFixed(2)}
-                    </div>
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 13 }}>R$ {(item.quantity * item.price).toFixed(2)}</div>
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontWeight: 'bold', fontSize: 14, color: 'var(--text-primary)' }}>
@@ -376,13 +368,12 @@ export function Checkout() {
                 </div>
               </div>
 
-              {/* PRODUTOS COMPLEMENTARES */}
               <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 8 }}>Leve também</h3>
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10, marginBottom: 10, scrollbarWidth: 'none' }}>
-                {complementaryProducts.map(prod => (
+                {COMPLEMENTARY_PRODUCTS.map((prod) => (
                   <div key={prod.id} style={{ minWidth: 105, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                     <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
+                      <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} loading="lazy" />
                     </div>
                     <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 24, overflow: 'hidden' }}>{prod.title}</span>
                     <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
@@ -391,10 +382,7 @@ export function Checkout() {
                 ))}
               </div>
 
-              <button 
-                onClick={() => setStep('delivery')}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 14 }}
-              >
+              <button onClick={() => setStep('delivery')} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 14 }}>
                 Continuar para Entrega <ChevronRight size={16} />
               </button>
             </div>
@@ -404,39 +392,19 @@ export function Checkout() {
           {step === 'delivery' && (
             <div className="checkout-step">
               <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 10, marginTop: 2 }}>Onde deseja receber?</h2>
-              
-              <div style={{ 
-                background: 'rgba(212,175,55,0.08)', 
-                border: '1px solid var(--border-gold)', 
-                borderRadius: 10, 
-                padding: '8px 10px', 
-                marginBottom: 12, 
-                fontSize: 12, 
-                color: 'var(--text-primary)', 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                gap: 8,
-                lineHeight: 1.4
-              }}>
+
+              <div style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid var(--border-gold)', borderRadius: 10, padding: '8px 10px', marginBottom: 12, fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.4 }}>
                 <ShieldCheck size={16} color="#D4AF37" style={{ flexShrink: 0, marginTop: 2 }} />
-                <span>
-                  <strong>O Nosso Jeito é 100% digital!</strong> Entrega rápida direto no seu condomínio. Escolha a preferência:
-                </span>
+                <span><strong>O Nosso Jeito é 100% digital!</strong> Entrega rápida direto no seu condomínio. Escolha a preferência:</span>
               </div>
-              
+
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                <button 
-                  onClick={() => setDeliveryMethod('apartment')}
-                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'apartment' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'apartment' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}
-                >
+                <button onClick={() => setDeliveryMethod('apartment')} style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'apartment' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'apartment' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <MapPin size={20} color={deliveryMethod === 'apartment' ? '#D4AF37' : 'var(--text-secondary)'} />
                   <span style={{ fontWeight: 'bold', fontSize: 12 }}>No Apartamento</span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Entregador sobe até a porta</span>
                 </button>
-                <button 
-                  onClick={() => setDeliveryMethod('lobby')}
-                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'lobby' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'lobby' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}
-                >
+                <button onClick={() => setDeliveryMethod('lobby')} style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'lobby' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'lobby' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <CheckCircle size={20} color={deliveryMethod === 'lobby' ? '#D4AF37' : 'var(--text-secondary)'} />
                   <span style={{ fontWeight: 'bold', fontSize: 12 }}>Na Portaria</span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Deixamos na portaria/guarita</span>
@@ -447,12 +415,8 @@ export function Checkout() {
                 <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 'bold' }}>Endereço de Entrega</h3>
                 {addresses.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {addresses.map(a => (
-                      <div 
-                        key={a.id} 
-                        onClick={() => setAddress(a)}
-                        style={{ padding: '8px 10px', borderRadius: 8, border: address?.id === a.id ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: address?.id === a.id ? 'rgba(212,175,55,0.05)' : 'var(--input-bg)', cursor: 'pointer' }}
-                      >
+                    {addresses.map((a) => (
+                      <div key={a.id} onClick={() => setAddress(a)} style={{ padding: '8px 10px', borderRadius: 8, border: address?.id === a.id ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: address?.id === a.id ? 'rgba(212,175,55,0.05)' : 'var(--input-bg)', cursor: 'pointer' }}>
                         <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 13 }}>{a.street}, {a.number}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.neighborhood} - {a.city}</div>
                       </div>
@@ -472,16 +436,10 @@ export function Checkout() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                <button 
-                  onClick={() => setStep('summary')}
-                  style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}
-                >
+                <button onClick={() => setStep('summary')} style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
-                <button 
-                  onClick={handleNext}
-                  style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}
-                >
+                <button onClick={handleNext} style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
                   Ir p/ Pagamento <ChevronRight size={16} />
                 </button>
               </div>
@@ -492,48 +450,49 @@ export function Checkout() {
           {step === 'payment' && (
             <div className="checkout-step">
               <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 10, marginTop: 2 }}>Pagamento</h2>
-              
+
               <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
                   <span>Subtotal</span>
                   <span>R$ {totalPrice.toFixed(2)}</span>
                 </div>
-                {discount > 0 && (
+                {couponApplied && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: '#34C759', fontSize: 12 }}>
-                    <span>Desconto</span>
-                    <span>- R$ {discount.toFixed(2)}</span>
+                    <span>Desconto estimado</span>
+                    <span>- R$ {previewDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
-                  <span>Entrega</span>
-                  <span>{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2)}`}</span>
+                  <span>Entrega (estimada)</span>
+                  <span>{previewDeliveryFee === 0 ? 'Grátis' : `R$ ${previewDeliveryFee.toFixed(2)}`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', fontSize: 15 }}>
-                  <span>Total a Pagar</span>
-                  <span>R$ {finalTotal.toFixed(2)}</span>
+                  <span>Total estimado</span>
+                  <span>R$ {previewTotal.toFixed(2)}</span>
                 </div>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '6px 0 0', textAlign: 'right' }}>
+                  * Valor final confirmado pelo servidor ao finalizar.
+                </p>
 
                 {/* Coupon input */}
                 <div style={{ display: 'flex', gap: 7, marginTop: 10, borderTop: '1px solid var(--border-primary)', paddingTop: 10 }}>
-                  <input 
-                    type="text" 
-                    placeholder="Cupom de desconto" 
+                  <input
+                    type="text"
+                    placeholder="Cupom de desconto"
                     value={couponCode}
-                    onChange={e => setCouponCode(e.target.value)}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={couponApplied}
                     style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border-primary)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: 12 }}
                   />
-                  <button onClick={applyCoupon} style={{ padding: '0 12px', borderRadius: 7, background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 12 }}>
-                    Aplicar
+                  <button onClick={applyCouponLocally} disabled={couponApplied} style={{ padding: '0 12px', borderRadius: 7, background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', cursor: couponApplied ? 'not-allowed' : 'pointer', fontSize: 12 }}>
+                    {couponApplied ? '✓' : 'Aplicar'}
                   </button>
                 </div>
               </div>
 
               <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)' }}>Forma de Pagamento</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button 
-                  onClick={() => setPaymentMethod('pix')}
-                  style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'pix' ? '2px solid #34C759' : '1px solid var(--border-primary)', background: paymentMethod === 'pix' ? 'rgba(52,199,89,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
-                >
+                <button onClick={() => setPaymentMethod('pix')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'pix' ? '2px solid #34C759' : '1px solid var(--border-primary)', background: paymentMethod === 'pix' ? 'rgba(52,199,89,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'pix' ? '#34C759' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'pix' ? '#34C759' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {paymentMethod === 'pix' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
                   </div>
@@ -546,10 +505,7 @@ export function Checkout() {
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => setPaymentMethod('credit_card')}
-                  style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'credit_card' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'credit_card' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
-                >
+                <button onClick={() => setPaymentMethod('credit_card')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'credit_card' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'credit_card' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'credit_card' ? '#D4AF37' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'credit_card' ? '#D4AF37' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {paymentMethod === 'credit_card' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#000' }} />}
                   </div>
@@ -559,12 +515,7 @@ export function Checkout() {
                   </div>
                 </button>
 
-                <button 
-                  onClick={() => {
-                    if (deliveryMethod !== 'lobby') setPaymentMethod('on_delivery');
-                  }}
-                  style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'on_delivery' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'on_delivery' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: deliveryMethod === 'lobby' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 10, opacity: deliveryMethod === 'lobby' ? 0.5 : 1 }}
-                >
+                <button onClick={() => { if (deliveryMethod !== 'lobby') setPaymentMethod('on_delivery'); }} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'on_delivery' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'on_delivery' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: deliveryMethod === 'lobby' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 10, opacity: deliveryMethod === 'lobby' ? 0.5 : 1 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'on_delivery' ? '#D4AF37' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'on_delivery' ? '#D4AF37' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {paymentMethod === 'on_delivery' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#000' }} />}
                   </div>
@@ -577,7 +528,6 @@ export function Checkout() {
                 </button>
               </div>
 
-              {/* REFORÇO DE SEGURANÇA */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 12, marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#34C759' }}>
                   <Lock size={11} /> <span style={{ fontSize: 10, fontWeight: 'bold' }}>Pagamento Seguro</span>
@@ -588,17 +538,10 @@ export function Checkout() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button 
-                  onClick={() => setStep('delivery')}
-                  style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}
-                >
+                <button onClick={() => setStep('delivery')} style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
-                <button 
-                  onClick={handleFinish}
-                  disabled={loading}
-                  style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13, opacity: loading ? 0.7 : 1 }}
-                >
+                <button onClick={() => void handleFinish()} disabled={loading} style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13, opacity: loading ? 0.7 : 1 }}>
                   {loading ? 'Processando...' : <><ShieldCheck size={16} /> Finalizar</>}
                 </button>
               </div>
@@ -606,63 +549,70 @@ export function Checkout() {
           )}
 
           {/* STEP 4: SUCCESS */}
-          {step === 'success' && (
+          {step === 'success' && confirmedOrder && (
             <div style={{ textAlign: 'center', padding: '20px 8px' }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 199, 89, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                 <CheckCircle size={38} color="#34C759" />
               </div>
               <h2 style={{ color: 'var(--text-primary)', marginBottom: 5, fontWeight: 900, fontSize: 18 }}>Pedido Finalizado!</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 14, fontSize: 13 }}>Seu pedido {orderId} foi recebido com sucesso.</p>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 14, fontSize: 13 }}>
+                Seu pedido <strong>{confirmedOrder.orderNumber}</strong> foi recebido com sucesso.
+                Total confirmado: <strong>R$ {confirmedOrder.total.toFixed(2)}</strong>
+              </p>
 
-              {/* Payment countdown & instruction box */}
-              <div style={{ 
-                background: 'rgba(212,175,55,0.06)', 
-                border: '1.5px solid var(--border-gold)', 
-                borderRadius: 12, 
-                padding: '12px 14px', 
-                marginBottom: 14, 
-                textAlign: 'center',
-                boxShadow: '0 4px 20px rgba(212,175,55,0.08)'
-              }}>
+              {/* Payment countdown */}
+              <div style={{ background: 'rgba(212,175,55,0.06)', border: '1.5px solid var(--border-gold)', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'center', boxShadow: '0 4px 20px rgba(212,175,55,0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#D4AF37', marginBottom: 7 }}>
                   <Clock size={15} />
                   <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aguardando Pagamento</span>
                 </div>
-                
                 <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '1px', marginBottom: 8 }}>
                   {formatTime(timeLeft)}
                 </div>
-
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
                   Realize o pagamento em até <strong>10 minutos</strong> para garantir a reserva dos seus produtos.
                 </p>
               </div>
 
-              {paymentMethod === 'pix' && (
+              {paymentData?.pixCopiaECola && (
+                <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
+                  <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text-primary)', textAlign: 'center' }}>Pague via Pix</h3>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 10 }}>
+                    Copie o código abaixo e pague no seu aplicativo bancário:
+                  </div>
+                  <div style={{ background: 'var(--input-bg)', padding: '10px', borderRadius: 8, wordBreak: 'break-all', fontSize: 10, color: 'var(--text-primary)', border: '1px dashed var(--border-primary)', marginBottom: 10 }}>
+                    {paymentData.pixCopiaECola}
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(paymentData.pixCopiaECola!); toastSuccess('Copiado!', 'Código Pix copiado para a área de transferência'); }} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', border: '1px solid #34C759', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
+                    Copiar Código Pix
+                  </button>
+                </div>
+              )}
+
+              {paymentMethod === 'pix' && !paymentData?.pixCopiaECola && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
                   <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 'bold' }}>Pague com Pix</h3>
+
+                  {/* Demo mode banner */}
+                  {PAYMENT_MODE === 'demo' && (
+                    <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 8, padding: '6px 10px', marginBottom: 10, fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>
+                      ⚠️ MODO DEMONSTRAÇÃO — Este QR Code é simulado e não processa pagamentos reais.
+                    </div>
+                  )}
+
                   <div style={{ background: '#fff', padding: 12, borderRadius: 10, display: 'inline-block', marginBottom: 10 }}>
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${orderId}`} alt="QR Code Pix" />
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${confirmedOrder.orderId}`} alt="QR Code Pix (simulado)" />
                   </div>
                   <div style={{ background: 'var(--input-bg)', padding: '8px 10px', borderRadius: 7, color: 'var(--text-primary)', fontSize: 11, fontFamily: 'monospace', wordBreak: 'break-all', textAlign: 'left' }}>
                     00020101021126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426655440000...
                   </div>
-                  <p style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 8 }}>
-                    Este é um código Pix simulado.
-                  </p>
                 </div>
               )}
 
-              <button 
-                onClick={() => navigate('/orders')}
-                style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', marginBottom: 10, fontSize: 13 }}
-              >
+              <button onClick={() => navigate('/orders')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', marginBottom: 10, fontSize: 13 }}>
                 Acompanhar Pedido
               </button>
-              <button 
-                onClick={() => navigate('/')}
-                style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: 13 }}
-              >
+              <button onClick={() => navigate('/')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: 13 }}>
                 Voltar à Loja
               </button>
             </div>

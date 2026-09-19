@@ -1,120 +1,35 @@
 /**
- * Script para criar documento admin no Firestore via REST API
- * Uso: node create-admin.cjs <email> <senha>
- * Exemplo: node create-admin.cjs meu@email.com minhasenha123
+ * @deprecated
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ATENÇÃO: Este script foi DEPRECIADO e NUNCA DEVE SER EXECUTADO.
+ *
+ * Problemas de segurança desta versão:
+ *   1. A API key do Firebase estava hardcoded no código-fonte — qualquer pessoa
+ *      com acesso ao repositório podia extraí-la.
+ *   2. A senha do usuário era passada como argumento de linha de comando,
+ *      ficando exposta no histórico do shell e nos logs do sistema.
+ *   3. O processo autenticava como o próprio usuário-alvo (não como Admin)
+ *      para escrever role: 'admin' — dependia de regras Firestore permissivas.
+ *
+ * Use o substituto seguro:
+ *   node scripts/set-admin.js promote <uid>
+ *
+ * Veja scripts/set-admin.js para instruções completas.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
-const https = require('https');
+console.error(`
+❌ create-admin.cjs foi DEPRECIADO por razões de segurança.
 
-const API_KEY = 'AIzaSyDymI1qb9b2NOpZElTWsV-SzXB_54fLtjw';
-const PROJECT_ID = 'nosso-mercado-4b877';
+   Use o substituto seguro:
 
-const email = process.argv[2];
-const password = process.argv[3];
+     node scripts/set-admin.js promote <uid>
 
-if (!email || !password) {
-  console.log('❌ Uso: node create-admin.cjs <email> <senha>');
-  console.log('   Exemplo: node create-admin.cjs meu@email.com minhasenha123');
-  process.exit(1);
-}
+   Para descobrir o UID de um usuário:
+     - Acesse console.firebase.google.com → Authentication → Users
+     - Copie o UID do usuário desejado
 
-function postJSON(url, data) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(data);
-    const urlObj = new URL(url);
-    const options = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-      },
-    };
-    const req = https.request(options, (res) => {
-      let responseData = '';
-      res.on('data', (chunk) => { responseData += chunk; });
-      res.on('end', () => {
-        const parsed = JSON.parse(responseData);
-        if (res.statusCode >= 400) reject(parsed);
-        else resolve(parsed);
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-function patchJSON(url, data, idToken) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(data);
-    const urlObj = new URL(url);
-    const options = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        'Authorization': `Bearer ${idToken}`,
-      },
-    };
-    const req = https.request(options, (res) => {
-      let responseData = '';
-      res.on('data', (chunk) => { responseData += chunk; });
-      res.on('end', () => {
-        const parsed = JSON.parse(responseData);
-        if (res.statusCode >= 400) reject(parsed);
-        else resolve(parsed);
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-async function main() {
-  console.log(`\n🔐 Fazendo login como: ${email}`);
-
-  // Step 1: Sign in to get ID token
-  let authData;
-  try {
-    authData = await postJSON(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
-      { email, password, returnSecureToken: true }
-    );
-  } catch (err) {
-    console.error('❌ Erro no login:', err.error?.message || err);
-    process.exit(1);
-  }
-
-  const { idToken, localId: uid } = authData;
-  console.log(`✅ Login OK! UID: ${uid}`);
-
-  // Step 2: Write user doc to Firestore with role: admin
-  const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}`;
-  const docBody = {
-    fields: {
-      name:      { stringValue: email.split('@')[0] },
-      email:     { stringValue: email },
-      role:      { stringValue: 'admin' },
-      createdAt: { timestampValue: new Date().toISOString() },
-    }
-  };
-
-  console.log('\n📝 Criando documento no Firestore com role: admin...');
-  try {
-    const result = await patchJSON(firestoreUrl, docBody, idToken);
-    console.log('✅ Documento criado com sucesso!');
-    console.log('   Caminho:', result.name);
-    console.log('\n🎉 Pronto! Volte ao aplicativo, faça login, e você terá acesso ao painel Admin.');
-  } catch (err) {
-    console.error('❌ Erro ao criar documento no Firestore:');
-    console.error(JSON.stringify(err, null, 2));
-    console.log('\n💡 Dica: Verifique se as Regras do Firestore estão publicadas com:');
-    console.log('   allow read, write: if request.auth != null;');
-  }
-}
-
-main();
+   Para executar o script:
+     export GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/service-account.json
+     node scripts/set-admin.js promote <uid>
+`);
+process.exit(1);

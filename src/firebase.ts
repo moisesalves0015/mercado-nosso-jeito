@@ -5,6 +5,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
 const requiredEnvVars = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -49,6 +50,9 @@ export const db = getFirestore(app);
 
 // Initialize Firebase Storage (for profile photos)
 export const storage = getStorage(app);
+
+// Initialize Firebase Functions (for Callable Functions like createOrder)
+export const fns = getFunctions(app);
 
 // Analytics — lazy, safe for non-browser environments
 export const analytics = typeof window !== "undefined"

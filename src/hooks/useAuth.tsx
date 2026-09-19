@@ -92,11 +92,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const auth = getAuth(app);
 
-  const toDate = (ts: any): Date | undefined => {
+  const toDate = (ts: unknown): Date | undefined => {
     if (!ts) return undefined;
     if (ts instanceof Date) return ts;
-    if (typeof ts.toDate === 'function') return ts.toDate();
-    if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+    if (typeof ts === 'object' && ts !== null) {
+      const obj = ts as Record<string, unknown>;
+      if (typeof obj['toDate'] === 'function') return (obj as { toDate: () => Date }).toDate();
+      if (typeof obj['seconds'] === 'number') return new Date(obj['seconds'] * 1000);
+    }
     if (typeof ts === 'string' || typeof ts === 'number') {
       const d = new Date(ts);
       return isNaN(d.getTime()) ? undefined : d;
@@ -174,9 +177,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         setProfileLoading(true);
         const profile = await fetchProfile(firebaseUser);
+        // Check Custom Claims for admin status first (preferred, no extra read).
+        // Falls back to profile.role for users created before Custom Claims migration.
+        const tokenResult = await firebaseUser.getIdTokenResult();
+        const hasAdminClaim = tokenResult.claims['admin'] === true;
         if (profile) {
           setUserProfile(profile);
-          setIsAdmin(profile.role === 'admin');
+          setIsAdmin(hasAdminClaim || profile.role === 'admin');
           setUserName(profile.name);
         }
         setProfileLoading(false);
@@ -360,10 +367,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async (): Promise<void> => {
     if (!user) return;
     setProfileLoading(true);
+    // Force-refresh token to pick up any new Custom Claims (e.g., after setAdminClaim)
+    const tokenResult = await user.getIdTokenResult(true);
+    const hasAdminClaim = tokenResult.claims['admin'] === true;
     const profile = await fetchProfile(user);
     if (profile) {
       setUserProfile(profile);
-      setIsAdmin(profile.role === 'admin');
+      setIsAdmin(hasAdminClaim || profile.role === 'admin');
       setUserName(profile.name);
     }
     setProfileLoading(false);
@@ -397,6 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 // ──────────────────────────────────────────────────────────────
 // Hook
 // ──────────────────────────────────────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
