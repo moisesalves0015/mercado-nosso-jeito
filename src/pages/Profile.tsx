@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
@@ -172,12 +172,12 @@ export const Profile: React.FC = () => {
   // Logout modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  useEffect(() => {
-    if (userProfile) {
-      setEditName(userProfile.name || '');
-      setEditTelefone(userProfile.telefone || '');
-    }
-  }, [userProfile]);
+  const [prevProfile, setPrevProfile] = useState<unknown>(null);
+  if (userProfile !== prevProfile) {
+    setPrevProfile(userProfile);
+    setEditName(userProfile?.name || '');
+    setEditTelefone(userProfile?.telefone || '');
+  }
 
   // ── Photo ────────────────────────────────────────────────
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,22 +245,23 @@ export const Profile: React.FC = () => {
   const avatarUrl = photoPreview || userProfile?.foto || user?.photoURL || '';
   const initials = (userProfile?.name || user?.displayName || 'U')
     .split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
-  const toDateObj = (ts: any): Date | null => {
+  const toDateObj = (ts: unknown): Date | null => {
     if (!ts) return null;
     if (ts instanceof Date) return ts;
-    if (typeof ts.toDate === 'function') return ts.toDate();
-    if (typeof ts.seconds === 'number') return new Date(ts.seconds * 1000);
+    const anyTs = ts as { toDate?: () => Date; seconds?: number };
+    if (typeof anyTs.toDate === 'function') return anyTs.toDate();
+    if (typeof anyTs.seconds === 'number') return new Date(anyTs.seconds * 1000);
     if (typeof ts === 'string' || typeof ts === 'number') {
       const d = new Date(ts);
       return isNaN(d.getTime()) ? null : d;
     }
     return null;
   };
-  const fmtDate = (d?: any) => {
+  const fmtDate = (d?: unknown) => {
     const dateObj = toDateObj(d);
     return dateObj ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
   };
-  const fmtTime = (d?: any) => {
+  const fmtTime = (d?: unknown) => {
     const dateObj = toDateObj(d);
     return dateObj ? dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' às ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
   };

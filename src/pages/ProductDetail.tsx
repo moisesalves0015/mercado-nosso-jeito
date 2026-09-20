@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, ShoppingCart, RefreshCw } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
+import type { Product } from '../data/defaultProducts';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DetailProduct = any;
 
 interface ProductMock {
   id: string;
@@ -353,7 +357,7 @@ export const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [productId]);
 
-  const [allProducts, setAllProducts] = useState<any[]>(() => {
+  const [allProducts, setAllProducts] = useState<DetailProduct[]>(() => {
     const stored = localStorage.getItem('app-products');
     return stored ? JSON.parse(stored) : Object.values(PRODUCTS_MOCK);
   });
@@ -362,7 +366,7 @@ export const ProductDetail = () => {
     const stored = localStorage.getItem('app-products');
     if (stored) {
       const list = JSON.parse(stored);
-      const found = list.find((p: any) => p.id === productId);
+      const found = list.find((p: Product) => p.id === productId);
       if (found) {
         const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
         return {
@@ -380,7 +384,7 @@ export const ProductDetail = () => {
     return (productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g'];
   };
 
-  const [product, setProduct] = useState<any>(getProductInitial);
+  const [product, setProduct] = useState<DetailProduct | null>(getProductInitial);
 
   useEffect(() => {
     const loadProduct = () => {
@@ -388,7 +392,7 @@ export const ProductDetail = () => {
       if (stored) {
         const list = JSON.parse(stored);
         setAllProducts(list);
-        const found = list.find((p: any) => p.id === productId);
+        const found = list.find((p: DetailProduct) => p.id === productId);
         if (found) {
           const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
           setProduct({

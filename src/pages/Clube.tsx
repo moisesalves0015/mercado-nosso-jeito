@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { SeasonRanking } from '../components/SeasonRanking';
 import { db } from '../firebase';
-import { doc, onSnapshot, setDoc, collection, getDocs, query, where, arrayUnion } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, arrayUnion } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { performCheckinTransaction } from '../services/checkinService';
@@ -78,20 +78,40 @@ const PremiumDiamondSVG = ({ size = 24, className = '', style = {}, fill = 'none
   </svg>
 );
 
-const formatHistoryDate = (dateVal: any): string => {
+const formatHistoryDate = (dateVal: unknown): string => {
   if (!dateVal) return '';
   if (typeof dateVal === 'string') return dateVal;
   if (dateVal instanceof Date) return dateVal.toLocaleString('pt-BR');
-  if (typeof dateVal.toDate === 'function') return dateVal.toDate().toLocaleString('pt-BR');
-  if (typeof dateVal.seconds === 'number') return new Date(dateVal.seconds * 1000).toLocaleString('pt-BR');
+  const anyVal = dateVal as { toDate?: () => Date; seconds?: number };
+  if (typeof anyVal.toDate === 'function') return anyVal.toDate!().toLocaleString('pt-BR');
+  if (typeof anyVal.seconds === 'number') return new Date(anyVal.seconds * 1000).toLocaleString('pt-BR');
   return String(dateVal);
 };
+
+interface ReferredUser {
+  id: string;
+  name?: string;
+  firstOrderPlaced?: boolean;
+  [key: string]: unknown;
+}
 
 export const Clube = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [randomDiamonds] = useState(() => {
+    return [...Array(35)].map((_, i) => ({
+      id: i,
+      size: Math.random() * 26 + 18,
+      left: `${Math.random() * 96 + 2}%`,
+      delay: `${Math.random() * 3.5}s`,
+      duration: `${Math.random() * 2.5 + 1.5}s`,
+      color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF',
+      fill: i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'
+    }));
+  });
+
   const [coins, setCoins] = useState<number>(0);
 
   const [popBadge, setPopBadge] = useState<boolean>(false);
@@ -122,7 +142,7 @@ export const Clube = () => {
   const [sponsorAds, setSponsorAds] = useState<SponsorAd[]>([]);
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [profileMissions, setProfileMissions] = useState<{ order: boolean; refer: boolean; combo: boolean }>({ order: false, refer: false, combo: false });
-  const [referredUsers, setReferredUsers] = useState<any[]>([]);
+  const [referredUsers, setReferredUsers] = useState<ReferredUser[]>([]);
 
   const { orders } = useOrders(user?.uid || null);
   const { cartItems } = useCart();
@@ -132,7 +152,7 @@ export const Clube = () => {
     if (!user) return;
     const qRefer = query(collection(db, 'users'), where('referredBy', '==', user.uid));
     const unsubRefer = onSnapshot(qRefer, snap => {
-      setReferredUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+      setReferredUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReferredUser)));
     });
     return () => unsubRefer();
   }, [user]);
@@ -140,10 +160,10 @@ export const Clube = () => {
   // Fetch dynamic configurations from Admin Collections
   useEffect(() => {
     const unsub2 = onSnapshot(collection(db, 'premium_offers'), snap => {
-      setSponsorAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+      setSponsorAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as SponsorAd)));
     });
     const unsub3 = onSnapshot(collection(db, 'diamond_rewards'), snap => {
-      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() } as RewardItem)));
     });
     return () => { unsub2(); unsub3(); };
   }, []);
@@ -151,6 +171,7 @@ export const Clube = () => {
   // Firebase Connection and Initialization
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
@@ -234,8 +255,8 @@ export const Clube = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const completedReferralsCount = referredUsers.filter((u: any) => u.firstOrderPlaced).length;
-  const hasDeliveredOrder = orders.some((o: any) => o.status === 'delivered');
+  const completedReferralsCount = referredUsers.filter((u) => Boolean(u.firstOrderPlaced)).length;
+  const hasDeliveredOrder = orders.some((o) => o.status === 'delivered');
 
   const missions: Mission[] = [
     { 
@@ -339,7 +360,7 @@ export const Clube = () => {
 
   // Timer for simulated sponsored ad video play
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isAdPlaying && adTimer > 0) {
       interval = setInterval(() => {
         setAdTimer((prev) => prev - 1);
@@ -377,35 +398,27 @@ export const Clube = () => {
     }
   };
 
-  // Kept for backward-compat of completedAds marking
   const updateFirebaseDoc = updateFirebaseDocNonFinancial;
 
-  const handleEarnCoins = async (amount: number, description: string) => {
-    // This path is kept for ad rewards (non-financial for now).
-    // TODO P1: migrate to a backend `claimAdReward` function with idempotency.
-    // For now, optimistic UI update; backend validation pending.
-    const startCoins = coins;
-    const targetCoins = startCoins + amount;
-    let tempCoins = startCoins;
-    
-    setPopBadge(true);
-    
-    const durationMs = 2400;
-    const stepTimeMs = 60;
-    const totalSteps = durationMs / stepTimeMs;
-    const incrementAmount = Math.max(1, Math.round(amount / totalSteps));
-    
-    const counterInterval = setInterval(() => {
-      tempCoins += incrementAmount;
-      if (tempCoins >= targetCoins) {
-        tempCoins = targetCoins;
-        clearInterval(counterInterval);
-        setPopBadge(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleEarnCoins = async (_amount: number, _desc: string) => {
+    if (!user) return;
+    try {
+      const functions = getFunctions();
+      const claimAdReward = httpsCallable(functions, 'claimAdReward');
+      const idempotencyKey = crypto.randomUUID();
+      
+      const res = await claimAdReward({ idempotencyKey }) as { data: { success: boolean, newBalance?: number } };
+      
+      if (res.data.success && res.data.newBalance !== undefined) {
+        setPopBadge(true);
+        setTimeout(() => setPopBadge(false), 2400);
+        setCoins(res.data.newBalance);
       }
-      setCoins(tempCoins);
-    }, stepTimeMs);
-
-    console.log(`[AD REWARD] Pending backend validation: +${amount} for "${description}"`);
+    } catch (e) {
+      console.error('Error claiming ad reward', e);
+      alert('Houve um erro ao creditar sua recompensa. Tente novamente mais tarde.');
+    }
   };
 
   const handleCheckin = async () => {
@@ -425,9 +438,9 @@ export const Clube = () => {
           description: `Check-in Diário (Dia ${result.currentDay})`
         });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      alert(e.message || "Erro ao fazer check-in.");
+      alert((e as Error).message || "Erro ao fazer check-in.");
       setCheckedIn(false); // unlock if failed
     }
   };
@@ -460,8 +473,8 @@ export const Clube = () => {
         amountGained: result.data.reward,
         description: 'Missão: Indicar Amigo'
       });
-    } catch (e: any) {
-      const msg = e?.message || 'Erro ao completar missão de indicação.';
+    } catch (e: unknown) {
+      const msg = (e as Error)?.message || 'Erro ao completar missão de indicação.';
       if (msg.includes('already-exists') || msg.includes('já foi completada')) {
         alert('Esta missão já foi completada neste período.');
       } else if (msg.includes('failed-precondition') || msg.includes('requisitos')) {
@@ -487,8 +500,8 @@ export const Clube = () => {
         amountGained: result.data.reward,
         description: 'Missão: Fazer Pedido'
       });
-    } catch (e: any) {
-      const msg = e?.message || 'Erro ao completar missão.';
+    } catch (e: unknown) {
+      const msg = (e as Error)?.message || 'Erro ao completar missão.';
       if (msg.includes('already-exists') || msg.includes('já foi completada')) {
         alert('Esta missão já foi completada neste período.');
       } else if (msg.includes('failed-precondition') || msg.includes('requisitos')) {
@@ -505,18 +518,29 @@ export const Clube = () => {
       return;
     }
     
-    // TODO P1: migrate to backend `redeemReward` callable function.
-    // This currently writes directly to the clube profile, which is blocked by
-    // the new Firestore rules. For now, this action requires Admin SDK or a
-    // dedicated Cloud Function to process the debit.
-    // Showing success modal optimistically until the function is implemented.
-    setSuccessModal({
-      title: 'Benefício Resgatado!',
-      desc: `Parabéns! Você trocou seus diamantes por: ${reward.title}. Use o cupom abaixo no checkout.`,
-      coupon: reward.code
-    });
+    if (!user) return;
     
-    console.warn('[REWARD REDEEM] Backend function pending — debit not applied yet.');
+    try {
+      const functions = getFunctions();
+      const redeemReward = httpsCallable(functions, 'redeemReward');
+      const idempotencyKey = crypto.randomUUID();
+      
+      await redeemReward({ 
+        rewardId: reward.id, 
+        cost: reward.cost, 
+        title: reward.title, 
+        idempotencyKey 
+      });
+      
+      setSuccessModal({
+        title: 'Benefício Resgatado!',
+        desc: `Parabéns! Você trocou seus diamantes por: ${reward.title}. Use o cupom abaixo no checkout.`,
+        coupon: reward.code
+      });
+    } catch (e: unknown) {
+      console.error(e);
+      alert('Erro ao resgatar recompensa: ' + ((e as Error)?.message || 'Tente novamente'));
+    }
   };
 
   if (isLoading) {
@@ -1031,15 +1055,13 @@ export const Clube = () => {
                   <button 
                     className="clube-ad-theater-action-cta"
                     onClick={() => {
-                      let actionText = '';
                       if (activeAd.brand === 'Melitta') {
-                        actionText = 'Abrindo WhatsApp do Consultor de Café Melitta no Condomínio...';
+                        alert('Abrindo WhatsApp do Consultor de Café Melitta no Condomínio...');
                       } else if (activeAd.brand === 'Danone Grego') {
-                        actionText = 'Redirecionando para o Site Oficial da Danone Grego...';
+                        alert('Redirecionando para o Site Oficial da Danone Grego...');
                       } else {
-                        actionText = 'Resgatando Cupom de Frete Grátis Do Bem...';
+                        alert('Resgatando Cupom de Frete Grátis Do Bem...');
                       }
-                      alert(actionText);
                     }}
                   >
                     {activeAd.brand === 'Melitta' && (
@@ -1082,19 +1104,19 @@ export const Clube = () => {
           {/* FLOATING FALLING DIAMONDS CASCADE (FULL VIEWPORT BACKGROUND EFFECT) */}
           {successModal.amountGained && (
             <div className="falling-diamonds-container">
-              {[...Array(35)].map((_, i) => (
+              {randomDiamonds.map((d) => (
                 <PremiumDiamondSVG 
-                  key={i} 
+                  key={d.id} 
                   className="falling-diamond" 
-                  size={Math.random() * 26 + 18}
+                  size={d.size}
                   style={{
-                    left: `${Math.random() * 96 + 2}%`,
-                    animationDelay: `${Math.random() * 3.5}s`,
-                    animationDuration: `${Math.random() * 2.5 + 1.5}s`,
+                    left: d.left,
+                    animationDelay: d.delay,
+                    animationDuration: d.duration,
                     filter: 'drop-shadow(0 0 10px rgba(212,175,55,0.9))',
-                    color: i % 3 === 0 ? '#FFDF73' : i % 3 === 1 ? '#E7BC79' : '#FFF'
+                    color: d.color
                   }}
-                  fill={i % 2 === 0 ? (i % 4 === 0 ? '#FFDF73' : '#E7BC79') : 'none'}
+                  fill={d.fill}
                 />
               ))}
             </div>
@@ -1252,17 +1274,9 @@ export const Clube = () => {
           onClick={async () => {
             if (window.confirm('Limpar todos os diamantes, histórico e missões de TODOS os usuários para iniciar os testes do zero?')) {
               try {
-                const usersSnap = await getDocs(collection(db, 'users'));
-                for (const uDoc of usersSnap.docs) {
-                  await setDoc(doc(db, 'users', uDoc.id, 'clube', 'profile'), {
-                    diamonds: 0,
-                    current_day: 0,
-                    streak: 0,
-                    history: [],
-                    freeSpinUsed: false,
-                    missions: {}
-                  });
-                }
+                const functions = getFunctions();
+                const adminCleanAllDiamonds = httpsCallable(functions, 'adminCleanAllDiamonds');
+                await adminCleanAllDiamonds();
                 alert('Dados limpos com sucesso para TODOS os usuários! A página será recarregada.');
                 window.location.reload();
               } catch (e) {

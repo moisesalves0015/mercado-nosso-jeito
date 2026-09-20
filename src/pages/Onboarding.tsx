@@ -74,22 +74,32 @@ export const Onboarding: React.FC = () => {
   }, [userProfile, navigate]);
 
   useEffect(() => {
-    const parseCondosData = (data: any): { name: string; fee: number }[] => {
-      if (!data) return [];
-      if (Array.isArray(data.condosList) && data.condosList.length > 0) {
-        return data.condosList.map((c: any) => ({
-          name: typeof c === 'string' ? c.trim() : (c.name || '').trim(),
-          fee: Number(c.fee) || 0
-        })).filter((c: any) => c.name);
+    const parseCondosData = (data: unknown): { name: string; fee: number }[] => {
+      if (!data || typeof data !== 'object') return [];
+      const obj = data as Record<string, unknown>;
+
+      if (Array.isArray(obj.condosList) && obj.condosList.length > 0) {
+        return obj.condosList.map((c: unknown) => {
+          if (typeof c === 'string') return { name: c.trim(), fee: 0 };
+          const item = c as Record<string, unknown>;
+          return {
+            name: String(item.name || '').trim(),
+            fee: Number(item.fee) || 0
+          };
+        }).filter((c: { name: string; fee: number }) => c.name);
       }
-      if (Array.isArray(data.condos) && data.condos.length > 0) {
-        return data.condos.map((c: any) => ({
-          name: typeof c === 'string' ? c.trim() : (c.name || '').trim(),
-          fee: Number(c.fee) || 0
-        })).filter((c: any) => c.name);
+      if (Array.isArray(obj.condos) && obj.condos.length > 0) {
+        return obj.condos.map((c: unknown) => {
+          if (typeof c === 'string') return { name: c.trim(), fee: 0 };
+          const item = c as Record<string, unknown>;
+          return {
+            name: String(item.name || '').trim(),
+            fee: Number(item.fee) || 0
+          };
+        }).filter((c: { name: string; fee: number }) => c.name);
       }
-      if (data.condos && typeof data.condos === 'object') {
-        return Object.entries(data.condos).map(([name, fee]) => ({
+      if (obj.condos && typeof obj.condos === 'object') {
+        return Object.entries(obj.condos as Record<string, unknown>).map(([name, fee]) => ({
           name: name.trim(),
           fee: Number(fee) || 0
         })).filter(c => c.name);
@@ -187,9 +197,9 @@ export const Onboarding: React.FC = () => {
 
       success('Tudo certo!', 'Seu cadastro foi concluído com sucesso.');
       navigate('/', { replace: true });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      error('Erro ao salvar', e?.message || 'Não foi possível concluir o cadastro.');
+      error('Erro ao salvar', (e as Error)?.message || 'Não foi possível concluir o cadastro.');
     } finally {
       setSaving(false);
     }

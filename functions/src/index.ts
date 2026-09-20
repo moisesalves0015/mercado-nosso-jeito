@@ -140,14 +140,11 @@ async function grantReward(
   const profileRef = db.collection('users').doc(opts.uid).collection('clube').doc('profile');
 
   // Check idempotency before writing anything
-  const existingSnap = await db
-    .collection('diamond_transactions')
-    .where('idempotencyKey', '==', opts.idempotencyKey)
-    .limit(1)
-    .get();
+  const txnRef = db.collection('diamond_operations').doc(opts.idempotencyKey);
+  const existingSnap = await transaction.get(txnRef);
 
-  if (!existingSnap.empty) {
-    const existingTxn = existingSnap.docs[0].data();
+  if (existingSnap.exists) {
+    const existingTxn = existingSnap.data()!;
     return { newBalance: existingTxn.balanceAfter as number, alreadyProcessed: true };
   }
 
@@ -167,7 +164,6 @@ async function grantReward(
   }
 
   // Immutable ledger entry
-  const txnRef = db.collection('diamond_transactions').doc();
   transaction.set(txnRef, {
     userId: opts.uid,
     type: opts.type,
@@ -1144,7 +1140,7 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder diamantes.');
   }
 
-  const req = data as { targetUid?: unknown; amount?: unknown; reason?: unknown };
+  const req = data as { targetUid?: unknown; amount?: unknown; reason?: unknown; idempotencyKey?: unknown };
 
   if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
     throw new functions.https.HttpsError('invalid-argument', 'targetUid inválido.');
@@ -1161,11 +1157,15 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
     throw new functions.https.HttpsError('invalid-argument', 'reason inválido (1–200 caracteres).');
   }
 
+  if (typeof req.idempotencyKey !== 'string' || !req.idempotencyKey.trim()) {
+    throw new functions.https.HttpsError('invalid-argument', 'idempotencyKey inválido.');
+  }
+
   const targetUid = req.targetUid.trim();
   const amount    = req.amount as number;
   const reason    = req.reason.trim();
   const now       = new Date();
-  const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${Date.now()}`;
+  const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${req.idempotencyKey.trim()}`;
 
   const result = await db.runTransaction(async (transaction) => {
     return grantReward(transaction, {
@@ -1423,5 +1423,131 @@ export const validateCoupon = functions.https.onCall(async (data, context) => {
     discountValue: coupon.discountValue,
     minPurchase: coupon.minPurchase,
   };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// claimAdReward — Callable; Grants diamonds for watching an ad securely
+// ─────────────────────────────────────────────────────────────────────────────
+export const claimAdReward = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+  
+  const req = data as { idempotencyKey?: unknown };
+  if (typeof req.idempotencyKey !== 'string' || !req.idempotencyKey.trim()) {
+    throw new functions.https.HttpsError('invalid-argument', 'idempotencyKey inválido.');
+  }
+
+  const uid = context.auth.uid;
+  const key = req.idempotencyKey.trim();
+  const idempotencyKey = `ad-reward:${uid}:${key}`;
+  const now = new Date();
+  
+  const result = await db.runTransaction(async (transaction) => {
+    return grantReward(transaction, {
+      uid,
+      type: 'MISSION_REWARD',
+      amount: 5,
+      sourceId: 'ad',
+      idempotencyKey,
+      metadata: { action: 'watched_ad' },
+      historyEntry: {
+        desc: 'Recompensa por vídeo',
+        date: `Hoje, ${formatTime(now)}`,
+        value: '+5',
+        isPlus: true,
+      },
+    });
+  });
+
+  return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// redeemReward — Callable; Spends diamonds to get a reward/coupon
+// ─────────────────────────────────────────────────────────────────────────────
+export const redeemReward = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const req = data as { rewardId?: unknown; cost?: unknown; idempotencyKey?: unknown; title?: unknown };
+  if (typeof req.rewardId !== 'string' || typeof req.cost !== 'number' || typeof req.idempotencyKey !== 'string' || typeof req.title !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Parâmetros inválidos.');
+  }
+
+  const uid = context.auth.uid;
+  const cost = req.cost;
+  const title = req.title;
+  const idempotencyKey = `redeem:${uid}:${req.idempotencyKey.trim()}`;
+  const now = new Date();
+
+  const result = await db.runTransaction(async (transaction) => {
+    // We pass negative amount for redemption
+    return grantReward(transaction, {
+      uid,
+      type: 'MISSION_REWARD', // Using mission reward as general club op
+      amount: -cost,
+      sourceId: req.rewardId,
+      idempotencyKey,
+      metadata: { action: 'redeem_reward', rewardId: req.rewardId },
+      historyEntry: {
+        desc: `Resgate: ${title}`,
+        date: `Hoje, ${formatTime(now)}`,
+        value: `-${cost}`,
+        isPlus: false,
+      },
+    });
+  });
+
+  return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminCleanAllDiamonds — Callable; Cleans all diamond data securely
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminCleanAllDiamonds = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  if (!hasRoleAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem limpar os dados.');
+  }
+
+  const usersSnap = await db.collection('users').get();
+  
+  // Create a massive batch or sequential updates. Sequential is safer if many users.
+  const batch = db.batch();
+  let count = 0;
+
+  for (const userDoc of usersSnap.docs) {
+    const profileRef = userDoc.ref.collection('clube').doc('profile');
+    batch.update(profileRef, {
+      diamonds: 0,
+      history: [],
+      missions: {
+        order: false,
+        refer: false,
+        combo: false
+      },
+      streak: 0,
+      current_day: 0,
+      completedAds: []
+    });
+    count++;
+    if (count % 400 === 0) {
+      await batch.commit();
+    }
+  }
+
+  if (count % 400 !== 0) {
+    await batch.commit();
+  }
+
+  functions.logger.info('adminCleanAllDiamonds executed', { adminUid: context.auth.uid, usersCleared: count });
+  return { success: true, usersCleared: count };
 });
 

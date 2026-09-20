@@ -31,12 +31,12 @@ export const Padaria = () => {
         // Check for missing default products and add them
         defaultProducts.forEach(defP => {
           if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP as any);
+            allProds.push(defP as Product);
             updated = true;
           }
         });
       } else {
-        allProds = defaultProducts as any[];
+        allProds = defaultProducts as Product[];
         updated = true;
       }
 
@@ -65,7 +65,7 @@ export const Padaria = () => {
         localStorage.setItem('app-products', JSON.stringify(allProds));
       }
 
-      setPadariaProds(allProds.filter(p => p.category === 'Padaria') as any[]);
+      setPadariaProds(allProds.filter(p => p.category === 'Padaria') as Product[]);
     };
 
     loadProducts();

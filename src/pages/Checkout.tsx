@@ -131,6 +131,7 @@ export function Checkout() {
 
   useEffect(() => {
     if (deliveryMethod === 'lobby' && paymentMethod === 'on_delivery') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentMethod('pix');
     }
   }, [deliveryMethod, paymentMethod]);
@@ -179,7 +180,7 @@ export function Checkout() {
         setCouponApplied(false);
         toastError('Cupom inválido', res.data.error || 'Não foi possível aplicar o cupom.');
       }
-    } catch (e) {
+    } catch {
       setCouponApplied(false);
       toastError('Erro', 'Ocorreu um erro ao validar o cupom.');
     } finally {

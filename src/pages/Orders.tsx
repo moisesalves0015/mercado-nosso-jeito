@@ -389,11 +389,12 @@ export const Orders: React.FC = () => {
   const [sort, setSort] = useState<'recent' | 'oldest' | 'highest'>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
+  const [now] = useState(() => Date.now());
   // Highlight orders placed in the last 5 min
   const highlightIds = useMemo(() => {
-    const cut = Date.now() - 5 * 60 * 1000;
+    const cut = now - 5 * 60 * 1000;
     return new Set(orders.filter((o) => o.createdAt.getTime() > cut).map((o) => o.id));
-  }, [orders]);
+  }, [orders, now]);
 
   // Status counts for chips
   const counts = useMemo(() => {

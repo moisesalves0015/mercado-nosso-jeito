@@ -89,6 +89,15 @@ const periodProducts: Record<Period, Product[]> = {
   ],
 };
 
+const getInitialPeriod = (): Period => {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 14) return 'lunch';
+  if (hour >= 14 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 24) return 'night';
+  return 'dawn';
+};
+
 export const Home = () => {
   const navigate = useNavigate();
   const [searchVal, setSearchVal] = useState('');
@@ -96,7 +105,7 @@ export const Home = () => {
   const [bebidas, setBebidas] = useState<Product[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [activePeriod, setActivePeriod] = useState<Period>('morning');
+  const [activePeriod, setActivePeriod] = useState<Period>(getInitialPeriod);
   const homeConfig = useHomeConfig();
   const { condoFavorites } = useCommunityPresence();
 
@@ -204,20 +213,7 @@ export const Home = () => {
     }
   };
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) {
-      setActivePeriod('morning');
-    } else if (hour >= 12 && hour < 14) {
-      setActivePeriod('lunch');
-    } else if (hour >= 14 && hour < 18) {
-      setActivePeriod('afternoon');
-    } else if (hour >= 18 && hour < 24) {
-      setActivePeriod('night');
-    } else {
-      setActivePeriod('dawn');
-    }
-  }, []);
+  // Period initialization handled by useState initializer
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);

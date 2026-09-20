@@ -31,12 +31,12 @@ export const Promotions = () => {
         // Check for missing default products and add them
         defaultProducts.forEach(defP => {
           if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP as any);
+            allProds.push(defP as Product);
             updated = true;
           }
         });
       } else {
-        allProds = defaultProducts as any[];
+        allProds = defaultProducts as Product[];
         updated = true;
       }
 
@@ -69,7 +69,7 @@ export const Promotions = () => {
       const filtered = allProds.filter(
         p => p.category === 'Promoções' || p.promoActive === true
       );
-      setPromoProds(filtered as any[]);
+      setPromoProds(filtered as Product[]);
     };
 
     loadProducts();

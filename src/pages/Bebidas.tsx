@@ -100,7 +100,7 @@ export const Bebidas = () => {
   }, [iceProducts.length]);
 
   // Generate 12 snow particles with randomized physics
-  const snowParticles = Array.from({ length: 12 }).map((_, i) => {
+  const [snowParticles] = useState(() => Array.from({ length: 12 }).map((_, i) => {
     const left = Math.random() * 100;
     const delay = Math.random() * 5;
     const duration = 4 + Math.random() * 4;
@@ -121,7 +121,7 @@ export const Bebidas = () => {
         ❄
       </span>
     );
-  });
+  }));
 
   return (
     <main className="app bebidas-page" style={{ paddingTop: 0 }}>

@@ -132,7 +132,8 @@ const CouponCard: React.FC<{ coupon: Coupon; onCopy: (code: string) => void }> =
   const statusCfg = STATUS_CFG[coupon.status];
   const available = coupon.status === 'available';
   const expiry = fmtExpiry(coupon.expiresAt);
-  const expiringUrgent = coupon.expiresAt && (coupon.expiresAt.getTime() - Date.now()) < 3 * 86400000 && available;
+  const [now] = useState(() => Date.now());
+  const expiringUrgent = coupon.expiresAt && (coupon.expiresAt.getTime() - now) < 3 * 86400000 && available;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(coupon.code).catch(() => {});
