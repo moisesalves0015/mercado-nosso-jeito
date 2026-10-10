@@ -232,6 +232,16 @@ export const Admin: React.FC = () => {
   const [newCondoName, setNewCondoName] = useState('');
   const [newCondoFee, setNewCondoFee] = useState('0');
 
+  // ── Store & Pix Config ──
+  const [storeConfig, setStoreConfig] = useState({
+    pixKey: '',
+    pixName: '',
+    supportPhone: '',
+    storeHours: ''
+  });
+  const [loadingStoreConfig, setLoadingStoreConfig] = useState(false);
+  const [savingStoreConfig, setSavingStoreConfig] = useState(false);
+
   // ─── Load from Firestore ───────────────────────────────────────────────
   useEffect(() => {
     const unsubP = onSnapshot(collection(db, 'products'), async (snap) => {
@@ -391,10 +401,45 @@ export const Admin: React.FC = () => {
     }
   };
 
+  const fetchStoreConfig = async () => {
+    setLoadingStoreConfig(true);
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'admin'));
+      if (snap.exists()) {
+        const data = snap.data();
+        setStoreConfig({
+          pixKey: data.pixKey || '',
+          pixName: data.pixName || '',
+          supportPhone: data.supportPhone || '',
+          storeHours: data.storeHours || ''
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStoreConfig(false);
+    }
+  };
+
+  const handleSaveStoreConfig = async () => {
+    setSavingStoreConfig(true);
+    try {
+      await setDoc(doc(db, 'settings', 'admin'), storeConfig, { merge: true });
+      alert('Configurações da loja salvas com sucesso! 🎉');
+    } catch (err: any) {
+      alert('Erro ao salvar: ' + err.message);
+    } finally {
+      setSavingStoreConfig(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'clientes') fetchClients();
     if (activeTab === 'roleta') fetchRoulette();
-    if (activeTab === 'configuracoes') fetchShippingConfig();
+    if (activeTab === 'configuracoes') {
+      fetchShippingConfig();
+      fetchStoreConfig();
+    }
   }, [activeTab]);
 
   const handleLogout = async () => { try { await logout(); navigate('/login'); } catch (e) { console.error(e); } };
@@ -1019,11 +1064,49 @@ export const Admin: React.FC = () => {
 
         {/* ══ TAB: CONFIGURACOES ════════════════════════════════════════════ */}
         {activeTab === 'configuracoes' && (
-          <div style={sectionCard}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <h3 style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={15} color={crmTheme.primary} /> Configurações Gerais de Frete</h3>
-                <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '4px 0 0' }}>Gerencie o frete grátis e a taxa de entrega específica por condomínio.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Store & Pix Config */}
+            <div style={sectionCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}><Store size={15} color={crmTheme.primary} /> Dados da Loja e Pagamento (Pix)</h3>
+                  <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '4px 0 0' }}>Configure a chave Pix e informações de contato do app.</p>
+                </div>
+                <button onClick={handleSaveStoreConfig} disabled={savingStoreConfig || loadingStoreConfig} style={{ background: crmTheme.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 18px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}>
+                  {savingStoreConfig ? 'Salvando...' : '💾 Salvar Loja'}
+                </button>
+              </div>
+
+              {loadingStoreConfig ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: crmTheme.textMuted, fontSize: 12 }}>Carregando loja...</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                  <div>
+                    <label style={labelStyle}>Chave Pix (Aparece no Checkout)</label>
+                    <input type="text" value={storeConfig.pixKey} onChange={e => setStoreConfig({ ...storeConfig, pixKey: e.target.value })} style={inputStyle} placeholder="Ex: 123.456.789-00 ou email@pix" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Nome do Titular do Pix</label>
+                    <input type="text" value={storeConfig.pixName} onChange={e => setStoreConfig({ ...storeConfig, pixName: e.target.value })} style={inputStyle} placeholder="Ex: Mercado Nosso Jeito LTDA" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Telefone de Suporte</label>
+                    <input type="text" value={storeConfig.supportPhone} onChange={e => setStoreConfig({ ...storeConfig, supportPhone: e.target.value })} style={inputStyle} placeholder="Ex: (11) 99999-9999" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Horário de Funcionamento</label>
+                    <input type="text" value={storeConfig.storeHours} onChange={e => setStoreConfig({ ...storeConfig, storeHours: e.target.value })} style={inputStyle} placeholder="Ex: Seg a Sab, 08:00 - 20:00" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Config */}
+            <div style={sectionCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}><Truck size={15} color={crmTheme.primary} /> Configurações Gerais de Frete</h3>
+                  <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '4px 0 0' }}>Gerencie o frete grátis e a taxa de entrega específica por condomínio.</p>
               </div>
               <button onClick={handleSaveShippingConfig} disabled={savingShipping || loadingShipping} style={{ background: crmTheme.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '8px 18px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}>
                 {savingShipping ? 'Salvando...' : '💾 Salvar Configurações'}
@@ -1152,6 +1235,7 @@ export const Admin: React.FC = () => {
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
       </main>

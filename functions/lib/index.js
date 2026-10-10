@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateCoupon = exports.updateOrderStatus = exports.cancelOrder = exports.setAdminClaim = exports.adminGrantDiamonds = exports.createOrder = exports.claimMissionReward = exports.processOrderDelivered = exports.spinRoulette = exports.dailyCheckin = exports.initClubeProfile = void 0;
+exports.adminCleanAllDiamonds = exports.redeemReward = exports.claimAdReward = exports.validateCoupon = exports.updateOrderStatus = exports.cancelOrder = exports.setAdminClaim = exports.adminGrantDiamonds = exports.createOrder = exports.claimMissionReward = exports.processOrderDelivered = exports.spinRoulette = exports.dailyCheckin = exports.initClubeProfile = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
@@ -118,13 +118,10 @@ async function grantReward(transaction, opts) {
     var _a, _b, _c;
     const profileRef = db.collection('users').doc(opts.uid).collection('clube').doc('profile');
     // Check idempotency before writing anything
-    const existingSnap = await db
-        .collection('diamond_transactions')
-        .where('idempotencyKey', '==', opts.idempotencyKey)
-        .limit(1)
-        .get();
-    if (!existingSnap.empty) {
-        const existingTxn = existingSnap.docs[0].data();
+    const txnRef = db.collection('diamond_operations').doc(opts.idempotencyKey);
+    const existingSnap = await transaction.get(txnRef);
+    if (existingSnap.exists) {
+        const existingTxn = existingSnap.data();
         return { newBalance: existingTxn.balanceAfter, alreadyProcessed: true };
     }
     const profileSnap = await transaction.get(profileRef);
@@ -137,7 +134,6 @@ async function grantReward(transaction, opts) {
         throw new functions.https.HttpsError('permission-denied', 'Saldo insuficiente para realizar esta operação.');
     }
     // Immutable ledger entry
-    const txnRef = db.collection('diamond_transactions').doc();
     transaction.set(txnRef, {
         userId: opts.uid,
         type: opts.type,
@@ -653,301 +649,316 @@ async function checkIsAdminByRole(uid) {
 // ─────────────────────────────────────────────────────────────────────────────
 exports.createOrder = functions.https.onCall(async (data, context) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-    // ── 1. Authentication ──────────────────────────────────────────────────────
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
-    }
-    const uid = context.auth.uid;
-    // ── 2. Payload validation ─────────────────────────────────────────────────
-    const req = data;
-    if (typeof req.idempotencyKey !== 'string' || req.idempotencyKey.length < 8 || req.idempotencyKey.length > 128) {
-        throw new functions.https.HttpsError('invalid-argument', 'Chave de idempotência inválida (8–128 caracteres).');
-    }
-    if (!Array.isArray(req.productItems) || req.productItems.length === 0 || req.productItems.length > 50) {
-        throw new functions.https.HttpsError('invalid-argument', 'Lista de produtos inválida (1–50 itens).');
-    }
-    for (const item of req.productItems) {
-        const it = item;
-        if (typeof it.productId !== 'string' || !it.productId.trim() || it.productId.length > 128) {
-            throw new functions.https.HttpsError('invalid-argument', 'ID de produto inválido.');
+    try {
+        // ── 1. Authentication ──────────────────────────────────────────────────────
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
         }
-        if (typeof it.quantity !== 'number' ||
-            !Number.isInteger(it.quantity) ||
-            it.quantity < 1 ||
-            it.quantity > 50) {
-            throw new functions.https.HttpsError('invalid-argument', `Quantidade inválida para produto ${String(it.productId)}.`);
+        const uid = context.auth.uid;
+        // ── 2. Payload validation ─────────────────────────────────────────────────
+        const req = data;
+        if (typeof req.idempotencyKey !== 'string' || req.idempotencyKey.length < 8 || req.idempotencyKey.length > 128) {
+            throw new functions.https.HttpsError('invalid-argument', 'Chave de idempotência inválida (8–128 caracteres).');
         }
-    }
-    const rawProductItems = req.productItems;
-    const consolidated = new Map();
-    for (const item of rawProductItems) {
-        consolidated.set(item.productId, ((_a = consolidated.get(item.productId)) !== null && _a !== void 0 ? _a : 0) + item.quantity);
-    }
-    const productItems = Array.from(consolidated.entries()).map(([productId, quantity]) => ({ productId, quantity }));
-    if (typeof req.addressId !== 'string' || !req.addressId.trim() || req.addressId.length > 128) {
-        throw new functions.https.HttpsError('invalid-argument', 'ID de endereço inválido.');
-    }
-    const validDelivery = ['apartment', 'lobby'];
-    if (!validDelivery.includes(String(req.deliveryMethod))) {
-        throw new functions.https.HttpsError('invalid-argument', 'Método de entrega inválido.');
-    }
-    const validPayment = ['pix', 'credit_card', 'on_delivery'];
-    if (!validPayment.includes(String(req.paymentMethod))) {
-        throw new functions.https.HttpsError('invalid-argument', 'Método de pagamento inválido.');
-    }
-    if (req.couponCode !== undefined) {
-        if (typeof req.couponCode !== 'string' || req.couponCode.length > 50) {
-            throw new functions.https.HttpsError('invalid-argument', 'Código de cupom inválido.');
+        if (!Array.isArray(req.productItems) || req.productItems.length === 0 || req.productItems.length > 50) {
+            throw new functions.https.HttpsError('invalid-argument', 'Lista de produtos inválida (1–50 itens).');
         }
-    }
-    if (req.notes !== undefined) {
-        if (typeof req.notes !== 'string' || req.notes.length > 500) {
-            throw new functions.https.HttpsError('invalid-argument', 'Observações devem ter no máximo 500 caracteres.');
+        for (const item of req.productItems) {
+            const it = item;
+            if (typeof it.productId !== 'string' || !it.productId.trim() || it.productId.length > 128) {
+                throw new functions.https.HttpsError('invalid-argument', 'ID de produto inválido.');
+            }
+            if (typeof it.quantity !== 'number' ||
+                !Number.isInteger(it.quantity) ||
+                it.quantity < 1 ||
+                it.quantity > 50) {
+                throw new functions.https.HttpsError('invalid-argument', `Quantidade inválida para produto ${String(it.productId)}.`);
+            }
         }
-    }
-    const addressId = String(req.addressId);
-    const deliveryMethod = req.deliveryMethod;
-    const paymentMethod = req.paymentMethod;
-    const couponCode = req.couponCode ? String(req.couponCode).trim().toUpperCase() : undefined;
-    const notes = req.notes ? String(req.notes).trim() : undefined;
-    const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
-    // ── 3. Idempotency check ──────────────────────────────────────────────────
-    // Use a deterministic document for idempotency to avoid race conditions.
-    const idempotencyRef = db.collection('users').doc(uid).collection('order_requests').doc(String(req.idempotencyKey));
-    // We'll perform the idempotency check and creation inside the main transaction.
-    // However, we pre-check outside to fail fast if it's already there.
-    const existingReqSnap = await idempotencyRef.get();
-    if (existingReqSnap.exists) {
-        const existingReq = existingReqSnap.data();
-        functions.logger.info('createOrder: idempotent return (pre-check)', { orderId: existingReq === null || existingReq === void 0 ? void 0 : existingReq.orderId, uid });
-        if (!existingReq || !existingReq.orderId) {
-            throw new functions.https.HttpsError('aborted', 'Requisição anterior ainda em processamento.');
+        const rawProductItems = req.productItems;
+        const consolidated = new Map();
+        for (const item of rawProductItems) {
+            consolidated.set(item.productId, ((_a = consolidated.get(item.productId)) !== null && _a !== void 0 ? _a : 0) + item.quantity);
         }
-        // Fetch the actual order to return
-        const orderSnap = await db.collection('orders').doc(existingReq.orderId).get();
-        if (orderSnap.exists) {
-            const d = orderSnap.data();
+        const productItems = Array.from(consolidated.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+        if (typeof req.addressId !== 'string' || !req.addressId.trim() || req.addressId.length > 128) {
+            throw new functions.https.HttpsError('invalid-argument', 'ID de endereço inválido.');
+        }
+        const validDelivery = ['apartment', 'lobby'];
+        if (!validDelivery.includes(String(req.deliveryMethod))) {
+            throw new functions.https.HttpsError('invalid-argument', 'Método de entrega inválido.');
+        }
+        const validPayment = ['pix', 'credit_card', 'on_delivery'];
+        if (!validPayment.includes(String(req.paymentMethod))) {
+            throw new functions.https.HttpsError('invalid-argument', 'Método de pagamento inválido.');
+        }
+        if (req.couponCode) {
+            if (typeof req.couponCode !== 'string' || req.couponCode.trim().length === 0 || req.couponCode.length > 50) {
+                throw new functions.https.HttpsError('invalid-argument', 'Código de cupom inválido.');
+            }
+        }
+        if (req.notes) {
+            if (typeof req.notes !== 'string' || req.notes.length > 500) {
+                throw new functions.https.HttpsError('invalid-argument', 'Observações devem ter no máximo 500 caracteres.');
+            }
+        }
+        const addressId = String(req.addressId);
+        const deliveryMethod = req.deliveryMethod;
+        const paymentMethod = req.paymentMethod;
+        const couponCode = req.couponCode ? String(req.couponCode).trim().toUpperCase() : undefined;
+        const notes = req.notes ? String(req.notes).trim() : undefined;
+        const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
+        // ── 3. Idempotency check ──────────────────────────────────────────────────
+        // Use a deterministic document for idempotency to avoid race conditions.
+        const idempotencyRef = db.collection('users').doc(uid).collection('order_requests').doc(String(req.idempotencyKey));
+        // We'll perform the idempotency check and creation inside the main transaction.
+        // However, we pre-check outside to fail fast if it's already there.
+        const existingReqSnap = await idempotencyRef.get();
+        if (existingReqSnap.exists) {
+            const existingReq = existingReqSnap.data();
+            functions.logger.info('createOrder: idempotent return (pre-check)', { orderId: existingReq === null || existingReq === void 0 ? void 0 : existingReq.orderId, uid });
+            if (!existingReq || !existingReq.orderId) {
+                throw new functions.https.HttpsError('aborted', 'Requisição anterior ainda em processamento.');
+            }
+            // Fetch the actual order to return
+            const orderSnap = await db.collection('orders').doc(existingReq.orderId).get();
+            if (orderSnap.exists) {
+                const d = orderSnap.data();
+                return {
+                    orderId: orderSnap.id,
+                    orderNumber: String((_b = d['orderNumber']) !== null && _b !== void 0 ? _b : ''),
+                    total: Number((_c = d['total']) !== null && _c !== void 0 ? _c : 0),
+                    subtotal: Number((_d = d['subtotal']) !== null && _d !== void 0 ? _d : 0),
+                    deliveryFee: Number((_e = d['deliveryFee']) !== null && _e !== void 0 ? _e : 0),
+                    discount: Number((_f = d['discount']) !== null && _f !== void 0 ? _f : 0),
+                    couponApplied: !!d['coupon'],
+                    status: 'pending',
+                };
+            }
+        }
+        // ── 4. Load and validate address (must belong to this user) ───────────────
+        const addressRef = db.collection('users').doc(uid).collection('addresses').doc(addressId);
+        const addressSnap = await addressRef.get();
+        if (!addressSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Endereço não encontrado.');
+        }
+        const ad = addressSnap.data();
+        const address = {
+            street: String((_g = ad['street']) !== null && _g !== void 0 ? _g : ''),
+            number: String((_h = ad['number']) !== null && _h !== void 0 ? _h : ''),
+            complement: ad['complement'] ? String(ad['complement']) : null,
+            neighborhood: String((_j = ad['neighborhood']) !== null && _j !== void 0 ? _j : ''),
+            city: String((_k = ad['city']) !== null && _k !== void 0 ? _k : ''),
+            state: String((_l = ad['state']) !== null && _l !== void 0 ? _l : ''),
+            zipCode: String((_m = ad['zipCode']) !== null && _m !== void 0 ? _m : ''),
+            label: ad['label'] ? String(ad['label']) : null,
+        };
+        // ── 5. Load shipping config from Firestore ────────────────────────────────
+        let shippingThreshold = 60;
+        let baseShippingFee = 5;
+        let condos = {};
+        try {
+            const shippingSnap = await db.collection('settings').doc('shipping').get();
+            if (shippingSnap.exists) {
+                const sd = shippingSnap.data();
+                shippingThreshold = Math.max(0, Number((_o = sd['freeShippingThreshold']) !== null && _o !== void 0 ? _o : 60));
+                baseShippingFee = Math.max(0, Number((_p = sd['baseShippingFee']) !== null && _p !== void 0 ? _p : 5));
+                condos = normalizeCondosServer(sd['condos'] || sd['condosList'] || {});
+            }
+        }
+        catch (e) {
+            functions.logger.warn('createOrder: could not load shipping config, using defaults', { error: String(e) });
+        }
+        // ── 6. Transactional: validate products + stock + coupon → create order ───
+        return await db.runTransaction(async (transaction) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+            // Re-check idempotency strictly inside the transaction
+            const txnIdempSnap = await transaction.get(idempotencyRef);
+            if (txnIdempSnap.exists) {
+                throw new functions.https.HttpsError('already-exists', 'Idempotência: Pedido já foi criado ou está em processamento.');
+            }
+            // 6a. Load all product docs
+            const productRefs = productItems.map(item => db.collection('products').doc(item.productId));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+            let serverSubtotal = 0;
+            const verifiedItems = [];
+            const stockUpdates = [];
+            for (let i = 0; i < productItems.length; i++) {
+                const { productId, quantity } = productItems[i];
+                const pDoc = productDocs[i];
+                if (!pDoc.exists) {
+                    throw new functions.https.HttpsError('not-found', `Produto não encontrado: ${productId}. Atualize o carrinho e tente novamente.`);
+                }
+                const pData = pDoc.data();
+                if (pData['active'] === false) {
+                    throw new functions.https.HttpsError('failed-precondition', `O produto "${String((_a = pData['title']) !== null && _a !== void 0 ? _a : productId)}" não está mais disponível.`);
+                }
+                // Authoritative price — never trust client
+                const serverPrice = pData['promoActive'] && pData['promoPrice'] && Number(pData['promoPrice']) > 0
+                    ? Number(pData['promoPrice'])
+                    : Number((_b = pData['price']) !== null && _b !== void 0 ? _b : 0);
+                if (serverPrice <= 0) {
+                    throw new functions.https.HttpsError('failed-precondition', `Preço inválido para "${String((_c = pData['title']) !== null && _c !== void 0 ? _c : productId)}".`);
+                }
+                serverSubtotal += serverPrice * quantity;
+                verifiedItems.push({
+                    id: productId,
+                    title: String((_d = pData['title']) !== null && _d !== void 0 ? _d : ''),
+                    price: serverPrice,
+                    quantity,
+                    image: String((_e = pData['image']) !== null && _e !== void 0 ? _e : ''),
+                });
+                // Stock check
+                const currentStock = pData['stock'];
+                if (currentStock !== undefined && currentStock !== null) {
+                    if (Number(currentStock) < quantity) {
+                        throw new functions.https.HttpsError('failed-precondition', `Estoque insuficiente para "${String((_f = pData['title']) !== null && _f !== void 0 ? _f : productId)}". Disponível: ${String(currentStock)}.`);
+                    }
+                    stockUpdates.push({ ref: productRefs[i], newStock: Number(currentStock) - quantity });
+                }
+            }
+            // 6b. Validate coupon
+            let discount = 0;
+            let appliedCoupon = null;
+            if (couponCode) {
+                const couponRef = db.collection('coupons').doc(couponCode);
+                const couponSnap = await transaction.get(couponRef);
+                if (!couponSnap.exists) {
+                    throw new functions.https.HttpsError('not-found', `Cupom "${couponCode}" não encontrado.`);
+                }
+                const cd = couponSnap.data();
+                if (!cd['active']) {
+                    throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" não está ativo.`);
+                }
+                const expiresAt = cd['expiresAt'];
+                if (expiresAt && expiresAt.toDate() < new Date()) {
+                    throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" expirado.`);
+                }
+                const maxUses = cd['maxUses'] !== undefined ? Number(cd['maxUses']) : undefined;
+                const usesCount = cd['usesCount'] !== undefined ? Number(cd['usesCount']) : 0;
+                if (maxUses !== undefined && usesCount >= maxUses) {
+                    throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" atingiu o limite de usos.`);
+                }
+                const minOrder = cd['minOrderValue'] !== undefined ? Number(cd['minOrderValue']) : undefined;
+                if (minOrder !== undefined && serverSubtotal < minOrder) {
+                    throw new functions.https.HttpsError('failed-precondition', `Pedido mínimo para este cupom: R$ ${minOrder.toFixed(2)}.`);
+                }
+                const couponType = String((_g = cd['type']) !== null && _g !== void 0 ? _g : 'fixed');
+                const couponValue = Number((_h = cd['value']) !== null && _h !== void 0 ? _h : 0);
+                if (couponType === 'percentage') {
+                    discount = serverSubtotal * Math.min(Math.max(couponValue, 0), 1);
+                }
+                else {
+                    discount = Math.min(couponValue, serverSubtotal);
+                }
+                discount = Math.max(0, discount);
+                appliedCoupon = couponCode;
+                // Increment usage atomically
+                transaction.update(couponRef, {
+                    usesCount: admin.firestore.FieldValue.increment(1),
+                });
+            }
+            // 6c. Calculate delivery fee — server-side only, cannot be set by client
+            const afterDiscount = serverSubtotal - discount;
+            let deliveryFee = 0;
+            if (afterDiscount < shippingThreshold) {
+                const streetLower = address.street.toLowerCase();
+                const neighLower = address.neighborhood.toLowerCase();
+                const labelLower = ((_j = address.label) !== null && _j !== void 0 ? _j : '').toLowerCase();
+                let matchedCondo = false;
+                for (const [condoName, fee] of Object.entries(condos)) {
+                    const nl = condoName.toLowerCase();
+                    if (streetLower.includes(nl) || neighLower.includes(nl) || labelLower.includes(nl)) {
+                        deliveryFee = Math.max(0, fee);
+                        matchedCondo = true;
+                        break;
+                    }
+                }
+                if (!matchedCondo) {
+                    deliveryFee = Math.max(0, baseShippingFee);
+                }
+            }
+            // 6d. Final totals
+            const clampedDiscount = Math.min(discount, serverSubtotal);
+            const total = Math.max(0.01, serverSubtotal - clampedDiscount + deliveryFee);
+            // 6g. Create order document
+            const orderRef = db.collection('orders').doc();
+            const orderId = orderRef.id;
+            // Generate a secure, pseudo-random but clean order number based on the Firestore document ID to prevent collisions
+            const safeSuffix = orderId.slice(-6).toUpperCase();
+            const orderNumber = `MNJ-${Date.now().toString().slice(-4)}${safeSuffix}`;
+            const nowTs = admin.firestore.FieldValue.serverTimestamp();
+            const timelineNow = admin.firestore.Timestamp.now();
+            const paymentLabel = paymentMethod === 'pix' ? 'Pix'
+                : paymentMethod === 'credit_card' ? 'Cartão de Crédito'
+                    : 'Pagamento na Entrega';
+            const deliveryLabel = deliveryMethod === 'apartment'
+                ? 'Entrega no Apartamento'
+                : 'Entrega na Portaria';
+            // 6f. Apply stock updates
+            for (const upd of stockUpdates) {
+                transaction.update(upd.ref, { stock: upd.newStock });
+            }
+            // 6g. Create order document
+            // orderRef and orderId were already generated earlier (lines 1054-1055)
+            // Write idempotency document atomically
+            transaction.set(idempotencyRef, {
+                orderId,
+                createdAt: nowTs,
+                payload: Object.assign({}, req)
+            });
+            transaction.set(orderRef, {
+                uid,
+                orderNumber,
+                status: 'pending',
+                items: verifiedItems,
+                subtotal: serverSubtotal,
+                discount: clampedDiscount,
+                deliveryFee,
+                total,
+                coupon: appliedCoupon,
+                paymentMethod: paymentLabel,
+                paymentStatus: 'pending',
+                paymentDetails: null,
+                deliveryMethod: deliveryLabel,
+                address,
+                notes: notes !== null && notes !== void 0 ? notes : null,
+                idempotencyKey,
+                createdAt: nowTs,
+                updatedAt: nowTs,
+                timeline: [{
+                        status: 'pending',
+                        label: 'Pedido criado',
+                        timestamp: timelineNow,
+                        actor: 'Sistema',
+                    }],
+            });
+            functions.logger.info('createOrder: success', { orderId: orderRef.id, uid, total });
             return {
-                orderId: orderSnap.id,
-                orderNumber: String((_b = d['orderNumber']) !== null && _b !== void 0 ? _b : ''),
-                total: Number((_c = d['total']) !== null && _c !== void 0 ? _c : 0),
-                subtotal: Number((_d = d['subtotal']) !== null && _d !== void 0 ? _d : 0),
-                deliveryFee: Number((_e = d['deliveryFee']) !== null && _e !== void 0 ? _e : 0),
-                discount: Number((_f = d['discount']) !== null && _f !== void 0 ? _f : 0),
-                couponApplied: !!d['coupon'],
+                orderId: orderRef.id,
+                orderNumber,
+                total,
+                subtotal: serverSubtotal,
+                deliveryFee,
+                discount: clampedDiscount,
+                couponApplied: !!appliedCoupon,
                 status: 'pending',
             };
-        }
-    }
-    // ── 4. Load and validate address (must belong to this user) ───────────────
-    const addressRef = db.collection('users').doc(uid).collection('addresses').doc(addressId);
-    const addressSnap = await addressRef.get();
-    if (!addressSnap.exists) {
-        throw new functions.https.HttpsError('not-found', 'Endereço não encontrado.');
-    }
-    const ad = addressSnap.data();
-    const address = {
-        street: String((_g = ad['street']) !== null && _g !== void 0 ? _g : ''),
-        number: String((_h = ad['number']) !== null && _h !== void 0 ? _h : ''),
-        complement: ad['complement'] ? String(ad['complement']) : undefined,
-        neighborhood: String((_j = ad['neighborhood']) !== null && _j !== void 0 ? _j : ''),
-        city: String((_k = ad['city']) !== null && _k !== void 0 ? _k : ''),
-        state: String((_l = ad['state']) !== null && _l !== void 0 ? _l : ''),
-        zipCode: String((_m = ad['zipCode']) !== null && _m !== void 0 ? _m : ''),
-        label: ad['label'] ? String(ad['label']) : undefined,
-    };
-    // ── 5. Load shipping config from Firestore ────────────────────────────────
-    let shippingThreshold = 60;
-    let baseShippingFee = 5;
-    let condos = {};
-    try {
-        const shippingSnap = await db.collection('settings').doc('shipping').get();
-        if (shippingSnap.exists) {
-            const sd = shippingSnap.data();
-            shippingThreshold = Math.max(0, Number((_o = sd['freeShippingThreshold']) !== null && _o !== void 0 ? _o : 60));
-            baseShippingFee = Math.max(0, Number((_p = sd['baseShippingFee']) !== null && _p !== void 0 ? _p : 5));
-            condos = normalizeCondosServer(sd['condos'] || sd['condosList'] || {});
-        }
-    }
-    catch (e) {
-        functions.logger.warn('createOrder: could not load shipping config, using defaults', { error: String(e) });
-    }
-    // ── 6. Transactional: validate products + stock + coupon → create order ───
-    return await db.runTransaction(async (transaction) => {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-        // Re-check idempotency strictly inside the transaction
-        const txnIdempSnap = await transaction.get(idempotencyRef);
-        if (txnIdempSnap.exists) {
-            throw new functions.https.HttpsError('already-exists', 'Idempotência: Pedido já foi criado ou está em processamento.');
-        }
-        // 6a. Load all product docs
-        const productRefs = productItems.map(item => db.collection('products').doc(item.productId));
-        const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
-        let serverSubtotal = 0;
-        const verifiedItems = [];
-        const stockUpdates = [];
-        for (let i = 0; i < productItems.length; i++) {
-            const { productId, quantity } = productItems[i];
-            const pDoc = productDocs[i];
-            if (!pDoc.exists) {
-                throw new functions.https.HttpsError('not-found', `Produto não encontrado: ${productId}. Atualize o carrinho e tente novamente.`);
-            }
-            const pData = pDoc.data();
-            if (pData['active'] === false) {
-                throw new functions.https.HttpsError('failed-precondition', `O produto "${String((_a = pData['title']) !== null && _a !== void 0 ? _a : productId)}" não está mais disponível.`);
-            }
-            // Authoritative price — never trust client
-            const serverPrice = pData['promoActive'] && pData['promoPrice'] && Number(pData['promoPrice']) > 0
-                ? Number(pData['promoPrice'])
-                : Number((_b = pData['price']) !== null && _b !== void 0 ? _b : 0);
-            if (serverPrice <= 0) {
-                throw new functions.https.HttpsError('failed-precondition', `Preço inválido para "${String((_c = pData['title']) !== null && _c !== void 0 ? _c : productId)}".`);
-            }
-            serverSubtotal += serverPrice * quantity;
-            verifiedItems.push({
-                id: productId,
-                title: String((_d = pData['title']) !== null && _d !== void 0 ? _d : ''),
-                price: serverPrice,
-                quantity,
-                image: String((_e = pData['image']) !== null && _e !== void 0 ? _e : ''),
-            });
-            // Stock check
-            const currentStock = pData['stock'];
-            if (currentStock !== undefined && currentStock !== null) {
-                if (Number(currentStock) < quantity) {
-                    throw new functions.https.HttpsError('failed-precondition', `Estoque insuficiente para "${String((_f = pData['title']) !== null && _f !== void 0 ? _f : productId)}". Disponível: ${String(currentStock)}.`);
-                }
-                stockUpdates.push({ ref: productRefs[i], newStock: Number(currentStock) - quantity });
-            }
-        }
-        // 6b. Validate coupon
-        let discount = 0;
-        let appliedCoupon = null;
-        if (couponCode) {
-            const couponRef = db.collection('coupons').doc(couponCode);
-            const couponSnap = await transaction.get(couponRef);
-            if (!couponSnap.exists) {
-                throw new functions.https.HttpsError('not-found', `Cupom "${couponCode}" não encontrado.`);
-            }
-            const cd = couponSnap.data();
-            if (!cd['active']) {
-                throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" não está ativo.`);
-            }
-            const expiresAt = cd['expiresAt'];
-            if (expiresAt && expiresAt.toDate() < new Date()) {
-                throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" expirado.`);
-            }
-            const maxUses = cd['maxUses'] !== undefined ? Number(cd['maxUses']) : undefined;
-            const usesCount = cd['usesCount'] !== undefined ? Number(cd['usesCount']) : 0;
-            if (maxUses !== undefined && usesCount >= maxUses) {
-                throw new functions.https.HttpsError('failed-precondition', `Cupom "${couponCode}" atingiu o limite de usos.`);
-            }
-            const minOrder = cd['minOrderValue'] !== undefined ? Number(cd['minOrderValue']) : undefined;
-            if (minOrder !== undefined && serverSubtotal < minOrder) {
-                throw new functions.https.HttpsError('failed-precondition', `Pedido mínimo para este cupom: R$ ${minOrder.toFixed(2)}.`);
-            }
-            const couponType = String((_g = cd['type']) !== null && _g !== void 0 ? _g : 'fixed');
-            const couponValue = Number((_h = cd['value']) !== null && _h !== void 0 ? _h : 0);
-            if (couponType === 'percentage') {
-                discount = serverSubtotal * Math.min(Math.max(couponValue, 0), 1);
-            }
-            else {
-                discount = Math.min(couponValue, serverSubtotal);
-            }
-            discount = Math.max(0, discount);
-            appliedCoupon = couponCode;
-            // Increment usage atomically
-            transaction.update(couponRef, {
-                usesCount: admin.firestore.FieldValue.increment(1),
-            });
-        }
-        // 6c. Calculate delivery fee — server-side only, cannot be set by client
-        const afterDiscount = serverSubtotal - discount;
-        let deliveryFee = 0;
-        if (afterDiscount < shippingThreshold) {
-            const streetLower = address.street.toLowerCase();
-            const neighLower = address.neighborhood.toLowerCase();
-            const labelLower = ((_j = address.label) !== null && _j !== void 0 ? _j : '').toLowerCase();
-            let matchedCondo = false;
-            for (const [condoName, fee] of Object.entries(condos)) {
-                const nl = condoName.toLowerCase();
-                if (streetLower.includes(nl) || neighLower.includes(nl) || labelLower.includes(nl)) {
-                    deliveryFee = Math.max(0, fee);
-                    matchedCondo = true;
-                    break;
-                }
-            }
-            if (!matchedCondo) {
-                deliveryFee = Math.max(0, baseShippingFee);
-            }
-        }
-        // 6d. Final totals
-        const clampedDiscount = Math.min(discount, serverSubtotal);
-        const total = Math.max(0.01, serverSubtotal - clampedDiscount + deliveryFee);
-        // 6g. Create order document
-        const orderRef = db.collection('orders').doc();
-        const orderId = orderRef.id;
-        // Generate a secure, pseudo-random but clean order number based on the Firestore document ID to prevent collisions
-        const safeSuffix = orderId.slice(-6).toUpperCase();
-        const orderNumber = `MNJ-${Date.now().toString().slice(-4)}${safeSuffix}`;
-        const nowTs = admin.firestore.FieldValue.serverTimestamp();
-        const timelineNow = admin.firestore.Timestamp.now();
-        const paymentLabel = paymentMethod === 'pix' ? 'Pix'
-            : paymentMethod === 'credit_card' ? 'Cartão de Crédito'
-                : 'Pagamento na Entrega';
-        const deliveryLabel = deliveryMethod === 'apartment'
-            ? 'Entrega no Apartamento'
-            : 'Entrega na Portaria';
-        // 6f. Apply stock updates
-        for (const upd of stockUpdates) {
-            transaction.update(upd.ref, { stock: upd.newStock });
-        }
-        // 6g. Create order document
-        // orderRef and orderId were already generated earlier (lines 1054-1055)
-        // Write idempotency document atomically
-        transaction.set(idempotencyRef, {
-            orderId,
-            createdAt: nowTs,
-            payload: Object.assign({}, req)
         });
-        transaction.set(orderRef, {
-            uid,
-            orderNumber,
-            status: 'pending',
-            items: verifiedItems,
-            subtotal: serverSubtotal,
-            discount: clampedDiscount,
-            deliveryFee,
-            total,
-            coupon: appliedCoupon,
-            paymentMethod: paymentLabel,
-            paymentStatus: 'pending',
-            paymentDetails: null,
-            deliveryMethod: deliveryLabel,
-            address,
-            notes: notes !== null && notes !== void 0 ? notes : null,
-            idempotencyKey,
-            createdAt: nowTs,
-            updatedAt: nowTs,
-            timeline: [{
-                    status: 'pending',
-                    label: 'Pedido criado',
-                    timestamp: timelineNow,
-                    actor: 'Sistema',
-                }],
-        });
-        functions.logger.info('createOrder: success', { orderId: orderRef.id, uid, total });
-        return {
-            orderId: orderRef.id,
-            orderNumber,
-            total,
-            subtotal: serverSubtotal,
-            deliveryFee,
-            discount: clampedDiscount,
-            couponApplied: !!appliedCoupon,
-            status: 'pending',
-        };
-    });
+    }
+    catch (err) {
+        await db.collection('debug_errors').add({
+            endpoint: 'createOrder',
+            message: (err === null || err === void 0 ? void 0 : err.message) ? String(err.message) : String(err),
+            stack: (err === null || err === void 0 ? void 0 : err.stack) ? String(err.stack) : 'no stack',
+            data: data ? JSON.parse(JSON.stringify(data)) : null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        }).catch(console.error);
+        if (err instanceof functions.https.HttpsError) {
+            throw err;
+        }
+        throw new functions.https.HttpsError('internal', (err === null || err === void 0 ? void 0 : err.message) || 'Erro interno.');
+    }
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // adminGrantDiamonds — Callable; routes all admin diamond grants through ledger
@@ -975,11 +986,14 @@ exports.adminGrantDiamonds = functions.https.onCall(async (data, context) => {
     if (typeof req.reason !== 'string' || !req.reason.trim() || req.reason.length > 200) {
         throw new functions.https.HttpsError('invalid-argument', 'reason inválido (1–200 caracteres).');
     }
+    if (typeof req.idempotencyKey !== 'string' || !req.idempotencyKey.trim()) {
+        throw new functions.https.HttpsError('invalid-argument', 'idempotencyKey inválido.');
+    }
     const targetUid = req.targetUid.trim();
     const amount = req.amount;
     const reason = req.reason.trim();
     const now = new Date();
-    const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${Date.now()}`;
+    const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${req.idempotencyKey.trim()}`;
     const result = await db.runTransaction(async (transaction) => {
         return grantReward(transaction, {
             uid: targetUid,
@@ -1191,5 +1205,116 @@ exports.validateCoupon = functions.https.onCall(async (data, context) => {
         discountValue: coupon.discountValue,
         minPurchase: coupon.minPurchase,
     };
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// claimAdReward — Callable; Grants diamonds for watching an ad securely
+// ─────────────────────────────────────────────────────────────────────────────
+exports.claimAdReward = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+    }
+    const req = data;
+    if (typeof req.idempotencyKey !== 'string' || !req.idempotencyKey.trim()) {
+        throw new functions.https.HttpsError('invalid-argument', 'idempotencyKey inválido.');
+    }
+    const uid = context.auth.uid;
+    const key = req.idempotencyKey.trim();
+    const idempotencyKey = `ad-reward:${uid}:${key}`;
+    const now = new Date();
+    const result = await db.runTransaction(async (transaction) => {
+        return grantReward(transaction, {
+            uid,
+            type: 'MISSION_REWARD',
+            amount: 5,
+            sourceId: 'ad',
+            idempotencyKey,
+            metadata: { action: 'watched_ad' },
+            historyEntry: {
+                desc: 'Recompensa por vídeo',
+                date: `Hoje, ${formatTime(now)}`,
+                value: '+5',
+                isPlus: true,
+            },
+        });
+    });
+    return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// redeemReward — Callable; Spends diamonds to get a reward/coupon
+// ─────────────────────────────────────────────────────────────────────────────
+exports.redeemReward = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+    }
+    const req = data;
+    if (typeof req.rewardId !== 'string' || typeof req.cost !== 'number' || typeof req.idempotencyKey !== 'string' || typeof req.title !== 'string') {
+        throw new functions.https.HttpsError('invalid-argument', 'Parâmetros inválidos.');
+    }
+    const uid = context.auth.uid;
+    const cost = req.cost;
+    const title = req.title;
+    const rewardId = req.rewardId;
+    const idempotencyKeyStr = req.idempotencyKey;
+    const idempotencyKey = `redeem:${uid}:${idempotencyKeyStr.trim()}`;
+    const now = new Date();
+    const result = await db.runTransaction(async (transaction) => {
+        // We pass negative amount for redemption
+        return grantReward(transaction, {
+            uid,
+            type: 'MISSION_REWARD', // Using mission reward as general club op
+            amount: -cost,
+            sourceId: rewardId,
+            idempotencyKey,
+            metadata: { action: 'redeem_reward', rewardId },
+            historyEntry: {
+                desc: `Resgate: ${title}`,
+                date: `Hoje, ${formatTime(now)}`,
+                value: `-${cost}`,
+                isPlus: false,
+            },
+        });
+    });
+    return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// adminCleanAllDiamonds — Callable; Cleans all diamond data securely
+// ─────────────────────────────────────────────────────────────────────────────
+exports.adminCleanAllDiamonds = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+    }
+    const hasClaimAdmin = context.auth.token['admin'] === true;
+    const hasRoleAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+    if (!hasRoleAdmin) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem limpar os dados.');
+    }
+    const usersSnap = await db.collection('users').get();
+    // Create a massive batch or sequential updates. Sequential is safer if many users.
+    const batch = db.batch();
+    let count = 0;
+    for (const userDoc of usersSnap.docs) {
+        const profileRef = userDoc.ref.collection('clube').doc('profile');
+        batch.update(profileRef, {
+            diamonds: 0,
+            history: [],
+            missions: {
+                order: false,
+                refer: false,
+                combo: false
+            },
+            streak: 0,
+            current_day: 0,
+            completedAds: []
+        });
+        count++;
+        if (count % 400 === 0) {
+            await batch.commit();
+        }
+    }
+    if (count % 400 !== 0) {
+        await batch.commit();
+    }
+    functions.logger.info('adminCleanAllDiamonds executed', { adminUid: context.auth.uid, usersCleared: count });
+    return { success: true, usersCleared: count };
 });
 //# sourceMappingURL=index.js.map

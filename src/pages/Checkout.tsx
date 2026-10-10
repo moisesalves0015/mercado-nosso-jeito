@@ -6,6 +6,7 @@ import { createOrderViaFunction, type CreateOrderResult } from '../hooks/useOrde
 import { generatePaymentIntent, type PaymentIntentResponse } from '../services/paymentService';
 import { useToast } from '../contexts/ToastContext';
 import { useShippingConfig } from '../hooks/useShippingConfig';
+import { useAdminConfig } from '../hooks/useAdminConfig';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db, fns } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
@@ -58,7 +59,7 @@ const COMPLEMENTARY_PRODUCTS = [
  * Set VITE_PAYMENT_MODE=production in your environment to enable real payments.
  * In demo mode a visible banner is shown and paymentStatus stays 'pending'.
  */
-const PAYMENT_MODE = (import.meta.env.VITE_PAYMENT_MODE as string | undefined) ?? 'demo';
+// const PAYMENT_MODE = (import.meta.env.VITE_PAYMENT_MODE as string | undefined) ?? 'demo';
 
 export function Checkout() {
   const navigate = useNavigate();
@@ -66,6 +67,8 @@ export function Checkout() {
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
   const { config: shippingConfig } = useShippingConfig();
+  const { config: adminConfig } = useAdminConfig();
+  const isPixAvailable = !!adminConfig.pixKey;
 
   // Idempotency key: generated once per checkout session mount.
   // If the user navigates away and returns, a new key is generated.
@@ -130,11 +133,17 @@ export function Checkout() {
   }, [step, timeLeft]);
 
   useEffect(() => {
-    if (deliveryMethod === 'lobby' && paymentMethod === 'on_delivery') {
+    if (deliveryMethod === 'lobby' && paymentMethod === 'on_delivery' && isPixAvailable) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentMethod('pix');
     }
-  }, [deliveryMethod, paymentMethod]);
+  }, [deliveryMethod, paymentMethod, isPixAvailable]);
+
+  useEffect(() => {
+    if (!isPixAvailable && paymentMethod === 'pix') {
+      setPaymentMethod('on_delivery');
+    }
+  }, [isPixAvailable, paymentMethod]);
 
   // Load addresses when reaching delivery step
   useEffect(() => {
@@ -228,7 +237,7 @@ export function Checkout() {
       });
 
       let paymentRes: PaymentIntentResponse | null = null;
-      if (paymentMethod === 'pix' || paymentMethod === 'credit_card') {
+      if (paymentMethod === 'credit_card') {
         paymentRes = await generatePaymentIntent(result.orderId, result.total, paymentMethod);
         if (!paymentRes.success) {
           toastError('Erro no pagamento', paymentRes.errorMessage || 'Falha na geração do pagamento');
@@ -512,26 +521,22 @@ export function Checkout() {
 
               <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)' }}>Forma de Pagamento</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button onClick={() => setPaymentMethod('pix')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'pix' ? '2px solid #34C759' : '1px solid var(--border-primary)', background: paymentMethod === 'pix' ? 'rgba(52,199,89,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={() => isPixAvailable && setPaymentMethod('pix')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'pix' ? '2px solid #34C759' : '1px solid var(--border-primary)', background: paymentMethod === 'pix' ? 'rgba(52,199,89,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: isPixAvailable ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 10, opacity: isPixAvailable ? 1 : 0.5 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'pix' ? '#34C759' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'pix' ? '#34C759' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {paymentMethod === 'pix' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                       <span style={{ fontWeight: 'bold', fontSize: 13 }}>Pix</span>
-                      <span style={{ fontSize: 9, background: 'rgba(52,199,89,0.15)', color: '#34C759', padding: '2px 6px', borderRadius: 4, fontWeight: 'bold', textTransform: 'uppercase' }}>Recomendado</span>
+                      {isPixAvailable ? (
+                        <span style={{ fontSize: 9, background: 'rgba(52,199,89,0.15)', color: '#34C759', padding: '2px 6px', borderRadius: 4, fontWeight: 'bold', textTransform: 'uppercase' }}>Recomendado</span>
+                      ) : (
+                        <span style={{ fontSize: 9, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '2px 6px', borderRadius: 4, fontWeight: 'bold', textTransform: 'uppercase' }}>Indisponível</span>
+                      )}
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Aprovação imediata</span>
-                  </div>
-                </button>
-
-                <button onClick={() => setPaymentMethod('credit_card')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'credit_card' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'credit_card' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'credit_card' ? '#D4AF37' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'credit_card' ? '#D4AF37' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {paymentMethod === 'credit_card' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#000' }} />}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: 13 }}>Cartão de Crédito</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Parcele em até 3x sem juros</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                      {isPixAvailable ? 'Aprovação manual (10 mins)' : 'Chave não configurada no admin'}
+                    </span>
                   </div>
                 </button>
 
@@ -609,23 +614,25 @@ export function Checkout() {
                 </div>
               )}
 
-              {paymentMethod === 'pix' && !paymentData?.pixCopiaECola && (
+              {paymentMethod === 'pix' && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
                   <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 'bold' }}>Pague com Pix</h3>
-
-                  {/* Demo mode banner */}
-                  {PAYMENT_MODE === 'demo' && (
-                    <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 8, padding: '6px 10px', marginBottom: 10, fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>
-                      ⚠️ MODO DEMONSTRAÇÃO — Este QR Code é simulado e não processa pagamentos reais.
-                    </div>
-                  )}
-
-                  <div style={{ background: '#fff', padding: 12, borderRadius: 10, display: 'inline-block', marginBottom: 10 }}>
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${confirmedOrder.orderId}`} alt="QR Code Pix (simulado)" />
+                  
+                  <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: 8, textAlign: 'left', marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Chave Pix:</div>
+                    <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{adminConfig.pixKey}</div>
+                    
+                    {adminConfig.pixName && (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8, marginBottom: 4 }}>Nome do Recebedor:</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{adminConfig.pixName}</div>
+                      </>
+                    )}
                   </div>
-                  <div style={{ background: 'var(--input-bg)', padding: '8px 10px', borderRadius: 7, color: 'var(--text-primary)', fontSize: 11, fontFamily: 'monospace', wordBreak: 'break-all', textAlign: 'left' }}>
-                    00020101021126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426655440000...
-                  </div>
+                  
+                  <button onClick={() => { navigator.clipboard.writeText(adminConfig.pixKey); toastSuccess('Copiado!', 'Chave Pix copiada'); }} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', border: '1px solid #34C759', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
+                    Copiar Chave Pix
+                  </button>
                 </div>
               )}
 

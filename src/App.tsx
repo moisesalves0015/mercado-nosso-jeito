@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
+import { AgeVerificationModal } from './components/AgeVerificationModal';
 // Eager: small, always-needed pages
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -156,6 +157,8 @@ function AppContent() {
           pointerEvents: 'none'
         }} 
       />
+
+      <AgeVerificationModal />
 
       <GlobalOnboardingGuard>
         <Suspense fallback={<PageLoader />}>
