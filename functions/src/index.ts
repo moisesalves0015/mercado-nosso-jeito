@@ -809,7 +809,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Método de entrega inválido.');
     }
 
-    const validPayment = ['pix', 'credit_card', 'on_delivery'];
+    const validPayment = ['pix', 'on_delivery'];
     if (!validPayment.includes(String(req.paymentMethod))) {
       throw new functions.https.HttpsError('invalid-argument', 'Método de pagamento inválido.');
     }
@@ -828,7 +828,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
 
     const addressId = String(req.addressId);
     const deliveryMethod = req.deliveryMethod as 'apartment' | 'lobby';
-    const paymentMethod = req.paymentMethod as 'pix' | 'credit_card' | 'on_delivery';
+    const paymentMethod = req.paymentMethod as 'pix' | 'on_delivery';
     const couponCode = req.couponCode ? String(req.couponCode).trim().toUpperCase() : undefined;
     const notes = req.notes ? String(req.notes).trim() : undefined;
     const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
@@ -1083,9 +1083,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       const nowTs = admin.firestore.FieldValue.serverTimestamp();
       const timelineNow = admin.firestore.Timestamp.now();
 
-      const paymentLabel = paymentMethod === 'pix'         ? 'Pix'
-                         : paymentMethod === 'credit_card' ? 'Cartão de Crédito'
-                         : 'Pagamento na Entrega';
+      const paymentLabel = paymentMethod === 'pix' ? 'Pix' : 'Pagamento na Entrega';
 
       const deliveryLabel = deliveryMethod === 'apartment'
         ? 'Entrega no Apartamento'
