@@ -1106,6 +1106,8 @@ export const createOrder = functions.https.onCall(async (data, context) => {
         payload: { ...req }
       });
 
+      const initialPaymentStatus = paymentMethod === 'on_delivery' ? 'on_delivery' : 'awaiting_confirmation';
+
       transaction.set(orderRef, {
         uid,
         orderNumber,
@@ -1117,7 +1119,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
         total,
         coupon:        appliedCoupon,
         paymentMethod: paymentLabel,
-        paymentStatus: 'pending',
+        paymentStatus: initialPaymentStatus,
         paymentDetails: null,
         deliveryMethod: deliveryLabel,
         address,
@@ -1291,7 +1293,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const { orderId } = data as { orderId?: string };
+  const { orderId, reason } = data as { orderId?: string; reason?: string };
   if (!orderId || typeof orderId !== 'string') {
     throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
   }
@@ -1301,12 +1303,6 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
   const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(callerUid);
 
   return await db.runTransaction(async (transaction) => {
-    const idempotencyRef = db.collection('orders').doc(orderId).collection('cancellation_requests').doc('cancel_req');
-    const idempSnap = await transaction.get(idempotencyRef);
-    if (idempSnap.exists) {
-       throw new functions.https.HttpsError('already-exists', 'O pedido já está sendo cancelado.');
-    }
-
     const orderRef = db.collection('orders').doc(orderId);
     const orderSnap = await transaction.get(orderRef);
 
@@ -1320,17 +1316,33 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('permission-denied', 'Você não tem permissão para cancelar este pedido.');
     }
 
+    // Check if already cancelled
     if (orderData.status === 'cancelled') {
-      throw new functions.https.HttpsError('failed-precondition', 'Este pedido já foi cancelado.');
+      throw new functions.https.HttpsError('failed-precondition', 'Este pedido já está cancelado.');
     }
 
+    // Users can only cancel while pending or confirmed (before preparation starts)
     if (orderData.status !== 'pending' && orderData.status !== 'confirmed' && !isAdmin) {
-      throw new functions.https.HttpsError('failed-precondition', 'Não é possível cancelar um pedido em andamento.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Não é possível cancelar um pedido em preparação ou entrega. Contate o suporte.',
+      );
     }
 
-    transaction.set(idempotencyRef, { requestedAt: admin.firestore.FieldValue.serverTimestamp(), by: callerUid });
+    // Idempotency subdocument lock to ensure single stock refund even under high concurrency
+    const idempotencyRef = db.collection('orders').doc(orderId).collection('cancellation_requests').doc('cancel_req');
+    const idempSnap = await transaction.get(idempotencyRef);
+    if (idempSnap.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Cancelamento deste pedido já está em processamento.');
+    }
 
-    // Refund stock
+    transaction.set(idempotencyRef, {
+      requestedAt: admin.firestore.FieldValue.serverTimestamp(),
+      by: callerUid,
+      reason: reason || (isAdmin ? 'Cancelado pelo administrador' : 'Cancelado pelo cliente'),
+    });
+
+    // Refund stock atomically (only if not already refunded)
     const items = (orderData.items ?? []) as Array<{ id: string; quantity: number }>;
     for (const item of items) {
       const productRef = db.collection('products').doc(item.id);
@@ -1343,28 +1355,123 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
       }
     }
 
-    // Update order status
+    // Update order status, paymentStatus (if not approved/completed), and timeline
     const existingTimeline = (orderData.timeline ?? []) as unknown[];
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const cancelReason = reason ? `: ${reason}` : '';
     const newEvent = {
       status: 'cancelled',
-      label: 'Pedido Cancelado',
+      label: `Pedido Cancelado${cancelReason}`,
       timestamp: admin.firestore.Timestamp.now(),
       actor: isAdmin ? 'Administrador' : 'Cliente',
     };
 
-    transaction.update(orderRef, {
+    const updatePayload: Record<string, unknown> = {
       status: 'cancelled',
       updatedAt: nowTs,
       timeline: [...existingTimeline, newEvent],
-    });
+      cancellationReason: reason || null,
+      cancelledBy: callerUid,
+      cancelledAt: nowTs,
+    };
+
+    // If payment was awaiting_confirmation, mark as rejected/cancelled
+    if (orderData.paymentStatus === 'awaiting_confirmation') {
+      updatePayload.paymentStatus = 'rejected';
+    }
+
+    transaction.update(orderRef, updatePayload);
 
     return { success: true };
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// confirmPayment — Callable; admin only
+// Confirms payment atomically and transitions order to confirmed
+// ─────────────────────────────────────────────────────────────────────────────
+export const confirmPayment = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const hasClaimAdmin = context.auth.token['admin'] === true;
+  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  if (!isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem confirmar pagamento.');
+  }
+
+  const { orderId, paymentMethod, paymentReference, note } = data as {
+    orderId?: string;
+    paymentMethod?: string;
+    paymentReference?: string;
+    note?: string;
+  };
+
+  if (!orderId || typeof orderId !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
+  }
+
+  return await db.runTransaction(async (transaction) => {
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderSnap = await transaction.get(orderRef);
+
+    if (!orderSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Pedido não encontrado.');
+    }
+
+    const orderData = orderSnap.data()!;
+
+    if (orderData.status === 'cancelled') {
+      throw new functions.https.HttpsError('failed-precondition', 'Não é possível confirmar pagamento de um pedido cancelado.');
+    }
+
+    // Idempotency: if already approved, return success without duplicate timeline
+    if (orderData.paymentStatus === 'approved') {
+      return { success: true, message: 'Pagamento já estava aprovado.' };
+    }
+
+    const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const existingTimeline = (orderData.timeline ?? []) as unknown[];
+
+    const timelineEvent = {
+      status: 'confirmed',
+      label: `Pagamento confirmado (${paymentMethod || orderData.paymentMethod || 'Pix'})`,
+      timestamp: admin.firestore.Timestamp.now(),
+      actor: 'Administrador',
+      details: paymentReference ? `Ref: ${paymentReference}` : undefined,
+    };
+
+    const updatePayload: Record<string, unknown> = {
+      paymentStatus: 'approved',
+      paidAt: nowTs,
+      confirmedBy: context.auth!.uid,
+      paymentReference: paymentReference || null,
+      updatedAt: nowTs,
+      timeline: [...existingTimeline, timelineEvent],
+    };
+
+    if (paymentMethod) {
+      updatePayload.paymentMethod = paymentMethod;
+    }
+    if (note) {
+      updatePayload.paymentNote = note;
+    }
+
+    // If order was pending, advance to confirmed
+    if (orderData.status === 'pending') {
+      updatePayload.status = 'confirmed';
+    }
+
+    transaction.update(orderRef, updatePayload);
+
+    return { success: true, orderId };
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // updateOrderStatus — Callable; admin only
+// Advances operational status with strict business checks
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateOrderStatus = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -1377,14 +1484,14 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem atualizar o status.');
   }
 
-  const { orderId, status } = data as { orderId?: string; status?: string };
+  const { orderId, status, note } = data as { orderId?: string; status?: string; note?: string };
   if (!orderId || !status) {
     throw new functions.https.HttpsError('invalid-argument', 'orderId e status são obrigatórios.');
   }
 
   const validStatuses: Record<string, string> = {
     pending: 'Pendente',
-    confirmed: 'Aprovado',
+    confirmed: 'Confirmado',
     preparing: 'Em preparo',
     delivering: 'Saiu para Entrega',
     delivered: 'Entregue',
@@ -1392,33 +1499,82 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
   };
 
   if (!validStatuses[status]) {
-    throw new functions.https.HttpsError('invalid-argument', 'Status inválido.');
+    throw new functions.https.HttpsError('invalid-argument', `Status inválido: ${status}`);
   }
 
-  const orderRef = db.collection('orders').doc(orderId);
-  const orderSnap = await orderRef.get();
+  return await db.runTransaction(async (transaction) => {
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderSnap = await transaction.get(orderRef);
 
-  if (!orderSnap.exists) {
-    throw new functions.https.HttpsError('not-found', 'Pedido não encontrado.');
-  }
+    if (!orderSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Pedido não encontrado.');
+    }
 
-  const orderData = orderSnap.data()!;
-  const existingTimeline = (orderData.timeline ?? []) as unknown[];
-  const nowTs = admin.firestore.FieldValue.serverTimestamp();
-  const newEvent = {
-    status,
-    label: validStatuses[status],
-    timestamp: admin.firestore.Timestamp.now(),
-    actor: 'Administrador',
-  };
+    const orderData = orderSnap.data()!;
 
-  await orderRef.update({
-    status,
-    updatedAt: nowTs,
-    timeline: [...existingTimeline, newEvent],
+    if (orderData.status === 'cancelled') {
+      throw new functions.https.HttpsError('failed-precondition', 'Pedido cancelado não pode ter o status alterado.');
+    }
+
+    // Commercial condition rule:
+    // Advancing to 'preparing' or 'delivering' requires either:
+    // 1. paymentStatus === 'approved'
+    // 2. paymentStatus === 'on_delivery' (explicit payment on delivery policy)
+    if (status === 'preparing' || status === 'delivering') {
+      const pStatus = orderData.paymentStatus;
+      const isPaid = pStatus === 'approved';
+      const isOnDelivery = pStatus === 'on_delivery';
+
+      if (!isPaid && !isOnDelivery) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Não é possível avançar para preparação/entrega sem confirmação comercial de pagamento (Aprovado ou Pagamento na Entrega).',
+        );
+      }
+    }
+
+    // If setting to cancelled, delegate to stock refund logic
+    if (status === 'cancelled') {
+      // Stock refund
+      const items = (orderData.items ?? []) as Array<{ id: string; quantity: number }>;
+      for (const item of items) {
+        const productRef = db.collection('products').doc(item.id);
+        const productSnap = await transaction.get(productRef);
+        if (productSnap.exists) {
+          const pData = productSnap.data()!;
+          if (pData.stock !== undefined) {
+            transaction.update(productRef, { stock: Number(pData.stock) + item.quantity });
+          }
+        }
+      }
+    }
+
+    const existingTimeline = (orderData.timeline ?? []) as unknown[];
+    const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const newEvent = {
+      status,
+      label: validStatuses[status] + (note ? ` - ${note}` : ''),
+      timestamp: admin.firestore.Timestamp.now(),
+      actor: 'Administrador',
+    };
+
+    const updatePayload: Record<string, unknown> = {
+      status,
+      updatedAt: nowTs,
+      timeline: [...existingTimeline, newEvent],
+    };
+
+    // If delivered and was on_delivery, update payment status to approved
+    if (status === 'delivered' && orderData.paymentStatus === 'on_delivery') {
+      updatePayload.paymentStatus = 'approved';
+      updatePayload.paidAt = nowTs;
+      updatePayload.confirmedBy = context.auth!.uid;
+    }
+
+    transaction.update(orderRef, updatePayload);
+
+    return { success: true, status };
   });
-
-  return { success: true };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

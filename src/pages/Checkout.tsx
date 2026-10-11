@@ -580,31 +580,43 @@ export function Checkout() {
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 199, 89, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                 <CheckCircle size={38} color="#34C759" />
               </div>
-              <h2 style={{ color: 'var(--text-primary)', marginBottom: 5, fontWeight: 900, fontSize: 18 }}>Pedido Finalizado!</h2>
+              <h2 style={{ color: 'var(--text-primary)', marginBottom: 5, fontWeight: 900, fontSize: 18 }}>Pedido Criado com Sucesso!</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: 14, fontSize: 13 }}>
-                Seu pedido <strong>{confirmedOrder.orderNumber}</strong> foi recebido com sucesso.
-                Total confirmado: <strong>R$ {confirmedOrder.total.toFixed(2)}</strong>
+                Seu pedido <strong>{confirmedOrder.orderNumber}</strong> foi gravado no sistema.
+                Total do pedido: <strong>R$ {confirmedOrder.total.toFixed(2)}</strong>
               </p>
 
-              {/* Payment countdown */}
-              <div style={{ background: 'rgba(212,175,55,0.06)', border: '1.5px solid var(--border-gold)', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'center', boxShadow: '0 4px 20px rgba(212,175,55,0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#D4AF37', marginBottom: 7 }}>
-                  <Clock size={15} />
-                  <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aguardando Pagamento</span>
+              {/* Payment countdown or On Delivery badge */}
+              {paymentMethod === 'pix' ? (
+                <div style={{ background: 'rgba(212,175,55,0.06)', border: '1.5px solid var(--border-gold)', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'center', boxShadow: '0 4px 20px rgba(212,175,55,0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#D4AF37', marginBottom: 7 }}>
+                    <Clock size={15} />
+                    <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aguardando Pagamento & Conferência</span>
+                  </div>
+                  <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '1px', marginBottom: 8 }}>
+                    {formatTime(timeLeft)}
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                    Transfira o valor exato via Pix abaixo. Seu pedido foi registrado com status <strong>Aguardando Conferência</strong> e será preparado assim que o pagamento for validado pelo operador.
+                  </p>
                 </div>
-                <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '1px', marginBottom: 8 }}>
-                  {formatTime(timeLeft)}
+              ) : paymentMethod === 'on_delivery' ? (
+                <div style={{ background: 'rgba(59,130,246,0.06)', border: '1.5px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: '14px', marginBottom: 14, textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#3B82F6', marginBottom: 6 }}>
+                    <ShieldCheck size={16} />
+                    <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>Pagamento na Entrega</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                    Seu pedido está confirmado para cobrança no momento da entrega! Tenha em mãos seu cartão ou dinheiro ao receber o entregador.
+                  </p>
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                  Realize o pagamento em até <strong>10 minutos</strong> para garantir a reserva dos seus produtos.
-                </p>
-              </div>
+              ) : null}
 
               {paymentData?.pixCopiaECola && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
-                  <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text-primary)', textAlign: 'center' }}>Pague via Pix</h3>
+                  <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text-primary)', textAlign: 'center' }}>Pague via Pix Copia e Cola</h3>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 10 }}>
-                    Copie o código abaixo e pague no seu aplicativo bancário:
+                    Copie o código abaixo e cole no seu aplicativo bancário:
                   </div>
                   <div style={{ background: 'var(--input-bg)', padding: '10px', borderRadius: 8, wordBreak: 'break-all', fontSize: 10, color: 'var(--text-primary)', border: '1px dashed var(--border-primary)', marginBottom: 10 }}>
                     {paymentData.pixCopiaECola}
@@ -615,9 +627,9 @@ export function Checkout() {
                 </div>
               )}
 
-              {paymentMethod === 'pix' && (
+              {paymentMethod === 'pix' && adminConfig.pixKey && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
-                  <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 'bold' }}>Pague com Pix</h3>
+                  <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 'bold' }}>Dados da Chave Pix</h3>
                   
                   <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: 8, textAlign: 'left', marginBottom: 10 }}>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Chave Pix:</div>
@@ -637,10 +649,10 @@ export function Checkout() {
                 </div>
               )}
 
-              <button onClick={() => navigate('/orders')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', marginBottom: 10, fontSize: 13 }}>
-                Acompanhar Pedido
+              <button onClick={() => navigate('/orders')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: '900', cursor: 'pointer', marginBottom: 10, fontSize: 13, border: 'none' }}>
+                Acompanhar Status do Pedido
               </button>
-              <button onClick={() => navigate('/')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+              <button onClick={() => navigate('/')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
                 Voltar à Loja
               </button>
             </div>

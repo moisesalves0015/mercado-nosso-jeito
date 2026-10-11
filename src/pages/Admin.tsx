@@ -16,6 +16,13 @@ import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, on
 import { db } from '../firebase';
 import { AdminMarketing } from '../components/AdminMarketing';
 import { AdminClube } from './AdminClube';
+import {
+  type OrderStatus,
+  type OrderPaymentStatus,
+  updateOrderStatus as updateOrderStatusCallable,
+  confirmOrderPayment as confirmOrderPaymentCallable,
+  cancelOrder as cancelOrderCallable,
+} from '../hooks/useOrders';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
 interface Product {
@@ -44,9 +51,23 @@ interface Product {
 }
 interface OrderItem { id: string; title: string; price: number; quantity: number; }
 interface Order {
-  id: string; clientName: string; clientEmail: string; items: OrderItem[];
-  total: number; status: 'Pendente' | 'Aprovado' | 'Saiu para Entrega' | 'Entregue';
-  createdAt: string; address: string;
+  id: string;
+  orderNumber?: string;
+  clientName?: string;
+  clientEmail?: string;
+  items: OrderItem[];
+  total: number;
+  subtotal?: number;
+  deliveryFee?: number;
+  discount?: number;
+  status: OrderStatus;
+  paymentMethod?: string;
+  paymentStatus?: OrderPaymentStatus;
+  paymentReference?: string;
+  paidAt?: unknown;
+  confirmedBy?: string;
+  createdAt: unknown;
+  address?: unknown;
 }
 interface FirestoreClient {
   id: string; name: string; email: string; role: string;
@@ -140,11 +161,20 @@ const crmTheme = {
 };
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  'Pendente':          { color: '#d97706', bg: '#fef3c7',  border: '#fde68a',  icon: Clock },
-  'Aprovado':          { color: '#0284c7', bg: '#e0f2fe',  border: '#bae6fd',  icon: CheckCircle },
-  'Saiu para Entrega': { color: '#4f46e5', bg: '#e0e7ff', border: '#c7d2fe', icon: Truck },
-  'Entregue':          { color: '#059669', bg: '#d1fae5',  border: '#a7f3d0',  icon: CheckCircle },
+const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; border: string; icon: React.ComponentType<{ size?: number }> }> = {
+  pending:    { label: 'Pendente',          color: '#d97706', bg: '#fef3c7',  border: '#fde68a',  icon: Clock },
+  confirmed:  { label: 'Confirmado',        color: '#0284c7', bg: '#e0f2fe',  border: '#bae6fd',  icon: CheckCircle },
+  preparing:  { label: 'Em preparo',        color: '#f97316', bg: '#ffedd5',  border: '#fed7aa',  icon: Package },
+  delivering: { label: 'Saiu p/ Entrega',  color: '#4f46e5', bg: '#e0e7ff',  border: '#c7d2fe',  icon: Truck },
+  delivered:  { label: 'Entregue',          color: '#059669', bg: '#d1fae5',  border: '#a7f3d0',  icon: CheckCircle },
+  cancelled:  { label: 'Cancelado',         color: '#ef4444', bg: '#fee2e2',  border: '#fca5a5',  icon: AlertCircle },
+};
+
+const PAYMENT_CONFIG: Record<OrderPaymentStatus, { label: string; color: string; bg: string; border: string }> = {
+  awaiting_confirmation: { label: 'Aguardando Pagamento/Conferência', color: '#d97706', bg: '#fef3c7', border: '#fde68a' },
+  approved:              { label: 'Pagamento Aprovado',               color: '#059669', bg: '#d1fae5', border: '#a7f3d0' },
+  rejected:              { label: 'Pagamento Rejeitado',              color: '#ef4444', bg: '#fee2e2', border: '#fca5a5' },
+  on_delivery:           { label: 'Pagamento na Entrega',            color: '#0284c7', bg: '#e0f2fe', border: '#bae6fd' },
 };
 
 // ─── TOOLTIP ─────────────────────────────────────────────────────────────────
@@ -295,17 +325,54 @@ export const Admin: React.FC = () => {
       });
     });
 
-    const unsubO = onSnapshot(collection(db, 'orders'), async (snap) => {
-      if (snap.empty) {
-        const stored = localStorage.getItem('app-orders');
-        if (stored) {
-          const arr = JSON.parse(stored);
-          for (const o of arr) {
-            try { await setDoc(doc(db, 'orders', o.id), o); } catch (e) { console.warn(e); }
-          }
-        }
-      }
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+    const unsubO = onSnapshot(collection(db, 'orders'), (snap) => {
+      const list = snap.docs.map(d => {
+        const data = d.data() as Record<string, unknown>;
+        const rawStatus = String(data.status ?? 'pending');
+        let status: OrderStatus = 'pending';
+        if (rawStatus === 'Pendente' || rawStatus === 'pending') status = 'pending';
+        else if (rawStatus === 'Aprovado' || rawStatus === 'confirmed') status = 'confirmed';
+        else if (rawStatus === 'Em preparo' || rawStatus === 'preparing') status = 'preparing';
+        else if (rawStatus === 'Saiu para Entrega' || rawStatus === 'delivering') status = 'delivering';
+        else if (rawStatus === 'Entregue' || rawStatus === 'delivered') status = 'delivered';
+        else if (rawStatus === 'Cancelado' || rawStatus === 'cancelled') status = 'cancelled';
+
+        let paymentStatus: OrderPaymentStatus | undefined = undefined;
+        const rawP = String(data.paymentStatus ?? '');
+        if (rawP === 'awaiting_confirmation' || rawP === 'pending') paymentStatus = 'awaiting_confirmation';
+        else if (rawP === 'approved') paymentStatus = 'approved';
+        else if (rawP === 'rejected') paymentStatus = 'rejected';
+        else if (rawP === 'on_delivery') paymentStatus = 'on_delivery';
+
+        return {
+          id: d.id,
+          orderNumber: String(data.orderNumber ?? d.id),
+          clientName: String(data.clientName ?? (data.address ? `${(data.address as { street?: string }).street ?? ''}` : 'Cliente')),
+          clientEmail: data.clientEmail ? String(data.clientEmail) : undefined,
+          items: (data.items as OrderItem[]) ?? [],
+          total: Number(data.total ?? 0),
+          subtotal: Number(data.subtotal ?? 0),
+          deliveryFee: Number(data.deliveryFee ?? 0),
+          discount: Number(data.discount ?? 0),
+          status,
+          paymentMethod: data.paymentMethod ? String(data.paymentMethod) : undefined,
+          paymentStatus,
+          paymentReference: data.paymentReference ? String(data.paymentReference) : undefined,
+          paidAt: data.paidAt,
+          confirmedBy: data.confirmedBy ? String(data.confirmedBy) : undefined,
+          createdAt: data.createdAt,
+          address: data.address,
+        } as Order;
+      });
+
+      // Sort by date desc (most recent first)
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? (typeof (a.createdAt as { toMillis?: () => number }).toMillis === 'function' ? (a.createdAt as { toMillis: () => number }).toMillis() : new Date(a.createdAt as string).getTime()) : 0;
+        const timeB = b.createdAt ? (typeof (b.createdAt as { toMillis?: () => number }).toMillis === 'function' ? (b.createdAt as { toMillis: () => number }).toMillis() : new Date(b.createdAt as string).getTime()) : 0;
+        return timeB - timeA;
+      });
+
+      setOrders(list);
     });
 
     return () => { unsubP(); unsubO(); };
@@ -472,21 +539,66 @@ export const Admin: React.FC = () => {
     await updateDoc(doc(db, 'products', id), { active: !active });
   };
   
-  // Status label → semantic enum value mapping (must match OrderStatus in useOrders.ts)
-  const STATUS_LABEL_TO_ENUM: Record<Order['status'], string> = {
-    'Pendente':          'pending',
-    'Aprovado':          'confirmed',
-    'Saiu para Entrega': 'delivering',
-    'Entregue':          'delivered',
+  const [orderActionLoading, setOrderActionLoading] = useState(false);
+
+  const handleUpdateOrderStatus = async (id: string, newStatus: OrderStatus, note?: string) => {
+    setOrderActionLoading(true);
+    try {
+      await updateOrderStatusCallable(id, newStatus, note);
+      if (selectedOrder?.id === id) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+      alert(`Status atualizado para "${STATUS_CONFIG[newStatus].label}" com sucesso!`);
+    } catch (err: unknown) {
+      alert(`Erro ao atualizar status: ${(err as Error)?.message || 'Erro'}`);
+    } finally {
+      setOrderActionLoading(false);
+    }
   };
 
-  const updateOrderStatus = async (id: string, status: Order['status']) => {
-    const enumStatus = STATUS_LABEL_TO_ENUM[status] || status;
-    await updateDoc(doc(db, 'orders', id), { 
-      status: enumStatus,
-      updatedAt: new Date().toISOString(),
-    });
-    if (selectedOrder?.id === id) setSelectedOrder({ ...selectedOrder, status });
+  const handleConfirmPayment = async (order: Order) => {
+    const ref = window.prompt('Código de referência/comprovante do pagamento (opcional):', order.paymentReference || '');
+    if (ref === null) return;
+    setOrderActionLoading(true);
+    try {
+      await confirmOrderPaymentCallable({
+        orderId: order.id,
+        paymentMethod: order.paymentMethod || 'Pix',
+        paymentReference: ref.trim() || undefined,
+        note: 'Pagamento conferido e confirmado pelo administrador',
+      });
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder({
+          ...selectedOrder,
+          paymentStatus: 'approved',
+          status: selectedOrder.status === 'pending' ? 'confirmed' : selectedOrder.status,
+          paymentReference: ref.trim() || selectedOrder.paymentReference,
+        });
+      }
+      alert('✅ Pagamento confirmado com sucesso! O pedido avançou para Confirmado.');
+    } catch (err: unknown) {
+      alert(`Erro ao confirmar pagamento: ${(err as Error)?.message || 'Erro'}`);
+    } finally {
+      setOrderActionLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (order: Order) => {
+    const reason = window.prompt('Motivo do cancelamento (opcional):', 'Cancelado pelo administrador');
+    if (reason === null) return;
+    if (!window.confirm('Confirmar cancelamento e devolução automática de estoque?')) return;
+    setOrderActionLoading(true);
+    try {
+      await cancelOrderCallable(order.id, reason.trim());
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder({ ...selectedOrder, status: 'cancelled', paymentStatus: 'rejected' });
+      }
+      alert('✅ Pedido cancelado com devolução de estoque registrada.');
+    } catch (err: unknown) {
+      alert(`Erro ao cancelar pedido: ${(err as Error)?.message || 'Erro'}`);
+    } finally {
+      setOrderActionLoading(false);
+    }
   };
 
   const promoteToAdmin = async (client: FirestoreClient) => {
@@ -534,14 +646,21 @@ export const Admin: React.FC = () => {
   };
 
   // ─── Computed ────────────────────────────────────────────────────────────
-  const approvedOrders = orders.filter(o => o.status !== 'Pendente');
-  const totalRevenue = approvedOrders.reduce((s, o) => s + o.total, 0);
-  const pendingCount = orders.filter(o => o.status === 'Pendente').length;
-  const avgTicket = approvedOrders.length > 0 ? totalRevenue / approvedOrders.length : 0;
+  const nonCancelledOrders = orders.filter(o => o.status !== 'cancelled');
+  const totalRevenue = nonCancelledOrders.reduce((s, o) => s + o.total, 0);
+  const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const awaitingPaymentCount = orders.filter(o => o.paymentStatus === 'awaiting_confirmation' && o.status !== 'cancelled').length;
+  const avgTicket = nonCancelledOrders.length > 0 ? totalRevenue / nonCancelledOrders.length : 0;
   const filteredProducts = products.filter(p =>
     p.title.toLowerCase().includes(searchProduct.toLowerCase()) && (filterCategory === 'Todos' || p.category === filterCategory)
   );
-  const filteredOrders = orderFilter === 'Todos' ? orders : orders.filter(o => o.status === orderFilter);
+
+  const filteredOrders = orders.filter(o => {
+    if (orderFilter === 'Todos') return true;
+    if (orderFilter === 'awaiting_payment') return o.paymentStatus === 'awaiting_confirmation' && o.status !== 'cancelled';
+    if (orderFilter === 'paid') return o.paymentStatus === 'approved';
+    return o.status === orderFilter;
+  });
   const filteredClients = clients.filter(c => c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()));
 
   // Financial computed
@@ -686,18 +805,21 @@ export const Admin: React.FC = () => {
                 <button onClick={() => navigate('/admin/pedidos')} style={{ background: 'none', border: 'none', color: crmTheme.primary, fontSize: 11, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>Ver todos <ChevronDown size={12} style={{ transform: 'rotate(-90deg)' }} /></button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {orders.filter(o => o.status === 'Pendente' || o.status === 'Aprovado').length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '20px 0', color: crmTheme.textMuted, fontSize: 12 }}>✅ Nenhum pedido pendente.</div>
-                ) : orders.filter(o => o.status === 'Pendente' || o.status === 'Aprovado').map(order => {
-                  const sc = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' };
+                {orders.filter(o => o.status === 'pending' || o.paymentStatus === 'awaiting_confirmation').length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: crmTheme.textMuted, fontSize: 12 }}>✅ Nenhum pedido pendente de conferência.</div>
+                ) : orders.filter(o => o.status === 'pending' || o.paymentStatus === 'awaiting_confirmation').slice(0, 5).map(order => {
+                  const sc = STATUS_CONFIG[order.status] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1', label: order.status };
                   return (
                     <div key={order.id} onClick={() => { setSelectedOrder(order); navigate('/admin/pedidos'); }} style={{ background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', boxShadow: crmTheme.shadowSm }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                          <span style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName}</span>
-                          <span style={{ fontSize: 8, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{order.status}</span>
+                          <span style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName || 'Cliente'}</span>
+                          <span style={{ fontSize: 8, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{sc.label}</span>
+                          {order.paymentStatus === 'awaiting_confirmation' && (
+                            <span style={{ fontSize: 8, fontWeight: 900, padding: '2px 7px', borderRadius: 99, background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>Conferir Pix</span>
+                          )}
                         </div>
-                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{formatAdminDate(order.createdAt)}</span>
+                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{formatAdminDate(order.createdAt)} • #{order.orderNumber || order.id}</span>
                       </div>
                       <span style={{ fontSize: 14, fontWeight: 900, color: crmTheme.primary }}>R$ {order.total.toFixed(2)}</span>
                     </div>
@@ -795,51 +917,126 @@ export const Admin: React.FC = () => {
         {/* ══ TAB: PEDIDOS ═════════════════════════════════════════════════════ */}
         {activeTab === 'pedidos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Filter buttons */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['Todos', 'Pendente', 'Aprovado', 'Saiu para Entrega', 'Entregue'].map(f => (
-                <button key={f} onClick={() => setOrderFilter(f)} style={{
-                  height: 34, padding: '0 14px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 800, fontFamily: 'Manrope, sans-serif',
-                  background: orderFilter === f ? (f === 'Todos' ? crmTheme.primary : STATUS_CONFIG[f as keyof typeof STATUS_CONFIG]?.bg || '#f1f5f9') : crmTheme.cardBg,
-                  color: orderFilter === f ? (f === 'Todos' ? '#fff' : STATUS_CONFIG[f as keyof typeof STATUS_CONFIG]?.color || crmTheme.textPrimary) : crmTheme.textSecondary,
-                  border: orderFilter === f ? 'none' : `1px solid ${crmTheme.border}`,
-                  boxShadow: orderFilter === f ? '0 4px 12px rgba(79,70,229,0.2)' : crmTheme.shadowSm,
-                }}>
-                  {f === 'Todos' ? `Todos (${orders.length})` : `${f} (${orders.filter(o => o.status === f).length})`}
+              {[
+                { id: 'Todos', label: `Todos (${orders.length})` },
+                { id: 'awaiting_payment', label: `Aguardando Conferência (${awaitingPaymentCount})` },
+                { id: 'paid', label: `Pagamento Aprovado (${orders.filter(o => o.paymentStatus === 'approved').length})` },
+                { id: 'pending', label: `Pendente (${orders.filter(o => o.status === 'pending').length})` },
+                { id: 'confirmed', label: `Confirmado (${orders.filter(o => o.status === 'confirmed').length})` },
+                { id: 'preparing', label: `Em preparo (${orders.filter(o => o.status === 'preparing').length})` },
+                { id: 'delivering', label: `Saiu p/ Entrega (${orders.filter(o => o.status === 'delivering').length})` },
+                { id: 'delivered', label: `Entregue (${orders.filter(o => o.status === 'delivered').length})` },
+                { id: 'cancelled', label: `Cancelado (${orders.filter(o => o.status === 'cancelled').length})` },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setOrderFilter(f.id)}
+                  style={{
+                    height: 34, padding: '0 14px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 800, fontFamily: 'Manrope, sans-serif',
+                    background: orderFilter === f.id ? crmTheme.primary : crmTheme.cardBg,
+                    color: orderFilter === f.id ? '#fff' : crmTheme.textSecondary,
+                    border: orderFilter === f.id ? 'none' : `1px solid ${crmTheme.border}`,
+                    boxShadow: orderFilter === f.id ? '0 4px 12px rgba(79,70,229,0.2)' : crmTheme.shadowSm,
+                  }}
+                >
+                  {f.label}
                 </button>
               ))}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            {/* Orders Queue list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredOrders.map(order => {
-                const sc = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1', icon: Clock };
+                const sc = STATUS_CONFIG[order.status] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1', label: order.status, icon: Clock };
                 const Icon = sc.icon;
+                const pc = order.paymentStatus ? PAYMENT_CONFIG[order.paymentStatus] : null;
+
                 return (
-                  <div key={order.id} onClick={() => setSelectedOrder(order)} style={{ background: selectedOrder?.id === order.id ? crmTheme.primaryLight : crmTheme.cardBg, border: selectedOrder?.id === order.id ? `1.5px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}`, borderRadius: 16, padding: 16, cursor: 'pointer', transition: 'all 0.25s ease', boxShadow: crmTheme.shadow }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    style={{
+                      background: selectedOrder?.id === order.id ? crmTheme.primaryLight : crmTheme.cardBg,
+                      border: selectedOrder?.id === order.id ? `1.5px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}`,
+                      borderRadius: 16, padding: 16, cursor: 'pointer', transition: 'all 0.25s ease', boxShadow: crmTheme.shadow,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                          <span style={{ fontSize: 13.5, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName}</span>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: crmTheme.primary }}>#{order.id}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary }}>{order.clientName || 'Cliente'}</span>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: crmTheme.primary }}>#{order.orderNumber || order.id}</span>
                         </div>
-                        <span style={{ fontSize: 10, color: crmTheme.textMuted }}>{formatAdminDate(order.createdAt)}</span>
+                        <div style={{ fontSize: 11, color: crmTheme.textMuted, display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <span>📅 {formatAdminDate(order.createdAt)}</span>
+                          <span>💳 {order.paymentMethod || 'Não informado'}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                         <span style={{ fontSize: 16, fontWeight: 900, color: crmTheme.primary }}>R$ {order.total.toFixed(2)}</span>
-                        <span style={{ fontSize: 9, fontWeight: 900, padding: '3px 10px', borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Icon size={10} />{order.status}
-                        </span>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {pc && (
+                            <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 99, background: pc.bg, color: pc.color, border: `1px solid ${pc.border}` }}>
+                              {pc.label}
+                            </span>
+                          )}
+                          <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 99, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Icon size={10} />{sc.label}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {order.items.map(item => (
-                        <span key={item.id} style={{ fontSize: 10, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, padding: '3px 8px', borderRadius: 8, color: crmTheme.textSecondary, fontWeight: 700 }}>
-                          {item.quantity}× {item.title.split(' ').slice(0, 3).join(' ')}
-                        </span>
-                      ))}
+
+                    {/* Address preview */}
+                    {Boolean(order.address) && (
+                      <div style={{ fontSize: 11, color: crmTheme.textSecondary, marginBottom: 10, background: crmTheme.bg, padding: '6px 10px', borderRadius: 8, border: `1px solid ${crmTheme.borderLight}` }}>
+                        📍 {typeof order.address === 'string' ? order.address : `${(order.address as { street?: string }).street ?? ''}, ${(order.address as { number?: string }).number ?? ''} - ${(order.address as { neighborhood?: string }).neighborhood ?? ''}`}
+                      </div>
+                    )}
+
+                    {/* Items chips & Action shortcuts */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {order.items.map(item => (
+                          <span key={item.id} style={{ fontSize: 10, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, padding: '3px 8px', borderRadius: 8, color: crmTheme.textSecondary, fontWeight: 700 }}>
+                            {item.quantity}× {item.title.split(' ').slice(0, 3).join(' ')}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Quick action trigger */}
+                      <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                        {order.paymentStatus === 'awaiting_confirmation' && (
+                          <button
+                            onClick={() => void handleConfirmPayment(order)}
+                            disabled={orderActionLoading}
+                            style={{
+                              background: '#d1fae5', border: '1px solid #10b981', color: '#059669',
+                              fontSize: 10.5, fontWeight: 900, borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                            }}
+                          >
+                            ✓ Confirmar Pagamento
+                          </button>
+                        )}
+                        {order.status !== 'cancelled' && (
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            style={{
+                              background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, color: crmTheme.primary,
+                              fontSize: 10.5, fontWeight: 900, borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                            }}
+                          >
+                            Gerenciar Pedido →
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
-              {filteredOrders.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: crmTheme.textMuted }}>Nenhum pedido encontrado.</div>}
+              {filteredOrders.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: crmTheme.textMuted }}>Nenhum pedido encontrado nesta categoria.</div>}
             </div>
           </div>
         )}
@@ -1261,36 +1458,115 @@ export const Admin: React.FC = () => {
       {/* ═══ MODAL: ORDER DETAIL ══════════════════════════════════════════════ */}
       {selectedOrder && activeTab === 'pedidos' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 100, backdropFilter: 'blur(6px)' }}>
-          <div style={{ background: crmTheme.cardBg, border: `1.5px solid ${crmTheme.border}`, borderRadius: 22, width: '100%', maxWidth: 460, padding: 24, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', position: 'relative' }}>
+          <div style={{ background: crmTheme.cardBg, border: `1.5px solid ${crmTheme.border}`, borderRadius: 22, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', padding: 24, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', position: 'relative' }}>
             <button onClick={() => setSelectedOrder(null)} style={{ position: 'absolute', top: 16, right: 16, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, width: 30, height: 30, borderRadius: 8, color: crmTheme.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>
-            <h3 style={{ fontSize: 17, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 2px' }}>Pedido #{selectedOrder.id}</h3>
-            <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>{formatAdminDate(selectedOrder.createdAt)} • {selectedOrder.clientName}</span>
-            <div style={{ margin: '18px 0', borderTop: `1px solid ${crmTheme.border}`, paddingTop: 14 }}>
-              <label style={{ ...labelStyle, marginBottom: 8 }}>Itens do Pedido</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 2px' }}>Pedido #{selectedOrder.orderNumber || selectedOrder.id}</h3>
+            <span style={{ fontSize: 11, color: crmTheme.textSecondary }}>{formatAdminDate(selectedOrder.createdAt)} • {selectedOrder.clientName || 'Cliente'}</span>
+
+            {/* Payment & Commercial status box */}
+            <div style={{ marginTop: 14, background: selectedOrder.paymentStatus === 'approved' ? '#f0fdf4' : selectedOrder.paymentStatus === 'on_delivery' ? '#eff6ff' : '#fffbeb', border: `1px solid ${selectedOrder.paymentStatus === 'approved' ? '#bbf7d0' : selectedOrder.paymentStatus === 'on_delivery' ? '#bfdbfe' : '#fef08a'}`, borderRadius: 12, padding: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: crmTheme.textPrimary }}>Estado Financeiro:</span>
+                <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', color: selectedOrder.paymentStatus === 'approved' ? '#15803d' : selectedOrder.paymentStatus === 'on_delivery' ? '#1d4ed8' : '#b45309' }}>
+                  {selectedOrder.paymentStatus ? PAYMENT_CONFIG[selectedOrder.paymentStatus]?.label : 'Não definido'}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>
+                Método: <strong>{selectedOrder.paymentMethod || 'Não informado'}</strong>
+                {selectedOrder.paymentReference ? ` • Ref: ${selectedOrder.paymentReference}` : ''}
+              </div>
+
+              {/* Action to confirm payment */}
+              {selectedOrder.paymentStatus === 'awaiting_confirmation' && selectedOrder.status !== 'cancelled' && (
+                <button
+                  onClick={() => void handleConfirmPayment(selectedOrder)}
+                  disabled={orderActionLoading}
+                  style={{
+                    marginTop: 8, width: '100%', height: 34, background: '#10b981', border: 'none',
+                    borderRadius: 8, color: '#fff', fontSize: 11.5, fontWeight: 900, cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+                  }}
+                >
+                  ✓ Confirmar Pagamento (Pix Recebido)
+                </button>
+              )}
+            </div>
+
+            {/* Items list */}
+            <div style={{ margin: '14px 0', borderTop: `1px solid ${crmTheme.border}`, paddingTop: 12 }}>
+              <label style={{ ...labelStyle, marginBottom: 8 }}>Itens do Pedido ({selectedOrder.items.length})</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
                 {selectedOrder.items.map(item => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: crmTheme.bg, padding: '8px 12px', borderRadius: 8, border: `1px solid ${crmTheme.border}` }}>
-                    <span style={{ fontSize: 12, color: crmTheme.textPrimary }}>{item.quantity}× {item.title}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: crmTheme.textPrimary, flexShrink: 0 }}>R$ {(item.price * item.quantity).toFixed(2)}</span>
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: crmTheme.bg, padding: '7px 10px', borderRadius: 8, border: `1px solid ${crmTheme.border}` }}>
+                    <span style={{ fontSize: 11.5, color: crmTheme.textPrimary }}>{item.quantity}× {item.title}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: crmTheme.textPrimary, flexShrink: 0 }}>R$ {(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ marginBottom: 16 }}>
+
+            {/* Address */}
+            <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Endereço de Entrega</label>
-              <p style={{ fontSize: 12, color: crmTheme.textSecondary, margin: 0, lineHeight: 1.5 }}>{selectedOrder.address}</p>
+              <p style={{ fontSize: 11.5, color: crmTheme.textSecondary, margin: 0, lineHeight: 1.4 }}>
+                {typeof selectedOrder.address === 'string' ? selectedOrder.address : `${(selectedOrder.address as { street?: string })?.street ?? ''}, ${(selectedOrder.address as { number?: string })?.number ?? ''} - ${(selectedOrder.address as { neighborhood?: string })?.neighborhood ?? ''}`}
+              </p>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, padding: '12px 16px', borderRadius: 12, marginBottom: 20 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: crmTheme.primary }}>Total do Pedido</span>
-              <span style={{ fontSize: 18, fontWeight: 900, color: crmTheme.primary }}>R$ {selectedOrder.total.toFixed(2)}</span>
+
+            {/* Total box */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: crmTheme.primaryLight, border: `1px solid ${crmTheme.primary}`, padding: '10px 14px', borderRadius: 12, marginBottom: 16 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: crmTheme.primary }}>Total Calculado pelo Servidor</span>
+              <span style={{ fontSize: 17, fontWeight: 900, color: crmTheme.primary }}>R$ {selectedOrder.total.toFixed(2)}</span>
             </div>
-            <label style={labelStyle}>Atualizar Status</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-              {(['Pendente', 'Aprovado', 'Saiu para Entrega', 'Entregue'] as Order['status'][]).map(s => {
-                const sc = STATUS_CONFIG[s] || { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' }; const active = selectedOrder.status === s;
-                return <button key={s} onClick={() => updateOrderStatus(selectedOrder.id, s)} style={{ height: 38, background: active ? sc.bg : crmTheme.bg, border: `1px solid ${active ? sc.border : crmTheme.border}`, borderRadius: 10, color: active ? sc.color : crmTheme.textSecondary, fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>{s}</button>;
+
+            {/* Status transitions */}
+            <label style={labelStyle}>Atualizar Fluxo Operacional (Callable Backend)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 12 }}>
+              {(['pending', 'confirmed', 'preparing', 'delivering', 'delivered'] as OrderStatus[]).map(s => {
+                const sc = STATUS_CONFIG[s];
+                const active = selectedOrder.status === s;
+                const isCommercialReady = selectedOrder.paymentStatus === 'approved' || selectedOrder.paymentStatus === 'on_delivery';
+                const isBlocked = (s === 'preparing' || s === 'delivering') && !isCommercialReady;
+
+                return (
+                  <button
+                    key={s}
+                    disabled={active || isBlocked || orderActionLoading || selectedOrder.status === 'cancelled'}
+                    onClick={() => void handleUpdateOrderStatus(selectedOrder.id, s)}
+                    title={isBlocked ? 'Avanço bloqueado: requer pagamento aprovado ou pagamento na entrega' : ''}
+                    style={{
+                      height: 36,
+                      background: active ? sc.bg : isBlocked ? '#f1f5f9' : crmTheme.bg,
+                      border: `1px solid ${active ? sc.border : isBlocked ? '#cbd5e1' : crmTheme.border}`,
+                      borderRadius: 9,
+                      color: active ? sc.color : isBlocked ? '#94a3b8' : crmTheme.textSecondary,
+                      fontSize: 10,
+                      fontWeight: 900,
+                      cursor: active || isBlocked || orderActionLoading ? 'not-allowed' : 'pointer',
+                      fontFamily: 'Manrope, sans-serif',
+                      opacity: isBlocked ? 0.6 : 1,
+                    }}
+                  >
+                    {active ? `✓ ${sc.label}` : sc.label}
+                  </button>
+                );
               })}
             </div>
+
+            {/* Cancellation trigger */}
+            {selectedOrder.status !== 'cancelled' && (
+              <button
+                onClick={() => void handleCancelOrder(selectedOrder)}
+                disabled={orderActionLoading}
+                style={{
+                  width: '100%', height: 34, background: crmTheme.dangerLight,
+                  border: `1px solid ${crmTheme.danger}`, borderRadius: 9, color: crmTheme.danger,
+                  fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif',
+                }}
+              >
+                ✕ Cancelar Pedido (Devolver Estoque)
+              </button>
+            )}
           </div>
         </div>
       )}

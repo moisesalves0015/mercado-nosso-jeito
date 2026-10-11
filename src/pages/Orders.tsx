@@ -292,13 +292,81 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
             </div>
           </div>
 
+          {/* Address & Delivery */}
+          {order.address && (
+            <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '10px 12px', marginBottom: 14 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 4 }}>
+                Endereço de Entrega {order.deliveryMethod ? `(${order.deliveryMethod})` : ''}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-primary)', fontWeight: 600 }}>
+                {order.address.street}, {order.address.number}{order.address.complement ? ` - ${order.address.complement}` : ''}
+              </div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                {order.address.neighborhood} - {order.address.city}/{order.address.state} • CEP {order.address.zipCode}
+              </div>
+            </div>
+          )}
+
+          {/* Payment & Commercial info */}
+          <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '10px 12px', marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                Forma & Estado de Pagamento
+              </div>
+              {order.paymentStatus && (
+                <span style={{
+                  fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 99,
+                  background: order.paymentStatus === 'approved' ? 'rgba(16,185,129,0.1)' : order.paymentStatus === 'on_delivery' ? 'rgba(59,130,246,0.1)' : order.paymentStatus === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                  color: order.paymentStatus === 'approved' ? '#10B981' : order.paymentStatus === 'on_delivery' ? '#3B82F6' : order.paymentStatus === 'rejected' ? '#EF4444' : '#F59E0B',
+                  border: `1px solid ${order.paymentStatus === 'approved' ? 'rgba(16,185,129,0.3)' : order.paymentStatus === 'on_delivery' ? 'rgba(59,130,246,0.3)' : order.paymentStatus === 'rejected' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                }}>
+                  {order.paymentStatus === 'approved' ? 'Pago & Confirmado' : order.paymentStatus === 'on_delivery' ? 'Pagar na Entrega' : order.paymentStatus === 'rejected' ? 'Rejeitado' : 'Aguardando Conferência'}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-primary)', fontWeight: 600 }}>
+              Método: {order.paymentMethod}
+            </div>
+            {order.paymentReference && (
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                Referência: {order.paymentReference}
+              </div>
+            )}
+          </div>
+
           {/* Timeline */}
-          <div>
+          <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(212,175,55,0.7)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>
-              Histórico
+              Histórico Operacional
             </div>
             <Timeline order={order} />
           </div>
+
+          {/* Cancel button if pending or confirmed */}
+          {(order.status === 'pending' || order.status === 'confirmed') && (
+            <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={async () => {
+                  if (window.confirm('Tem certeza que deseja cancelar este pedido? O estoque será devolvido automaticamente.')) {
+                    try {
+                      const { cancelOrder: callCancel } = await import('../hooks/useOrders');
+                      await callCancel(order.id, 'Cancelado pelo cliente');
+                      alert('Pedido cancelado com sucesso.');
+                    } catch (err: unknown) {
+                      alert('Erro ao cancelar: ' + ((err as Error)?.message || 'Erro'));
+                    }
+                  }
+                }}
+                style={{
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#EF4444', borderRadius: 8, padding: '6px 14px', fontSize: 11,
+                  fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Cancelar Pedido
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

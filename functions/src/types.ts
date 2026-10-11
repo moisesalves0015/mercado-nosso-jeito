@@ -105,3 +105,38 @@ export interface RedeemRewardResponse {
   newBalance: number;
   alreadyProcessed?: boolean;
 }
+
+// ── Order status & payment types ─────────────────────────────────────────────
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'delivering'
+  | 'delivered'
+  | 'cancelled';
+
+export type OrderPaymentStatus =
+  | 'awaiting_confirmation'
+  | 'approved'
+  | 'rejected'
+  | 'on_delivery';
+
+export interface UpdateOrderStatusRequest {
+  orderId: string;
+  status: OrderStatus;
+  note?: string;
+}
+
+export interface ConfirmPaymentRequest {
+  orderId: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  note?: string;
+}
+
+export interface CancelOrderRequest {
+  orderId: string;
+  reason?: string;
+}
+
