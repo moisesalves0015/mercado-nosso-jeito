@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:staging": "tsc -b && vite build --mode staging",
+    "build:prod": "tsc -b && vite build --mode production",
+    "seed": "tsx scripts/seed-firebase.ts",
+    "validate:products": "tsx scripts/validate-products.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:rules": "firebase emulators:exec --project mercado-nosso-jeito-test \"jest firestore.rules.test.js\""

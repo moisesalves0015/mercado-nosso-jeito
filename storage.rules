@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Default deny: all paths closed unless explicitly granted
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    // Profile photos:
+    // - Public read for rendering avatars
+    // - Owner write with validation (max 5MB, image content type)
+    match /profile-photos/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) 
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // Products images (uploaded via Admin):
+    // - Public read for catalogue
+    // - Admin-only write with image validation (max 10MB)
+    match /products/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -886,6 +886,8 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     let shippingThreshold = 60;
     let baseShippingFee = 5;
     let condos: Record<string, number> = {};
+    let shippingConfigFound = false;
+
     try {
       const shippingSnap = await db.collection('settings').doc('shipping').get();
       if (shippingSnap.exists) {
@@ -893,9 +895,23 @@ export const createOrder = functions.https.onCall(async (data, context) => {
         shippingThreshold = Math.max(0, Number(sd['freeShippingThreshold'] ?? 60));
         baseShippingFee   = Math.max(0, Number(sd['baseShippingFee']       ?? 5));
         condos = normalizeCondosServer(sd['condos'] || sd['condosList'] || {});
+        shippingConfigFound = true;
+      } else {
+        const configSnap = await db.collection('configs').doc('shipping').get();
+        if (configSnap.exists) {
+          const cd = configSnap.data()!;
+          shippingThreshold = Math.max(0, Number(cd['freeShippingThreshold'] ?? 60));
+          baseShippingFee   = Math.max(0, Number(cd['baseShippingFee']       ?? 5));
+          condos = normalizeCondosServer(cd['condos'] || cd['condosList'] || {});
+          shippingConfigFound = true;
+        }
       }
     } catch (e) {
-      functions.logger.warn('createOrder: could not load shipping config, using defaults', { error: String(e) });
+      functions.logger.error('createOrder: erro ao carregar configurações de frete', { error: String(e) });
+    }
+
+    if (!shippingConfigFound) {
+      functions.logger.warn('createOrder: /settings/shipping não encontrado no Firestore. Aplicando configuração padrão de contingência.');
     }
 
     // ── 6. Transactional: validate products + stock + coupon → create order ───
@@ -942,10 +958,10 @@ export const createOrder = functions.https.onCall(async (data, context) => {
             ? Number(pData['promoPrice'])
             : Number(pData['price'] ?? 0);
 
-        if (serverPrice <= 0) {
+        if (serverPrice <= 0 || isNaN(serverPrice)) {
           throw new functions.https.HttpsError(
             'failed-precondition',
-            `Preço inválido para "${String(pData['title'] ?? productId)}".`,
+            `Preço inválido para "${String(pData['title'] ?? productId)}". Preço deve ser numérico e positivo.`,
           );
         }
 
@@ -959,17 +975,23 @@ export const createOrder = functions.https.onCall(async (data, context) => {
           image:    String(pData['image']  ?? ''),
         });
 
-        // Stock check
+        // Stock check — all sellable items MUST have a defined integer stock
         const currentStock = pData['stock'];
-        if (currentStock !== undefined && currentStock !== null) {
-          if (Number(currentStock) < quantity) {
-            throw new functions.https.HttpsError(
-              'failed-precondition',
-              `Estoque insuficiente para "${String(pData['title'] ?? productId)}". Disponível: ${String(currentStock)}.`,
-            );
-          }
-          stockUpdates.push({ ref: productRefs[i], newStock: Number(currentStock) - quantity });
+        if (currentStock === undefined || currentStock === null || typeof currentStock !== 'number' || isNaN(currentStock)) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            `Estoque não definido para o produto "${String(pData['title'] ?? productId)}". Contate o suporte.`,
+          );
         }
+
+        const numericStock = Number(currentStock);
+        if (numericStock < quantity) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            `Estoque insuficiente para "${String(pData['title'] ?? productId)}". Disponível: ${String(numericStock)}.`,
+          );
+        }
+        stockUpdates.push({ ref: productRefs[i], newStock: numericStock - quantity });
       }
 
       // 6b. Validate coupon
@@ -1420,24 +1442,36 @@ export const validateCoupon = functions.https.onCall(async (data, context) => {
     return { valid: false, error: 'Cupom não encontrado' };
   }
 
-  const coupon = snap.data()!;
-  if (!coupon.active) {
+  const cd = snap.data()!;
+  if (!cd['active']) {
     return { valid: false, error: 'Cupom inativo' };
   }
 
-  if (coupon.expiresAt && coupon.expiresAt.toDate() < new Date()) {
+  const expiresAt = cd['expiresAt'] as admin.firestore.Timestamp | undefined;
+  if (expiresAt && expiresAt.toDate() < new Date()) {
     return { valid: false, error: 'Cupom expirado' };
   }
 
-  if (coupon.maxUses && (coupon.usesCount ?? 0) >= coupon.maxUses) {
-    return { valid: false, error: 'Cupom esgotado' };
+  const maxUses   = cd['maxUses']   !== undefined ? Number(cd['maxUses'])   : undefined;
+  const usesCount = cd['usesCount'] !== undefined ? Number(cd['usesCount']) : 0;
+  if (maxUses !== undefined && usesCount >= maxUses) {
+    return { valid: false, error: 'Cupom esgotado (limite de usos atingido)' };
   }
+
+  const couponType  = String(cd['type'] ?? cd['discountType'] ?? 'fixed');
+  const couponValue = Number(cd['value'] ?? cd['discountValue'] ?? 0);
+  const minOrder    = cd['minOrderValue'] !== undefined ? Number(cd['minOrderValue']) : (cd['minPurchase'] !== undefined ? Number(cd['minPurchase']) : 0);
 
   return {
     valid: true,
-    discountType: coupon.discountType,
-    discountValue: coupon.discountValue,
-    minPurchase: coupon.minPurchase,
+    type: couponType,
+    value: couponValue,
+    discountType: couponType,
+    discountValue: couponValue,
+    minPurchase: minOrder,
+    minOrderValue: minOrder,
+    maxUses,
+    usesCount,
   };
 });
 

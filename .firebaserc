@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "nosso-mercado-4b877",
+    "staging": "nosso-mercado-4b877",
+    "production": "nosso-mercado-prod"
+  }
+}
