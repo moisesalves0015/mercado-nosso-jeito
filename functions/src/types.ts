@@ -90,3 +90,18 @@ export interface SetAdminClaimResponse {
   targetUid: string;
   isAdmin: boolean;
 }
+
+// ── redeemReward ─────────────────────────────────────────────────────────────
+
+export interface RedeemRewardRequest {
+  rewardId: string | number;
+  cost: number;
+  title: string;
+  idempotencyKey: string;
+}
+
+export interface RedeemRewardResponse {
+  success: boolean;
+  newBalance: number;
+  alreadyProcessed?: boolean;
+}

@@ -105,11 +105,17 @@ const TABS = [
 ] as const;
 
 // ─── TOOLTIP FOR RECHARTS ─────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipPayloadItem {
+  name: string;
+  value: number | string;
+  color?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipPayloadItem[]; label?: string }) => {
   if (active && payload && payload.length) return (
     <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 10, padding: '10px 14px', boxShadow: crmTheme.shadow }}>
       <p style={{ color: crmTheme.textPrimary, fontWeight: 900, fontSize: 12, margin: '0 0 4px' }}>{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i: number) => (
         <p key={i} style={{ color: p.color || crmTheme.textPrimary, fontSize: 11, margin: 0, fontWeight: 700 }}>
           {p.name}: {typeof p.value === 'number' && p.name !== 'unidades' ? `R$ ${p.value.toFixed(2)}` : p.value}
         </p>
@@ -125,7 +131,16 @@ const Skeleton = ({ w = '100%', h = 20, radius = 8 }: { w?: string | number; h?:
 );
 
 // ─── KPI CARD ─────────────────────────────────────────────────────────────────
-const KpiCard = ({ label, value, sub, icon: Icon, color, trend }: any) => (
+interface KpiCardProps {
+  label: string;
+  value: string | number;
+  sub: string;
+  icon: React.ComponentType<{ size: number; color: string }>;
+  color: string;
+  trend?: number;
+}
+
+const KpiCard = ({ label, value, sub, icon: Icon, color, trend }: KpiCardProps) => (
   <div style={{
     background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`,
     borderRadius: 16, padding: '16px 14px', position: 'relative', overflow: 'hidden',
@@ -184,7 +199,13 @@ export const AdminProductDetail: React.FC = () => {
   const [stockHistory, setStockHistory] = useState<{ delta: number; note: string; date: string }[]>([]);
 
   // ── Analytics Data ──
-  const [ordersData, setOrdersData] = useState<{ totalOrders: number; totalQty: number; totalRevenue: number; chartData: any[] }>({
+  interface ChartDataItem {
+    day: string;
+    receita: number;
+    unidades: number;
+  }
+
+  const [ordersData, setOrdersData] = useState<{ totalOrders: number; totalQty: number; totalRevenue: number; chartData: ChartDataItem[] }>({
     totalOrders: 0, totalQty: 0, totalRevenue: 0, chartData: []
   });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -193,10 +214,6 @@ export const AdminProductDetail: React.FC = () => {
   const homeConfig = useHomeConfig();
 
   // ─── Load Product ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isNew && id) loadProduct(id);
-  }, [id]);
-
   const loadProduct = async (prodId: string) => {
     try {
       const snap = await getDoc(doc(db, 'products', prodId));
@@ -230,16 +247,17 @@ export const AdminProductDetail: React.FC = () => {
     }
   };
 
-  // ─── Load Analytics ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (activeTab === 'analytics' && !isNew && id) loadAnalytics(id);
-  }, [activeTab, id]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!isNew && id) loadProduct(id);
+  }, [id, isNew]);
 
+  // ─── Load Analytics ────────────────────────────────────────────────────────
   const loadAnalytics = async (prodId: string) => {
     setLoadingAnalytics(true);
     try {
       const snap = await getDocs(collection(db, 'orders'));
-      const allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      const allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown>));
 
       let totalOrders = 0;
       let totalQty = 0;
@@ -247,22 +265,22 @@ export const AdminProductDetail: React.FC = () => {
       const dayMap: Record<string, { receita: number; unidades: number }> = {};
 
       allOrders.forEach(order => {
-        const items = order.items || [];
-        const productItems = items.filter((item: any) =>
+        const items = (order.items as Array<{ id?: string; title?: string; price?: number; quantity?: number }> | undefined) || [];
+        const productItems = items.filter((item) =>
           item.id === prodId || item.title === title
         );
         if (productItems.length > 0) {
           totalOrders++;
-          productItems.forEach((item: any) => {
+          productItems.forEach((item) => {
             totalQty += item.quantity || 1;
             totalRevenue += (item.price || 0) * (item.quantity || 1);
           });
 
           // Group by day for chart
-          const date = order.createdAt ? new Date(order.createdAt) : new Date();
+          const date = order.createdAt ? new Date(order.createdAt as string | number) : new Date();
           const dayKey = date.toLocaleDateString('pt-BR', { weekday: 'short' });
           if (!dayMap[dayKey]) dayMap[dayKey] = { receita: 0, unidades: 0 };
-          productItems.forEach((item: any) => {
+          productItems.forEach((item) => {
             dayMap[dayKey].receita += (item.price || 0) * (item.quantity || 1);
             dayMap[dayKey].unidades += item.quantity || 1;
           });
@@ -277,6 +295,11 @@ export const AdminProductDetail: React.FC = () => {
       setLoadingAnalytics(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeTab === 'analytics' && !isNew && id) loadAnalytics(id);
+  }, [activeTab, id, isNew]);
 
   // ─── Image Upload ──────────────────────────────────────────────────────────
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -314,7 +337,7 @@ export const AdminProductDetail: React.FC = () => {
       setStock(newStock.toString());
       setStockHistory(newHistory);
       setStockAdjustNote('');
-    } catch (e) {
+    } catch {
       alert('Erro ao ajustar estoque.');
     } finally {
       setSavingStockAdj(false);
@@ -343,7 +366,7 @@ export const AdminProductDetail: React.FC = () => {
     setSaving(true);
 
     // Build raw data — then strip undefined to satisfy Firestore
-    const rawData: Record<string, any> = {
+    const rawData: Record<string, unknown> = {
       title,
       description,
       category,
@@ -639,7 +662,7 @@ export const AdminProductDetail: React.FC = () => {
                   </div>
                   <div>
                     <label style={labelStyle}>Cor do Badge</label>
-                    <select value={badgeStyle} onChange={e => setBadgeStyle(e.target.value as any)} style={{ ...inputStyle, appearance: 'none' }}>
+                    <select value={badgeStyle} onChange={e => setBadgeStyle(e.target.value as 'orange' | 'light')} style={{ ...inputStyle, appearance: 'none' }}>
                       <option value="orange">Laranja (Destaque)</option>
                       <option value="light">Claro (Premium)</option>
                     </select>
@@ -1080,7 +1103,7 @@ export const AdminProductDetail: React.FC = () => {
                         const newIds = isInVitrine ? v.productIds.filter(pid => pid !== id) : [...v.productIds, id];
                         try {
                           await setDoc(ref, { productIds: newIds }, { merge: true });
-                        } catch(e) { alert('Erro ao atualizar vitrine'); }
+                        } catch { alert('Erro ao atualizar vitrine'); }
                       }}>
                         <div>
                           <span style={{ fontSize: 12, fontWeight: 800, color: isInVitrine ? crmTheme.primary : crmTheme.textPrimary, display: 'block' }}>{v.title}</span>

@@ -50,7 +50,7 @@ interface Order {
 }
 interface FirestoreClient {
   id: string; name: string; email: string; role: string;
-  diamonds?: number; createdAt?: any;
+  diamonds?: number; createdAt?: unknown;
 }
 type TabType = 'dashboard' | 'produtos' | 'pedidos' | 'clientes' | 'analytics' | 'roleta' | 'financeiro' | 'marketing' | 'clube' | 'configuracoes';
 // ─── VIP LEVELS ──────────────────────────────────────────────────────────────
@@ -82,15 +82,16 @@ const getMarginStatus = (margin: number | null) => {
   return                   { label: '🟢 Saudável',    color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.4)' };
 };
 
-const formatAdminDate = (dateVal: any): string => {
+const formatAdminDate = (dateVal: unknown): string => {
   if (!dateVal) return '';
   if (typeof dateVal === 'string') return dateVal;
   if (dateVal instanceof Date) return dateVal.toLocaleString('pt-BR');
-  if (typeof dateVal.toDate === 'function') {
-    return dateVal.toDate().toLocaleString('pt-BR');
+  const d = dateVal as { toDate?: () => Date; seconds?: number };
+  if (typeof d.toDate === 'function') {
+    return d.toDate().toLocaleString('pt-BR');
   }
-  if (typeof dateVal.seconds === 'number') {
-    return new Date(dateVal.seconds * 1000).toLocaleString('pt-BR');
+  if (typeof d.seconds === 'number') {
+    return new Date(d.seconds * 1000).toLocaleString('pt-BR');
   }
   return String(dateVal);
 };
@@ -147,11 +148,11 @@ const STATUS_CONFIG = {
 };
 
 // ─── TOOLTIP ─────────────────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string }>; label?: string }) => {
   if (active && payload && payload.length) return (
     <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 10, padding: '10px 14px', boxShadow: crmTheme.shadow }}>
       <p style={{ color: crmTheme.textPrimary, fontWeight: 900, fontSize: 12, margin: '0 0 4px' }}>{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i: number) => (
         <p key={i} style={{ color: p.color, fontSize: 11, margin: 0, fontWeight: 700 }}>
           {p.name}: {p.name === 'vendas' || p.name === 'receita' ? `R$ ${p.value.toFixed(2)}` : p.value}
         </p>
@@ -162,7 +163,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 // ─── STAT CARD ────────────────────────────────────────────────────────────────
-const StatCard = ({ label, value, sub, icon: Icon, iconColor, trend }: any) => (
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  sub: string;
+  icon: React.ComponentType<{ size: number; color: string }>;
+  iconColor: string;
+  trend?: number;
+  gold?: boolean;
+}
+
+const StatCard = ({ label, value, sub, icon: Icon, iconColor, trend }: StatCardProps) => (
   <div style={{
     background: crmTheme.cardBg,
     border: `1px solid ${crmTheme.border}`,
@@ -250,7 +261,7 @@ export const Admin: React.FC = () => {
         if (stored) {
           const arr = JSON.parse(stored);
           for (const p of arr) {
-            try { await setDoc(doc(db, 'products', p.id), p); } catch(e){}
+            try { await setDoc(doc(db, 'products', p.id), p); } catch (e) { console.warn(e); }
           }
         }
       }
@@ -290,7 +301,7 @@ export const Admin: React.FC = () => {
         if (stored) {
           const arr = JSON.parse(stored);
           for (const o of arr) {
-            try { await setDoc(doc(db, 'orders', o.id), o); } catch(e){}
+            try { await setDoc(doc(db, 'orders', o.id), o); } catch (e) { console.warn(e); }
           }
         }
       }
@@ -342,15 +353,21 @@ export const Admin: React.FC = () => {
         const data = snap.data();
         let condosArray: { name: string; fee: number }[] = [];
         if (Array.isArray(data.condosList) && data.condosList.length > 0) {
-          condosArray = data.condosList.map((c: any) => ({
-            name: typeof c === 'string' ? c : (c.name || ''),
-            fee: Number(c.fee) || 0
-          })).filter((c: any) => c.name);
+          condosArray = data.condosList.map((c: unknown) => {
+            const item = c as { name?: string; fee?: number } | string;
+            return {
+              name: typeof item === 'string' ? item : (item.name || ''),
+              fee: typeof item === 'object' && item ? Number(item.fee) || 0 : 0
+            };
+          }).filter((c) => c.name);
         } else if (Array.isArray(data.condos)) {
-          condosArray = data.condos.map((c: any) => ({
-            name: typeof c === 'string' ? c : (c.name || ''),
-            fee: Number(c.fee) || 0
-          })).filter((c: any) => c.name);
+          condosArray = data.condos.map((c: unknown) => {
+            const item = c as { name?: string; fee?: number } | string;
+            return {
+              name: typeof item === 'string' ? item : (item.name || ''),
+              fee: typeof item === 'object' && item ? Number(item.fee) || 0 : 0
+            };
+          }).filter((c) => c.name);
         } else if (data.condos && typeof data.condos === 'object') {
           condosArray = Object.entries(data.condos).map(([name, fee]) => ({
             name,
@@ -394,8 +411,8 @@ export const Admin: React.FC = () => {
         setDoc(doc(db, 'configs', 'shipping'), payload)
       ]);
       alert('Configurações de frete salvas com sucesso! 🎉');
-    } catch (err: any) {
-      alert('Erro ao salvar: ' + err.message);
+    } catch (err: unknown) {
+      alert('Erro ao salvar: ' + ((err as Error)?.message || 'Erro'));
     } finally {
       setSavingShipping(false);
     }
@@ -426,14 +443,15 @@ export const Admin: React.FC = () => {
     try {
       await setDoc(doc(db, 'settings', 'admin'), storeConfig, { merge: true });
       alert('Configurações da loja salvas com sucesso! 🎉');
-    } catch (err: any) {
-      alert('Erro ao salvar: ' + err.message);
+    } catch (err: unknown) {
+      alert('Erro ao salvar: ' + ((err as Error)?.message || 'Erro'));
     } finally {
       setSavingStoreConfig(false);
     }
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeTab === 'clientes') fetchClients();
     if (activeTab === 'roleta') fetchRoulette();
     if (activeTab === 'configuracoes') {
@@ -498,7 +516,7 @@ export const Admin: React.FC = () => {
     if (rouletteItems.length < 2) { alert('A roleta precisa de no mínimo 2 itens.'); return; }
     setSavingRoulette(true);
     try { await setDoc(doc(db, 'configs', 'roulette'), { items: rouletteItems, updatedAt: new Date().toISOString() }); alert('Roleta salva! 🎉'); }
-    catch (e: any) { alert('Erro: ' + e.message); }
+    catch (e: unknown) { alert('Erro: ' + ((e as Error)?.message || 'Erro')); }
     finally { setSavingRoulette(false); }
   };
   const handleAddRouletteItem = () => {
@@ -942,7 +960,7 @@ export const Admin: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke={crmTheme.borderLight} horizontal={false} />
                     <XAxis type="number" tick={{ fill: crmTheme.textSecondary, fontSize: 9 }} domain={[0, 60]} tickFormatter={v => `${v}%`} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fill: crmTheme.textPrimary, fontSize: 9 }} width={120} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} formatter={(v: any) => [`${v}%`, 'Margem']} />
+                    <Tooltip content={<CustomTooltip />} formatter={(v: unknown) => [`${v}%`, 'Margem']} />
                     <Bar dataKey="margem" radius={[0, 6, 6, 0]}>
                       {marginBarData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                     </Bar>
@@ -1314,7 +1332,7 @@ export const Admin: React.FC = () => {
 };
 
 // Simple stub component for placeholder icon
-const ParagraphIcon = ({ size, style }: any) => (
+const ParagraphIcon = ({ size, style }: { size?: number | string; style?: React.CSSProperties }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
     <line x1="4" y1="9" x2="20" y2="9"></line>
     <line x1="4" y1="15" x2="20" y2="15"></line>

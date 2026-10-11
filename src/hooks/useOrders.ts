@@ -147,7 +147,7 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
   const rawItems = (data.items as OrderItem[] | undefined) ?? [];
   const rawTimeline = (data.timeline as Array<{ status: OrderStatus; label: string; timestamp: unknown; actor?: string }> | undefined) ?? [];
 
-  let statusStr = String(data.status ?? 'pending');
+  const statusStr = String(data.status ?? 'pending');
   let status: OrderStatus = 'pending';
   
   if (statusStr === 'Pendente' || statusStr === 'pending') status = 'pending';
@@ -177,7 +177,7 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
     timeline: rawTimeline.map((t) => {
-      let tStatusStr = String(t.status ?? 'pending');
+      const tStatusStr = String(t.status ?? 'pending');
       let tStatus: OrderStatus = 'pending';
       if (tStatusStr === 'Pendente' || tStatusStr === 'pending') tStatus = 'pending';
       else if (tStatusStr === 'Aprovado' || tStatusStr === 'confirmed') tStatus = 'confirmed';
@@ -200,16 +200,15 @@ function rawToOrder(id: string, data: Record<string, unknown>): Order {
 // ──────────────────────────────────────────────────────────────
 export function useOrders(uid: string | null) {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(uid));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!uid) {
-      setOrders([]);
-      setLoading(false);
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
 
@@ -256,7 +255,12 @@ export function useOrders(uid: string | null) {
     };
   }, [orders]);
 
-  return { orders, metrics, loading, error };
+  return {
+    orders: uid ? orders : [],
+    metrics,
+    loading: uid ? loading : false,
+    error: uid ? error : null,
+  };
 }
 
 // ──────────────────────────────────────────────────────────────

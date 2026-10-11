@@ -167,7 +167,7 @@ function buildActivityStats(): ActivityStats {
     (checkins * 0.3 + orders * 0.4 + missionsDone * 0.3)
   ));
 
-  let icLabel = 'Comunidade ativa';
+  let icLabel: string;
   if (ic >= 85) icLabel = 'Comunidade muito ativa 🔥';
   else if (ic >= 65) icLabel = 'Comunidade ativa hoje';
   else if (ic >= 40) icLabel = 'Atividade moderada';

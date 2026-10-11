@@ -1124,11 +1124,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
         status: 'pending' as const,
       };
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorObj = err as { message?: string; stack?: string };
     await db.collection('debug_errors').add({
       endpoint: 'createOrder',
-      message: err?.message ? String(err.message) : String(err),
-      stack: err?.stack ? String(err.stack) : 'no stack',
+      message: errorObj?.message ? String(errorObj.message) : String(err),
+      stack: errorObj?.stack ? String(errorObj.stack) : 'no stack',
       data: data ? JSON.parse(JSON.stringify(data)) : null,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     }).catch(console.error);
@@ -1136,7 +1137,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     if (err instanceof functions.https.HttpsError) {
       throw err;
     }
-    throw new functions.https.HttpsError('internal', err?.message || 'Erro interno.');
+    throw new functions.https.HttpsError('internal', (err as Error)?.message || 'Erro interno.');
   }
 });
 
@@ -1321,7 +1322,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     }
 
     // Update order status
-    const existingTimeline = (orderData.timeline ?? []) as any[];
+    const existingTimeline = (orderData.timeline ?? []) as unknown[];
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
     const newEvent = {
       status: 'cancelled',
@@ -1380,7 +1381,7 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
   }
 
   const orderData = orderSnap.data()!;
-  const existingTimeline = (orderData.timeline ?? []) as any[];
+  const existingTimeline = (orderData.timeline ?? []) as unknown[];
   const nowTs = admin.firestore.FieldValue.serverTimestamp();
   const newEvent = {
     status,
@@ -1487,14 +1488,18 @@ export const redeemReward = functions.https.onCall(async (data, context) => {
   }
 
   const req = data as { rewardId?: unknown; cost?: unknown; idempotencyKey?: unknown; title?: unknown };
-  if (typeof req.rewardId !== 'string' || typeof req.cost !== 'number' || typeof req.idempotencyKey !== 'string' || typeof req.title !== 'string') {
+  const isRewardIdValid = typeof req.rewardId === 'string' || typeof req.rewardId === 'number';
+  if (!isRewardIdValid || typeof req.cost !== 'number' || typeof req.idempotencyKey !== 'string' || typeof req.title !== 'string') {
     throw new functions.https.HttpsError('invalid-argument', 'Parâmetros inválidos.');
   }
 
   const uid = context.auth.uid;
   const cost = req.cost as number;
   const title = req.title as string;
-  const rewardId = req.rewardId as string;
+  const rewardId = String(req.rewardId).trim();
+  if (!rewardId) {
+    throw new functions.https.HttpsError('invalid-argument', 'rewardId não pode ser vazio.');
+  }
   const idempotencyKeyStr = req.idempotencyKey as string;
   const idempotencyKey = `redeem:${uid}:${idempotencyKeyStr.trim()}`;
   const now = new Date();

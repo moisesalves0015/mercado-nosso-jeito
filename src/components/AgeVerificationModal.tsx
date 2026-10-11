@@ -1,14 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function AgeVerificationModal() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const verified = localStorage.getItem('age_verified');
-    if (!verified) {
-      setIsOpen(true);
-    }
-  }, []);
+  const [isOpen, setIsOpen] = useState(() => {
+    return !localStorage.getItem('age_verified');
+  });
 
   const handleConfirm = () => {
     localStorage.setItem('age_verified', 'true');

@@ -3,19 +3,32 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firesto
 import { db } from '../firebase';
 import { Gem, Plus, Trash2 } from 'lucide-react';
 
+interface AdminMission {
+  id: string;
+  title?: string;
+  reward?: number;
+  is_active?: boolean;
+}
+
+interface AdminReward {
+  id: string;
+  title?: string;
+  cost?: number;
+}
+
 export const AdminClube: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'missoes' | 'recompensas' | 'config'>('missoes');
 
   // Mocks/State for Admin Collections
-  const [missions, setMissions] = useState<any[]>([]);
-  const [rewards, setRewards] = useState<any[]>([]);
+  const [missions, setMissions] = useState<AdminMission[]>([]);
+  const [rewards, setRewards] = useState<AdminReward[]>([]);
 
   useEffect(() => {
     const unsub1 = onSnapshot(collection(db, 'daily_missions'), snap => {
-      setMissions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setMissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminMission)));
     });
     const unsub2 = onSnapshot(collection(db, 'diamond_rewards'), snap => {
-      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminReward)));
     });
     return () => { unsub1(); unsub2(); };
   }, []);

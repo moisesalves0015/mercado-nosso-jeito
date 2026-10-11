@@ -141,6 +141,7 @@ export function Checkout() {
 
   useEffect(() => {
     if (!isPixAvailable && paymentMethod === 'pix') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentMethod('on_delivery');
     }
   }, [isPixAvailable, paymentMethod]);

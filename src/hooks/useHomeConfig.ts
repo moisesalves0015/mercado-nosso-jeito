@@ -67,14 +67,16 @@ export const useHomeConfig = () => {
     // Escutar vitrines
     const unsubVitrines = onSnapshot(collection(db, 'home-config', 'data', 'vitrines'), (snap) => {
       const vitrinesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as VitrineConfig));
-      setConfig(prev => ({ ...prev, vitrines: vitrinesData }));
+      setConfig(prev => ({ ...prev, vitrines: vitrinesData, loading: false }));
+    }, () => {
+      setConfig(prev => ({ ...prev, loading: false }));
     });
 
     // Escutar configurações de período
     const unsubPeriods = onSnapshot(collection(db, 'home-config', 'data', 'period-config'), (snap) => {
       const periodsData: Record<string, PeriodConfig> = {};
       snap.docs.forEach(doc => {
-        periodsData[doc.id] = { id: doc.id as any, ...doc.data() } as PeriodConfig;
+        periodsData[doc.id] = { id: doc.id as PeriodConfig['id'], ...doc.data() } as PeriodConfig;
       });
       setConfig(prev => ({ ...prev, periodConfig: periodsData }));
     });
@@ -90,9 +92,6 @@ export const useHomeConfig = () => {
       const heroBannersData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as HeroBannerConfig));
       setConfig(prev => ({ ...prev, heroBanners: heroBannersData }));
     });
-
-    // Set loading to false after initial subscriptions
-    setConfig(prev => ({ ...prev, loading: false }));
 
     return () => {
       unsubVitrines();

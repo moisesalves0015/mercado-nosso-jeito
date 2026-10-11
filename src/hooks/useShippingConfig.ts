@@ -17,15 +17,16 @@ export const DEFAULT_SHIPPING: ShippingConfig = {
   }
 };
 
-export const normalizeCondosMap = (rawCondos: any): Record<string, number> => {
+export const normalizeCondosMap = (rawCondos: unknown): Record<string, number> => {
   if (!rawCondos) return { ...DEFAULT_SHIPPING.condos };
   const result: Record<string, number> = {};
   if (Array.isArray(rawCondos)) {
-    rawCondos.forEach((item: any) => {
+    rawCondos.forEach((item: unknown) => {
       if (typeof item === 'string' && item.trim()) {
         result[item.trim()] = 0;
-      } else if (item && typeof item === 'object' && item.name) {
-        result[String(item.name).trim()] = Number(item.fee) || 0;
+      } else if (item && typeof item === 'object' && 'name' in item) {
+        const namedItem = item as { name: unknown; fee?: unknown };
+        result[String(namedItem.name).trim()] = Number(namedItem.fee) || 0;
       }
     });
   } else if (typeof rawCondos === 'object') {

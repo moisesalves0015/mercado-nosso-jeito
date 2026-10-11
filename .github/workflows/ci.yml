@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java (for Firebase Firestore Emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Clean install dependencies (Root)
+        run: npm ci
+
+      - name: Clean install dependencies (Functions)
+        run: npm --prefix functions ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Build Functions Backend
+        run: npm --prefix functions run build
+
+      - name: Run Functions Unit Tests
+        run: npm --prefix functions test
+
+      - name: Run Firestore Security Rules Tests
+        run: npx firebase emulators:exec --only firestore --project mercado-nosso-jeito-test "npx jest firestore.rules.test.js"
