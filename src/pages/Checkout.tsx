@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { createOrderViaFunction, type CreateOrderResult } from '../hooks/useOrders';
-import { generatePaymentIntent, type PaymentIntentResponse } from '../services/paymentService';
 import { useToast } from '../contexts/ToastContext';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { useAdminConfig } from '../hooks/useAdminConfig';
@@ -54,13 +53,6 @@ const COMPLEMENTARY_PRODUCTS = [
   { id: 'prod-melitta', title: 'Café Melitta', price: 24.50, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80' },
 ];
 
-/**
- * PAYMENT_MODE controls whether the Pix flow is real or simulated.
- * Set VITE_PAYMENT_MODE=production in your environment to enable real payments.
- * In demo mode a visible banner is shown and paymentStatus stays 'pending'.
- */
-// const PAYMENT_MODE = (import.meta.env.VITE_PAYMENT_MODE as string | undefined) ?? 'demo';
-
 export function Checkout() {
   const navigate = useNavigate();
   const { cartItems, totalPrice, clearCart, addToCart } = useCart();
@@ -108,11 +100,10 @@ export function Checkout() {
   const [step, setStep] = useState<CheckoutStep>('summary');
   const [loading, setLoading] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<CreateOrderResult | null>(null);
-  const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'on_delivery'>('pix');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'on_delivery'>('pix');
 
   // Coupon (sent to backend for authoritative validation — no discount computed client-side)
   const [couponCode, setCouponCode] = useState('');
@@ -236,16 +227,6 @@ export function Checkout() {
         idempotencyKey: idempotencyKeyRef.current,
         notes: undefined,
       });
-
-      let paymentRes: PaymentIntentResponse | null = null;
-      if (paymentMethod === 'credit_card') {
-        paymentRes = await generatePaymentIntent(result.orderId, result.total, paymentMethod);
-        if (!paymentRes.success) {
-          toastError('Erro no pagamento', paymentRes.errorMessage || 'Falha na geração do pagamento');
-        } else {
-          setPaymentData(paymentRes);
-        }
-      }
 
       setConfirmedOrder(result);
       clearCart();
@@ -611,21 +592,6 @@ export function Checkout() {
                   </p>
                 </div>
               ) : null}
-
-              {paymentData?.pixCopiaECola && (
-                <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '16px', marginBottom: 14 }}>
-                  <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text-primary)', textAlign: 'center' }}>Pague via Pix Copia e Cola</h3>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 10 }}>
-                    Copie o código abaixo e cole no seu aplicativo bancário:
-                  </div>
-                  <div style={{ background: 'var(--input-bg)', padding: '10px', borderRadius: 8, wordBreak: 'break-all', fontSize: 10, color: 'var(--text-primary)', border: '1px dashed var(--border-primary)', marginBottom: 10 }}>
-                    {paymentData.pixCopiaECola}
-                  </div>
-                  <button onClick={() => { navigator.clipboard.writeText(paymentData.pixCopiaECola!); toastSuccess('Copiado!', 'Código Pix copiado para a área de transferência'); }} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', border: '1px solid #34C759', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
-                    Copiar Código Pix
-                  </button>
-                </div>
-              )}
 
               {paymentMethod === 'pix' && adminConfig.pixKey && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
