@@ -136,15 +136,6 @@ export function Checkout() {
   const previewDeliveryFee = getPreviewDeliveryFee(totalPrice - previewDiscount);
   const previewTotal = Math.max(0.01, totalPrice - previewDiscount + previewDeliveryFee);
 
-  // Countdown for payment (10 minutes)
-  const [timeLeft, setTimeLeft] = useState(600);
-
-  useEffect(() => {
-    if (step === 'success' && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft((p) => p - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [step, timeLeft]);
 
   useEffect(() => {
     if (deliveryMethod === 'lobby' && paymentMethod === 'on_delivery' && isPixAvailable) {
@@ -178,11 +169,6 @@ export function Checkout() {
     void loadAddresses();
   }, [step, user]);
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
 
   /** Coupon is validated server-side on submission; this just marks intent. */
   const applyCouponLocally = async () => {
@@ -613,11 +599,8 @@ export function Checkout() {
                     <Clock size={15} />
                     <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Aguardando Pagamento & Conferência</span>
                   </div>
-                  <div style={{ fontSize: 30, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '1px', marginBottom: 8 }}>
-                    {formatTime(timeLeft)}
-                  </div>
                   <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                    Transfira o valor exato via Pix abaixo. Seu pedido foi registrado com status <strong>Aguardando Conferência</strong> e será preparado assim que o pagamento for validado pelo operador.
+                    Transfira o valor exato via Pix abaixo. Seu pedido foi registrado com status <strong>Aguardando Conferência</strong> e será preparado assim que o operador confirmar o recebimento. A conferência é manual e pode levar alguns minutos.
                   </p>
                 </div>
               ) : paymentMethod === 'on_delivery' ? (
