@@ -615,19 +615,45 @@ export const Admin: React.FC = () => {
   };
   const banClient = async (client: FirestoreClient) => {
     if (!window.confirm(`Banir ${client.name}?`)) return;
-    try { await updateDoc(doc(db, 'users', client.id), { role: 'banned' }); setClients(prev => prev.map(c => c.id === client.id ? { ...c, role: 'banned' } : c)); }
-    catch { alert('Erro ao banir.'); }
+    try {
+      // Se era admin, revogar custom claim também no servidor
+      if (client.role === 'admin') {
+        await httpsCallable<{ targetUid: string; isAdmin: boolean }, { success: boolean }>(fns, 'setAdminClaim')({ targetUid: client.id, isAdmin: false });
+      }
+      await updateDoc(doc(db, 'users', client.id), { role: 'banned' });
+      setClients(prev => prev.map(c => c.id === client.id ? { ...c, role: 'banned' } : c));
+      alert('✅ Usuário banido.');
+    } catch (err: unknown) {
+      alert(`Erro ao banir usuário: ${(err as Error)?.message || 'Erro'}`);
+    }
   };
   const handleAwardDiamonds = async () => {
     if (!selectedClient) return;
     const amount = parseInt(awardAmount);
-    if (isNaN(amount) || amount <= 0) { alert('Quantidade inválida.'); return; }
+    if (isNaN(amount) || amount === 0 || Math.abs(amount) > 10000) {
+      alert('Quantidade inválida (deve ser um inteiro entre -10.000 e 10.000).');
+      return;
+    }
     try {
-      const newTotal = (selectedClient.diamonds || 0) + amount;
-      await updateDoc(doc(db, 'users', selectedClient.id), { diamonds: newTotal });
+      const grantDiamondsCallable = httpsCallable<
+        { targetUid: string; amount: number; reason: string; idempotencyKey: string },
+        { success: boolean; newBalance: number }
+      >(fns, 'adminGrantDiamonds');
+
+      const result = await grantDiamondsCallable({
+        targetUid: selectedClient.id,
+        amount,
+        reason: 'Concessão manual via painel administrativo',
+        idempotencyKey: `manual-grant-${selectedClient.id}-${Date.now()}`
+      });
+
+      const newTotal = result.data.newBalance;
       setClients(prev => prev.map(c => c.id === selectedClient.id ? { ...c, diamonds: newTotal } : c));
-      setIsAwardModalOpen(false); alert(`✅ ${amount} 💎 creditados para ${selectedClient.name}!`);
-    } catch { alert('Erro ao conceder diamantes.'); }
+      setIsAwardModalOpen(false);
+      alert(`✅ ${amount} 💎 creditados para ${selectedClient.name}! Novo saldo: ${newTotal}`);
+    } catch (err: unknown) {
+      alert(`Erro ao conceder diamantes: ${(err as Error)?.message || 'Erro'}`);
+    }
   };
 
   // Roulette

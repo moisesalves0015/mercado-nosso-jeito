@@ -265,15 +265,18 @@ describe('createOrder', () => {
       expect(stockOf('p1')).toBe(8);
     });
 
-    it('requisições simultâneas com a mesma chave criam um único pedido', async () => {
+    it('requisições simultâneas com a mesma chave criam um único pedido e retornam o mesmo orderId', async () => {
       const payload = orderPayload();
-      const results = await Promise.allSettled([
+      const results = await Promise.all([
         call(createOrder, payload, asUser(CUSTOMER)),
         call(createOrder, payload, asUser(CUSTOMER)),
         call(createOrder, payload, asUser(CUSTOMER)),
       ]);
 
-      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const firstId = results[0].orderId;
+      for (const res of results) {
+        expect(res.orderId).toBe(firstId);
+      }
       expect(orderPaths()).toHaveLength(1);
       expect(stockOf('p1')).toBe(8);
     });

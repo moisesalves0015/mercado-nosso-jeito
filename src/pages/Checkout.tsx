@@ -593,7 +593,17 @@ export function Checkout() {
               </p>
 
               {/* Payment countdown or On Delivery badge */}
-              {paymentMethod === 'pix' ? (
+              {confirmedOrder.paymentStatus === 'approved' ? (
+                <div style={{ background: 'rgba(52,199,89,0.06)', border: '1.5px solid rgba(52,199,89,0.3)', borderRadius: 12, padding: '14px', marginBottom: 14, textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#34C759', marginBottom: 6 }}>
+                    <ShieldCheck size={16} />
+                    <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>Pagamento Aprovado</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
+                    O pagamento deste pedido já foi confirmado! Ele está em preparação para entrega.
+                  </p>
+                </div>
+              ) : paymentMethod === 'pix' ? (
                 <div style={{ background: 'rgba(212,175,55,0.06)', border: '1.5px solid var(--border-gold)', borderRadius: 12, padding: '12px 14px', marginBottom: 14, textAlign: 'center', boxShadow: '0 4px 20px rgba(212,175,55,0.08)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#D4AF37', marginBottom: 7 }}>
                     <Clock size={15} />

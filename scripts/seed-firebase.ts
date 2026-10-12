@@ -71,6 +71,7 @@ interface Options {
   projectId: string;
   apply: boolean;
   resetStock: boolean;
+  updateExisting: boolean;
 }
 
 function parseArgs(argv: string[]): Options {
@@ -89,12 +90,16 @@ function parseArgs(argv: string[]): Options {
     console.error('   Confirme com --i-know-this-resets-stock (apenas em ambiente SEM vendas).');
     process.exit(1);
   }
-  return { projectId, apply: argv.includes('--apply'), resetStock };
+  const updateExisting = argv.includes('--update-existing');
+  return { projectId, apply: argv.includes('--apply'), resetStock, updateExisting };
 }
 
 async function seedData(opts: Options) {
   const mode = opts.apply ? 'APPLY (GRAVANDO)' : 'DRY-RUN (nada será gravado)';
   console.log(`--- SEED FIREBASE | projeto: ${opts.projectId} | modo: ${mode} ---`);
+  if (!opts.updateExisting) {
+    console.log('ℹ️  Modo seguro: produtos existentes NÃO serão modificados (use --update-existing para forçar atualização).');
+  }
 
   const validation = validateProducts(defaultProducts);
   if (!validation.valid) {
@@ -112,6 +117,7 @@ async function seedData(opts: Options) {
   const existingSnaps = await db.getAll(...defaultProducts.map((p) => productsCol.doc(p.id)));
   let created = 0;
   let updated = 0;
+  let skipped = 0;
   let stockKept = 0;
 
   let batch = db.batch();
@@ -119,6 +125,11 @@ async function seedData(opts: Options) {
   for (let i = 0; i < defaultProducts.length; i++) {
     const prod = defaultProducts[i];
     const exists = existingSnaps[i].exists;
+
+    if (exists && !opts.updateExisting) {
+      skipped++;
+      continue;
+    }
 
     const data: Record<string, unknown> = {
       title: prod.title,
@@ -158,7 +169,7 @@ async function seedData(opts: Options) {
   }
   if (opts.apply && pending > 0) await batch.commit();
   console.log(
-    `📦 Produtos: ${created} a criar, ${updated} a atualizar, estoque preservado em ${stockKept} existentes.`,
+    `📦 Produtos: ${created} a criar, ${updated} a atualizar, ${skipped} mantidos intactos (não modificados), estoque preservado em ${stockKept}.`,
   );
 
   // 2. Frete — só cria se não existir (nunca sobrescreve configuração real)

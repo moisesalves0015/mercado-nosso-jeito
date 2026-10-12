@@ -942,6 +942,30 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       // Re-check idempotency strictly inside the transaction
       const txnIdempSnap = await transaction.get(idempotencyRef);
       if (txnIdempSnap.exists) {
+        const idempData = txnIdempSnap.data();
+        if (idempData?.orderId) {
+          if (typeof idempData.fingerprint === 'string' && idempData.fingerprint !== fingerprint) {
+            throw new functions.https.HttpsError(
+              'already-exists',
+              'Esta chave já foi usada para um pedido diferente. Revise o carrinho e tente novamente.',
+            );
+          }
+          const racedOrderSnap = await transaction.get(db.collection('orders').doc(idempData.orderId as string));
+          if (racedOrderSnap.exists) {
+            const d = racedOrderSnap.data()!;
+            return {
+              orderId: racedOrderSnap.id,
+              orderNumber: String(d['orderNumber'] ?? ''),
+              total: Number(d['total'] ?? 0),
+              subtotal: Number(d['subtotal'] ?? 0),
+              deliveryFee: Number(d['deliveryFee'] ?? 0),
+              discount: Number(d['discount'] ?? 0),
+              couponApplied: !!d['coupon'],
+              status: String(d['status'] ?? 'pending'),
+              paymentStatus: String(d['paymentStatus'] ?? ''),
+            };
+          }
+        }
         throw new functions.https.HttpsError('already-exists', 'Idempotência: Pedido já foi criado ou está em processamento.');
       }
 
