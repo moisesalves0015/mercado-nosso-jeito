@@ -99,6 +99,29 @@ describe('Firestore Rules - Security & Hardening', () => {
     await assertSucceeds(adminDb.collection('orders').doc('order_2').get());
   });
 
+  it('Denies admins from mutating orders directly (must use callables)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('orders').doc('order_3').set({ uid: 'user_123', status: 'pending', paymentStatus: 'awaiting_confirmation' });
+    });
+    const adminDb = testEnv.authenticatedContext('admin_1', { admin: true }).firestore();
+    const ref = adminDb.collection('orders').doc('order_3');
+    await assertFails(ref.update({ paymentStatus: 'approved' }));
+    await assertFails(ref.update({ status: 'delivered' }));
+    await assertFails(ref.delete());
+  });
+
+  it('Denies the order owner from editing or self-approving their own order', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('orders').doc('order_4').set({ uid: 'user_123', status: 'pending', paymentStatus: 'awaiting_confirmation', total: 100 });
+    });
+    const ownerDb = testEnv.authenticatedContext('user_123').firestore();
+    const ref = ownerDb.collection('orders').doc('order_4');
+    await assertFails(ref.update({ paymentStatus: 'approved' }));
+    await assertFails(ref.update({ total: 0.01 }));
+    await assertFails(ref.delete());
+  });
+
+
   it('Denies clients from reading coupons', async () => {
     const authedDb = testEnv.authenticatedContext('user_123').firestore();
     const docRef = authedDb.collection('coupons').doc('CODE10');

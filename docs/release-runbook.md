@@ -76,14 +76,22 @@ Durante a fase de testes com o grupo piloto (1º a 3º dia):
 
 ## 5. Checklist Final para Abertura ao Público
 
-- [x] Testes unitários das Cloud Functions passando (12/12 invariantes aprovados).
-- [x] Regras de segurança do Firestore (`firestore.rules`) publicadas e bloqueando escritas diretas de clientes.
-- [x] Índices compostos (`firestore.indexes.json`) implantados e ativos no banco.
-- [x] Cloud Functions essenciais publicadas no Firebase us-central1 (`createOrder`, `confirmPayment`, `cancelOrder`, `updateOrderStatus`, etc.).
-- [x] Produtos avaliados e validados via script com preço positivo, estoque inteiro e imagem (`scripts/validate-products.ts`).
-- [x] Regras de frete por condomínio e valores mínimos configurados em `/settings/shipping`.
-- [x] Dados de recebimento Pix manual (chave e instrução) configurados e testados.
-- [x] Administrador inicial promovido via Custom Claims (`admin: true`).
-- [ ] Variáveis de ambiente configuradas no Vercel (Production) sem chaves versionadas.
-- [ ] Smoke test executado pelo operador e cliente no domínio piloto.
-- [ ] Canal de atendimento/WhatsApp visível e testado pelos usuários do condomínio.
+> Legenda: `[x]` = verificado (código/testes/deploy comprovados). `[ ]` = pendente ou não verificado. Staging ≠ produção.
+
+- [x] Build frontend e Functions, lint (0 erros) e testes comportamentais das Functions passando.
+- [x] `npm ci` validado com npm 10 (mesmo da CI Node 20).
+- [x] Pagamento simulado removido do bundle; servidor rejeita `credit_card`.
+- [x] `/orders` imutável pelo cliente, inclusive admin (somente callables).
+- [x] Firestore rules, índices e 15 Functions publicados em **staging** (`nosso-mercado-4b877`).
+- [ ] Reimplantar Functions em staging com as últimas mudanças (idempotência por conteúdo, frete falha fechado).
+- [ ] Storage habilitado no console e `storage.rules` implantadas (deploy anterior falhou), ou upload desativado.
+- [ ] Projeto Firebase de **produção** criado e configurado (`nosso-mercado-prod`); staging e produção ainda usam alias diferente apenas no `.firebaserc`.
+- [ ] Catálogo importado com `npm run seed` (dry-run revisado) e estoque real conferido.
+- [ ] `/settings/shipping` populado com condomínios e taxas reais.
+- [ ] Chave Pix e nome do recebedor configurados em `settings/admin` (checkout desabilita Pix sem chave).
+- [ ] Admin inicial com Custom Claim (`scripts/set-admin.js`) e token verificado no painel.
+- [ ] Política de expiração de Pix pendente definida e implementada (hoje o contador de 10 min é apenas visual).
+- [ ] Variáveis `VITE_*` configuradas na Vercel (Production) sem chaves versionadas.
+- [ ] Smoke test cliente + admin no staging (pedido Pix de ponta a ponta, cancelamento e estoque).
+- [ ] Canal de atendimento visível e responsável de plantão definido.
+- [ ] Procedimento presencial de verificação de idade para produtos restritos validado.

@@ -13,7 +13,8 @@ import {
   PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts';
 import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, fns } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 import { AdminMarketing } from '../components/AdminMarketing';
 import { AdminClube } from './AdminClube';
 import {
@@ -603,8 +604,14 @@ export const Admin: React.FC = () => {
 
   const promoteToAdmin = async (client: FirestoreClient) => {
     if (!window.confirm(`Promover ${client.name} a administrador?`)) return;
-    try { await updateDoc(doc(db, 'users', client.id), { role: 'admin' }); setClients(prev => prev.map(c => c.id === client.id ? { ...c, role: 'admin' } : c)); }
-    catch { alert('Erro ao promover usuário.'); }
+    try {
+      // Server-side: sets the Custom Claim AND syncs users/{uid}.role.
+      await httpsCallable<{ targetUid: string; isAdmin: boolean }, { success: boolean }>(fns, 'setAdminClaim')({ targetUid: client.id, isAdmin: true });
+      setClients(prev => prev.map(c => c.id === client.id ? { ...c, role: 'admin' } : c));
+      alert('✅ Usuário promovido. Ele precisa sair e entrar novamente para o acesso valer.');
+    } catch (err: unknown) {
+      alert(`Erro ao promover usuário: ${(err as Error)?.message || 'Erro'}`);
+    }
   };
   const banClient = async (client: FirestoreClient) => {
     if (!window.confirm(`Banir ${client.name}?`)) return;

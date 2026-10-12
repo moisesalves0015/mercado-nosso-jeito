@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 import { defaultProducts, Product } from '../src/data/defaultProducts';
 
 interface ValidationError {
@@ -62,12 +63,16 @@ export function validateProducts(products: Product[]): {
   };
 }
 
-const report = validateProducts(defaultProducts);
-console.log(`--- RELATÓRIO DE VALIDAÇÃO DE PRODUTOS ---`);
-console.log(`Total de produtos avaliados: ${report.total}`);
-console.log(`Erros encontrados: ${report.errors.length}`);
-if (!report.valid) {
-  console.table(report.errors);
-} else {
-  console.log(`✅ Todos os produtos passaram na validação com sucesso!`);
+const isDirectRun = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+if (isDirectRun) {
+  const report = validateProducts(defaultProducts);
+  console.log(`--- RELATÓRIO DE VALIDAÇÃO DE PRODUTOS ---`);
+  console.log(`Total de produtos avaliados: ${report.total}`);
+  console.log(`Erros encontrados: ${report.errors.length}`);
+  if (!report.valid) {
+    console.table(report.errors);
+    process.exitCode = 1;
+  } else {
+    console.log(`✅ Todos os produtos passaram na validação com sucesso!`);
+  }
 }

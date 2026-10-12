@@ -81,8 +81,10 @@ service cloud.firestore {
                   || isAdmin();
       // No client create: createOrder Cloud Function handles this via Admin SDK.
       allow create: if false;
-      // Only admins (or Cloud Functions) can update or delete orders.
-      allow update, delete: if isAdmin();
+      // No client update/delete — not even admins. Every mutation (payment, status,
+      // cancellation + stock refund) must go through the transactional callables
+      // (confirmPayment, updateOrderStatus, cancelOrder), which use the Admin SDK.
+      allow update, delete: if false;
     }
 
     // ─── Coupons ──────────────────────────────────────────────────────────────

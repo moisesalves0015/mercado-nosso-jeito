@@ -833,6 +833,16 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     const notes = req.notes ? String(req.notes).trim() : undefined;
     const idempotencyKey = `order:${uid}:${String(req.idempotencyKey)}`;
 
+    // Fingerprint of the order content: the same key must always mean the same order.
+    const fingerprint = JSON.stringify({
+      items: [...productItems].sort((a, b) => a.productId.localeCompare(b.productId)),
+      addressId,
+      deliveryMethod,
+      paymentMethod,
+      couponCode: couponCode ?? null,
+      notes: notes ?? null,
+    });
+
     // ── 3. Idempotency check ──────────────────────────────────────────────────
     // Use a deterministic document for idempotency to avoid race conditions.
     const idempotencyRef = db.collection('users').doc(uid).collection('order_requests').doc(String(req.idempotencyKey));
@@ -845,6 +855,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       functions.logger.info('createOrder: idempotent return (pre-check)', { orderId: existingReq?.orderId, uid });
       if (!existingReq || !existingReq.orderId) {
         throw new functions.https.HttpsError('aborted', 'Requisição anterior ainda em processamento.');
+      }
+      if (typeof existingReq.fingerprint === 'string' && existingReq.fingerprint !== fingerprint) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'Esta chave já foi usada para um pedido diferente. Revise o carrinho e tente novamente.',
+        );
       }
       
       // Fetch the actual order to return
@@ -859,7 +875,9 @@ export const createOrder = functions.https.onCall(async (data, context) => {
           deliveryFee: Number(d['deliveryFee'] ?? 0),
           discount: Number(d['discount'] ?? 0),
           couponApplied: !!d['coupon'],
-          status: 'pending' as const,
+          // Real current state — the order may already have advanced since creation.
+          status: String(d['status'] ?? 'pending'),
+          paymentStatus: String(d['paymentStatus'] ?? ''),
         };
       }
     }
@@ -911,7 +929,12 @@ export const createOrder = functions.https.onCall(async (data, context) => {
     }
 
     if (!shippingConfigFound) {
-      functions.logger.warn('createOrder: /settings/shipping não encontrado no Firestore. Aplicando configuração padrão de contingência.');
+      // Fail closed: never charge default fees silently when the store has not configured shipping.
+      functions.logger.error('createOrder: /settings/shipping ausente ou ilegível — pedido recusado.');
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Frete não configurado. Tente novamente em instantes ou contate o suporte.',
+      );
     }
 
     // ── 6. Transactional: validate products + stock + coupon → create order ───
@@ -1100,6 +1123,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
       // Write idempotency document atomically
       transaction.set(idempotencyRef, {
         orderId,
+        fingerprint,
         createdAt: nowTs,
         payload: { ...req }
       });
@@ -1144,6 +1168,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
         discount:     clampedDiscount,
         couponApplied: !!appliedCoupon,
         status: 'pending' as const,
+        paymentStatus: initialPaymentStatus,
       };
     });
   } catch (err: unknown) {

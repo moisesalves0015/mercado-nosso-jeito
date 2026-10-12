@@ -47,6 +47,23 @@ function parseOrderError(err: unknown): string {
   return 'Erro ao processar o pedido. Tente novamente.';
 }
 
+/**
+ * True when we cannot know whether the server created the order (connection lost, timeout,
+ * internal/unknown error). Definitive business errors return false.
+ */
+function isAmbiguousOrderError(err: unknown): boolean {
+  const code = err && typeof err === 'object' ? (err as { code?: string }).code : undefined;
+  if (!code) return true; // not a Firebase error (e.g. raw network failure)
+  return [
+    'functions/unavailable',
+    'functions/deadline-exceeded',
+    'functions/internal',
+    'functions/unknown',
+    'functions/aborted',
+    'functions/cancelled',
+  ].includes(code);
+}
+
 // ── Complementary products shown in summary step ───────────────────────────────
 const COMPLEMENTARY_PRODUCTS = [
   { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
@@ -78,8 +95,8 @@ export function Checkout() {
   const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
   const progressPercent = Math.min((totalPrice / freeShippingThreshold) * 100, 100);
 
-  const getPreviewDeliveryFee = (): number => {
-    if (totalPrice >= freeShippingThreshold) return 0;
+  const getPreviewDeliveryFee = (afterDiscount: number): number => {
+    if (afterDiscount >= freeShippingThreshold) return 0;
     if (!address) return baseShippingFee;
     const streetLower = (address.street ?? '').toLowerCase();
     const neighborhoodLower = (address.neighborhood ?? '').toLowerCase();
@@ -94,8 +111,6 @@ export function Checkout() {
     return baseShippingFee;
   };
 
-  const previewDeliveryFee = getPreviewDeliveryFee();
-
   // Step / UI
   const [step, setStep] = useState<CheckoutStep>('summary');
   const [loading, setLoading] = useState(false);
@@ -105,13 +120,21 @@ export function Checkout() {
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'on_delivery'>('pix');
 
-  // Coupon (sent to backend for authoritative validation — no discount computed client-side)
+  // Coupon: validated by the backend (validateCoupon); the final discount is always recomputed server-side.
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [couponInfo, setCouponInfo] = useState<{ type: string; value: number } | null>(null);
 
-  // Preview discount shown before order is placed (not authoritative)
-  const previewDiscount = couponApplied ? totalPrice * 0.1 : 0; // visual only
-  const previewTotal = totalPrice - previewDiscount + previewDeliveryFee;
+  // Preview mirrors the server rules (percentage value is a 0..1 fraction; fixed is capped at subtotal).
+  const previewDiscount = (() => {
+    if (!couponApplied || !couponInfo) return 0;
+    const raw = couponInfo.type === 'percentage'
+      ? totalPrice * Math.min(Math.max(couponInfo.value, 0), 1)
+      : Math.min(couponInfo.value, totalPrice);
+    return Math.max(0, raw);
+  })();
+  const previewDeliveryFee = getPreviewDeliveryFee(totalPrice - previewDiscount);
+  const previewTotal = Math.max(0.01, totalPrice - previewDiscount + previewDeliveryFee);
 
   // Countdown for payment (10 minutes)
   const [timeLeft, setTimeLeft] = useState(600);
@@ -171,14 +194,23 @@ export function Checkout() {
     
     setLoading(true);
     try {
-      const validateFn = httpsCallable<{ code: string }, { valid: boolean; error?: string; discountType?: string; discountValue?: number }>(fns, 'validateCoupon');
+      const validateFn = httpsCallable<{ code: string }, { valid: boolean; error?: string; discountType?: string; discountValue?: number; minOrderValue?: number }>(fns, 'validateCoupon');
       const res = await validateFn({ code });
-      
+
       if (res.data.valid) {
+        const minOrder = Number(res.data.minOrderValue ?? 0);
+        if (minOrder > 0 && totalPrice < minOrder) {
+          setCouponApplied(false);
+          setCouponInfo(null);
+          toastError('Cupom indisponível', `Pedido mínimo para este cupom: R$ ${minOrder.toFixed(2)}.`);
+          return;
+        }
+        setCouponInfo({ type: String(res.data.discountType ?? 'fixed'), value: Number(res.data.discountValue ?? 0) });
         setCouponApplied(true);
-        toastSuccess('Cupom registrado', 'O desconto será aplicado ao finalizar o pedido.');
+        toastSuccess('Cupom aplicado', 'O valor final é confirmado pelo servidor ao finalizar o pedido.');
       } else {
         setCouponApplied(false);
+        setCouponInfo(null);
         toastError('Cupom inválido', res.data.error || 'Não foi possível aplicar o cupom.');
       }
     } catch {
@@ -246,11 +278,18 @@ export function Checkout() {
       setStep('success');
     } catch (err: unknown) {
       console.error('createOrderViaFunction error:', err);
-      const msg = parseOrderError(err);
+      const ambiguous = isAmbiguousOrderError(err);
+      const msg = ambiguous
+        ? 'Não conseguimos confirmar se o pedido foi criado (falha de conexão). Toque em Finalizar novamente: não vamos duplicar o pedido. Se preferir, confira em "Meus pedidos".'
+        : parseOrderError(err);
       setError(msg);
-      toastError('Erro no pedido', msg);
-      // Renew idempotency key so the user can retry
-      idempotencyKeyRef.current = crypto.randomUUID();
+      toastError(ambiguous ? 'Conexão instável' : 'Erro no pedido', msg);
+      // Ambiguous failure (network/timeout/internal): the server may already have created the order.
+      // KEEP the idempotency key so the retry returns that same order instead of creating a second one.
+      // Definitive failure (validation/stock/coupon/permission): nothing was created, so renew the key.
+      if (!ambiguous) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
     } finally {
       setLoading(false);
       submittingRef.current = false;

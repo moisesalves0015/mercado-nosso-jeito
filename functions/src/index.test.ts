@@ -165,6 +165,16 @@ describe('createOrder', () => {
     expect(res.deliveryFee).toBe(3);
   });
 
+  it('recusa o pedido quando o frete não está configurado (sem cobrar valores padrão)', async () => {
+    fakeDb.reset();
+    seedProduct('p1');
+    seedAddress(CUSTOMER);
+    // intentionally NO /settings/shipping and NO /configs/shipping
+    await expectCode(call(createOrder, orderPayload(), asUser(CUSTOMER)), 'failed-precondition');
+    expect(orderPaths()).toHaveLength(0);
+    expect(stockOf('p1')).toBe(10);
+  });
+
   it('rejeita produto inexistente', async () => {
     await expectCode(
       call(createOrder, orderPayload({ productItems: [{ productId: 'nao-existe', quantity: 1 }] }), asUser(CUSTOMER)),
@@ -266,6 +276,50 @@ describe('createOrder', () => {
       expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
       expect(orderPaths()).toHaveLength(1);
       expect(stockOf('p1')).toBe(8);
+    });
+
+    it('retry idempotente (ex.: após timeout) devolve o estado REAL do pedido, não "pending" fixo', async () => {
+      const payload = orderPayload();
+      const first = await call(createOrder, payload, asUser(CUSTOMER));
+      expect(first).toMatchObject({ status: 'pending', paymentStatus: 'awaiting_confirmation' });
+
+      await call(confirmPayment, { orderId: first.orderId }, asAdmin());
+      await call(updateOrderStatus, { orderId: first.orderId, status: 'preparing' }, asAdmin());
+
+      const retry = await call(createOrder, payload, asUser(CUSTOMER));
+      expect(retry.orderId).toBe(first.orderId);
+      expect(retry).toMatchObject({ status: 'preparing', paymentStatus: 'approved' });
+      expect(orderPaths()).toHaveLength(1);
+      expect(stockOf('p1')).toBe(8);
+    });
+
+    it('mesma chave com conteúdo diferente é rejeitada e não devolve o pedido antigo', async () => {
+      const key = newKey();
+      await call(createOrder, orderPayload({ idempotencyKey: key }), asUser(CUSTOMER));
+
+      await expectCode(
+        call(createOrder, orderPayload({ idempotencyKey: key, productItems: [{ productId: 'p1', quantity: 5 }] }), asUser(CUSTOMER)),
+        'already-exists',
+      );
+      expect(orderPaths()).toHaveLength(1);
+      expect(stockOf('p1')).toBe(8);
+    });
+
+    it('a ordem dos itens e a consolidação de duplicados não alteram a identidade do pedido', async () => {
+      seedProduct('p2');
+      const key = newKey();
+      const a = await call(
+        createOrder,
+        orderPayload({ idempotencyKey: key, productItems: [{ productId: 'p1', quantity: 1 }, { productId: 'p2', quantity: 1 }, { productId: 'p1', quantity: 1 }] }),
+        asUser(CUSTOMER),
+      );
+      const b = await call(
+        createOrder,
+        orderPayload({ idempotencyKey: key, productItems: [{ productId: 'p2', quantity: 1 }, { productId: 'p1', quantity: 2 }] }),
+        asUser(CUSTOMER),
+      );
+      expect(b.orderId).toBe(a.orderId);
+      expect(orderPaths()).toHaveLength(1);
     });
 
     it('chaves diferentes criam pedidos diferentes', async () => {

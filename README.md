@@ -12,7 +12,7 @@ Aplicativo 100% digital para um supermercado com foco em entregas em condomínio
 
 - **Node.js** v20+
 - **Firebase CLI** (`npm install -g firebase-tools`)
-- Variáveis de ambiente configuradas no `.env` (ex: `VITE_PAYMENT_MODE=demo`).
+- Variáveis `VITE_FIREBASE_*` e `VITE_ENV` (veja `.env.production.example`). Nunca versione `.env` com chaves reais.
 
 ## Como rodar localmente
 
@@ -56,16 +56,25 @@ npm run test:rules
 ```
 *(Certifique-se de que o Firebase Local Emulator Suite está configurado corretamente no seu projeto, pois o Jest usará a suite `@firebase/rules-unit-testing`.)*
 
-## Deploy 
-
-O Frontend utiliza o Vercel / Firebase Hosting e o Backend as Firebase Cloud Functions (Node 20).
+## Seed do catálogo (seguro)
 
 ```bash
-# Frontend
-npm run build
-firebase deploy --only hosting
-
-# Backend (Functions e Regras)
-npm --prefix functions run build
-firebase deploy --only functions,firestore:rules
+npm run validate:products                                   # valida o catálogo, não grava nada
+npm run seed -- --project <PROJECT_ID>                      # DRY-RUN: mostra o que faria
+npm run seed -- --project <PROJECT_ID> --apply              # grava
 ```
+
+O seed **não sobrescreve estoque** de produtos existentes, **não altera `usesCount`** de cupons e só cria frete/cupons que ainda não existem. Requer credenciais do Admin SDK (`GOOGLE_APPLICATION_CREDENTIALS`). Sem `/settings/shipping` o `createOrder` recusa pedidos (falha fechada).
+
+## Deploy (caminho único)
+
+- **Frontend:** Vercel (usa `vercel.json`). Não há Firebase Hosting configurado. Variáveis `VITE_*` ficam no painel da Vercel (Preview = staging, Production = produção).
+- **Backend:** Firebase (Functions, Firestore rules/indexes e Storage). **Sempre informe o projeto explicitamente** — `default` e `staging` apontam para o mesmo projeto:
+
+```bash
+npm --prefix functions run build
+npx firebase deploy --only functions,firestore:rules,firestore:indexes --project <PROJECT_ID>
+npx firebase deploy --only storage --project <PROJECT_ID>   # exige Storage habilitado no console
+```
+
+Rollback e plantão: veja [`docs/release-runbook.md`](docs/release-runbook.md).

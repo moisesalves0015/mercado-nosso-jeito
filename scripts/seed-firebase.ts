@@ -2,78 +2,100 @@ import admin from 'firebase-admin';
 import { defaultProducts } from '../src/data/defaultProducts';
 import { validateProducts } from './validate-products';
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  // If GOOGLE_APPLICATION_CREDENTIALS or application default is set, use it;
-  // otherwise, default to the projectId
-  const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'nosso-mercado-4b877';
-  admin.initializeApp({
-    projectId,
-  });
-}
-
-const db = admin.firestore();
+/**
+ * Seed / importação inicial do catálogo e configuração.
+ *
+ * SEGURO POR PADRÃO:
+ *  - Sem --apply roda em DRY-RUN: valida e mostra o que faria, sem gravar nada.
+ *  - --project <id> é OBRIGATÓRIO (sem projeto padrão silencioso).
+ *  - Produtos existentes NUNCA têm o estoque sobrescrito (use --reset-stock apenas em
+ *    ambiente sem vendas, e informe --i-know-this-resets-stock).
+ *  - Frete e cupons só são criados se ainda não existirem; contadores (usesCount)
+ *    e configuração real nunca são alterados.
+ *
+ * Uso:
+ *   npm run seed -- --project nosso-mercado-4b877            # dry-run
+ *   npm run seed -- --project nosso-mercado-4b877 --apply    # grava
+ */
 
 export const INITIAL_SHIPPING_CONFIG = {
-  freeShippingThreshold: 60.00,
-  baseShippingFee: 5.00,
+  freeShippingThreshold: 60.0,
+  baseShippingFee: 5.0,
   condos: {
-    'Condomínio Vitória': 0.00,
-    'Residencial Flores': 5.90,
-    'Spazio Di Fiori': 4.50,
-    'Parque das Árvores': 5.00,
-    'Portal dos Pássaros': 0.00,
+    'Condomínio Vitória': 0.0,
+    'Residencial Flores': 5.9,
+    'Spazio Di Fiori': 4.5,
+    'Parque das Árvores': 5.0,
+    'Portal dos Pássaros': 0.0,
   },
   condosList: [
-    { name: 'Condomínio Vitória', fee: 0.00 },
-    { name: 'Residencial Flores', fee: 5.90 },
-    { name: 'Spazio Di Fiori', fee: 4.50 },
-    { name: 'Parque das Árvores', fee: 5.00 },
-    { name: 'Portal dos Pássaros', fee: 0.00 },
+    { name: 'Condomínio Vitória', fee: 0.0 },
+    { name: 'Residencial Flores', fee: 5.9 },
+    { name: 'Spazio Di Fiori', fee: 4.5 },
+    { name: 'Parque das Árvores', fee: 5.0 },
+    { name: 'Portal dos Pássaros', fee: 0.0 },
   ],
-  updatedAt: new Date().toISOString(),
 };
 
 export const INITIAL_COUPONS = [
   {
     code: 'BEMVINDO10',
     type: 'percentage',
-    value: 0.10, // 10%
+    value: 0.1,
     active: true,
-    minOrderValue: 30.00,
+    minOrderValue: 30.0,
     maxUses: 500,
-    usesCount: 0,
     description: '10% de desconto para novos clientes em pedidos acima de R$ 30,00',
-    createdAt: new Date().toISOString(),
   },
   {
     code: 'FRETEGRATIS',
     type: 'fixed',
-    value: 5.00, // Abate taxa de entrega base
+    value: 5.0,
     active: true,
-    minOrderValue: 40.00,
+    minOrderValue: 40.0,
     maxUses: 1000,
-    usesCount: 0,
     description: 'R$ 5,00 de desconto no frete para pedidos a partir de R$ 40,00',
-    createdAt: new Date().toISOString(),
   },
   {
     code: 'NOSSOJEITO5',
     type: 'fixed',
-    value: 5.00, // R$ 5 fixo
+    value: 5.0,
     active: true,
-    minOrderValue: 25.00,
+    minOrderValue: 25.0,
     maxUses: 200,
-    usesCount: 0,
     description: 'R$ 5,00 de desconto promocional',
-    createdAt: new Date().toISOString(),
   },
 ];
 
-async function seedData() {
-  console.log('--- INICIANDO SEED IDEMPOTENTE DO FIREBASE ---');
+interface Options {
+  projectId: string;
+  apply: boolean;
+  resetStock: boolean;
+}
 
-  // 1. Validar produtos antes de gravar
+function parseArgs(argv: string[]): Options {
+  const get = (flag: string) => {
+    const i = argv.indexOf(flag);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  const projectId = get('--project');
+  if (!projectId || projectId.startsWith('--')) {
+    console.error('❌ Informe o projeto de destino: --project <firebase-project-id>');
+    process.exit(1);
+  }
+  const resetStock = argv.includes('--reset-stock');
+  if (resetStock && !argv.includes('--i-know-this-resets-stock')) {
+    console.error('❌ --reset-stock sobrescreve o estoque de produtos existentes.');
+    console.error('   Confirme com --i-know-this-resets-stock (apenas em ambiente SEM vendas).');
+    process.exit(1);
+  }
+  return { projectId, apply: argv.includes('--apply'), resetStock };
+}
+
+async function seedData(opts: Options) {
+  const mode = opts.apply ? 'APPLY (GRAVANDO)' : 'DRY-RUN (nada será gravado)';
+  console.log(`--- SEED FIREBASE | projeto: ${opts.projectId} | modo: ${mode} ---`);
+
   const validation = validateProducts(defaultProducts);
   if (!validation.valid) {
     console.error('❌ Validação de produtos falhou! Abortando importação.');
@@ -82,73 +104,95 @@ async function seedData() {
   }
   console.log(`✅ Validação aprovada: ${validation.total} produtos íntegros.`);
 
-  // 2. Importar produtos de forma idempotente em batches
-  console.log(`📦 Importando ${defaultProducts.length} produtos para a coleção /products...`);
-  const productsCol = db.collection('products');
-  let batch = db.batch();
-  let count = 0;
-  let batchCount = 0;
+  admin.initializeApp({ projectId: opts.projectId });
+  const db = admin.firestore();
 
-  for (const prod of defaultProducts) {
-    const docRef = productsCol.doc(prod.id);
-    const dataToSave: Record<string, unknown> = {
+  // 1. Produtos
+  const productsCol = db.collection('products');
+  const existingSnaps = await db.getAll(...defaultProducts.map((p) => productsCol.doc(p.id)));
+  let created = 0;
+  let updated = 0;
+  let stockKept = 0;
+
+  let batch = db.batch();
+  let pending = 0;
+  for (let i = 0; i < defaultProducts.length; i++) {
+    const prod = defaultProducts[i];
+    const exists = existingSnaps[i].exists;
+
+    const data: Record<string, unknown> = {
       title: prod.title,
       price: prod.price,
-      stock: prod.stock,
       active: prod.active,
       image: prod.image,
       category: prod.category,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
+    if (!exists || opts.resetStock) {
+      data.stock = prod.stock;
+    } else {
+      stockKept++;
+    }
+    if (prod.description) data.description = prod.description;
+    if (prod.costPrice !== undefined) data.costPrice = prod.costPrice;
+    if (prod.badge) data.badge = prod.badge;
+    if (prod.badgeStyle) data.badgeStyle = prod.badgeStyle;
+    if (prod.diamondReward !== undefined) data.diamondReward = prod.diamondReward;
+    if (prod.minStock !== undefined) data.minStock = prod.minStock;
+    if (prod.tags) data.tags = prod.tags;
+    if (prod.promoActive !== undefined) data.promoActive = prod.promoActive;
+    if (prod.promoPrice !== undefined) data.promoPrice = prod.promoPrice;
+    if (prod.availableInRoulette !== undefined) data.availableInRoulette = prod.availableInRoulette;
 
-    if (prod.description) dataToSave.description = prod.description;
-    if (prod.costPrice !== undefined) dataToSave.costPrice = prod.costPrice;
-    if (prod.badge) dataToSave.badge = prod.badge;
-    if (prod.badgeStyle) dataToSave.badgeStyle = prod.badgeStyle;
-    if (prod.diamondReward !== undefined) dataToSave.diamondReward = prod.diamondReward;
-    if (prod.minStock !== undefined) dataToSave.minStock = prod.minStock;
-    if (prod.tags) dataToSave.tags = prod.tags;
-    if (prod.promoActive !== undefined) dataToSave.promoActive = prod.promoActive;
-    if (prod.promoPrice !== undefined) dataToSave.promoPrice = prod.promoPrice;
-    if (prod.availableInRoulette !== undefined) dataToSave.availableInRoulette = prod.availableInRoulette;
+    if (exists) updated++;
+    else created++;
 
-    batch.set(docRef, dataToSave, { merge: true });
-    count++;
+    if (opts.apply) {
+      batch.set(productsCol.doc(prod.id), data, { merge: true });
+      if (++pending === 400) {
+        await batch.commit();
+        batch = db.batch();
+        pending = 0;
+      }
+    }
+  }
+  if (opts.apply && pending > 0) await batch.commit();
+  console.log(
+    `📦 Produtos: ${created} a criar, ${updated} a atualizar, estoque preservado em ${stockKept} existentes.`,
+  );
 
-    if (count % 400 === 0) {
-      await batch.commit();
-      batchCount++;
-      console.log(`  -> Batch ${batchCount} commitado (${count}/${defaultProducts.length})`);
-      batch = db.batch();
+  // 2. Frete — só cria se não existir (nunca sobrescreve configuração real)
+  for (const path of [['settings', 'shipping'], ['configs', 'shipping']] as const) {
+    const ref = db.collection(path[0]).doc(path[1]);
+    const snap = await ref.get();
+    if (snap.exists) {
+      console.log(`🚚 /${path.join('/')} já existe — mantido sem alterações.`);
+    } else {
+      console.log(`🚚 /${path.join('/')} ${opts.apply ? 'criado' : 'seria criado'}.`);
+      if (opts.apply) {
+        await ref.set({ ...INITIAL_SHIPPING_CONFIG, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      }
     }
   }
 
-  if (count % 400 !== 0) {
-    await batch.commit();
-    batchCount++;
-    console.log(`  -> Batch final ${batchCount} commitado (${count}/${defaultProducts.length})`);
+  // 3. Cupons — só cria os ausentes; usesCount nunca é tocado em existentes
+  for (const { code, ...rest } of INITIAL_COUPONS) {
+    const ref = db.collection('coupons').doc(code);
+    const snap = await ref.get();
+    if (snap.exists) {
+      console.log(`🎟️  ${code} já existe — mantido (usesCount preservado: ${String(snap.data()?.usesCount ?? 0)}).`);
+    } else {
+      console.log(`🎟️  ${code} ${opts.apply ? 'criado' : 'seria criado'}.`);
+      if (opts.apply) {
+        await ref.set({ code, ...rest, usesCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      }
+    }
   }
-  console.log(`✅ ${count} produtos gravados/atualizados com sucesso.`);
 
-  // 3. Popular /settings/shipping e /configs/shipping
-  console.log('🚚 Gravando configurações de frete em /settings/shipping e /configs/shipping...');
-  await Promise.all([
-    db.collection('settings').doc('shipping').set(INITIAL_SHIPPING_CONFIG, { merge: true }),
-    db.collection('configs').doc('shipping').set(INITIAL_SHIPPING_CONFIG, { merge: true }),
-  ]);
-  console.log('✅ Configurações de frete e condomínios salvas com sucesso.');
-
-  // 4. Popular cupons iniciais
-  console.log('🎟️ Gravando cupons iniciais em /coupons...');
-  for (const coupon of INITIAL_COUPONS) {
-    await db.collection('coupons').doc(coupon.code).set(coupon, { merge: true });
-  }
-  console.log(`✅ ${INITIAL_COUPONS.length} cupons cadastrados.`);
-
-  console.log('\n🎉 SEED DE DADOS FINALIZADO COM SUCESSO!');
+  console.log(opts.apply ? '\n🎉 SEED FINALIZADO.' : '\nℹ️  Dry-run concluído. Reexecute com --apply para gravar.');
 }
 
-seedData().catch((err) => {
+seedData(parseArgs(process.argv.slice(2))).catch((err) => {
   console.error('❌ Erro durante a execução do seed:', err);
   process.exit(1);
 });

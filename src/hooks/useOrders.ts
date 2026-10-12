@@ -108,7 +108,9 @@ export interface CreateOrderResult {
   deliveryFee: number;
   discount: number;
   couponApplied: boolean;
-  status: 'pending';
+  /** Real order status — may be beyond 'pending' when an idempotent retry returns an existing order. */
+  status: string;
+  paymentStatus?: string;
 }
 
 
