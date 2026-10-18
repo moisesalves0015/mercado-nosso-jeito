@@ -82,8 +82,7 @@ Durante a fase de testes com o grupo piloto (1º a 3º dia):
 - [x] `npm ci` validado com npm 10 (mesmo da CI Node 20).
 - [x] Pagamento simulado removido do bundle; servidor rejeita `credit_card`.
 - [x] `/orders` imutável pelo cliente, inclusive admin (somente callables).
-- [x] Firestore rules, índices e 15 Functions publicados em **staging** (`nosso-mercado-4b877`).
-- [ ] Reimplantar Functions em staging com as últimas mudanças (idempotência por conteúdo, frete falha fechado).
+- [x] Firestore rules, índices e 24 Functions publicados no Firebase (`nosso-mercado-4b877`) com as últimas mudanças (RBAC/CRM, auditoria, idempotência por conteúdo, frete falha fechado).
 - [ ] Storage habilitado no console e `storage.rules` implantadas (deploy anterior falhou), ou upload desativado.
 - [ ] Projeto Firebase de **produção** criado e configurado (`nosso-mercado-prod`); staging e produção ainda usam alias diferente apenas no `.firebaserc`.
 - [ ] Catálogo importado com `npm run seed` (dry-run revisado) e estoque real conferido.
