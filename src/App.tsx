@@ -121,11 +121,9 @@ function AppContent() {
   // Real-time Firestore sync of products to localStorage
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'products'), (snap) => {
-      if (!snap.empty) {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        localStorage.setItem('app-products', JSON.stringify(list));
-        window.dispatchEvent(new Event('app-products-updated'));
-      }
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      localStorage.setItem('app-products', JSON.stringify(list));
+      window.dispatchEvent(new Event('app-products-updated'));
     });
     return () => unsub();
   }, []);

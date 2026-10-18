@@ -15,9 +15,9 @@ service cloud.firestore {
 
     function isBanned() {
       return isAuthenticated() && (
-        request.auth.token.banned == true ||
+        request.auth.token.get('banned', false) == true ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'banned')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'banned')
       );
     }
 
@@ -46,8 +46,8 @@ service cloud.firestore {
       return isAuthenticated() && !isBanned() && (
         hasAssignment()
           ? (assignment().status == 'active' && assignment().roleId in ['admin', 'superadmin'])
-          : (request.auth.token.admin == true ||
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+          : (request.auth.token.get('admin', false) == true ||
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
       );
     }
 

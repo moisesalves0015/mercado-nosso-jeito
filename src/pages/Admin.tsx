@@ -24,6 +24,11 @@ import {
   confirmOrderPayment as confirmOrderPaymentCallable,
   cancelOrder as cancelOrderCallable,
 } from '../hooks/useOrders';
+import {
+  buildCatalogCategoryData,
+  buildMonthlyRevenueData,
+  buildWeeklySalesData,
+} from '../utils/adminAnalytics';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────
 interface Product {
@@ -117,25 +122,6 @@ const formatAdminDate = (dateVal: unknown): string => {
   }
   return String(dateVal);
 };
-
-// ─── KNOWN IMAGES (quick gallery) ────────────────────────────────────────────
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-const salesData = [
-  { day: 'Seg', vendas: 340, pedidos: 4 },{ day: 'Ter', vendas: 520, pedidos: 7 },
-  { day: 'Qua', vendas: 280, pedidos: 3 },{ day: 'Qui', vendas: 890, pedidos: 11 },
-  { day: 'Sex', vendas: 1200, pedidos: 15 },{ day: 'Sáb', vendas: 1650, pedidos: 20 },
-  { day: 'Dom', vendas: 980, pedidos: 12 },
-];
-const categoryData = [
-  { name: 'Bebidas', value: 42, color: '#818cf8' },{ name: 'Tabacaria', value: 28, color: '#f59e0b' },
-  { name: 'Eletrônicos', value: 18, color: '#10b981' },{ name: 'Limpeza', value: 8, color: '#ec4899' },
-  { name: 'Alimentos', value: 4, color: '#0ea5e9' },
-];
-const monthlyData = [
-  { mes: 'Jan', receita: 4200 },{ mes: 'Fev', receita: 5800 },{ mes: 'Mar', receita: 4900 },
-  { mes: 'Abr', receita: 7200 },{ mes: 'Mai', receita: 8900 },{ mes: 'Jun', receita: 6100 },
-];
-
 
 // ─── CRM Light Mode Theme ───────────────────────────────────────────────
 const crmTheme = {
@@ -289,44 +275,9 @@ export const Admin: React.FC = () => {
 
   // ─── Load from Firestore ───────────────────────────────────────────────
   useEffect(() => {
-    const unsubP = onSnapshot(collection(db, 'products'), async (snap) => {
-      if (snap.empty) {
-        const stored = localStorage.getItem('app-products');
-        if (stored) {
-          const arr = JSON.parse(stored);
-          for (const p of arr) {
-            try { await setDoc(doc(db, 'products', p.id), p); } catch (e) { console.warn(e); }
-          }
-        }
-      }
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    const unsubP = onSnapshot(collection(db, 'products'), (snap) => {
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as Product));
       setProducts(list);
-
-      // Auto-correct Firestore if any product has the old 404 Corona image
-      list.forEach(async p => {
-        if (p.image) {
-          let updatedImage = '';
-          if (p.image.includes('1608270176050-12ec057deab0')) {
-            updatedImage = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          } else if (p.image.includes('1548907040-4d42b52145ca')) {
-            updatedImage = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          } else if (p.image.includes('1599490659213-e2b9527bb087')) {
-            updatedImage = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          } else if (p.image.includes('1549778398-f3c481549766')) {
-            updatedImage = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          }
-
-          if (updatedImage) {
-            try {
-              const docRef = doc(db, 'products', p.id);
-              await updateDoc(docRef, { image: updatedImage });
-              console.log(`Auto-corrected image for product ${p.id} in Admin`);
-            } catch (err) {
-              console.error(`Failed to auto-correct product image in Admin:`, err);
-            }
-          }
-        }
-      });
     });
 
     const unsubO = onSnapshot(collection(db, 'orders'), (snap) => {
@@ -697,11 +648,21 @@ export const Admin: React.FC = () => {
   };
 
   // ─── Computed ────────────────────────────────────────────────────────────
-  const nonCancelledOrders = orders.filter(o => o.status !== 'cancelled');
-  const totalRevenue = nonCancelledOrders.reduce((s, o) => s + o.total, 0);
+  const recognizedOrders = orders.filter(o => o.status !== 'cancelled' && o.paymentStatus === 'approved');
+  const totalRevenue = recognizedOrders.reduce((s, o) => s + o.total, 0);
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const awaitingPaymentCount = orders.filter(o => o.paymentStatus === 'awaiting_confirmation' && o.status !== 'cancelled').length;
-  const avgTicket = nonCancelledOrders.length > 0 ? totalRevenue / nonCancelledOrders.length : 0;
+  const avgTicket = recognizedOrders.length > 0 ? totalRevenue / recognizedOrders.length : 0;
+  const weeklySalesData = buildWeeklySalesData(orders);
+  const monthlyRevenueData = buildMonthlyRevenueData(orders);
+  const categoryData = buildCatalogCategoryData(products);
+  const topCategory = categoryData[0];
+  const bestSalesDay = weeklySalesData.reduce((best, day) => day.vendas > best.vendas ? day : best, weeklySalesData[0]);
+  const largestPaidOrder = recognizedOrders.reduce<Order | null>((best, order) => !best || order.total > best.total ? order : best, null);
+  const nonCancelledOrders = orders.filter(o => o.status !== 'cancelled');
+  const deliveredOrders = nonCancelledOrders.filter(o => o.status === 'delivered').length;
+  const deliveryCompletion = nonCancelledOrders.length > 0 ? Math.round((deliveredOrders / nonCancelledOrders.length) * 100) : null;
+  const activeProductCount = products.filter(p => p.active !== false).length;
   const filteredProducts = products.filter(p =>
     p.title.toLowerCase().includes(searchProduct.toLowerCase()) && (filterCategory === 'Todos' || p.category === filterCategory)
   );
@@ -812,16 +773,16 @@ export const Admin: React.FC = () => {
         {activeTab === 'dashboard' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-              <StatCard label="Faturamento" value={`R$ ${totalRevenue.toFixed(2)}`} sub="⚡ Pedidos aprovados" icon={TrendingUp} iconColor={crmTheme.primary} trend={12} />
-              <StatCard label="Pedidos Totais" value={orders.length} sub={`${pendingCount} pendentes`} icon={ShoppingBag} iconColor={crmTheme.accent} trend={5} />
-              <StatCard label="Ticket Médio" value={`R$ ${avgTicket.toFixed(2)}`} sub="Por pedido aprovado" icon={Zap} iconColor={crmTheme.success} trend={3} />
-              <StatCard label="Produtos" value={products.length} sub={`${products.filter(p => p.active !== false).length} ativos`} icon={Package} iconColor={crmTheme.primary} />
+              <StatCard label="Faturamento recebido" value={`R$ ${totalRevenue.toFixed(2)}`} sub={`${recognizedOrders.length} pedidos com pagamento aprovado`} icon={TrendingUp} iconColor={crmTheme.primary} />
+              <StatCard label="Pedidos Totais" value={orders.length} sub={`${pendingCount} pendentes`} icon={ShoppingBag} iconColor={crmTheme.accent} />
+              <StatCard label="Ticket Médio recebido" value={`R$ ${avgTicket.toFixed(2)}`} sub="Somente pagamentos aprovados" icon={Zap} iconColor={crmTheme.success} />
+              <StatCard label="Produtos" value={products.length} sub={`${activeProductCount} ativos`} icon={Package} iconColor={crmTheme.primary} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
               <div style={sectionCard}>
                 <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}><TrendingUp size={15} color={crmTheme.primary} /> Vendas da Semana</h3>
                 <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={salesData}>
+                  <LineChart data={weeklySalesData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={crmTheme.borderLight} />
                     <XAxis dataKey="day" tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `R$${v}`} />
@@ -831,23 +792,27 @@ export const Admin: React.FC = () => {
                 </ResponsiveContainer>
               </div>
               <div style={sectionCard}>
-                <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={15} color={crmTheme.primary} /> Vendas por Categoria</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <ResponsiveContainer width={120} height={120}>
-                    <PieChart><Pie data={categoryData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={3}>{categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}</Pie></PieChart>
-                  </ResponsiveContainer>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-                    {categoryData.map(c => (
-                      <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: 2, background: c.color }} />
-                          <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 700 }}>{c.name}</span>
+                <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={15} color={crmTheme.primary} /> Produtos ativos por categoria</h3>
+                {categoryData.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 24, color: crmTheme.textMuted, fontSize: 12 }}>Nenhum produto ativo cadastrado.</div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <ResponsiveContainer width={120} height={120}>
+                      <PieChart><Pie data={categoryData} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={3}>{categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}</Pie></PieChart>
+                    </ResponsiveContainer>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                      {categoryData.map(c => (
+                        <div key={c.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: 2, background: c.color }} />
+                            <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 700 }}>{c.name}</span>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: crmTheme.textPrimary }}>{c.value} produtos</span>
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: crmTheme.textPrimary }}>{c.value}%</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             <div style={sectionCard}>
@@ -1171,7 +1136,7 @@ export const Admin: React.FC = () => {
             <div style={sectionCard}>
               <h3 style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 6 }}><TrendingUp size={15} color={crmTheme.primary} /> Receita Mensal (6 meses)</h3>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={monthlyData}>
+                <LineChart data={monthlyRevenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={crmTheme.borderLight} />
                   <XAxis dataKey="mes" tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: crmTheme.textSecondary, fontSize: 10 }} axisLine={false} tickLine={false} width={55} tickFormatter={v => `R$${v}`} />
@@ -1181,10 +1146,10 @@ export const Admin: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-              <StatCard label="Melhor Dia" value="Sábado" sub="R$ 1.650 em vendas" icon={Star} iconColor={crmTheme.warning} />
-              <StatCard label="Categoria Top" value="Bebidas" sub="42% das vendas" icon={TrendingUp} iconColor={crmTheme.primary} />
-              <StatCard label="Pedido Máximo" value="R$ 303,40" sub="Carlos Souza" icon={Award} iconColor={crmTheme.success} />
-              <StatCard label="Taxa Entrega" value="100%" sub="Frete grátis ativo" icon={Truck} iconColor={crmTheme.accent} />
+              <StatCard label="Melhor dia (7 dias)" value={bestSalesDay?.pedidos ? bestSalesDay.day : '—'} sub={bestSalesDay?.pedidos ? `R$ ${bestSalesDay.vendas.toFixed(2)} recebidos` : 'Sem vendas aprovadas nesta semana'} icon={Star} iconColor={crmTheme.warning} />
+              <StatCard label="Categoria com mais produtos" value={topCategory?.name ?? '—'} sub={topCategory ? `${topCategory.value} produtos ativos` : 'Sem produtos ativos'} icon={TrendingUp} iconColor={crmTheme.primary} />
+              <StatCard label="Maior pedido pago" value={largestPaidOrder ? `R$ ${largestPaidOrder.total.toFixed(2)}` : '—'} sub={largestPaidOrder?.clientName ?? 'Sem pagamentos aprovados'} icon={Award} iconColor={crmTheme.success} />
+              <StatCard label="Pedidos entregues" value={deliveryCompletion === null ? '—' : `${deliveryCompletion}%`} sub={`${deliveredOrders} de ${nonCancelledOrders.length} pedidos não cancelados`} icon={Truck} iconColor={crmTheme.accent} />
             </div>
           </div>
         )}

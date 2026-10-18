@@ -6,7 +6,6 @@ import { PromoCard } from '../components/PromoCard';
 import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHomeConfig } from '../hooks/useHomeConfig';
-import { defaultProducts } from '../data/defaultProducts';
 import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
 import bannerIndique from '../assets/banners/bannerIndique.svg';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
@@ -133,80 +132,21 @@ export const Home = () => {
         );
       });
     } else {
+      const normalizeCategory = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const alimentos = allProducts.filter(product => ['alimentos', 'cafe', 'padaria'].includes(normalizeCategory(product.category)));
+      const limpeza = allProducts.filter(product => normalizeCategory(product.category).includes('limpeza'));
       const fallbackSections = [
-        <Section
-          key="fallback-bebidas"
-          title="Bebidas"
-          subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]}
-          linkText="Ver tudo >"
-          theme="purple"
-        >
-          {bebidas.map(product => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-          {bebidas.length === 0 && (
-            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>
-          )}
+        <Section key="fallback-bebidas" title="Bebidas" subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]} linkText="Ver tudo >" theme="purple">
+          {bebidas.map(product => <ProductCard key={product.id} {...product} />)}
+          {bebidas.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>}
         </Section>,
-        
-        <Section
-          key="fallback-alimentos"
-          title="Alimentos"
-          subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]}
-          linkText="Ver tudo >"
-          theme="orange"
-        >
-          <ProductCard
-            title="Pão Pullman Forma Integral (500g)"
-            price="R$ 12,90"
-            image="/pao_de_forma.png"
-            badge="Melhor Preço"
-            badgeStyle="orange"
-            category="alimentos"
-          />
-          <ProductCard
-            title="Queijo Minas Frescal Itambé (300g)"
-            price="R$ 19,90"
-            image="/queijo_minas.png"
-            badge="Promocional"
-            badgeStyle="orange"
-            category="alimentos"
-          />
-          <ProductCard
-            title="Peito de Peru Fatiado Sadia (100g)"
-            price="R$ 7,49"
-            image="/peito_de_peru.webp"
-            category="alimentos"
-          />
-          <ProductCard
-            title="Manteiga Itambé Extra Sal (200g)"
-            price="R$ 11,90"
-            image="/manteiga_itambe.png"
-            category="alimentos"
-          />
+        <Section key="fallback-alimentos" title="Alimentos" subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]} linkText="Ver tudo >" theme="orange">
+          {alimentos.map(product => <ProductCard key={product.id} {...product} />)}
+          {alimentos.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum alimento cadastrado.</span>}
         </Section>,
-
-        <Section
-          key="fallback-limpeza"
-          title="Limpeza"
-          subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]}
-          linkText="Ver tudo >"
-          theme="green"
-        >
-          <ProductCard
-            title="Sabão Líquido Premium"
-            price="R$ 19,90"
-            image="/lava_roupa.png"
-            category="limpeza"
-          />
-          <ProductCard
-            title="Multiuso Fresh Ultra"
-            price="R$ 12,90"
-            image="/pano_multiuso.webp"
-            badge="Melhor Preço"
-            badgeStyle="orange"
-            category="limpeza"
-          />
+        <Section key="fallback-limpeza" title="Limpeza" subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]} linkText="Ver tudo >" theme="green">
+          {limpeza.map(product => <ProductCard key={product.id} {...product} />)}
+          {limpeza.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto de limpeza cadastrado.</span>}
         </Section>
       ];
       return fallbackSections.slice(startIndex, startIndex + count);
@@ -276,67 +216,16 @@ export const Home = () => {
 
   useEffect(() => {
     const loadProducts = () => {
-      const stored = localStorage.getItem('app-products');
-      let allProds: Product[] = [];
-      let updated = false;
-
-      if (stored) {
-        allProds = JSON.parse(stored) as Product[];
-        // Check for missing default products and add them
-        defaultProducts.forEach(defP => {
-          if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP);
-            updated = true;
-          }
-        });
-      } else {
-        allProds = [...defaultProducts];
-        updated = true;
+      try {
+        const stored = localStorage.getItem('app-products');
+        const allProds = stored ? JSON.parse(stored) as Product[] : [];
+        setAllProducts(allProds);
+        setBebidas(allProds.filter(p => p.category === 'Bebidas'));
+      } catch (error) {
+        console.error('Não foi possível ler o catálogo armazenado.', error);
+        setAllProducts([]);
+        setBebidas([]);
       }
-
-      // Sync specific image updates if necessary
-      allProds = allProds.map(p => {
-        if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
-          p.image = '/heineken.png';
-          updated = true;
-        }
-        if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
-          p.image = '/coca_cola_zero.png';
-          updated = true;
-        }
-        if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
-          p.image = '/monster_energy.webp';
-          updated = true;
-        }
-        if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
-          p.image = '/spaten.webp';
-          updated = true;
-        }
-        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
-          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
-          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
-          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1549778398-f3c481549766')) {
-          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          updated = true;
-        }
-        return p;
-      });
-
-      if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
-      }
-
-      setAllProducts(allProds);
-      setBebidas(allProds.filter(p => p.category === 'Bebidas'));
     };
 
     loadProducts();
@@ -574,7 +463,7 @@ export const Home = () => {
             ? homeConfig.periodConfig[activePeriod].productIds
                 .map(id => allProducts.find(p => p.id === id) as Product)
                 .filter(Boolean)
-            : periodProducts[activePeriod]).map((product) => (
+            : periodProducts[activePeriod].map(item => allProducts.find(p => p.id === item.id)).filter((product): product is Product => Boolean(product))).map((product) => (
               <ProductCard key={product.id} {...product} glassEffect={true} />
           ))}
         </Section>
@@ -835,7 +724,7 @@ export const Home = () => {
         </div>
         <div className="condo-favorites-scroll">
           {condoFavorites.map((fav) => {
-            const prod = allProducts.find(p => p.id === fav.id) || defaultProducts.find(p => p.id === fav.id);
+            const prod = allProducts.find(p => p.id === fav.id);
             if (!prod) return null;
             return (
               <PromoCard

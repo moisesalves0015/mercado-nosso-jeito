@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, ShoppingCart, RefreshCw } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
+import { getEffectiveProductPrice } from '../utils/productPricing';
 import type { Product } from '../data/defaultProducts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,330 +24,24 @@ interface ProductMock {
   category: string;
 }
 
-const PRODUCTS_MOCK: Record<string, ProductMock> = {
-  'pao-de-queijo-tradicional-1kg': {
-    id: 'pao-de-queijo-tradicional-1kg',
-    title: 'Pão de Queijo Tradicional (1kg)',
-    price: 'R$ 32,90',
-    priceNum: 32.90,
-    image: '/paodequeijo-novo.webp',
-    badge: 'Mais Vendido',
-    rating: 4.8,
-    ratingCount: 1420,
-    soldCount: '4K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Café da Manhã'
-  },
-  'iogurte-grego-danone-4x': {
-    id: 'iogurte-grego-danone-4x',
-    title: 'Iogurte Grego Danone (4x)',
-    price: 'R$ 18,90',
-    priceNum: 18.90,
-    image: '/iogurte-novo.webp',
-    badge: 'Recomendado',
-    rating: 4.7,
-    ratingCount: 980,
-    soldCount: '2.5K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Café da Manhã'
-  },
-  'granola-mel-barano-500g': {
-    id: 'granola-mel-barano-500g',
-    title: 'Granola Mel Barano (500g)',
-    price: 'R$ 24,90',
-    priceNum: 24.90,
-    image: '/granola-novo.png',
-    badge: 'Premium',
-    rating: 4.9,
-    ratingCount: 650,
-    soldCount: '1.2K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba amanhã até as 12h',
-    category: 'Café da Manhã'
-  },
-  'ovo-branco-medio-12un': {
-    id: 'ovo-branco-medio-12un',
-    title: 'Ovo Branco Médio (12un)',
-    price: 'R$ 15,90',
-    priceNum: 15.90,
-    image: '/ovos-novo.png',
-    badge: 'Essencial',
-    rating: 4.6,
-    ratingCount: 2150,
-    soldCount: '5K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Café da Manhã'
-  },
-  'cafe-melitta-tradicional-500g': {
-    id: 'cafe-melitta-tradicional-500g',
-    title: 'Café Melitta Tradicional (500g)',
-    price: 'R$ 19,90',
-    priceNum: 19.90,
-    image: '/cafe-novo.png',
-    badge: 'Melhor Preço',
-    rating: 4.8,
-    ratingCount: 8675,
-    soldCount: '10K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Café da Manhã'
-  },
-  'suco-de-laranja-integral-do-bem-1l': {
-    id: 'suco-de-laranja-integral-do-bem-1l',
-    title: 'Suco de Laranja Integral Do Bem (1L)',
-    price: 'R$ 14,90',
-    priceNum: 14.90,
-    image: '/suco_do_bem_laranja_integral.png',
-    badge: 'Promocional',
-    rating: 4.5,
-    ratingCount: 320,
-    soldCount: '800+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Bebidas'
-  },
-  'cafe-torrado-e-moido-pilao-500g': {
-    id: 'cafe-torrado-e-moido-pilao-500g',
-    title: 'Café Torrado e Moído Pilão (500g)',
-    price: 'R$ 17,90',
-    priceNum: 17.90,
-    image: '/cafe-pilao-500g.png',
-    badge: 'Melhor Preço',
-    rating: 4.6,
-    ratingCount: 1850,
-    soldCount: '4K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Bebidas'
-  },
-  'cha-matte-natural-leao-100g': {
-    id: 'cha-matte-natural-leao-100g',
-    title: 'Chá Matte Natural Leão (100g)',
-    price: 'R$ 9,90',
-    priceNum: 9.90,
-    image: '/Cha-Matte-Natural-100g-Leao.png',
-    badge: 'Orgânico',
-    rating: 4.7,
-    ratingCount: 430,
-    soldCount: '1.5K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Bebidas'
-  },
-  'leite-longa-vida-integral-1l': {
-    id: 'leite-longa-vida-integral-1l',
-    title: 'Leite Longa Vida Integral (1L)',
-    price: 'R$ 5,49',
-    priceNum: 5.49,
-    image: '/leite-integral-interna.png',
-    badge: 'Essencial',
-    rating: 4.8,
-    ratingCount: 5120,
-    soldCount: '8K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Bebidas'
-  },
-  'pao-pullman-forma-integral-500g': {
-    id: 'pao-pullman-forma-integral-500g',
-    title: 'Pão Pullman Forma Integral (500g)',
-    price: 'R$ 12,90',
-    priceNum: 12.90,
-    image: '/pao_de_forma.png',
-    badge: 'Fibras',
-    rating: 4.6,
-    ratingCount: 890,
-    soldCount: '2K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Alimentos'
-  },
-  'queijo-minas-frescal-itambe-300g': {
-    id: 'queijo-minas-frescal-itambe-300g',
-    title: 'Queijo Minas Frescal Itambé (300g)',
-    price: 'R$ 19,90',
-    priceNum: 19.90,
-    image: '/queijo_minas.png',
-    badge: 'Frescal',
-    rating: 4.7,
-    ratingCount: 650,
-    soldCount: '1.8K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Alimentos'
-  },
-  'peito-de-peru-fatiado-sadia-100g': {
-    id: 'peito-de-peru-fatiado-sadia-100g',
-    title: 'Peito de Peru Fatiado Sadia (100g)',
-    price: 'R$ 7,49',
-    priceNum: 7.49,
-    image: '/peito_de_peru.webp',
-    badge: 'Proteico',
-    rating: 4.8,
-    ratingCount: 1540,
-    soldCount: '5K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Alimentos'
-  },
-  'manteiga-itambe-extra-sal-200g': {
-    id: 'manteiga-itambe-extra-sal-200g',
-    title: 'Manteiga Itambé Extra Sal (200g)',
-    price: 'R$ 11,90',
-    priceNum: 11.90,
-    image: '/manteiga_itambe.png',
-    badge: 'Tradicional',
-    rating: 4.8,
-    ratingCount: 2200,
-    soldCount: '4K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Alimentos'
-  },
-  'sabao-liquido-premium': {
-    id: 'sabao-liquido-premium',
-    title: 'Sabão Líquido Premium',
-    price: 'R$ 19,90',
-    priceNum: 19.90,
-    image: '/lava_roupa.png',
-    badge: 'Concentrado',
-    rating: 4.9,
-    ratingCount: 310,
-    soldCount: '900+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba amanhã até as 12h',
-    category: 'Limpeza'
-  },
-  'multiuso-fresh-ultra': {
-    id: 'multiuso-fresh-ultra',
-    title: 'Multiuso Fresh Ultra',
-    price: 'R$ 12,90',
-    priceNum: 12.90,
-    image: '/pano_multiuso.webp',
-    badge: 'Multiuso',
-    rating: 4.6,
-    ratingCount: 740,
-    soldCount: '3K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba hoje até as 18h',
-    category: 'Limpeza'
-  },
-  'carregador-de-parede-turbo-usb-c-20w': {
-    id: 'carregador-de-parede-turbo-usb-c-20w',
-    title: 'Carregador de Parede Turbo USB-C (20W)',
-    price: 'R$ 49,90',
-    priceNum: 49.90,
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=600',
-    badge: 'Carga Rápida',
-    rating: 4.8,
-    ratingCount: 512,
-    soldCount: '1.2K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'cabo-usb-c-para-lightning-reforcado-1m': {
-    id: 'cabo-usb-c-para-lightning-reforcado-1m',
-    title: 'Cabo USB-C para Lightning Reforçado (1m)',
-    price: 'R$ 29,90',
-    priceNum: 29.90,
-    image: 'https://images.unsplash.com/photo-1541667590928-2c6b0ef4fcb3?q=80&w=600',
-    badge: 'Ultra Resistente',
-    rating: 4.7,
-    ratingCount: 384,
-    soldCount: '900+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'cabo-usb-c-para-usb-c-turbo-1-2m': {
-    id: 'cabo-usb-c-para-usb-c-turbo-1-2m',
-    title: 'Cabo USB-C para USB-C Turbo (1.2m)',
-    price: 'R$ 24,90',
-    priceNum: 24.90,
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=600',
-    badge: 'Turbo Power',
-    rating: 4.8,
-    ratingCount: 290,
-    soldCount: '600+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'fone-de-ouvido-com-fio-e-microfone-p2': {
-    id: 'fone-de-ouvido-com-fio-e-microfone-p2',
-    title: 'Fone de Ouvido com Fio e Microfone P2',
-    price: 'R$ 19,90',
-    priceNum: 19.90,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600',
-    badge: 'Clássico',
-    rating: 4.5,
-    ratingCount: 180,
-    soldCount: '400+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'fone-de-ouvido-bluetooth-tws-premium': {
-    id: 'fone-de-ouvido-bluetooth-tws-premium',
-    title: 'Fone de Ouvido Bluetooth TWS Premium',
-    price: 'R$ 79,90',
-    priceNum: 79.90,
-    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=600',
-    badge: 'Mais Procurado',
-    rating: 4.6,
-    ratingCount: 920,
-    soldCount: '2K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'carregador-veicular-fast-charge-dual-usb': {
-    id: 'carregador-veicular-fast-charge-dual-usb',
-    title: 'Carregador Veicular Fast Charge Dual USB',
-    price: 'R$ 34,90',
-    priceNum: 34.90,
-    image: 'https://images.unsplash.com/photo-1629131726617-578c64227f6a?q=80&w=600',
-    badge: 'Veicular',
-    rating: 4.7,
-    ratingCount: 220,
-    soldCount: '500+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'power-bank-portatil-10000mah-ultra-rapido': {
-    id: 'power-bank-portatil-10000mah-ultra-rapido',
-    title: 'Power Bank Portátil 10000mAh Ultra Rápido',
-    price: 'R$ 89,90',
-    priceNum: 89.90,
-    image: 'https://images.unsplash.com/photo-1609592424109-dd89569ed053?q=80&w=600',
-    badge: 'Bateria Extra',
-    rating: 4.9,
-    ratingCount: 430,
-    soldCount: '1K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  },
-  'pilha-alcalina-duracell-aa-4-unidades': {
-    id: 'pilha-alcalina-duracell-aa-4-unidades',
-    title: 'Pilha Alcalina Duracell AA (4 unidades)',
-    price: 'R$ 22,90',
-    priceNum: 22.90,
-    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=600',
-    badge: 'Duracell',
-    rating: 4.9,
-    ratingCount: 1850,
-    soldCount: '5K+',
-    stockStatus: 'Em estoque',
-    deliveryTime: 'Receba em até 30 min',
-    category: 'Eletrônicos'
-  }
-};
+const unavailableProduct = (id = ''): ProductMock & { stock: number; description: string } => ({
+  id,
+  title: 'Produto indisponível',
+  price: 'R$ 0,00',
+  priceNum: 0,
+  image: '',
+  rating: 0,
+  ratingCount: 0,
+  soldCount: '',
+  stockStatus: 'Indisponível',
+  deliveryTime: 'Consulte novamente em instantes',
+  category: '',
+  stock: 0,
+  description: '',
+});
+
+const productSlug = (title: string) => title.toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
 export const ProductDetail = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -359,29 +54,29 @@ export const ProductDetail = () => {
 
   const [allProducts, setAllProducts] = useState<DetailProduct[]>(() => {
     const stored = localStorage.getItem('app-products');
-    return stored ? JSON.parse(stored) : Object.values(PRODUCTS_MOCK);
+    return stored ? JSON.parse(stored) : [];
   });
 
   const getProductInitial = () => {
     const stored = localStorage.getItem('app-products');
     if (stored) {
       const list = JSON.parse(stored);
-      const found = list.find((p: Product) => p.id === productId);
+      const found = list.find((p: Product) => p.id === productId || productSlug(p.title) === productId);
       if (found) {
-        const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
+        const priceNum = getEffectiveProductPrice(found);
         return {
           ...found,
-          priceNum: priceNum || 0,
-          price: `R$ ${(priceNum || 0).toFixed(2).replace('.', ',')}`,
-          rating: found.rating || 4.8,
-          ratingCount: found.ratingCount || 120,
-          soldCount: found.soldCount || '100+',
-          stockStatus: found.stockStatus || 'Em estoque',
-          deliveryTime: found.deliveryTime || 'Receba em até 30 min',
+          priceNum,
+          price: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
+          rating: found.rating || 0,
+          ratingCount: found.ratingCount || 0,
+          soldCount: found.soldCount || '',
+          stockStatus: found.stock > 0 ? 'Em estoque' : 'Estoque indisponível',
+          deliveryTime: found.deliveryTime || 'Consulte no checkout',
         };
       }
     }
-    return (productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g'];
+    return unavailableProduct(productId);
   };
 
   const [product, setProduct] = useState<DetailProduct | null>(getProductInitial);
@@ -392,24 +87,24 @@ export const ProductDetail = () => {
       if (stored) {
         const list = JSON.parse(stored);
         setAllProducts(list);
-        const found = list.find((p: DetailProduct) => p.id === productId);
+        const found = list.find((p: DetailProduct) => p.id === productId || productSlug(p.title) === productId);
         if (found) {
-          const priceNum = typeof found.price === 'string' ? parseFloat(found.price) : found.price;
-          setProduct({
-            ...found,
-            priceNum: priceNum || 0,
-            price: `R$ ${(priceNum || 0).toFixed(2).replace('.', ',')}`,
-            rating: found.rating || 4.8,
-            ratingCount: found.ratingCount || 120,
-            soldCount: found.soldCount || '100+',
-            stockStatus: found.stockStatus || 'Em estoque',
-            deliveryTime: found.deliveryTime || 'Receba em até 30 min',
+        const priceNum = getEffectiveProductPrice(found);
+        setProduct({
+          ...found,
+          priceNum,
+          price: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
+            rating: found.rating || 0,
+            ratingCount: found.ratingCount || 0,
+            soldCount: found.soldCount || '',
+            stockStatus: found.stock > 0 ? 'Em estoque' : 'Estoque indisponível',
+            deliveryTime: found.deliveryTime || 'Consulte no checkout',
           });
           return;
         }
       }
-      setAllProducts(Object.values(PRODUCTS_MOCK));
-      setProduct((productId && PRODUCTS_MOCK[productId]) || PRODUCTS_MOCK['cafe-melitta-tradicional-500g']);
+      setAllProducts([]);
+      setProduct(unavailableProduct(productId));
     };
 
     loadProduct();
@@ -418,17 +113,12 @@ export const ProductDetail = () => {
   }, [productId]);
 
   // State for subscription selection, quantity, and favoriting
-  const [purchaseMode, setPurchaseMode] = useState<'subscribe' | 'onetime'>('subscribe');
   const [quantity, setQuantity] = useState<number>(1);
-  const [frequency, setFrequency] = useState<string>('30');
   const [isFavorited, setIsFavorited] = useState<boolean>(false);
-  const [couponApplied, setCouponApplied] = useState<boolean>(false);
   const { addToCart } = useCart();
 
   // Calculations
-  const discountMultiplier = purchaseMode === 'subscribe' ? 0.9 : 1.0;
-  const couponMultiplier = couponApplied ? 0.8 : 1.0; // Extra 20% off
-  const finalPrice = product.priceNum * discountMultiplier * couponMultiplier;
+  const finalPrice = product.priceNum;
 
   // Filter suggested products from the same category or overall catalog dynamically
   const finalSuggested = useMemo(() => {
@@ -489,7 +179,7 @@ export const ProductDetail = () => {
         <div className="social-proof-header">
           <div className="store-link">Visite a Loja Mercado do Nosso Jeito</div>
           
-          <div className="rating-row">
+          {product.ratingCount > 0 && product.rating > 0 && <div className="rating-row">
             <div className="stars">
               <span className="rating-value">{product.rating}</span>
               {[...Array(5)].map((_, i) => (
@@ -503,18 +193,11 @@ export const ProductDetail = () => {
               ))}
             </div>
             <span className="rating-count">{product.ratingCount.toLocaleString('pt-BR')} avaliações</span>
-          </div>
-
-          <div className="amazon-choice-row">
-            <div className="choice-badge">Destaque do Mercado</div>
-            <span className="choice-text">para "{product.category.toLowerCase()}"</span>
-          </div>
+          </div>}
 
           <h1 className="product-main-title">{product.title}</h1>
 
-          <div className="recent-purchases-badge">
-            🔥 Mais de {product.soldCount} comprados no último mês
-          </div>
+          {product.soldCount && <div className="recent-purchases-badge">🔥 {product.soldCount} vendidos recentemente</div>}
         </div>
 
         {/* PRICING BLOCK */}
@@ -523,100 +206,18 @@ export const ProductDetail = () => {
             <span className="main-price-red">
               R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            {purchaseMode === 'subscribe' && (
-              <span className="strike-price">
-                R$ {product.priceNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            )}
           </div>
           
-          {/* HIGH-CONVERSION COUPON NOTICE */}
-          <div className="coupon-card">
-            <div className="coupon-label">Cupom Assinatura:</div>
-            <label className="coupon-checkbox-container">
-              <input 
-                type="checkbox" 
-                checked={couponApplied} 
-                onChange={() => setCouponApplied(!couponApplied)}
-              />
-              <span className="checkmark"></span>
-              <span className="coupon-text">
-                Aplicar <strong>20% de desconto extra</strong> na sua primeira entrega do clube. <span className="shop-items">Termos</span>
-              </span>
-            </label>
-          </div>
         </div>
 
-        {/* SUBSCRIBE & SAVE CONFIGURATION BOX (CLUBE DO NOSSO JEITO) */}
         <div className="purchase-options-container">
-          
-          {/* OPTION 1: SUBSCRIBE & SAVE (DEFAULT) */}
-          <div 
-            className={`purchase-option-card ${purchaseMode === 'subscribe' ? 'active' : ''}`}
-            onClick={() => setPurchaseMode('subscribe')}
-          >
+          <div className="purchase-option-card active">
             <div className="option-left">
-              <div className="option-header-row">
-                <span className="option-title">Assinar e Economizar</span>
-                <span className="savings-badge">Economize 10%</span>
-              </div>
-              <div className="option-price-sub">
-                R$ {(product.priceNum * 0.9 * (couponApplied ? 0.8 : 1.0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / un
-              </div>
-              <div className="delivery-details-text">
-                Sem taxas de adesão. Cancele online a qualquer momento.
-              </div>
-              
-              {purchaseMode === 'subscribe' && (
-                <div className="subscription-settings" onClick={(e) => e.stopPropagation()}>
-                  <div className="select-setting">
-                    <span className="setting-label">Entregar a cada:</span>
-                    <div className="custom-select-wrapper">
-                      <select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-                        <option value="15">15 dias</option>
-                        <option value="30">30 dias (Mais comum)</option>
-                        <option value="60">60 dias</option>
-                      </select>
-                      <ChevronDown size={14} className="select-arrow" />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* RADIO SELECT ON THE RIGHT FOR RIGHT-HANDED ACCESSIBILITY */}
-            <div className="option-right-radio">
-              <div className={`radio-outer ${purchaseMode === 'subscribe' ? 'checked' : ''}`}>
-                <div className="radio-inner"></div>
-              </div>
+              <div className="option-header-row"><span className="option-title">Compra única</span></div>
+              <div className="option-price-sub">R$ {product.priceNum.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / un</div>
+              <div className="delivery-details-text">O preço final é confirmado no checkout; cupons disponíveis são aplicados conforme as regras cadastradas.</div>
             </div>
           </div>
-
-          {/* OPTION 2: ONE-TIME PURCHASE */}
-          <div 
-            className={`purchase-option-card ${purchaseMode === 'onetime' ? 'active' : ''}`}
-            onClick={() => setPurchaseMode('onetime')}
-          >
-            <div className="option-left">
-              <div className="option-header-row">
-                <span className="option-title">Compra Única</span>
-              </div>
-              <div className="option-price-sub">
-                R$ {(product.priceNum * (couponApplied ? 0.8 : 1.0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / un
-              </div>
-              <div className="delivery-details-text">
-                Preço normal sem recorrência.
-              </div>
-            </div>
-
-            {/* RADIO SELECT ON THE RIGHT FOR RIGHT-HANDED ACCESSIBILITY */}
-            <div className="option-right-radio">
-              <div className={`radio-outer ${purchaseMode === 'onetime' ? 'checked' : ''}`}>
-                <div className="radio-inner"></div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* QUANTITY SELECTOR & SHIPPING INFO */}
@@ -650,59 +251,31 @@ export const ProductDetail = () => {
         {/* EXPLICATIVE DETAILED SPECIFICATIONS BLOCK */}
         <div className="product-specifications-card">
           <h3>Descrição do Produto</h3>
-          <p className="spec-description">
-            {product.category === 'Café da Manhã' && "O acompanhamento perfeito para o seu café da manhã em família! Selecionado sob rigorosos padrões de qualidade, garantindo frescor incomparável, sabor marcante e nutrientes essenciais para começar o seu dia com toda a energia que você merece."}
-            {product.category === 'Bebidas' && "Perfeito para refrescar o seu dia ou complementar momentos especiais com amigos e família. Armazenado sob temperatura ideal, garantindo refrescância máxima, sabor inigualável e qualidade premium em cada gole."}
-            {product.category === 'Alimentos' && "Ingrediente de altíssima qualidade selecionado especialmente para as suas receitas. Sabor autêntico, embalagem higiênica e procedência garantida para levar o melhor sabor à mesa do seu lar."}
-            {product.category === 'Limpeza' && "Fórmula ultra concentrada de alta performance desenvolvida para eliminar as sujeiras mais difíceis com o mínimo esforço. Deixa um perfume refrescante e protege as superfícies da sua casa."}
-            {product.category === 'Eletrônicos' && "Acessório eletrônico indispensável e de altíssima qualidade, perfeito para resolver suas necessidades tecnológicas com agilidade e total segurança. Previamente testado para uso imediato e com garantia de fábrica de 90 dias."}
-          </p>
+          <p className="spec-description">{product.description || 'Descrição detalhada não cadastrada.'}</p>
           <div className="spec-grid">
             <div className="spec-item">
               <span className="spec-label">Categoria:</span>
               <span className="spec-value">{product.category}</span>
             </div>
-            <div className="spec-item">
+            {product.origin && <div className="spec-item">
               <span className="spec-label">Origem:</span>
-              <span className="spec-value">Nacional (Brasil)</span>
-            </div>
-            <div className="spec-item">
+              <span className="spec-value">{product.origin}</span>
+            </div>}
+            {product.conservation && <div className="spec-item">
               <span className="spec-label">Conservação:</span>
-              <span className="spec-value">
-                {product.category === 'Limpeza' ? "Manter fora do alcance de crianças" : "Manter refrigerado após aberto"}
-              </span>
-            </div>
+              <span className="spec-value">{product.conservation}</span>
+            </div>}
           </div>
-        </div>
-
-        {/* CLUBE NOSSO JEITO EXCLUSIVE PROMOTION BANNER */}
-        <div className="clube-nosso-jeito-invite">
-          <div className="clube-invite-title">✨ Clube do Nosso Jeito</div>
-          <p className="clube-invite-text">
-            Faça parte do nosso clube de assinaturas exclusivo! Economize 10% adicionais em todos os produtos, garanta frete grátis em entregas recorrentes e tenha suporte VIP em minutos.
-          </p>
-          <button 
-            className="clube-invite-btn"
-            onClick={() => {
-              setPurchaseMode('subscribe');
-              window.scrollTo({ top: 320, behavior: 'smooth' });
-            }}
-          >
-            Assinar agora com 10% OFF
-          </button>
         </div>
 
         {/* OBVIOUS HIGH-CONTRAST CONVERSION CALL-TO-ACTION (CTA) BUTTON */}
         <div className="cta-container">
           <button 
             className="main-gold-cta"
-            disabled={product.stock === 0}
-            style={{ opacity: product.stock === 0 ? 0.6 : 1, cursor: product.stock === 0 ? 'not-allowed' : 'pointer' }}
+            disabled={!Number.isInteger(product.stock) || product.stock <= 0}
+            style={{ opacity: !Number.isInteger(product.stock) || product.stock <= 0 ? 0.6 : 1, cursor: !Number.isInteger(product.stock) || product.stock <= 0 ? 'not-allowed' : 'pointer' }}
             onClick={(e) => {
-              if (product.stock === 0) return;
-              if (purchaseMode === 'subscribe') {
-                alert(`Assinatura de ${quantity}x ${product.title} a cada ${frequency} dias configurada!`);
-              } else {
+              if (!Number.isInteger(product.stock) || product.stock <= 0) return;
                 // Trigger visual flying item thumbnail
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 const startX = rect.left + rect.width / 2;
@@ -756,18 +329,12 @@ export const ProductDetail = () => {
                     flyer.remove();
                   }, 900);
                 }, wasEmpty ? 650 : 50);
-              }
             }}
           >
             {product.stock === 0 ? (
               <>
                 <Shield size={18} style={{marginRight: 8}} />
                 Produto Esgotado
-              </>
-            ) : purchaseMode === 'subscribe' ? (
-              <>
-                <RefreshCw size={18} style={{marginRight: 8, animation: 'spin 4s linear infinite'}} />
-                Configurar Clube do Nosso Jeito
               </>
             ) : (
               <>
@@ -777,13 +344,7 @@ export const ProductDetail = () => {
             )}
           </button>
           
-          <div className="cta-assurance-sub">
-            {purchaseMode === 'subscribe' ? (
-              "🔒 Cancelamento grátis e frete incluso nas entregas recorrentes"
-            ) : (
-              "🔒 Compra protegida por Mercado Seguro com garantia de devolução"
-            )}
-          </div>
+          <div className="cta-assurance-sub">🔒 Compra protegida; frete e total confirmados no checkout.</div>
         </div>
 
         {/* GUARANTEE INFO */}
@@ -811,6 +372,10 @@ export const ProductDetail = () => {
                 price={prod.price}
                 image={prod.image}
                 category="detail-suggested"
+                id={prod.id}
+                promoActive={prod.promoActive}
+                promoPrice={prod.promoPrice}
+                promoExpiry={prod.promoExpiry}
               />
             ))}
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
+import { getEffectiveProductPrice } from '../utils/productPricing';
 
 const DiamondIcon = ({ size = 10 }: { size?: number }) => (
   <svg 
@@ -22,15 +23,19 @@ const DiamondIcon = ({ size = 10 }: { size?: number }) => (
 );
 
 export const ProductCard = ({
+  id,
   title,
   price,
   image,
   badge,
   diamondReward,
-  category,
   glassEffect,
   stock,
+  promoActive,
+  promoPrice,
+  promoExpiry,
 }: {
+  id?: string;
   title: string;
   price: number | string;
   image: string;
@@ -40,6 +45,9 @@ export const ProductCard = ({
   category?: string;
   glassEffect?: boolean;
   stock?: number;
+  promoActive?: boolean;
+  promoPrice?: number | string;
+  promoExpiry?: string | number | Date | { toDate?: () => Date; seconds?: number } | null;
 }) => {
   const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart();
 
@@ -49,14 +57,11 @@ export const ProductCard = ({
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+  const productId = id || slug;
+  const numericPrice = getEffectiveProductPrice({ price, promoActive, promoPrice, promoExpiry });
+  const canOrder = Boolean(id) && Number.isInteger(stock) && Number(stock) > 0;
 
-  const formattedPrice = typeof price === 'number' 
-    ? `R$ ${price.toFixed(2).replace('.', ',')}` 
-    : price;
-
-  const numericPrice = typeof price === 'number' 
-    ? price 
-    : (parseFloat(price.replace('R$', '').replace(',', '.').trim()) || 0);
+  const formattedPrice = `R$ ${numericPrice.toFixed(2).replace('.', ',')}`;
 
   const isTall = title.toLowerCase().includes('heineken') ||
                  title.toLowerCase().includes('coca-cola') ||
@@ -70,8 +75,6 @@ export const ProductCard = ({
 
   const cardRef = useRef<HTMLDivElement>(null);
   const pricePillRef = useRef<HTMLDivElement>(null);
-  const [animationState, setAnimationState] = useState<'normal' | 'reducing' | 'reduced-flash' | 'club-only'>('normal');
-  const [currentPrice, setCurrentPrice] = useState<number>(numericPrice);
   const [showDiamond, setShowDiamond] = useState(true);
 
   useEffect(() => {
@@ -83,26 +86,26 @@ export const ProductCard = ({
     }
   }, [diamondReward, badge]);
 
-  const currentQuantity = cartItems.find((item) => item.id === slug)?.quantity || 0;
+  const currentQuantity = cartItems.find((item) => item.id === productId)?.quantity || 0;
 
   const handleMinus = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (currentQuantity <= 1) {
-      removeFromCart(slug);
+      removeFromCart(productId);
     } else {
-      updateQuantity(slug, currentQuantity - 1);
+      updateQuantity(productId, currentQuantity - 1);
     }
   };
 
   const handlePlus = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (stock !== undefined && currentQuantity >= stock) {
-      alert(`Desculpe, temos apenas ${stock} unidade(s) deste produto em estoque.`);
+    if (!canOrder || (stock !== undefined && currentQuantity >= stock)) {
+      alert(stock === undefined ? 'A disponibilidade deste produto está sendo verificada.' : `Desculpe, temos apenas ${stock} unidade(s) deste produto em estoque.`);
       return;
     }
-    updateQuantity(slug, currentQuantity + 1);
+    updateQuantity(productId, currentQuantity + 1);
   };
 
   const triggerIncentiveEffects = () => {
@@ -169,99 +172,13 @@ export const ProductCard = ({
     }
   };
 
-  useEffect(() => {
-    // Randomly decide if this card displays the club discount teaser
-    const lucky = Math.random() < 0.45;
 
-    if (!lucky) return;
-
-    // Stagger the initial start
-    const initialDelay = Math.random() * 12000 + 6000; // 6s to 18s stagger (slower)
-    let timer: ReturnType<typeof setTimeout>;
-    let loopInterval: ReturnType<typeof setInterval>;
-    const channel = category || 'global';
-    const globalWindow = window as unknown as { activeAnimations?: Record<string, string> };
-
-    const runAnimation = () => {
-      // Coordinate animations per category using a global window registry
-      if (!globalWindow.activeAnimations) {
-        globalWindow.activeAnimations = {};
-      }
-
-      // If another product in this category is currently animating, postpone by 5-10s
-      if (globalWindow.activeAnimations[channel] && globalWindow.activeAnimations[channel] !== title) {
-        timer = setTimeout(runAnimation, Math.random() * 5000 + 5000);
-        return;
-      }
-
-      // Claim the channel
-      globalWindow.activeAnimations[channel] = title;
-
-      // 1. Start reducing (color is green in CSS)
-      setAnimationState('reducing');
-      const discount = parseFloat((Math.random() * 1.0 + 2.0).toFixed(2)); // between 2.00 and 3.00
-      const targetPrice = Math.max(0.5, numericPrice - discount);
-      
-      const startPriceCents = Math.round(numericPrice * 100);
-      const targetPriceCents = Math.round(targetPrice * 100);
-      const totalCentsToReduce = startPriceCents - targetPriceCents;
-      
-      const totalDuration = 3000; // 3 seconds total animation duration
-      const stepTime = Math.max(10, Math.round(totalDuration / totalCentsToReduce));
-      
-      let currentCents = startPriceCents;
-
-      const countdown = setInterval(() => {
-        currentCents -= 1; // Decrement cent-by-cent
-        if (currentCents <= targetPriceCents) {
-          clearInterval(countdown);
-          setCurrentPrice(targetPrice);
-          
-          // 2. Switch to reduced-flash state (final reduced price pulses/scale-flashes)
-          setAnimationState('reduced-flash');
-          
-          // Trigger the yellow diamond explosion
-          triggerIncentiveEffects();
-
-          // Hold reduced-flash for 7.0 seconds (drastically slower), then display "SÓ NO CLUBE!"
-          setTimeout(() => {
-            setAnimationState('club-only');
-            
-            // Hold club-only for 8.0 seconds (drastically slower), then return to normal
-            setTimeout(() => {
-              setAnimationState('normal');
-              setCurrentPrice(numericPrice);
-              
-              // Release the channel
-              if (globalWindow.activeAnimations) {
-                delete globalWindow.activeAnimations[channel];
-              }
-            }, 8000);
-          }, 7000);
-        } else {
-          setCurrentPrice(currentCents / 100);
-        }
-      }, stepTime);
-    };
-
-    timer = setTimeout(() => {
-      runAnimation();
-      loopInterval = setInterval(runAnimation, 45000); // repeat every 45 seconds (drastically slower pacing)
-    }, initialDelay);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(loopInterval);
-      // Clean up global channel reservation on unmount
-      if (globalWindow.activeAnimations && globalWindow.activeAnimations[channel] === title) {
-        delete globalWindow.activeAnimations[channel];
-      }
-    };
-  }, [numericPrice, category, title]);;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!canOrder) return;
 
     if (stock !== undefined && stock <= 0) {
       alert('Produto esgotado no momento.');
@@ -297,7 +214,8 @@ export const ProductCard = ({
     const wasEmpty = !document.querySelector('.floating-mini-cart');
     
     // Add to cart immediately so the mini-cart appears
-    addToCart({ id: slug, title, price: numericPrice, image }, 1);
+    addToCart({ id: productId, title, price: numericPrice, image }, 1);
+    triggerIncentiveEffects();
 
     if (wasEmpty) {
       // Pop effect while waiting for cart to slide up
@@ -331,7 +249,7 @@ export const ProductCard = ({
 
   return (
     <div className={`product-card ${glassEffect ? 'glass-card' : ''}`} ref={cardRef}>
-      <Link to={`/product/${slug}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Link to={`/product/${encodeURIComponent(productId)}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
           <img src={image} alt={title} />
           
@@ -373,13 +291,9 @@ export const ProductCard = ({
         <div className="product-title">{title}</div>
       </Link>
 
-      <div className={`price-pill ${
-        animationState === 'club-only' || animationState === 'reduced-flash' ? 'green-pill-active' : ''
-      } ${animationState === 'club-only' ? 'club-only-active' : ''}`} ref={pricePillRef}>
-        {stock === 0 ? (
-          <div className="out-of-stock-flash" style={{ color: '#FF6B6B', fontWeight: 900, fontSize: 11 }}>ESGOTADO</div>
-        ) : animationState === 'club-only' ? (
-          <div className="club-only-flash">SÓ NO CLUBE!</div>
+      <div className="price-pill" ref={pricePillRef}>
+        {!canOrder ? (
+          <div className="out-of-stock-flash" style={{ color: '#FF6B6B', fontWeight: 900, fontSize: 11 }}>{stock === 0 ? 'ESGOTADO' : 'INDISPONÍVEL'}</div>
         ) : currentQuantity > 0 ? (
           <div className="quantity-control-wrapper">
              <button className="minus-btn" onClick={handleMinus} aria-label={`Reduzir quantidade de ${title}`}>-</button>
@@ -388,18 +302,8 @@ export const ProductCard = ({
           </div>
         ) : (
           <>
-            <div className={`product-price ${
-              animationState === 'reducing' 
-                ? 'reducing-active' 
-                : animationState === 'reduced-flash' 
-                  ? 'reduced-flash-active' 
-                  : ''
-            }`}>
-              {animationState === 'reducing' || animationState === 'reduced-flash'
-                ? `R$ ${currentPrice.toFixed(2).replace('.', ',')}`
-                : formattedPrice}
-            </div>
-            <button className={`add-btn ${animationState === 'reduced-flash' ? 'green-btn-active' : ''}`} onClick={handleAdd} aria-label={`Adicionar ${title} ao carrinho`}>+</button>
+            <div className="product-price">{formattedPrice}</div>
+            <button className="add-btn" onClick={handleAdd} aria-label={`Adicionar ${title} ao carrinho`}>+</button>
           </>
         )}
       </div>

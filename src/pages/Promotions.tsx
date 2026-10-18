@@ -3,7 +3,7 @@ import { PartyPopper, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { Topbar } from '../components/Topbar';
-import { defaultProducts } from '../data/defaultProducts';
+import { isProductPromotionCurrent } from '../utils/productPricing';
 
 interface Product {
   id: string;
@@ -15,6 +15,8 @@ interface Product {
   badgeStyle?: 'orange' | 'light';
   diamondReward?: number;
   promoActive?: boolean;
+  promoPrice?: number | string;
+  promoExpiry?: string | number | Date | { toDate?: () => Date; seconds?: number } | null;
 }
 
 export const Promotions = () => {
@@ -22,54 +24,14 @@ export const Promotions = () => {
 
   useEffect(() => {
     const loadProducts = () => {
-      const stored = localStorage.getItem('app-products');
-      let allProds: Product[] = [];
-      let updated = false;
-
-      if (stored) {
-        allProds = JSON.parse(stored) as Product[];
-        // Check for missing default products and add them
-        defaultProducts.forEach(defP => {
-          if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP as Product);
-            updated = true;
-          }
-        });
-      } else {
-        allProds = defaultProducts as Product[];
-        updated = true;
+      try {
+        const stored = localStorage.getItem('app-products');
+        const allProds = stored ? JSON.parse(stored) as Product[] : [];
+        setPromoProds(allProds.filter(p => p.category === 'Promoções' || isProductPromotionCurrent(p)));
+      } catch (error) {
+        console.error('Não foi possível ler o catálogo de promoções.', error);
+        setPromoProds([]);
       }
-
-      // Sync specific image updates if necessary
-      allProds = allProds.map(p => {
-        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
-          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
-          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
-          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1549778398-f3c481549766')) {
-          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          updated = true;
-        }
-        return p;
-      });
-
-      if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
-      }
-
-      // Promotions are products with category "Promoções" OR promoActive === true
-      const filtered = allProds.filter(
-        p => p.category === 'Promoções' || p.promoActive === true
-      );
-      setPromoProds(filtered as Product[]);
     };
 
     loadProducts();

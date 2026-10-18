@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, runTransaction, collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import {
   ArrowLeft, Save, Package, DollarSign, Target,
@@ -320,19 +320,31 @@ export const AdminProductDetail: React.FC = () => {
 
   // ─── Stock Adjustment ─────────────────────────────────────────────────────
   const handleStockAdjust = async (delta: number) => {
-    const currentStock = parseInt(stock) || 0;
-    const newStock = Math.max(0, currentStock + delta);
     const note = stockAdjustNote.trim() || (delta > 0 ? 'Entrada manual' : 'Saída manual');
-    const entry = { delta, note, date: new Date().toISOString() };
 
     setSavingStockAdj(true);
     try {
-      const newHistory = [entry, ...stockHistory].slice(0, 20);
+      let newStock = Math.max(0, (parseInt(stock) || 0) + delta);
+      let newHistory = stockHistory;
       if (!isNew && id) {
-        await updateDoc(doc(db, 'products', id), {
-          stock: newStock,
-          stockHistory: newHistory,
+        const productRef = doc(db, 'products', id);
+        const result = await runTransaction(db, async transaction => {
+          const snapshot = await transaction.get(productRef);
+          if (!snapshot.exists()) throw new Error('Produto não encontrado.');
+          const product = snapshot.data();
+          const actualStock = product.stock;
+          if (!Number.isInteger(actualStock) || actualStock < 0) throw new Error('Estoque atual inválido.');
+          const nextStock = Math.max(0, actualStock + delta);
+          const appliedDelta = nextStock - actualStock;
+          const history = Array.isArray(product.stockHistory) ? product.stockHistory : [];
+          const nextHistory = [{ delta: appliedDelta, note, date: new Date().toISOString() }, ...history].slice(0, 20);
+          transaction.update(productRef, { stock: nextStock, stockHistory: nextHistory, updatedAt: new Date().toISOString() });
+          return { stock: nextStock, history: nextHistory };
         });
+        newStock = result.stock;
+        newHistory = result.history;
+      } else {
+        newHistory = [{ delta, note, date: new Date().toISOString() }, ...stockHistory].slice(0, 20);
       }
       setStock(newStock.toString());
       setStockHistory(newHistory);
@@ -346,14 +358,61 @@ export const AdminProductDetail: React.FC = () => {
 
   // ─── Save (ORIGINAL logic + new fields) ────────────────────────────────────
   const handleSave = async () => {
-    if (!title || !price || !image) {
+    if (!title.trim() || !price.trim() || !image.trim()) {
       alert('Preencha nome, preço e imagem.');
       return;
     }
 
-    const pPrice = parseFloat(price);
-    const pCost = costPrice ? parseFloat(costPrice) : undefined;
-    const pDiamonds = diamondReward ? parseInt(diamondReward) : undefined;
+    const pPrice = Number(price);
+    const pCost = costPrice.trim() ? Number(costPrice) : undefined;
+    const pDiamonds = diamondReward.trim() ? Number(diamondReward) : undefined;
+    const pStock = stock.trim() ? Number(stock) : undefined;
+    const pMinStock = minStock.trim() ? Number(minStock) : undefined;
+    const pPromoDiscount = promoDiscount.trim() ? Number(promoDiscount) : undefined;
+
+    if (!Number.isFinite(pPrice) || pPrice <= 0) {
+      alert('O preço de venda deve ser um número maior que zero.');
+      return;
+    }
+    if (pCost !== undefined && (!Number.isFinite(pCost) || pCost < 0)) {
+      alert('O preço de custo deve ser um número igual ou maior que zero.');
+      return;
+    }
+    if (pDiamonds !== undefined && (!Number.isInteger(pDiamonds) || pDiamonds < 0)) {
+      alert('A recompensa em diamantes deve ser um inteiro não negativo.');
+      return;
+    }
+    if (pStock !== undefined && (!Number.isInteger(pStock) || pStock < 0)) {
+      alert('O estoque deve ser um inteiro não negativo.');
+      return;
+    }
+    if (pMinStock !== undefined && (!Number.isInteger(pMinStock) || pMinStock < 0)) {
+      alert('O estoque mínimo deve ser um inteiro não negativo.');
+      return;
+    }
+    if (pPromoDiscount !== undefined && (!Number.isFinite(pPromoDiscount) || pPromoDiscount < 0 || pPromoDiscount > 90)) {
+      alert('O desconto da promoção deve estar entre 0% e 90%.');
+      return;
+    }
+    if (promoActive && (pPromoDiscount === undefined || pPromoDiscount <= 0)) {
+      alert('Informe um desconto maior que zero para ativar a promoção.');
+      return;
+    }
+    if (promoActive && promoExpiry) {
+      const expiry = new Date(promoExpiry);
+      if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now()) {
+        alert('A validade da promoção precisa ser uma data futura válida.');
+        return;
+      }
+    }
+
+    const pPromoPrice = promoActive && pPromoDiscount !== undefined
+      ? Number((pPrice * (1 - pPromoDiscount / 100)).toFixed(2))
+      : null;
+    if (pPromoPrice !== null && pPromoPrice <= 0) {
+      alert('O preço promocional calculado deve ser maior que zero.');
+      return;
+    }
 
     if (pCost && pDiamonds !== undefined) {
       const margin = calcRealMargin(pPrice, pCost, pDiamonds);
@@ -377,10 +436,11 @@ export const AdminProductDetail: React.FC = () => {
       price: pPrice,
       costPrice: pCost || null,
       diamondReward: pDiamonds || null,
-      stock: stock ? parseInt(stock) : null,
-      minStock: minStock ? parseInt(minStock) : null,
+      stock: pStock ?? null,
+      minStock: pMinStock ?? null,
       promoActive,
-      promoDiscount: promoDiscount ? parseFloat(promoDiscount) : null,
+      promoDiscount: pPromoDiscount ?? null,
+      promoPrice: pPromoPrice,
       promoExpiry: promoExpiry || null,
       availableInRoulette,
       active,
@@ -393,6 +453,11 @@ export const AdminProductDetail: React.FC = () => {
     const data = Object.fromEntries(
       Object.entries(rawData).filter(([, v]) => v !== undefined && v !== null)
     );
+    // Existing stock and its history are changed only by the transactional adjuster.
+    if (!isNew) {
+      delete data.stock;
+      delete data.stockHistory;
+    }
 
 
     try {

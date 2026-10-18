@@ -1028,11 +1028,25 @@ export const createOrder = functions.https.onCall(async (data, context) => {
           );
         }
 
-        // Authoritative price — never trust client
-        const serverPrice: number =
-          pData['promoActive'] && pData['promoPrice'] && Number(pData['promoPrice']) > 0
-            ? Number(pData['promoPrice'])
-            : Number(pData['price'] ?? 0);
+        // Authoritative price — never trust client. Only honor a promotion when its
+        // persisted price is valid and its optional expiry is still in the future.
+        const regularPrice = Number(pData['price'] ?? 0);
+        const promotionalPrice = Number(pData['promoPrice'] ?? 0);
+        let promotionIsCurrent = pData['promoActive'] === true &&
+          Number.isFinite(promotionalPrice) && promotionalPrice > 0 && promotionalPrice < regularPrice;
+        const rawPromoExpiry = pData['promoExpiry'];
+        if (promotionIsCurrent && rawPromoExpiry) {
+          let expiry: Date | null = null;
+          if (typeof rawPromoExpiry === 'string' || typeof rawPromoExpiry === 'number') {
+            const parsed = new Date(rawPromoExpiry);
+            expiry = Number.isNaN(parsed.getTime()) ? null : parsed;
+          } else if (rawPromoExpiry && typeof rawPromoExpiry.toDate === 'function') {
+            const parsed = rawPromoExpiry.toDate();
+            expiry = parsed instanceof Date && !Number.isNaN(parsed.getTime()) ? parsed : null;
+          }
+          promotionIsCurrent = expiry !== null && expiry.getTime() > Date.now();
+        }
+        const serverPrice: number = promotionIsCurrent ? promotionalPrice : regularPrice;
 
         if (serverPrice <= 0 || isNaN(serverPrice)) {
           throw new functions.https.HttpsError(
@@ -1899,4 +1913,3 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (data, context
 // Admin portal: RBAC / SUPERADMIN / audit callables (see ./admin)
 // ─────────────────────────────────────────────────────────────────────────────
 export * from './admin/callables';
-

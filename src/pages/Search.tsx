@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
+import { isProductPromotionCurrent } from '../utils/productPricing';
 import { MercadoLogo } from './Login';
-import { defaultProducts } from '../data/defaultProducts';
 
 const card = {
   background: 'var(--card-gradient)',
@@ -25,6 +25,8 @@ interface Product {
   badgeStyle?: 'light' | 'orange';
   diamondReward?: number;
   promoActive?: boolean;
+  promoPrice?: number | string;
+  promoExpiry?: string | number | Date | { toDate?: () => Date; seconds?: number } | null;
 }
 
 const CATEGORIES = [
@@ -72,53 +74,16 @@ export const Search = () => {
     setSelectedCategory(categoryParam);
   }
 
-  // Load products from localStorage or fallback to defaults
+  // Firestore is the catalog source; localStorage is only its realtime cache.
   useEffect(() => {
     const loadProducts = () => {
-      const stored = localStorage.getItem('app-products');
-      let allProds: Product[] = [];
-      let updated = false;
-
-      if (stored) {
-        allProds = JSON.parse(stored) as Product[];
-        // Check for missing default products and add them
-        defaultProducts.forEach(defP => {
-          if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP as Product);
-            updated = true;
-          }
-        });
-      } else {
-        allProds = defaultProducts as Product[];
-        updated = true;
+      try {
+        const stored = localStorage.getItem('app-products');
+        setProducts(stored ? JSON.parse(stored) as Product[] : []);
+      } catch (error) {
+        console.error('Não foi possível ler o catálogo da busca.', error);
+        setProducts([]);
       }
-
-      // Sync specific image updates if necessary
-      allProds = allProds.map(p => {
-        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
-          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
-          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
-          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1549778398-f3c481549766')) {
-          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          updated = true;
-        }
-        return p;
-      });
-
-      if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
-      }
-
-      setProducts(allProds);
     };
 
     loadProducts();
@@ -172,7 +137,7 @@ export const Search = () => {
       if (selectedCategory) {
         const selCat = normalizeStr(selectedCategory);
         if (selCat === 'promocoes' || selCat === 'promocoes' || selCat === 'promoçoes' || selCat === 'promotions') {
-          categoryMatches = p.promoActive === true || normalizeStr(p.category) === 'promocoes';
+          categoryMatches = isProductPromotionCurrent(p) || normalizeStr(p.category) === 'promocoes';
         } else {
           categoryMatches = normalizeStr(p.category) === selCat;
         }

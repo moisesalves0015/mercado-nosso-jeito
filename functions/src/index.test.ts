@@ -152,6 +152,18 @@ describe('createOrder', () => {
     expect(res.subtotal).toBe(16);
   });
 
+  it('ignora promoção com validade expirada e cobra o preço regular', async () => {
+    seedProduct('p1', { promoActive: true, promoPrice: 8, promoExpiry: '2000-01-01T00:00:00.000Z' });
+    const res = await call(createOrder, orderPayload(), asUser(CUSTOMER));
+    expect(res.subtotal).toBe(20);
+  });
+
+  it('aplica promoção ainda válida quando existe data de expiração futura', async () => {
+    seedProduct('p1', { promoActive: true, promoPrice: 8, promoExpiry: '2999-01-01T00:00:00.000Z' });
+    const res = await call(createOrder, orderPayload(), asUser(CUSTOMER));
+    expect(res.subtotal).toBe(16);
+  });
+
   it('frete grátis quando o subtotal atinge o limite configurado', async () => {
     seedProduct('p1', { price: 40, stock: 5 });
     const res = await call(createOrder, orderPayload(), asUser(CUSTOMER));
