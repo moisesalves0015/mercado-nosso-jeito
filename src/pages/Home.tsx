@@ -227,6 +227,21 @@ export const Home = () => {
     }
   };
 
+  const defaultHeroBanners = [
+    { id: 'ofertas', image: '/hero_background.png', link: '/promotions', title: 'Ofertas do dia' },
+    { id: 'bebidas', image: '/hero_bebidas.png', link: '/bebidas', title: 'Bebidas geladas' },
+    { id: 'tabacaria', image: '/hero_tabacaria.png', link: '/tabacaria', title: 'Tabacaria' },
+  ];
+
+  const activeBanners = (homeConfig.heroBanners && homeConfig.heroBanners.length > 0)
+    ? homeConfig.heroBanners.sort((a, b) => a.order - b.order).map(b => ({
+        id: b.id,
+        image: b.image || '/hero_background.png',
+        link: b.link || '/',
+        title: b.title || 'Banner'
+      }))
+    : defaultHeroBanners;
+
   const minSwipeDistance = 50;
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -245,18 +260,19 @@ export const Home = () => {
     const isRightSwipe = distance < -minSwipeDistance;
 
     if (isLeftSwipe) {
-      setCurrentSlide((prev) => (prev + 1) % 3);
+      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
     } else if (isRightSwipe) {
-      setCurrentSlide((prev) => (prev - 1 + 3) % 3);
+      setCurrentSlide((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
     }
   };
 
   useEffect(() => {
+    if (activeBanners.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3);
-    }, 8000);
+      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
+    }, 4500);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentSlide, activeBanners.length]);
 
   useEffect(() => {
     const loadProducts = () => {
@@ -351,58 +367,26 @@ export const Home = () => {
               className="hero-slider-track" 
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-              {/* Slide 1: Ofertas */}
-              <Link to="/promotions" className="hero-slide" style={{ backgroundImage: `url('/hero_background.png')` }}>
-                <div className="hero-left">
-                  <div className="hero-badge">
-                    <span className="hero-badge-icon">🔥</span>
-                    <span>OFERTA DO DIA</span>
-                  </div>
-                  <h2>Descontos que você <br />vai <span className="highlight-gold">amar! 💛</span></h2>
-                  <p>Economize hoje em itens selecionados.</p>
-                  <button className="hero-btn gold-shiny-btn">
-                    Ver ofertas <span className="btn-arrow">→</span>
-                  </button>
-                </div>
-              </Link>
-
-              {/* Slide 2: Bebidas */}
-              <Link to="/bebidas" className="hero-slide" style={{ backgroundImage: `url('/hero_bebidas.png')` }}>
-                <div className="hero-left">
-                  <div className="hero-badge">
-                    <span className="hero-badge-icon">🍻</span>
-                    <span>BEBIDAS GELADAS</span>
-                  </div>
-                  <h2>Cervejas e Refris <br />no <span className="highlight-blue">grau! 🧊</span></h2>
-                  <p>Para comemorar <br />ou relaxar no fim de semana.</p>
-                  <button className="hero-btn gold-shiny-btn">
-                    Ver bebidas <span className="btn-arrow">→</span>
-                  </button>
-                </div>
-              </Link>
-
-              {/* Slide 3: Tabacaria */}
-              <Link to="/tabacaria" className="hero-slide hero-slide-tabacaria" style={{ backgroundImage: `url('/hero_tabacaria.png')` }}>
-                <div className="hero-left hero-left-lowered">
-                  <h2>O melhor da <br />nossa <span className="highlight-red">tabacaria! 🔞</span></h2>
-                  <p>Variedade de sedas, <br />isqueiros e importados.</p>
-                  <button className="hero-btn gold-shiny-btn">
-                    Ver tabacaria <span className="btn-arrow">→</span>
-                  </button>
-                </div>
-              </Link>
+              {activeBanners.map((banner, idx) => (
+                <Link
+                  key={banner.id || idx}
+                  to={banner.link}
+                  className="hero-slide"
+                  style={{ backgroundImage: `url('${banner.image}')` }}
+                  aria-label={banner.title}
+                />
+              ))}
             </div>
 
             {/* SLIDER DOTS */}
-            <div className="hero-dots" role="tablist" aria-label="Navegar entre slides">
-              {[0, 1, 2].map((idx) => {
-                const labels = ['Ofertas do dia', 'Bebidas geladas', 'Tabacaria'];
-                return (
+            {activeBanners.length > 1 && (
+              <div className="hero-dots" role="tablist" aria-label="Navegar entre slides">
+                {activeBanners.map((banner, idx) => (
                   <span
-                    key={idx}
+                    key={banner.id || idx}
                     role="tab"
                     aria-selected={currentSlide === idx}
-                    aria-label={`Slide ${idx + 1}: ${labels[idx]}`}
+                    aria-label={`Slide ${idx + 1}: ${banner.title}`}
                     className={`dot ${currentSlide === idx ? 'active' : ''}`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -410,9 +394,9 @@ export const Home = () => {
                       setCurrentSlide(idx);
                     }}
                   />
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* QUICK CATEGORIES (SINGLE ROW, NO SCROLL) - DIRECTLY BELOW HERO BANNER */}

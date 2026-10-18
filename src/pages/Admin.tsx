@@ -12,7 +12,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts';
-import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, query, orderBy, setDoc, getDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db, fns } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { AdminMarketing } from '../components/AdminMarketing';
@@ -227,7 +227,7 @@ const StatCard = ({ label, value, sub, icon: Icon, iconColor, trend }: StatCardP
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 export const Admin: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, user: adminUser } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams<{ tab?: string }>();
   const activeTab: TabType = (tab === 'dashboard' ? 'dashboard' : (tab || 'dashboard')) as TabType;
@@ -250,6 +250,9 @@ export const Admin: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<FirestoreClient | null>(null);
   const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
   const [awardAmount, setAwardAmount] = useState('50');
+  const [isAwarding, setIsAwarding] = useState(false);
+  const [awardIdempotencyKey, setAwardIdempotencyKey] = useState('');
+  const [banningClientId, setBanningClientId] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState('');
 
   // ── Roulette ──
@@ -530,14 +533,23 @@ export const Admin: React.FC = () => {
 
   const handleLogout = async () => { try { await logout(); navigate('/login'); } catch (e) { console.error(e); } };
 
-  const handleDeleteProduct = async (id: string) => { 
-    if (window.confirm('Excluir produto?')) {
-      await deleteDoc(doc(db, 'products', id));
+  // Products are never physically deleted: "excluir" archives (reversible, history preserved).
+  const handleDeleteProduct = async (id: string) => {
+    if (window.confirm('Arquivar este produto? Ele sai da loja, mas o histórico é preservado e pode ser reativado.')) {
+      await updateDoc(doc(db, 'products', id), {
+        active: false,
+        archivedAt: serverTimestamp(),
+        archivedBy: adminUser?.uid ?? null,
+        archiveReason: 'Arquivado pelo painel administrativo',
+      });
     }
   };
   
   const toggleProductActive = async (id: string, active: boolean) => {
-    await updateDoc(doc(db, 'products', id), { active: !active });
+    // Activating restores an archived product: clear the archive state and record who restored it.
+    await updateDoc(doc(db, 'products', id), active
+      ? { active: false }
+      : { active: true, archivedAt: null, archivedBy: null, archiveReason: null, restoredAt: serverTimestamp(), restoredBy: adminUser?.uid ?? null });
   };
   
   const [orderActionLoading, setOrderActionLoading] = useState(false);
@@ -614,45 +626,51 @@ export const Admin: React.FC = () => {
     }
   };
   const banClient = async (client: FirestoreClient) => {
-    if (!window.confirm(`Banir ${client.name}?`)) return;
+    if (!window.confirm(`Banir ${client.name}? Esta ação revogará tokens de sessão e suspenderá a conta no servidor.`)) return;
+    setBanningClientId(client.id);
     try {
-      // Se era admin, revogar custom claim também no servidor
-      if (client.role === 'admin') {
-        await httpsCallable<{ targetUid: string; isAdmin: boolean }, { success: boolean }>(fns, 'setAdminClaim')({ targetUid: client.id, isAdmin: false });
-      }
-      await updateDoc(doc(db, 'users', client.id), { role: 'banned' });
+      const banCallable = httpsCallable<{ targetUid: string; reason?: string }, { success: boolean; targetUid: string }>(fns, 'adminBanUser');
+      await banCallable({ targetUid: client.id, reason: 'Suspensão manual via painel administrativo' });
       setClients(prev => prev.map(c => c.id === client.id ? { ...c, role: 'banned' } : c));
-      alert('✅ Usuário banido.');
+      alert('✅ Usuário banido com sucesso e sessões revogadas.');
     } catch (err: unknown) {
       alert(`Erro ao banir usuário: ${(err as Error)?.message || 'Erro'}`);
+    } finally {
+      setBanningClientId(null);
     }
   };
   const handleAwardDiamonds = async () => {
-    if (!selectedClient) return;
+    if (!selectedClient || isAwarding) return;
     const amount = parseInt(awardAmount);
     if (isNaN(amount) || amount === 0 || Math.abs(amount) > 10000) {
       alert('Quantidade inválida (deve ser um inteiro entre -10.000 e 10.000).');
       return;
     }
+    setIsAwarding(true);
     try {
       const grantDiamondsCallable = httpsCallable<
         { targetUid: string; amount: number; reason: string; idempotencyKey: string },
         { success: boolean; newBalance: number }
       >(fns, 'adminGrantDiamonds');
 
+      const key = awardIdempotencyKey || `manual-grant-${selectedClient.id}-${Date.now()}`;
       const result = await grantDiamondsCallable({
         targetUid: selectedClient.id,
         amount,
         reason: 'Concessão manual via painel administrativo',
-        idempotencyKey: `manual-grant-${selectedClient.id}-${Date.now()}`
+        idempotencyKey: key,
       });
 
       const newTotal = result.data.newBalance;
       setClients(prev => prev.map(c => c.id === selectedClient.id ? { ...c, diamonds: newTotal } : c));
       setIsAwardModalOpen(false);
+      setAwardIdempotencyKey('');
       alert(`✅ ${amount} 💎 creditados para ${selectedClient.name}! Novo saldo: ${newTotal}`);
     } catch (err: unknown) {
       alert(`Erro ao conceder diamantes: ${(err as Error)?.message || 'Erro'}`);
+      // Observação: awardIdempotencyKey é mantida intacta para que um novo clique/retry reutilize a mesma chave com segurança.
+    } finally {
+      setIsAwarding(false);
     }
   };
 
@@ -1118,11 +1136,26 @@ export const Admin: React.FC = () => {
                         <div style={{ fontSize: 11, color: crmTheme.success, fontWeight: 800, marginTop: 2 }}>💎 {client.diamonds ?? 0} diamantes</div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                        <button onClick={() => { setSelectedClient(client); setAwardAmount('50'); setIsAwardModalOpen(true); }} style={{ height: 32, padding: '0 12px', background: crmTheme.successLight, border: `1px solid ${crmTheme.success}`, borderRadius: 8, color: crmTheme.success, fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button onClick={() => { setSelectedClient(client); setAwardAmount('50'); setAwardIdempotencyKey(`manual-grant-${client.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`); setIsAwardModalOpen(true); }} style={{ height: 32, padding: '0 12px', background: crmTheme.successLight, border: `1px solid ${crmTheme.success}`, borderRadius: 8, color: crmTheme.success, fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Gem size={11} /> +💎
                         </button>
                         {client.role !== 'admin' && <button onClick={() => promoteToAdmin(client)} style={{ height: 32, padding: '0 10px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, color: '#d97706', fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}><Shield size={11} /></button>}
-                        {client.role !== 'banned' && <button onClick={() => banClient(client)} style={{ height: 32, padding: '0 10px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, color: '#ef4444', fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}><Ban size={11} /></button>}
+                        {client.role !== 'banned' && (
+                          <button
+                            onClick={() => banClient(client)}
+                            disabled={banningClientId === client.id}
+                            title="Banir usuário e revogar tokens de sessão"
+                            style={{
+                              height: 32, padding: '0 10px', background: '#fee2e2', border: '1px solid #fecaca',
+                              borderRadius: 8, color: '#ef4444', fontSize: 11, fontWeight: 900,
+                              cursor: banningClientId === client.id ? 'not-allowed' : 'pointer',
+                              opacity: banningClientId === client.id ? 0.6 : 1,
+                              fontFamily: 'Manrope, sans-serif', display: 'flex', alignItems: 'center', gap: 4,
+                            }}
+                          >
+                            <Ban size={11} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1625,7 +1658,19 @@ export const Admin: React.FC = () => {
                 <button key={v} onClick={() => setAwardAmount(v.toString())} style={{ height: 34, background: awardAmount === v.toString() ? crmTheme.successLight : crmTheme.bg, border: `1px solid ${awardAmount === v.toString() ? crmTheme.success : crmTheme.border}`, borderRadius: 8, color: awardAmount === v.toString() ? crmTheme.success : crmTheme.textSecondary, fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'Manrope, sans-serif' }}>+{v}</button>
               ))}
             </div>
-            <button onClick={handleAwardDiamonds} style={{ width: '100%', height: 44, background: crmTheme.success, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer', fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(16,185,129,0.2)' }}>Confirmar Premiação 💎</button>
+            <button
+              onClick={handleAwardDiamonds}
+              disabled={isAwarding}
+              style={{
+                width: '100%', height: 44, background: crmTheme.success, border: 'none', borderRadius: 12,
+                color: '#fff', fontWeight: 900, fontSize: 14,
+                cursor: isAwarding ? 'not-allowed' : 'pointer',
+                opacity: isAwarding ? 0.7 : 1,
+                fontFamily: 'Manrope, sans-serif', boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
+              }}
+            >
+              {isAwarding ? 'Processando Concessão...' : 'Confirmar Premiação 💎'}
+            </button>
           </div>
         </div>
       )}

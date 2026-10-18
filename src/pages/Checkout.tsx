@@ -600,7 +600,13 @@ export function Checkout() {
                     <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>Pagamento Aprovado</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                    O pagamento deste pedido já foi confirmado! Ele está em preparação para entrega.
+                    {confirmedOrder.status === 'delivered'
+                      ? 'O pagamento deste pedido foi confirmado e a entrega já foi concluída com sucesso!'
+                      : confirmedOrder.status === 'delivering'
+                      ? 'O pagamento deste pedido já foi confirmado! Seu pedido está a caminho.'
+                      : confirmedOrder.status === 'cancelled'
+                      ? 'O pagamento deste pedido consta como aprovado, porém o pedido foi cancelado no sistema. Contate o suporte para esclarecimentos.'
+                      : 'O pagamento deste pedido já foi confirmado! Ele está em preparação para entrega.'}
                   </p>
                 </div>
               ) : paymentMethod === 'pix' ? (

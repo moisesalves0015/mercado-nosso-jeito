@@ -13,17 +13,55 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
+    function isBanned() {
+      return isAuthenticated() && (
+        request.auth.token.banned == true ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'banned')
+      );
     }
 
-    // Prefer Custom Claim (set by setAdminClaim Cloud Function).
-    // Falls back to Firestore role for backward compatibility during rollout.
-    // Once all admins have claims, remove the get() fallback.
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid && !isBanned();
+    }
+
+    // Admin access, in order of precedence:
+    //  1. If a role assignment exists (RBAC), it is the ONLY source of truth: the assignment must be
+    //     'active' and its role must be rule-level admin ('admin' | 'superadmin'). A suspended or
+    //     archived assignment, or a non-admin role (operacoes, financeiro, ...), denies immediately —
+    //     even if the user still holds a stale `admin` token claim.
+    //  2. Otherwise (legacy admin, not yet migrated): Custom Claim (setAdminClaim) or Firestore role.
+    // Banned accounts are always rejected.
+    // Granular, per-module authorization is enforced server-side in Cloud Functions; these rules
+    // only gate direct Firestore access.
+    function hasAssignment() {
+      return exists(/databases/$(database)/documents/role_assignments/$(request.auth.uid));
+    }
+
+    function assignment() {
+      return get(/databases/$(database)/documents/role_assignments/$(request.auth.uid)).data;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      return isAuthenticated() && !isBanned() && (
+        hasAssignment()
+          ? (assignment().status == 'active' && assignment().roleId in ['admin', 'superadmin'])
+          : (request.auth.token.admin == true ||
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && !isBanned() && hasAssignment() &&
+        assignment().status == 'active' && assignment().roleId == 'superadmin';
+    }
+
+    // Any active staff member (any role), used to let the admin shell read its own role catalogue.
+    function isStaff() {
+      return isAuthenticated() && !isBanned() && (
+        hasAssignment()
+          ? assignment().status == 'active'
+          : isAdmin()
       );
     }
 
@@ -33,7 +71,9 @@ service cloud.firestore {
     // still covers admin console use but NEVER allows clients to touch stock.
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      // Physical delete is forbidden: products are archived (active:false + archivedAt/By/Reason).
+      allow create, update: if isAdmin();
+      allow delete: if false;
 
       // Stock change history written exclusively by Cloud Functions
       match /stock_history/{historyId} {
@@ -48,14 +88,23 @@ service cloud.firestore {
       // Self-registration: role must be 'client' — admins are assigned via setAdminClaim.
       allow create: if isOwner(userId) && request.resource.data.role == 'client';
       // Users can update their own safe profile fields only.
+      // Admins can update profile data but NEVER the privilege/ban/archive fields from the client:
+      // role, ban and archive state change exclusively through Cloud Functions (audited).
       allow update: if (
         isOwner(userId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'name', 'telefone', 'cpf', 'foto', 'unlockedBadges',
           'updatedAt', 'lastLogin', 'onboardingComplete', 'tokenRefreshTime'
         ])
-      ) || isAdmin();
-      allow delete: if isAdmin();
+      ) || (
+        isAdmin() &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'role', 'bannedAt', 'bannedBy', 'banReason',
+          'archivedAt', 'archivedBy', 'archiveReason', 'restoredAt', 'restoredBy'
+        ])
+      );
+      // Users are never physically deleted (archive instead).
+      allow delete: if false;
 
       // ── Addresses subcollection ───────────────────────────────────────────
       match /addresses/{addressId} {
@@ -77,7 +126,7 @@ service cloud.firestore {
     // using the Admin SDK. The client NEVER writes to this collection directly.
     // This prevents price/discount/fee manipulation.
     match /orders/{orderId} {
-      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid)
+      allow read: if (isAuthenticated() && !isBanned() && resource.data.uid == request.auth.uid)
                   || isAdmin();
       // No client create: createOrder Cloud Function handles this via Admin SDK.
       allow create: if false;
@@ -127,7 +176,7 @@ service cloud.firestore {
 
     // ─── Campaign Configs ─────────────────────────────────────────────────────
     match /campaign_configs/{configId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && !isBanned();
       allow write: if isAdmin();
     }
 
@@ -135,14 +184,14 @@ service cloud.firestore {
     // Immutable ledger. Clients can read their own entries. Only Admin SDK writes.
     match /diamond_transactions/{transactionId} {
       allow read: if isAdmin()
-                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+                  || (isAuthenticated() && !isBanned() && resource.data.userId == request.auth.uid);
       allow write: if false; // Cloud Functions (Admin SDK) only
     }
 
     // ─── Reward Claims ────────────────────────────────────────────────────────
     match /reward_claims/{claimId} {
       allow read: if isAdmin()
-                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+                  || (isAuthenticated() && !isBanned() && resource.data.userId == request.auth.uid);
       allow write: if false; // Cloud Functions (Admin SDK) only
     }
 
@@ -154,17 +203,42 @@ service cloud.firestore {
 
     // ─── Community/Presence (read-only for clients) ────────────────────────────
     match /community_presence/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && !isBanned();
       allow write: if isOwner(userId) || isAdmin();
     }
 
     // ─── Support tickets ──────────────────────────────────────────────────────
     match /support_tickets/{ticketId} {
-      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid)
+      allow read: if (isAuthenticated() && !isBanned() && resource.data.uid == request.auth.uid)
                   || isAdmin();
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && !isBanned() && request.resource.data.uid == request.auth.uid;
       allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Tickets are business history: never physically deleted.
+      allow delete: if false;
+    }
+
+    // ─── RBAC: roles catalogue ────────────────────────────────────────────────
+    // Read by staff so the admin shell can render menus (UX only). Written exclusively by
+    // Cloud Functions (Admin SDK).
+    match /roles/{roleId} {
+      allow read: if isStaff() || isAdmin();
+      allow write: if false;
+    }
+
+    // ─── RBAC: role assignments ───────────────────────────────────────────────
+    // A user can read only their own assignment; admins can read the roster. Writes: Admin SDK only,
+    // so neither a client nor an admin can invent a role or permission.
+    match /role_assignments/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if false;
+    }
+
+    // ─── Audit trail (append-only, backend-written) ───────────────────────────
+    // Direct reads are restricted to superadmins; everyone else goes through adminListAudit, which
+    // checks the granular `auditoria:view` permission. No client write/update/delete, ever.
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
     }
 
   }

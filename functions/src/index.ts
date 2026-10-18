@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { applyStaffRole, requirePermission } from './admin/rbac';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -149,9 +150,12 @@ async function grantReward(
   }
 
   const profileSnap = await transaction.get(profileRef);
+  const userDocRef = db.collection('users').doc(opts.uid);
+  const userSnap = await transaction.get(userDocRef);
+
   const profileData = profileSnap.exists
     ? profileSnap.data()!
-    : { diamonds: 0, history: [] as unknown[] };
+    : { diamonds: userSnap.exists ? ((userSnap.data()?.diamonds as number) ?? 0) : 0, history: [] as unknown[] };
 
   const balanceBefore: number = (profileData.diamonds as number) ?? 0;
   const balanceAfter: number = balanceBefore + opts.amount;
@@ -199,6 +203,10 @@ async function grantReward(
       missions: { order: false, refer: false, combo: false },
       completedAds: [],
     });
+  }
+
+  if (userSnap.exists) {
+    transaction.update(userDocRef, { diamonds: balanceAfter });
   }
 
   return { newBalance: balanceAfter, alreadyProcessed: false };
@@ -736,28 +744,49 @@ function normalizeCondosServer(rawCondos: unknown): Record<string, number> {
 }
 
 /**
- * Checks whether a UID holds admin role via Firestore `users/{uid}.role`.
- * Used as a fallback while Custom Claims are being rolled out.
+ * Checks whether the caller is active and not banned.
  */
-async function checkIsAdminByRole(uid: string): Promise<boolean> {
+async function checkIsCallerBanned(contextAuth: { uid: string; token?: Record<string, unknown> }): Promise<boolean> {
+  if (contextAuth.token && contextAuth.token['banned'] === true) return true;
   try {
-    const snap = await db.collection('users').doc(uid).get();
+    const snap = await db.collection('users').doc(contextAuth.uid).get();
+    return snap.exists && snap.data()?.role === 'banned';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks whether the caller has administrator privileges.
+ * Automatically denies access if the user is banned (even if their token still carries admin: true).
+ */
+async function checkIsCallerAdmin(contextAuth: { uid: string; token?: Record<string, unknown> }): Promise<boolean> {
+  if (contextAuth.token && contextAuth.token['banned'] === true) return false;
+  try {
+    const snap = await db.collection('users').doc(contextAuth.uid).get();
+    if (snap.exists && snap.data()?.role === 'banned') return false;
+    if (contextAuth.token && contextAuth.token['admin'] === true) return true;
     return snap.exists && snap.data()?.role === 'admin';
   } catch {
     return false;
   }
 }
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // createOrder — Callable; all price/stock/coupon/shipping logic runs server-side
 // ─────────────────────────────────────────────────────────────────────────────
 export const createOrder = functions.https.onCall(async (data, context) => {
   try {
-    // ── 1. Authentication ──────────────────────────────────────────────────────
+    // ── 1. Authentication & Ban check ──────────────────────────────────────────
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
     }
     const uid = context.auth.uid;
+
+    if (await checkIsCallerBanned({ uid, token: context.auth.token })) {
+      throw new functions.https.HttpsError('permission-denied', 'Conta suspensa. Entre em contato com o suporte.');
+    }
 
     // ── 2. Payload validation ─────────────────────────────────────────────────
     const req = data as {
@@ -1220,10 +1249,8 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  // Accept Custom Claim (preferred) OR Firestore role (backward compat)
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
-  if (!hasRoleAdmin) {
+  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
+  if (!isAdmin) {
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder diamantes.');
   }
 
@@ -1273,7 +1300,67 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
 
   functions.logger.info('adminGrantDiamonds', { targetUid, amount, adminUid: context.auth.uid, reason });
 
-  return { success: true, newBalance: result.newBalance };
+  return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminBanUser — Callable; bans user account completely (Auth disabled + claims + Firestore)
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminBanUser = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
+  }
+
+  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
+  if (!isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem banir contas.');
+  }
+
+  const req = data as { targetUid?: unknown; reason?: unknown };
+  if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
+    throw new functions.https.HttpsError('invalid-argument', 'targetUid é obrigatório.');
+  }
+
+  const targetUid = req.targetUid.trim();
+  const callerUid = context.auth.uid;
+  const reason    = typeof req.reason === 'string' && req.reason.trim() ? req.reason.trim() : 'Suspensão administrativa';
+
+  if (targetUid === callerUid) {
+    throw new functions.https.HttpsError('failed-precondition', 'Você não pode banir sua própria conta.');
+  }
+
+  // An active superadmin can only be removed through the access-management flow
+  // (adminSetStaffStatus), which enforces the "last superadmin" protection.
+  const targetAssignment = await db.collection('role_assignments').doc(targetUid).get();
+  const targetRa = targetAssignment.exists ? (targetAssignment.data() as { roleId?: string; status?: string }) : null;
+  if (targetRa?.roleId === 'superadmin' && targetRa?.status === 'active') {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Este usuário é superadmin. Suspenda ou rebaixe o acesso na gestão de usuários antes de banir.',
+    );
+  }
+
+  // 1. Firebase Auth: revoga tokens, desabilita conta e marca claim banned: true, admin: false
+  try {
+    await admin.auth().setCustomUserClaims(targetUid, { admin: false, banned: true });
+    await admin.auth().updateUser(targetUid, { disabled: true });
+    await admin.auth().revokeRefreshTokens(targetUid);
+  } catch (authErr) {
+    functions.logger.warn('adminBanUser: aviso ao atualizar Firebase Auth (usuário pode inexistir no Auth)', { targetUid, error: authErr });
+  }
+
+  // 2. Firestore: marca role: 'banned' imediatamente
+  await db.collection('users').doc(targetUid).set({
+    role: 'banned',
+    bannedAt: admin.firestore.FieldValue.serverTimestamp(),
+    bannedBy: callerUid,
+    banReason: reason,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  functions.logger.info('adminBanUser', { targetUid, callerUid, reason });
+
+  return { success: true, targetUid };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1287,17 +1374,12 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
 // firebase.auth().currentUser?.getIdToken(true)) for the new claim to apply.
 // ─────────────────────────────────────────────────────────────────────────────
 export const setAdminClaim = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
-  }
+  // Legacy entry point kept for compatibility. It now requires the granular
+  // `usuarios:admin` permission (superadmin by default) and delegates to the RBAC engine,
+  // which audits the change, merges claims and protects the last superadmin.
+  const actor = await requirePermission(context.auth, 'usuarios:admin');
 
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
-  if (!hasRoleAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder privilégios administrativos.');
-  }
-
-  const req = data as { targetUid?: unknown; isAdmin?: unknown };
+  const req = data as { targetUid?: unknown; isAdmin?: unknown; reason?: unknown };
 
   if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
     throw new functions.https.HttpsError('invalid-argument', 'targetUid inválido.');
@@ -1308,7 +1390,10 @@ export const setAdminClaim = functions.https.onCall(async (data, context) => {
 
   const targetUid    = req.targetUid.trim();
   const makeAdmin    = req.isAdmin as boolean;
-  const callerUid    = context.auth.uid;
+  const callerUid    = actor.uid;
+  const reason       = typeof req.reason === 'string' && req.reason.trim().length >= 5
+    ? req.reason.trim().slice(0, 300)
+    : 'Alteração via setAdminClaim (legado)';
 
   // Prevent self-demotion to avoid accidental lockout
   if (targetUid === callerUid && !makeAdmin) {
@@ -1318,13 +1403,13 @@ export const setAdminClaim = functions.https.onCall(async (data, context) => {
     );
   }
 
-  // Set Custom Claim — takes effect on next token refresh
-  await admin.auth().setCustomUserClaims(targetUid, { admin: makeAdmin });
-
-  // Also sync the role field for backward compatibility with isAdmin() in rules
-  await db.collection('users').doc(targetUid).update({
-    role:      makeAdmin ? 'admin' : 'client',
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  await applyStaffRole({
+    actor,
+    targetUid,
+    roleId: makeAdmin ? 'admin' : undefined,
+    status: makeAdmin ? 'active' : 'archived',
+    reason,
+    action: makeAdmin ? 'staff.assign_role' : 'staff.archive',
   });
 
   functions.logger.info('setAdminClaim', { targetUid, makeAdmin, callerUid });
@@ -1340,14 +1425,17 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
+  const callerUid = context.auth.uid;
+  if (await checkIsCallerBanned({ uid: callerUid, token: context.auth.token })) {
+    throw new functions.https.HttpsError('permission-denied', 'Conta suspensa.');
+  }
+
   const { orderId, reason } = data as { orderId?: string; reason?: string };
   if (!orderId || typeof orderId !== 'string') {
     throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
   }
 
-  const callerUid = context.auth.uid;
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(callerUid);
+  const isAdmin = await checkIsCallerAdmin({ uid: callerUid, token: context.auth.token });
 
   return await db.runTransaction(async (transaction) => {
     const orderRef = db.collection('orders').doc(orderId);
@@ -1442,8 +1530,7 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
   if (!isAdmin) {
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem confirmar pagamento.');
   }
@@ -1525,8 +1612,7 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const isAdmin = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
+  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
   if (!isAdmin) {
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem atualizar o status.');
   }
@@ -1770,9 +1856,8 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (data, context
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const hasClaimAdmin = context.auth.token['admin'] === true;
-  const hasRoleAdmin  = hasClaimAdmin ? true : await checkIsAdminByRole(context.auth.uid);
-  if (!hasRoleAdmin) {
+  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
+  if (!isAdmin) {
     throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem limpar os dados.');
   }
 
@@ -1809,4 +1894,9 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (data, context
   functions.logger.info('adminCleanAllDiamonds executed', { adminUid: context.auth.uid, usersCleared: count });
   return { success: true, usersCleared: count };
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin portal: RBAC / SUPERADMIN / audit callables (see ./admin)
+// ─────────────────────────────────────────────────────────────────────────────
+export * from './admin/callables';
 

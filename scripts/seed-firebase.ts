@@ -85,12 +85,16 @@ function parseArgs(argv: string[]): Options {
     process.exit(1);
   }
   const resetStock = argv.includes('--reset-stock');
+  const updateExisting = argv.includes('--update-existing');
+  if (resetStock && !updateExisting) {
+    console.error('❌ --reset-stock requer a flag --update-existing para alterar produtos já cadastrados no Firestore.');
+    process.exit(1);
+  }
   if (resetStock && !argv.includes('--i-know-this-resets-stock')) {
     console.error('❌ --reset-stock sobrescreve o estoque de produtos existentes.');
     console.error('   Confirme com --i-know-this-resets-stock (apenas em ambiente SEM vendas).');
     process.exit(1);
   }
-  const updateExisting = argv.includes('--update-existing');
   return { projectId, apply: argv.includes('--apply'), resetStock, updateExisting };
 }
 

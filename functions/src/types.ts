@@ -71,11 +71,25 @@ export interface AdminGrantDiamondsRequest {
   targetUid: string;
   amount: number;
   reason: string;
+  idempotencyKey?: string;
 }
 
 export interface AdminGrantDiamondsResponse {
   success: boolean;
   newBalance: number;
+  alreadyProcessed?: boolean;
+}
+
+// ── adminBanUser ──────────────────────────────────────────────────────────────
+
+export interface AdminBanUserRequest {
+  targetUid: string;
+  reason?: string;
+}
+
+export interface AdminBanUserResponse {
+  success: boolean;
+  targetUid: string;
 }
 
 // ── setAdminClaim ─────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ jest.mock('firebase-admin', () =>
 );
 
 import { fakeDb, FakeTimestamp } from './__fakes__/fakeAdmin';
-import { createOrder, cancelOrder, confirmPayment, updateOrderStatus } from './index';
+import { createOrder, cancelOrder, confirmPayment, updateOrderStatus, adminGrantDiamonds, adminBanUser, setAdminClaim } from './index';
 
 /**
  * Behavioural tests: every case invokes the REAL callable handler from index.ts
@@ -513,5 +513,116 @@ describe('updateOrderStatus', () => {
     await call(updateOrderStatus, { orderId: 'o1', status: 'cancelled' }, asAdmin());
     await expectCode(call(updateOrderStatus, { orderId: 'o1', status: 'cancelled' }, asAdmin()), 'failed-precondition');
     expect(stockOf('p1')).toBe(10);
+  });
+});
+
+describe('adminGrantDiamonds', () => {
+  beforeEach(() => {
+    fakeDb.seed('users/target1', { name: 'Cliente Alvo', diamonds: 100 });
+  });
+
+  it('exige autenticação e privilégio de administrador', async () => {
+    const payload = { targetUid: 'target1', amount: 50, reason: 'Bônus', idempotencyKey: 'k1' };
+    await expectCode(call(adminGrantDiamonds, payload, anonymous), 'unauthenticated');
+    await expectCode(call(adminGrantDiamonds, payload, asUser(CUSTOMER)), 'permission-denied');
+  });
+
+  it('credita diamantes, atualiza profile e usuário, e grava ledger', async () => {
+    const res = await call(
+      adminGrantDiamonds,
+      { targetUid: 'target1', amount: 50, reason: 'Bônus de fidelidade', idempotencyKey: 'grant-k1' },
+      asAdmin(),
+    );
+    expect(res.success).toBe(true);
+    expect(res.newBalance).toBe(150);
+
+    const profile = fakeDb.read('users/target1/clube/profile');
+    expect(profile?.diamonds).toBe(150);
+
+    const user = fakeDb.read('users/target1');
+    expect(user?.diamonds).toBe(150);
+
+    const ledger = fakeDb.read('diamond_operations/admin-grant:adm1:target1:grant-k1');
+    expect(ledger?.amount).toBe(50);
+    expect(ledger?.balanceBefore).toBe(100);
+    expect(ledger?.balanceAfter).toBe(150);
+  });
+
+  it('idempotência: repetição com a mesma chave não duplica crédito', async () => {
+    const payload = { targetUid: 'target1', amount: 50, reason: 'Bônus', idempotencyKey: 'grant-dup' };
+    const first = await call(adminGrantDiamonds, payload, asAdmin());
+    expect(first.newBalance).toBe(150);
+    expect(first.alreadyProcessed).toBe(false);
+
+    const second = await call(adminGrantDiamonds, payload, asAdmin());
+    expect(second.newBalance).toBe(150);
+    expect(second.alreadyProcessed).toBe(true);
+
+    const profile = fakeDb.read('users/target1/clube/profile');
+    expect(profile?.diamonds).toBe(150);
+  });
+});
+
+describe('adminBanUser & Suspensão de Contas', () => {
+  beforeEach(() => {
+    fakeDb.seed('users/baduser', { name: 'Usuário Infrator', role: 'client' });
+    fakeDb.seed('users/admin_rogue', { name: 'Admin Suspeito', role: 'admin' });
+  });
+
+  it('somente admin pode banir contas', async () => {
+    await expectCode(call(adminBanUser, { targetUid: 'baduser' }, anonymous), 'unauthenticated');
+    await expectCode(call(adminBanUser, { targetUid: 'baduser' }, asUser(CUSTOMER)), 'permission-denied');
+  });
+
+  it('impede auto-banimento de administrador', async () => {
+    await expectCode(call(adminBanUser, { targetUid: ADMIN }, asAdmin(ADMIN)), 'failed-precondition');
+  });
+
+  it('bane usuário com sucesso, registrando role=banned no Firestore', async () => {
+    const res = await call(adminBanUser, { targetUid: 'baduser', reason: 'Fraude detectada' }, asAdmin());
+    expect(res.success).toBe(true);
+    expect(res.targetUid).toBe('baduser');
+
+    const userDoc = fakeDb.read('users/baduser');
+    expect(userDoc?.role).toBe('banned');
+    expect(userDoc?.banReason).toBe('Fraude detectada');
+    expect(userDoc?.bannedBy).toBe(ADMIN);
+  });
+
+  it('usuário banido não cria pedido nem cancela pedido', async () => {
+    seedProduct('p1', { stock: 10, price: 10, active: true });
+    seedAddress('baduser');
+    seedShipping();
+    fakeDb.seed('users/baduser', { role: 'banned' });
+
+    const orderPayload = {
+      productItems: [{ id: 'p1', quantity: 1 }],
+      addressId: 'addr1',
+      deliveryMethod: 'lobby',
+      paymentMethod: 'pix',
+      idempotencyKey: 'order-banned',
+    };
+
+    // Rejeitado se o documento no Firestore estiver banned
+    await expectCode(call(createOrder, orderPayload, asUser('baduser')), 'permission-denied');
+
+    // Rejeitado se a claim no token estiver banned
+    await expectCode(call(createOrder, orderPayload, { auth: { uid: 'user_claim_banned', token: { banned: true } } }), 'permission-denied');
+
+    // Rejeitado ao tentar cancelar pedido
+    seedOrder('o_banned', { uid: 'baduser' });
+    await expectCode(call(cancelOrder, { orderId: 'o_banned' }, asUser('baduser')), 'permission-denied');
+  });
+
+  it('admin banido no Firestore é bloqueado imediatamente de operações administrativas', async () => {
+    fakeDb.seed('users/admin_rogue', { role: 'banned' });
+    seedOrder('o1');
+
+    // Mesmo que o token contenha claim admin: true, o backend checa role != banned
+    const contextWithStaleClaim = { auth: { uid: 'admin_rogue', token: { admin: true } } };
+    await expectCode(call(confirmPayment, { orderId: 'o1' }, contextWithStaleClaim), 'permission-denied');
+    await expectCode(call(updateOrderStatus, { orderId: 'o1', status: 'preparing' }, contextWithStaleClaim), 'permission-denied');
+    await expectCode(call(adminGrantDiamonds, { targetUid: 'baduser', amount: 10, reason: 'x', idempotencyKey: 'x' }, contextWithStaleClaim), 'permission-denied');
+    await expectCode(call(setAdminClaim, { targetUid: 'baduser', isAdmin: true }, contextWithStaleClaim), 'permission-denied');
   });
 });

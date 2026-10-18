@@ -37,7 +37,7 @@ export interface UserProfile {
   telefone?: string;
   cpf?: string;
   foto?: string;
-  role: 'client' | 'admin';
+  role: 'client' | 'admin' | 'banned';
   unlockedBadges?: string[];
   referredBy?: string | null;
   firstOrderPlaced?: boolean;
@@ -180,6 +180,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check Custom Claims for admin status first (preferred, no extra read).
         // Falls back to profile.role for users created before Custom Claims migration.
         const tokenResult = await firebaseUser.getIdTokenResult();
+        const isBanned = tokenResult.claims['banned'] === true || profile?.role === 'banned';
+
+        if (isBanned) {
+          await signOut(auth);
+          setUser(null);
+          setUserProfile(null);
+          setIsAdmin(false);
+          setUserName('');
+          setProfileLoading(false);
+          setLoading(false);
+          alert('Esta conta foi suspensa por um administrador.');
+          return;
+        }
+
         const hasAdminClaim = tokenResult.claims['admin'] === true;
         if (profile) {
           setUserProfile(profile);

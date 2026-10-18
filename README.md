@@ -61,10 +61,14 @@ npm run test:rules
 ```bash
 npm run validate:products                                   # valida o catálogo, não grava nada
 npm run seed -- --project <PROJECT_ID>                      # DRY-RUN: mostra o que faria
-npm run seed -- --project <PROJECT_ID> --apply              # grava
+npm run seed -- --project <PROJECT_ID> --apply              # grava novos produtos e frete/cupons faltantes
+
+# Opções de atualização (apenas quando explicitamente desejado):
+# --update-existing                                          # atualiza metadados (preço, títulos) de produtos existentes
+# --reset-stock --i-know-this-resets-stock --update-existing # reseta estoque de produtos existentes (exige confirmação e --update-existing)
 ```
 
-O seed **não sobrescreve estoque** de produtos existentes, **não altera `usesCount`** de cupons e só cria frete/cupons que ainda não existem. Requer credenciais do Admin SDK (`GOOGLE_APPLICATION_CREDENTIALS`). Sem `/settings/shipping` o `createOrder` recusa pedidos (falha fechada).
+Por padrão, o seed **preserva produtos existentes intactos** (não altera metadados nem estoque), **não altera `usesCount`** de cupons e só cria frete/cupons que ainda não existem. Requer credenciais do Admin SDK (`GOOGLE_APPLICATION_CREDENTIALS`). Sem `/settings/shipping` o `createOrder` recusa pedidos (falha fechada).
 
 ## Deploy (caminho único)
 
