@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Bike, Award, Lock } from 'lucide-react';
-import bannerFreteGratis from '../../assets/banners/bannerFreteGratis.svg';
-import bannerIndique from '../../assets/banners/bannerIndique.svg';
+import bannerFreteGratis from '../../assets/banners/generated/bannerFreteGratis.png';
+import bannerIndique from '../../assets/banners/generated/bannerIndique.png';
+import bannerEntregaRapida from '../../assets/banners/generated/bannerEntregaRapida.png';
 
 const formatBRL = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
 /**
- * Banners de frete e indicação, lado a lado.
+ * Banners promocionais da Home, em cartões horizontais responsivos.
  * O texto alternativo do frete reflete a regra vigente (`settings/shipping.freeShippingThreshold`),
  * não uma promessa fixa de primeira compra.
  */
@@ -22,6 +23,9 @@ export const HomePromoBanners = ({ freeShippingThreshold }: { freeShippingThresh
       </Link>
       <Link to="/clube" className="home-promo-banner-link">
         <img src={bannerIndique} alt="Indique e ganhe no Clube" className="home-promo-banner-img" />
+      </Link>
+      <Link to="/search" className="home-promo-banner-link">
+        <img src={bannerEntregaRapida} alt="Entrega rápida direto no seu condomínio" className="home-promo-banner-img" />
       </Link>
     </div>
   );

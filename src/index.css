@@ -8654,25 +8654,38 @@ body.light-mode .period-products-container .section-header h2 {
   font-size: clamp(8.5px, 2.7vw, 11px);
 }
 
-/* Banners de frete e indicação lado a lado */
+/* Banners promocionais horizontais: três cartões com a proporção original 433×167. */
 .home-promo-banners {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
   width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.home-promo-banners::-webkit-scrollbar {
+  display: none;
 }
 .home-promo-banner-link {
-  flex: 1;
+  flex: 1 0 calc((100% - 24px) / 3);
   min-width: 0;
+  aspect-ratio: 433 / 167;
   text-decoration: none;
   border-radius: 8px;
+  overflow: hidden;
 }
 .home-promo-banner-img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   object-fit: cover;
   border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+  .home-promo-banner-link {
+    flex-basis: min(82vw, 433px);
+  }
 }
 
 /* Cartões de benefício clicáveis mantêm o visual atual */
