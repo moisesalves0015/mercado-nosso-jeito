@@ -268,7 +268,8 @@ export const Admin: React.FC = () => {
     pixKey: '',
     pixName: '',
     supportPhone: '',
-    storeHours: ''
+    storeHours: '',
+    deliveryEta: ''
   });
   const [loadingStoreConfig, setLoadingStoreConfig] = useState(false);
   const [savingStoreConfig, setSavingStoreConfig] = useState(false);
@@ -450,7 +451,8 @@ export const Admin: React.FC = () => {
           pixKey: data.pixKey || '',
           pixName: data.pixName || '',
           supportPhone: data.supportPhone || '',
-          storeHours: data.storeHours || ''
+          storeHours: data.storeHours || '',
+          deliveryEta: data.deliveryEta || ''
         });
       }
     } catch (err) {
@@ -1342,6 +1344,10 @@ export const Admin: React.FC = () => {
                   <div>
                     <label style={labelStyle}>Horário de Funcionamento</label>
                     <input type="text" value={storeConfig.storeHours} onChange={e => setStoreConfig({ ...storeConfig, storeHours: e.target.value })} style={inputStyle} placeholder="Ex: Seg a Sab, 08:00 - 20:00" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Prazo de Entrega (exibido na Home)</label>
+                    <input type="text" value={storeConfig.deliveryEta} onChange={e => setStoreConfig({ ...storeConfig, deliveryEta: e.target.value })} style={inputStyle} placeholder="Ex: 20 min (vazio = não promete prazo)" />
                   </div>
                 </div>
               )}

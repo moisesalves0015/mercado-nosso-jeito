@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:rules": "firebase emulators:exec --project mercado-nosso-jeito-test \"jest firestore.rules.test.js\"",
-    "test:admin-analytics": "node --import tsx --test tests/adminAnalytics.test.ts"
+    "test:admin-analytics": "node --import tsx --test tests/adminAnalytics.test.ts",
+    "test:home": "node --import tsx --test tests/homeProducts.test.ts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

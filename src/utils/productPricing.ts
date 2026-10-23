@@ -16,6 +16,8 @@ function toPrice(value: number | string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export { toPrice as parsePrice };
+
 function toExpiry(value: PricedProduct['promoExpiry']): Date | null {
   if (!value) return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;

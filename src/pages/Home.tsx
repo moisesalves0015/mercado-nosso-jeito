@@ -1,751 +1,132 @@
-import { useState, useEffect } from 'react';
+/**
+ * Home — vitrine principal.
+ *
+ * Esta página apenas COMPÕE blocos; cada bloco vive em src/components/home/*.
+ * Fontes de dados:
+ *  - produtos:        useCatalog (coleção `products`, mesmo cache de busca/detalhe/carrinho);
+ *  - editorial:       useHomeConfig (`home-config/data/*`, normalizado e validado);
+ *  - suporte/prazo:   useAdminConfig (`settings/admin`);
+ *  - frete:           useShippingConfig (`settings/shipping`);
+ *  - categorias:      src/data/homeCategories.ts (declarativo).
+ * Nenhum produto, preço ou métrica fictícia é gerado no front-end.
+ */
+import { useMemo } from 'react';
 import { Topbar } from '../components/Topbar';
-import { Section } from '../components/Section';
-import { ProductCard } from '../components/ProductCard';
-import { PromoCard } from '../components/PromoCard';
-import { Bike, Award, Lock, Flame, Candy, Cookie, Droplet, Sparkles, Gift, LayoutGrid, Search, Heart } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useHomeConfig } from '../hooks/useHomeConfig';
-import bannerFreteGratis from '../assets/banners/bannerFreteGratis.svg';
-import bannerIndique from '../assets/banners/bannerIndique.svg';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
-import { useCommunityPresence } from '../hooks/useCommunityPresence';
+import { HomeHero } from '../components/home/HomeHero';
+import type { HeroSlide } from '../components/home/HomeHero';
+import { HomeQuickCategories } from '../components/home/HomeQuickCategories';
+import { HomeSearch } from '../components/home/HomeSearch';
+import { HomePeriodSelector } from '../components/home/HomePeriodSelector';
+import { HomeVitrineList } from '../components/home/HomeVitrineList';
+import { HomeMegaOffers } from '../components/home/HomeMegaOffers';
+import { HomeBenefitCards, HomePromoBanners } from '../components/home/HomeBenefitCards';
+import { HomeCategoryCarousel } from '../components/home/HomeCategoryCarousel';
+import { HomeCondoFavorites } from '../components/home/HomeCondoFavorites';
+import { HomeFooter } from '../components/home/HomeFooter';
+import { useCatalog } from '../hooks/useCatalog';
+import { useHomeConfig } from '../hooks/useHomeConfig';
+import { useAdminConfig } from '../hooks/useAdminConfig';
+import { useShippingConfig } from '../hooks/useShippingConfig';
+import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../data/homeCategories';
+import { buildShowcases } from '../utils/homeShowcases';
 
+/**
+ * Fallback visual APENAS quando não há banners configurados. Títulos neutros: não prometem
+ * campanha ("ofertas do dia" etc.) que possa não existir.
+ */
+const DEFAULT_HERO_SLIDES: HeroSlide[] = [
+  { id: 'default-promocoes', image: '/hero_background.png', link: '/promotions', title: 'Promoções' },
+  { id: 'default-bebidas', image: '/hero_bebidas.png', link: '/bebidas', title: 'Bebidas' },
+  { id: 'default-tabacaria', image: '/hero_tabacaria.png', link: '/tabacaria', title: 'Tabacaria' },
+];
 
-// Custom SVG backgrounds and button assets
-import manhaBg from '../assets/bkgs/manha.png';
-import almocoBg from '../assets/bkgs/almoco.png';
-import tardeBg from '../assets/bkgs/tarde.png';
-import noiteBg from '../assets/bkgs/noite.png';
-import madrugadaBg from '../assets/bkgs/madrugada.png';
-
-const periodBgs: Record<Period, string> = {
-  morning: manhaBg,
-  lunch: almocoBg,
-  afternoon: tardeBg,
-  night: noiteBg,
-  dawn: madrugadaBg,
-};
-
-
-interface Product {
-  id: string;
-  title: string;
-  price: number | string;
-  image: string;
-  category: string;
-  badge?: string;
-  badgeStyle?: 'orange' | 'light';
-  diamondReward?: number;
-}
-
-type Period = 'morning' | 'lunch' | 'afternoon' | 'night' | 'dawn';
-
-const periodTitles: Record<Period, string> = {
-  morning: 'Essenciais do Café da Manhã',
-  lunch: 'Sugestões para o Almoço',
-  afternoon: 'Lanches da Tarde',
-  night: 'Destaques para o Jantar',
-  dawn: 'Essenciais da Madrugada',
-};
-
-const periodProducts: Record<Period, Product[]> = {
-  morning: [
-    { id: 'paodequeijo-novo', title: "Pão de Queijo Tradicional (1kg)", price: 32.90, image: "/paodequeijo-novo.webp", category: "cafe", diamondReward: 18 },
-    { id: 'iogurte-novo', title: "Iogurte Grego Danone (4x)", price: 18.90, image: "/iogurte-novo.webp", category: "cafe", diamondReward: 12 },
-    { id: 'granola-novo', title: "Granola Mel Barano (500g)", price: 24.90, image: "/granola-novo.png", category: "cafe" },
-    { id: 'ovos-novo', title: "Ovo Branco Médio (12un)", price: 15.90, image: "/ovos-novo.png", category: "cafe" },
-    { id: 'cafe-novo', title: "Café Melitta Tradicional (500g)", price: 19.90, image: "/cafe-novo.png", category: "cafe", diamondReward: 15 },
-  ],
-  lunch: [
-    { id: 'peito_de_peru', title: "Peito de Peru Fatiado Sadia (100g)", price: 7.49, image: "/peito_de_peru.webp", category: "alimentos" },
-    { id: 'queijo_minas', title: "Queijo Minas Frescal Itambé (300g)", price: 19.90, image: "/queijo_minas.png", category: "alimentos", badge: "Promocional", badgeStyle: "orange" },
-    { id: 'manteiga_itambe', title: "Manteiga Itambé Extra Sal (200g)", price: 11.90, image: "/manteiga_itambe.png", category: "alimentos" },
-    { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
-    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-  ],
-  afternoon: [
-    { id: 'pao_de_forma', title: "Pão Pullman Forma Integral (500g)", price: 12.90, image: "/pao_de_forma.png", category: "alimentos", badge: "Melhor Preço", badgeStyle: "orange" },
-    { id: 'manteiga_itambe', title: "Manteiga Itambé Extra Sal (200g)", price: 11.90, image: "/manteiga_itambe.png", category: "alimentos" },
-    { id: 'cha_leao', title: "Chá Matte Natural Leão (100g)", price: 8.90, image: "/Cha-Matte-Natural-100g-Leao.png", category: "cafe" },
-    { id: 'iogurte-novo', title: "Iogurte Grego Danone (4x)", price: 18.90, image: "/iogurte-novo.webp", category: "cafe", diamondReward: 12 },
-    { id: 'suco_laranja', title: "Suco de Laranja Integral Do Bem (1L)", price: 12.90, image: "/suco_do_bem_laranja_integral.png", category: "cafe" },
-  ],
-  night: [
-    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-    { id: 'spaten-350ml', title: "Cerveja Spaten Puro Malte Lata (350ml)", price: 5.20, image: "/spaten.webp", category: "Bebidas", diamondReward: 1 },
-    { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-    { id: 'coca-cola-350ml', title: "Refrigerante Coca-Cola Sem Açúcar Lata (350ml)", price: 4.50, image: "/coca_cola_zero.png", category: "Bebidas", diamondReward: 1 },
-    { id: 'peito_de_peru', title: "Peito de Peru Fatiado Sadia (100g)", price: 7.49, image: "/peito_de_peru.webp", category: "alimentos" },
-  ],
-  dawn: [
-    { id: 'monster-energy', title: "Energético Monster Energy Tradicional (473ml)", price: 9.90, image: "/monster_energy.webp", category: "Bebidas", badge: "Mais Vendido", badgeStyle: "orange", diamondReward: 3 },
-    { id: 'cafe_pilao', title: "Café Pilão Torrado e Moído (500g)", price: 21.90, image: "/cafe-pilao-500g.png", category: "cafe" },
-    { id: 'lava_roupa', title: "Sabão Líquido Premium (3L)", price: 19.90, image: "/lava_roupa.png", category: "limpeza" },
-    { id: 'pano_multiuso', title: "Multiuso Fresh Ultra", price: 12.90, image: "/pano_multiuso.webp", category: "limpeza", badge: "Melhor Preço", badgeStyle: "orange" },
-    { id: 'heineken-330ml', title: "Cerveja Heineken Long Neck (330ml)", price: 7.90, image: "/heineken.png", category: "Bebidas", badge: "Trincando", badgeStyle: "orange", diamondReward: 2 },
-  ],
-};
-
-const getInitialPeriod = (): Period => {
-  const hour = new Date().getHours();
-  if (hour >= 6 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 14) return 'lunch';
-  if (hour >= 14 && hour < 18) return 'afternoon';
-  if (hour >= 18 && hour < 24) return 'night';
-  return 'dawn';
-};
+const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
 
 export const Home = () => {
-  const navigate = useNavigate();
-  const [searchVal, setSearchVal] = useState('');
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [bebidas, setBebidas] = useState<Product[]>([]);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [activePeriod, setActivePeriod] = useState<Period>(getInitialPeriod);
+  const catalog = useCatalog();
   const homeConfig = useHomeConfig();
-  const { condoFavorites } = useCommunityPresence();
+  const { config: adminConfig } = useAdminConfig();
+  const { config: shippingConfig } = useShippingConfig();
 
-  const renderVitrines = (startIndex: number, count: number) => {
-    const activeVitrines = homeConfig.vitrines.filter(v => v.active).sort((a, b) => a.order - b.order);
-    
-    if (activeVitrines.length > 0) {
-      return activeVitrines.slice(startIndex, startIndex + count).map(vitrine => {
-        const prods = vitrine.productIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean) as Product[];
-        return (
-          <Section
-            key={vitrine.id}
-            title={vitrine.title}
-            subtitle={vitrine.subtitle}
-            linkText="Ver tudo >"
-            theme={vitrine.theme}
-          >
-            {prods.map(product => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-            {prods.length === 0 && (
-              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto cadastrado nesta vitrine.</span>
-            )}
-          </Section>
-        );
-      });
-    } else {
-      const normalizeCategory = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const alimentos = allProducts.filter(product => ['alimentos', 'cafe', 'padaria'].includes(normalizeCategory(product.category)));
-      const limpeza = allProducts.filter(product => normalizeCategory(product.category).includes('limpeza'));
-      const fallbackSections = [
-        <Section key="fallback-bebidas" title="Bebidas" subtitle={["Gelada é aqui! 🧊", "As melhores marcas", "Refresque seu dia"]} linkText="Ver tudo >" theme="purple">
-          {bebidas.map(product => <ProductCard key={product.id} {...product} />)}
-          {bebidas.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhuma bebida cadastrada.</span>}
-        </Section>,
-        <Section key="fallback-alimentos" title="Alimentos" subtitle={["Descubra novidades exclusivas!", "Sabor inconfundível", "Ofertas especiais"]} linkText="Ver tudo >" theme="orange">
-          {alimentos.map(product => <ProductCard key={product.id} {...product} />)}
-          {alimentos.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum alimento cadastrado.</span>}
-        </Section>,
-        <Section key="fallback-limpeza" title="Limpeza" subtitle={["Deixo tudo brilhando ✨", "Limpeza pesada", "Fragrâncias únicas"]} linkText="Ver tudo >" theme="green">
-          {limpeza.map(product => <ProductCard key={product.id} {...product} />)}
-          {limpeza.length === 0 && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Nenhum produto de limpeza cadastrado.</span>}
-        </Section>
-      ];
-      return fallbackSections.slice(startIndex, startIndex + count);
-    }
-  };
+  // Cópia ordenada (nunca muta o array recebido do hook).
+  const heroSlides = useMemo<HeroSlide[]>(() => {
+    if (homeConfig.heroBanners.length === 0) return DEFAULT_HERO_SLIDES;
+    return [...homeConfig.heroBanners].sort(byOrder).map(b => ({
+      id: b.id,
+      title: b.title || 'Banner',
+      image: b.image,
+      link: b.link,
+    }));
+  }, [homeConfig.heroBanners]);
 
-  // Period initialization handled by useState initializer
+  const showcases = useMemo(
+    () => buildShowcases(homeConfig.vitrines, catalog.products, catalog.byId),
+    [homeConfig.vitrines, catalog.products, catalog.byId],
+  );
 
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
-
-  const handleCategoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const maxScroll = target.scrollWidth - target.clientWidth;
-    if (maxScroll > 0) {
-      const percentage = (target.scrollLeft / maxScroll) * 100;
-      setScrollProgress(percentage);
-    }
-  };
-
-  const defaultHeroBanners = [
-    { id: 'ofertas', image: '/hero_background.png', link: '/promotions', title: 'Ofertas do dia' },
-    { id: 'bebidas', image: '/hero_bebidas.png', link: '/bebidas', title: 'Bebidas geladas' },
-    { id: 'tabacaria', image: '/hero_tabacaria.png', link: '/tabacaria', title: 'Tabacaria' },
-  ];
-
-  const activeBanners = (homeConfig.heroBanners && homeConfig.heroBanners.length > 0)
-    ? homeConfig.heroBanners.sort((a, b) => a.order - b.order).map(b => ({
-        id: b.id,
-        image: b.image || '/hero_background.png',
-        link: b.link || '/',
-        title: b.title || 'Banner'
-      }))
-    : defaultHeroBanners;
-
-  const minSwipeDistance = 50;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-    const distance = touchStartX - touchEndX;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
-    } else if (isRightSwipe) {
-      setCurrentSlide((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
-    }
-  };
-
-  useEffect(() => {
-    if (activeBanners.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [currentSlide, activeBanners.length]);
-
-  useEffect(() => {
-    const loadProducts = () => {
-      try {
-        const stored = localStorage.getItem('app-products');
-        const allProds = stored ? JSON.parse(stored) as Product[] : [];
-        setAllProducts(allProds);
-        setBebidas(allProds.filter(p => p.category === 'Bebidas'));
-      } catch (error) {
-        console.error('Não foi possível ler o catálogo armazenado.', error);
-        setAllProducts([]);
-        setBebidas([]);
-      }
-    };
-
-    loadProducts();
-    window.addEventListener('app-products-updated', loadProducts);
-    return () => window.removeEventListener('app-products-updated', loadProducts);
-  }, []);
+  const quickCategories = useMemo(() => QUICK_CATEGORIES.filter(c => c.active).sort(byOrder), []);
+  const visualCategories = useMemo(() => VISUAL_CATEGORIES.filter(c => c.active).sort(byOrder), []);
 
   return (
     <div style={{ width: '100%', overflowX: 'hidden' }}>
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
-        {/* Background container clipped at the base */}
-
-
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
           <Topbar />
 
-          {/* APP INSTALL PROMO BANNER */}
+          {/* Convite de instalação do PWA */}
           <PwaInstallBanner />
 
-          {/* HERO PROMO BANNER (CARROSSEL SLIDER) */}
-          <div 
-            className="hero-banner"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div 
-              className="hero-slider-track" 
-              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-            >
-              {activeBanners.map((banner, idx) => (
-                <Link
-                  key={banner.id || idx}
-                  to={banner.link}
-                  className="hero-slide"
-                  style={{ backgroundImage: `url('${banner.image}')` }}
-                  aria-label={banner.title}
-                />
-              ))}
-            </div>
+          {/* Carrossel de banners (admin: home-config/data/hero-banners) */}
+          <HomeHero slides={heroSlides} />
 
-            {/* SLIDER DOTS */}
-            {activeBanners.length > 1 && (
-              <div className="hero-dots" role="tablist" aria-label="Navegar entre slides">
-                {activeBanners.map((banner, idx) => (
-                  <span
-                    key={banner.id || idx}
-                    role="tab"
-                    aria-selected={currentSlide === idx}
-                    aria-label={`Slide ${idx + 1}: ${banner.title}`}
-                    className={`dot ${currentSlide === idx ? 'active' : ''}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setCurrentSlide(idx);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* QUICK CATEGORIES (SINGLE ROW, NO SCROLL) - DIRECTLY BELOW HERO BANNER */}
-          <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '10px' }}>
-            <h2 style={{ margin: 0, fontSize: '11.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
-          </div>
-          <div className="quick-categories-grid-no-scroll" style={{ marginBottom: '10px' }}>
-            <Link to="/promotions" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Flame size={24} />
-              </div>
-              <span className="quick-gold-label">Promoções</span>
-            </Link>
-
-            <Link to="/search?q=doces" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Candy size={24} />
-              </div>
-              <span className="quick-gold-label">Doces</span>
-            </Link>
-
-            <Link to="/search?q=biscoitos" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Cookie size={24} />
-              </div>
-              <span className="quick-gold-label">Biscoitos</span>
-            </Link>
-
-            <Link to="/search?q=higiene" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Droplet size={24} />
-              </div>
-              <span className="quick-gold-label">Higiene</span>
-            </Link>
-
-            <Link to="/search?q=limpeza" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Sparkles size={24} />
-              </div>
-              <span className="quick-gold-label">Limpeza</span>
-            </Link>
-
-            <Link to="/search?q=combos" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <Gift size={24} />
-              </div>
-              <span className="quick-gold-label">Combos</span>
-            </Link>
-
-            <Link to="/categories" className="quick-gold-card">
-              <div className="quick-gold-icon-container">
-                <LayoutGrid size={24} />
-              </div>
-              <span className="quick-gold-label">Ver todas</span>
-            </Link>
-          </div>
-
-          {/* SEARCH BAR THAT COMBINES WITH THE QUICK CATEGORY CARDS */}
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (searchVal.trim()) navigate(`/search?q=${encodeURIComponent(searchVal.trim())}`);
-          }} className="quick-search-wrapper">
-            <div className="quick-search-container">
-              <Search size={16} className="quick-search-icon" />
-              <input 
-                type="text" 
-                placeholder="O que você procura hoje?" 
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                className="quick-search-input"
-              />
-            </div>
-          </form>
+          {/* Atalhos rápidos + busca */}
+          <HomeQuickCategories items={quickCategories} />
+          <HomeSearch />
         </div>
       </div>
 
       <main className="app" style={{ paddingTop: 0 }}>
-
-      <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '2px' }}>
-        <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Os mais pedidos por horário</h2>
-      </div>
-
-      {/* PERIOD SELECTOR BUTTONS */}
-      <div className="period-buttons-row">
-        <button
-          className={`period-button ${activePeriod === 'morning' ? 'active' : ''}`}
-          onClick={() => setActivePeriod('morning')}
-          style={{ backgroundImage: `url(${periodBgs.morning})` }}
-          type="button"
-          aria-label="Manhã: Essenciais do Café da Manhã"
-          aria-pressed={activePeriod === 'morning'}
-        >
-          <div className="period-button-text">
-            <span className="period-button-title">Manhã</span>
-            <span className="period-button-subtitle">Café da manhã</span>
+        {homeConfig.error && (
+          <div className="section-state-message" role="status">
+            Algumas seções da página podem estar desatualizadas. Tente recarregar em instantes.
           </div>
-        </button>
+        )}
 
-        <button
-          className={`period-button ${activePeriod === 'lunch' ? 'active' : ''}`}
-          onClick={() => setActivePeriod('lunch')}
-          style={{ backgroundImage: `url(${periodBgs.lunch})` }}
-          type="button"
-          aria-label="Almoço: Sugestões para o Almoço"
-          aria-pressed={activePeriod === 'lunch'}
-        >
-          <div className="period-button-text">
-            <span className="period-button-title">Almoço</span>
-            <span className="period-button-subtitle">Refeições</span>
-          </div>
-        </button>
+        {/* Os mais pedidos por horário */}
+        <HomePeriodSelector catalog={catalog} periodConfig={homeConfig.periodConfig} />
 
-        <button
-          className={`period-button ${activePeriod === 'afternoon' ? 'active' : ''}`}
-          onClick={() => setActivePeriod('afternoon')}
-          style={{ backgroundImage: `url(${periodBgs.afternoon})` }}
-          type="button"
-          aria-label="Tarde: Lanches da Tarde"
-          aria-pressed={activePeriod === 'afternoon'}
-        >
-          <div className="period-button-text">
-            <span className="period-button-title">Tarde</span>
-            <span className="period-button-subtitle">Lanches</span>
-          </div>
-        </button>
-
-        <button
-          className={`period-button ${activePeriod === 'night' ? 'active' : ''}`}
-          onClick={() => setActivePeriod('night')}
-          style={{ backgroundImage: `url(${periodBgs.night})` }}
-          type="button"
-          aria-label="Noite: Destaques para o Jantar"
-          aria-pressed={activePeriod === 'night'}
-        >
-          <div className="period-button-text">
-            <span className="period-button-title">Noite</span>
-            <span className="period-button-subtitle">Jantar</span>
-          </div>
-        </button>
-
-        <button
-          className={`period-button ${activePeriod === 'dawn' ? 'active' : ''}`}
-          onClick={() => setActivePeriod('dawn')}
-          style={{ backgroundImage: `url(${periodBgs.dawn})` }}
-          type="button"
-          aria-label="Madrugada: Essenciais da Madrugada"
-          aria-pressed={activePeriod === 'dawn'}
-        >
-          <div className="period-button-text">
-            <span className="period-button-title">Madrugada</span>
-            <span className="period-button-subtitle">Essenciais</span>
-          </div>
-        </button>
-      </div>
-
-
-      <div
-        className="period-products-container"
-        style={{
-          backgroundImage: `url(${periodBgs[activePeriod]})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'right center',
-          backgroundRepeat: 'no-repeat',
-          paddingTop: '4px',
-          paddingBottom: '4px',
-          marginBottom: '16px',
-        }}
-      >
-        <Section
-          title={homeConfig.periodConfig[activePeriod]?.title || periodTitles[activePeriod]}
-          theme="hero"
-          linkText="Ver tudo >"
-        >
-          {(homeConfig.periodConfig[activePeriod]?.productIds?.length > 0
-            ? homeConfig.periodConfig[activePeriod].productIds
-                .map(id => allProducts.find(p => p.id === id) as Product)
-                .filter(Boolean)
-            : periodProducts[activePeriod].map(item => allProducts.find(p => p.id === item.id)).filter((product): product is Product => Boolean(product))).map((product) => (
-              <ProductCard key={product.id} {...product} glassEffect={true} />
-          ))}
-        </Section>
-      </div>
-
-      {/* PROVA SOCIAL SILENCIOSA */}
-      <div style={{ padding: '0 0 0' }}>
-        <SocialProofBanner />
-      </div>
-
-      {/* 2 LISTAS DE CATEGORIAS DE PRODUTO (Grupo 1) */}
-      {renderVitrines(0, 2)}
-
-      {/* SUPER PROMO SECTION (MEGA OFERTAS) */}
-      <div className="super-promo-container">
-        <h2 className="super-promo-title">MEGA OFERTAS</h2>
-        <div className="super-promo-subtitle">SÓ ESTA SEMANA</div>
-        
-        <div className="super-promo-scroll">
-          {homeConfig.megaOfertas.length > 0 ? (
-            homeConfig.megaOfertas.map(mo => {
-              const p = allProducts.find(prod => prod.id === mo.productId);
-              if (!p) return null;
-              return (
-                <PromoCard
-                  key={mo.id}
-                  title={p.title}
-                  price={p.price}
-                  image={p.image}
-                  badge={mo.badge}
-                  badgeStyle={mo.badgeStyle}
-                  category={p.category}
-                />
-              );
-            })
-          ) : (
-            <>
-              <PromoCard
-                title="Energético Monster Energy 473ml"
-                price={7.90}
-                image="/monster_energy.webp"
-                badge="47% OFF"
-                badgeStyle="orange"
-                category="bebidas"
-              />
-
-              <PromoCard
-                title="Sabão Líquido Premium 3L"
-                price={27.90}
-                image="/lava_roupa.png"
-                badge="22% OFF"
-                badgeStyle="orange"
-                category="limpeza"
-              />
-
-              <PromoCard
-                title="Café Melitta Tradicional 500g"
-                price={16.18}
-                image="/cafe-novo.png"
-                badge="35% OFF"
-                badgeStyle="orange"
-                category="cafe"
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* MAIS 2 LINHAS DE CATEGORIAS (Grupo 2) */}
-      {renderVitrines(2, 2)}
-
-      {/* BANNERS LADO A LADO */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', width: '100%' }}>
-        <Link to="/promotions" style={{ textDecoration: 'none', flex: 1 }}>
-          <img 
-            src={bannerFreteGratis} 
-            alt="Frete Grátis na sua primeira compra no app!" 
-            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
-          />
-        </Link>
-        <Link to="/clube" style={{ textDecoration: 'none', flex: 1 }}>
-          <img 
-            src={bannerIndique} 
-            alt="Indique e Ganhe" 
-            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
-          />
-        </Link>
-      </div>
-
-      {/* MAIS 2 LINHAS DE CATEGORIAS (Grupo 3) */}
-      {renderVitrines(4, 2)}
-
-      {/* INFO CARDS ROW */}
-      <div className="info-cards-row">
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Bike size={18} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Entrega rápida</h4>
-            <p>Receba em até 30 min na sua casa.</p>
-          </div>
+        {/* Mensagens editoriais (sem números fabricados) */}
+        <div style={{ padding: '0 0 0' }}>
+          <SocialProofBanner />
         </div>
 
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Award size={18} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Nosso Clube</h4>
-            <p>Ofertas exclusivas só para você!</p>
-          </div>
-        </div>
+        {/* Vitrines — grupo 1 */}
+        <HomeVitrineList showcases={showcases.slice(0, 2)} catalog={catalog} />
 
-        <div className="info-card">
-          <div className="info-card-icon-wrapper">
-            <Lock size={16} color="#D4AF37" />
-          </div>
-          <div className="info-card-content">
-            <h4>Compras seguras</h4>
-            <p>Seus dados sempre protegidos.</p>
-          </div>
-        </div>
-      </div>
+        {/* MEGA OFERTAS */}
+        <HomeMegaOffers catalog={catalog} megaOfertas={homeConfig.megaOfertas} />
 
+        {/* Vitrines — grupo 2 */}
+        <HomeVitrineList showcases={showcases.slice(2, 4)} catalog={catalog} />
 
+        {/* Frete grátis / indicação */}
+        <HomePromoBanners freeShippingThreshold={shippingConfig.freeShippingThreshold} />
 
-        {/* CATEGORY ROW (3D REALISTIC ICONS) */}
-        <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
-          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
-            <Link to="/categories" className="glass-ver-todas-btn">
-              Ver todas <span style={{ color: '#FFDF73' }}>&gt;</span>
-            </Link>
-          </div>
-          <div className="category-row" onScroll={handleCategoryScroll}>
+        {/* Vitrines — grupo 3 (inclui todas as restantes) */}
+        <HomeVitrineList showcases={showcases.slice(4)} catalog={catalog} />
 
-        <Link to="/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/promocoes.png" alt="Ofertas" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/bebidas" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/bebidas.png" alt="Bebidas" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=padaria" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/padaria.png" alt="Padaria" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=congelados" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/congelados.png" alt="Congelados" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=petshop" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/petshop.png" alt="Pet Shop" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=salgadinhos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/salgadinhos.png" alt="Salgadinhos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=doces" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/doces.png" alt="Doces" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=biscoitos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/biscoitos.png" alt="Biscoitos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=beleza" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/beleza.png" alt="Beleza" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=limpeza" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/limpeza.png" alt="Limpeza" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/eletronicos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/eletronicos.png" alt="Eletrônicos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/tabacaria" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/tabacaria.png" alt="Tabacaria" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=sorvetes" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/sorvetes.png" alt="Sorvetes" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=utilidades" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/utilidades.png" alt="Utilidades" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=churrasco" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/churrasco.png" alt="Churrasco" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=adega" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/adega.png" alt="Adega" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=bomboniere" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/bomboniere.png" alt="Bomboniere" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=higiene" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/higiene.png" alt="Higiene" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=fitness" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/fitness.png" alt="Fitness" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-        <Link to="/search?q=combos" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="category-item">
-            <div className="category-icon-wrapper"><img src="/categories/combos.png" alt="Combos" className="category-3d-icon" /></div>
-          </div>
-        </Link>
-      </div>
+        {/* Entrega, Clube e segurança */}
+        <HomeBenefitCards deliveryEta={adminConfig.deliveryEta} />
 
-      {/* CATEGORY SCROLL INDICATOR */}
-      <div className="category-scroll-indicators">
-        <div className="category-scroll-track">
-          <div 
-            className="category-scroll-thumb" 
-            style={{ 
-              left: `${(scrollProgress / 100) * (80 - 24)}px` 
-            }}
-          />
-        </div>
-      </div>
+        {/* Categorias ilustradas */}
+        <HomeCategoryCarousel items={visualCategories} />
 
-      {/* ❤️ FAVORITOS DO CONDOMÍNIO */}
-      <div style={{ margin: '24px 0 8px' }}>
-        <div className="section-header" style={{ padding: '0 8px', marginBottom: '10px' }}>
-          <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Heart size={14} fill="#f87171" color="#f87171" />
-            Favoritos do Condomínio
-          </h2>
-        </div>
-        <div className="condo-favorites-scroll">
-          {condoFavorites.map((fav) => {
-            const prod = allProducts.find(p => p.id === fav.id);
-            if (!prod) return null;
-            return (
-              <PromoCard
-                key={fav.id}
-                title={prod.title}
-                price={prod.price}
-                image={prod.image}
-                rank={fav.rank}
-                category={prod.category}
-              />
-            );
-          })}
-        </div>
-      </div>
+        {/* Favoritos do Condomínio */}
+        <HomeCondoFavorites catalog={catalog} favorites={homeConfig.condoFavorites} />
 
-      {/* FOOTER */}
-      <footer className="app-footer">
-        <h4>mercado do nosso jeito</h4>
-        <p>O melhor do supermercado na palma da mão.</p>
-        <p>Atendimento: (11) 99999-9999</p>
-      </footer>
+        <HomeFooter config={adminConfig} />
       </main>
     </div>
   );

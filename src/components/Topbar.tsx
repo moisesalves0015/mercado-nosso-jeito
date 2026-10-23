@@ -2,12 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useAdminConfig } from '../hooks/useAdminConfig';
+import { useDefaultCondo } from '../hooks/useDefaultCondo';
 
 export const Topbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userProfile, isAdmin, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Condomínio vem do endereço padrão do usuário; prazo vem de settings/admin.deliveryEta.
+  const condoName = useDefaultCondo();
+  const { config: adminConfig } = useAdminConfig();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [coins, setCoins] = useState<number>(() => {
     const saved = localStorage.getItem('user_diamonds');
     return saved ? parseInt(saved, 10) : 320;
@@ -32,6 +39,21 @@ export const Topbar = () => {
   };
 
   const navRef = useRef<HTMLDivElement>(null);
+
+  // Menu lateral: Escape fecha, foco entra no painel ao abrir e volta ao botão ao fechar.
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const menuButton = menuButtonRef.current;
+    closeButtonRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      menuButton?.focus();
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -75,10 +97,14 @@ export const Topbar = () => {
           <MapPin size={15} color="#FFDF73" fill="rgba(255, 223, 115, 0.15)" className="location-pin-icon" />
           <div className="location-info">
             <span className="location-label">
-              Entrega em <span className="location-highlight">20 min</span>
+              {adminConfig.deliveryEta ? (
+                <>Entrega em <span className="location-highlight">{adminConfig.deliveryEta}</span></>
+              ) : (
+                'Entrega no condomínio'
+              )}
             </span>
             <span className="location-value">
-              Condomínio Vitória
+              {condoName ?? (userProfile ? 'Cadastre seu endereço' : 'Entre para escolher o local')}
               <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
             </span>
           </div>
@@ -149,6 +175,7 @@ export const Topbar = () => {
             aria-expanded={isMenuOpen}
             aria-controls="topbar-drawer"
             style={{ padding: '4px' }}
+            ref={menuButtonRef}
             onClick={() => setIsMenuOpen(true)}
           >
             <Menu size={18} />
@@ -168,6 +195,8 @@ export const Topbar = () => {
         role="dialog"
         aria-label="Menu de navegação"
         aria-modal="true"
+        aria-hidden={!isMenuOpen}
+        inert={!isMenuOpen}
         className={`topbar-menu-drawer ${isMenuOpen ? 'open' : ''}`}
       >
         <div className="topbar-menu-header">
@@ -178,7 +207,7 @@ export const Topbar = () => {
           <button
             className="topbar-menu-close-btn"
             onClick={() => setIsMenuOpen(false)}
-            aria-label="Fechar menu"
+            aria-label="Fechar menu" ref={closeButtonRef}
             title="Fechar menu"
           >
             <X size={18} />
