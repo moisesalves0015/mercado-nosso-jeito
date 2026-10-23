@@ -830,25 +830,31 @@ export const AdminMarketing: React.FC = () => {
           {vitrines.length === 0 && !creatingVitrine && (
             <div style={{ ...card, textAlign: 'center', padding: '40px 20px' }}>
               <Layers size={32} color={crmTheme.textMuted} style={{ marginBottom: 12 }} />
-              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhuma vitrine configurada.<br/>A Home usa dados de fallback (Bebidas, Alimentos, Limpeza).</p>
+              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhuma vitrine configurada.<br/>A Home seleciona automaticamente categorias ativas do catálogo oficial.</p>
             </div>
           )}
 
           {vitrines.map((v, index) => {
             const isEditing = editingVitrineId === v.id;
             const theme = THEME_OPTIONS.find(t => t.value === v.theme);
+            const missingCount = v.productIds.filter(pid => !products.some(p => p.id === pid)).length;
             return (
               <div key={v.id} style={{ ...card, border: isEditing ? `1px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}`, transition: 'border 0.2s' }}>
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: isEditing ? 16 : 0 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: theme?.color || '#666', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 14, fontWeight: 900, color: crmTheme.textPrimary }}>{v.title}</span>
                       <span style={{ fontSize: 9, fontWeight: 900, background: v.active ? crmTheme.successLight : crmTheme.dangerLight, color: v.active ? crmTheme.success : crmTheme.danger, border: `1px solid ${v.active ? crmTheme.success : crmTheme.danger}`, padding: '2px 7px', borderRadius: 99 }}>
                         {v.active ? 'ATIVA' : 'INATIVA'}
                       </span>
                       <span style={{ fontSize: 9, fontWeight: 700, color: crmTheme.textMuted }}>Ordem {v.order} · {v.productIds.length} produtos</span>
+                      {missingCount > 0 && (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: crmTheme.danger, background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, padding: '1px 6px', borderRadius: 99 }}>
+                          {missingCount} produto{missingCount > 1 ? 's' : ''} ausente{missingCount > 1 ? 's' : ''} do catálogo
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 5 }}>
@@ -960,7 +966,7 @@ export const AdminMarketing: React.FC = () => {
           {megaOfertas.length === 0 ? (
             <div style={{ ...card, textAlign: 'center', padding: '32px 20px' }}>
               <Zap size={28} color={crmTheme.textMuted} style={{ marginBottom: 10 }} />
-              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhum produto nas Mega Ofertas.<br/>A Home usa 3 produtos de fallback.</p>
+              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhum produto nas Mega Ofertas.<br/>A Home exibe automaticamente promoções ativas do catálogo oficial.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -968,12 +974,16 @@ export const AdminMarketing: React.FC = () => {
                 const p = products.find(x => x.id === mo.productId);
                 return (
                   <div key={mo.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
-                    {p && <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />}
+                    {p ? (
+                      <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: 8, background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: crmTheme.danger, fontSize: 11, fontWeight: 900, flexShrink: 0 }}>!</div>
+                    )}
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p ? p.title : mo.productId}
+                      <div style={{ fontSize: 13, fontWeight: 800, color: p ? crmTheme.textPrimary : crmTheme.danger, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p ? p.title : `${mo.productId} (não encontrado no catálogo)`}
                       </div>
-                      <div style={{ display: 'flex', gap: 6, marginTop: 3, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 3, alignItems: 'center', flexWrap: 'wrap' }}>
                         {p && <span style={{ fontSize: 11, fontWeight: 900, color: crmTheme.primary }}>R$ {Number(p.price).toFixed(2)}</span>}
                         {mo.badge && (
                           <span style={{ fontSize: 9, fontWeight: 900, background: mo.badgeStyle === 'orange' ? crmTheme.warningLight : crmTheme.primaryLight, color: mo.badgeStyle === 'orange' ? crmTheme.warning : crmTheme.primary, border: `1px solid ${mo.badgeStyle === 'orange' ? crmTheme.warning : crmTheme.primary}`, padding: '2px 7px', borderRadius: 99 }}>{mo.badge}</span>

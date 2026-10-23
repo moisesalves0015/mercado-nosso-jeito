@@ -4,6 +4,7 @@ import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Ci
 import { useAuth } from '../hooks/useAuth';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { useDefaultCondo } from '../hooks/useDefaultCondo';
+import { useUserDiamonds } from '../hooks/useUserDiamonds';
 
 export const Topbar = () => {
   const location = useLocation();
@@ -13,12 +14,9 @@ export const Topbar = () => {
   // Condomínio vem do endereço padrão do usuário; prazo vem de settings/admin.deliveryEta.
   const condoName = useDefaultCondo();
   const { config: adminConfig } = useAdminConfig();
+  const { diamonds } = useUserDiamonds();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const [coins, setCoins] = useState<number>(() => {
-    const saved = localStorage.getItem('user_diamonds');
-    return saved ? parseInt(saved, 10) : 320;
-  });
 
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const isLight = theme === 'light';
@@ -54,21 +52,6 @@ export const Topbar = () => {
       menuButton?.focus();
     };
   }, [isMenuOpen]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('user_diamonds');
-      if (saved) {
-        setCoins(parseInt(saved, 10));
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('diamonds_updated', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('diamonds_updated', handleStorageChange);
-    };
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,13 +100,22 @@ export const Topbar = () => {
         </div>
 
         {/* GOLD LEVEL BADGE */}
-        <Link to="/clube" style={{ textDecoration: 'none' }}>
+        <Link to="/clube" style={{ textDecoration: 'none' }} aria-label="Acessar o Clube">
           <div className="gold-level-badge">
             <div className="gold-badge-info">
-              <span className="gold-badge-title">NÍVEL OURO</span>
+              <span className="gold-badge-title">NOSSO CLUBE</span>
               <span className="gold-badge-points">
-                {(5004617 + coins).toLocaleString('pt-BR')} pts
-                <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
+                {diamonds !== null ? (
+                  <>
+                    {diamonds.toLocaleString('pt-BR')} pts
+                    <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
+                  </>
+                ) : (
+                  <>
+                    Benefícios
+                    <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -227,7 +219,9 @@ export const Topbar = () => {
               )}
               <div className="topbar-menu-user-info">
                 <span className="topbar-menu-username">{userProfile.name}</span>
-                <span className="topbar-menu-user-points">{coins.toLocaleString('pt-BR')} pts</span>
+                <span className="topbar-menu-user-points">
+                  {diamonds !== null ? `${diamonds.toLocaleString('pt-BR')} diamantes` : 'Membro do Clube'}
+                </span>
               </div>
             </>
           ) : (
