@@ -420,6 +420,7 @@ body {
 
 html {
   scrollbar-gutter: stable;
+  overflow-x: hidden;
 }
 
 body {
@@ -698,8 +699,12 @@ body.light-mode .topbar-search-container {
   align-items: center;
   gap: 10px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   flex: 1;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .topbar-nav-links::-webkit-scrollbar {
@@ -8361,6 +8366,9 @@ body.light-mode .category-item:hover .category-3d-icon {
 
 /* Page Route Transitions */
 .route-transition-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
   animation: routeFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 

@@ -1,9 +1,9 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { useState, useId } from 'react';
+import React, { useState, useId, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import { validateEmail } from '../utils/validators';
+import { sanitizeInternalRedirect, getAuthErrorMessage } from '../utils/authRedirect';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────
@@ -460,11 +460,39 @@ export const Login: React.FC = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user, userProfile, loading, profileLoading, redirectLoading, redirectError } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from || '/';
+
+  const searchParams = new URLSearchParams(location.search);
+  const queryTarget = searchParams.get('returnUrl') || searchParams.get('from');
+  const stateTarget = (location.state as { from?: string })?.from;
+  const storedTarget = typeof window !== 'undefined' ? sessionStorage.getItem('auth_return_url') : null;
+  const targetUrl = sanitizeInternalRedirect(queryTarget || stateTarget || storedTarget, '/');
+
+  // Surface redirect errors if returning from signInWithRedirect
+  useEffect(() => {
+    if (redirectError) {
+      const errInfo = getAuthErrorMessage(redirectError);
+      if (!errInfo.isCancelled) {
+        toastError(errInfo.title, errInfo.message);
+      }
+    }
+  }, [redirectError, toastError]);
+
+  // If already authenticated (or redirect completed), navigate forward
+  useEffect(() => {
+    if (user && !loading && !profileLoading && !redirectLoading) {
+      sessionStorage.removeItem('auth_return_url');
+      if (userProfile && !userProfile.onboardingComplete) {
+        navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+      } else {
+        const destination = user.email?.toLowerCase().startsWith('admin@') ? '/admin' : targetUrl;
+        navigate(destination, { replace: true });
+      }
+    }
+  }, [user, loading, profileLoading, redirectLoading, userProfile, targetUrl, navigate]);
 
   const validateFields = (): boolean => {
     let valid = true;
@@ -481,9 +509,16 @@ export const Login: React.FC = () => {
     if (!validateFields()) return;
     setLoadingLocal(true);
     try {
-      const user = await login(email, password, rememberMe);
+      const loggedUser = await login(email, password, rememberMe);
+      sessionStorage.removeItem('auth_return_url');
       success('Login realizado!', `Bem-vindo de volta 👋`);
-      navigate(user.email?.toLowerCase().startsWith('admin@') ? '/admin' : (from === '/login' ? '/' : from), { replace: true });
+      if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
+        navigate('/admin', { replace: true });
+      } else if (userProfile && !userProfile.onboardingComplete) {
+        navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+      } else {
+        navigate(targetUrl, { replace: true });
+      }
     } catch (err: unknown) {
       const e = err as { code?: string };
       if (e?.code === 'auth/user-not-found' || e?.code === 'auth/wrong-password' || e?.code === 'auth/invalid-credential') {
@@ -491,7 +526,8 @@ export const Login: React.FC = () => {
       } else if (e?.code === 'auth/too-many-requests') {
         toastError('Muitas tentativas', 'Aguarde alguns minutos antes de tentar novamente.');
       } else {
-        toastError('Erro ao entrar', 'Tente novamente em instantes.');
+        const errInfo = getAuthErrorMessage(err);
+        toastError(errInfo.title, errInfo.message);
       }
     } finally {
       setLoadingLocal(false);
@@ -501,17 +537,22 @@ export const Login: React.FC = () => {
   const handleGoogle = async () => {
     setLoadingGoogle(true);
     try {
-      const user = await loginWithGoogle();
-      success('Login com Google!', `Bem-vindo, ${user.displayName?.split(' ')[0] || ''} 👋`);
-      navigate(user.email?.toLowerCase().startsWith('admin@') ? '/admin' : (from === '/login' ? '/' : from), { replace: true });
+      const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
+      if (loggedUser) {
+        sessionStorage.removeItem('auth_return_url');
+        success('Login com Google!', `Bem-vindo, ${loggedUser.displayName?.split(' ')[0] || ''} 👋`);
+        if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
+          navigate('/admin', { replace: true });
+        } else if (userProfile && !userProfile.onboardingComplete) {
+          navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+        } else {
+          navigate(targetUrl, { replace: true });
+        }
+      }
     } catch (err: unknown) {
-      const e = err as { code?: string };
-      if (e?.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, no need to show error
-      } else if (e?.code === 'auth/popup-blocked') {
-        toastError('Popup bloqueado', 'Permita popups para usar o login com Google.');
-      } else {
-        toastError('Erro com Google', 'Não foi possível entrar com Google. Tente novamente.');
+      const errInfo = getAuthErrorMessage(err);
+      if (!errInfo.isCancelled) {
+        toastError(errInfo.title, errInfo.message);
       }
     } finally {
       setLoadingGoogle(false);
@@ -542,7 +583,7 @@ export const Login: React.FC = () => {
           <h2 style={{ ...s.sectionTitle, marginBottom: '18px' }}>Entrar na sua conta</h2>
 
           {/* Google button — above the form */}
-          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle} />
+          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle || redirectLoading} />
 
           {/* Divider */}
           <div style={s.divider}>
@@ -633,7 +674,13 @@ export const Login: React.FC = () => {
 
           <p style={{ textAlign: 'center', margin: '20px 0 0' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Não tem conta? </span>
-            <Link to="/register" style={s.authLink}>Cadastre-se grátis</Link>
+            <Link
+              to={targetUrl !== '/' ? `/register?returnUrl=${encodeURIComponent(targetUrl)}` : '/register'}
+              state={{ from: targetUrl }}
+              style={s.authLink}
+            >
+              Cadastre-se grátis
+            </Link>
           </p>
         </div>
       </div>

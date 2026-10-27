@@ -1,5 +1,5 @@
 import React, { useState, useId, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -7,6 +7,7 @@ import {
   validatePhone, validateCPF, getPasswordStrength,
 } from '../utils/validators';
 import { maskPhone, maskCPF } from '../utils/masks';
+import { sanitizeInternalRedirect, getAuthErrorMessage } from '../utils/authRedirect';
 import { Mail, Lock, User, Phone, CreditCard, Eye, EyeOff, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import {
   MercadoLogo, GoogleSignInButton, AuthBackground, AuthStyles, authStyles as s,
@@ -17,9 +18,16 @@ import {
 // ──────────────────────────────────────────────────────────────
 export const Register: React.FC = () => {
   const id = useId();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, user, userProfile, loading: authLoading, profileLoading, redirectLoading, redirectError } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchParams = new URLSearchParams(location.search);
+  const queryTarget = searchParams.get('returnUrl') || searchParams.get('from');
+  const stateTarget = (location.state as { from?: string })?.from;
+  const storedTarget = typeof window !== 'undefined' ? sessionStorage.getItem('auth_return_url') : null;
+  const targetUrl = sanitizeInternalRedirect(queryTarget || stateTarget || storedTarget, '/');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,8 +41,32 @@ export const Register: React.FC = () => {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
   // Scroll to top on mount (register card is tall)
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Surface redirect errors if returning from signInWithRedirect
+  useEffect(() => {
+    if (redirectError) {
+      const errInfo = getAuthErrorMessage(redirectError);
+      if (!errInfo.isCancelled) {
+        toastError(errInfo.title, errInfo.message);
+      }
+    }
+  }, [redirectError, toastError]);
+
+  // If already authenticated (or redirect completed), navigate forward
+  useEffect(() => {
+    if (user && !authLoading && !profileLoading && !redirectLoading) {
+      sessionStorage.removeItem('auth_return_url');
+      if (userProfile && !userProfile.onboardingComplete) {
+        navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+      } else {
+        const destination = user.email?.toLowerCase().startsWith('admin@') ? '/admin' : targetUrl;
+        navigate(destination, { replace: true });
+      }
+    }
+  }, [user, authLoading, profileLoading, redirectLoading, userProfile, targetUrl, navigate]);
 
   const passwordStrength = getPasswordStrength(password);
 
@@ -78,8 +110,9 @@ export const Register: React.FC = () => {
     setLoading(true);
     try {
       await register({ name: name.trim(), email: email.trim(), password, telefone, cpf });
+      sessionStorage.removeItem('auth_return_url');
       success('Conta criada!', `Bem-vindo ao Mercado Nosso Jeito, ${name.split(' ')[0]}! 🎉`);
-      navigate('/');
+      navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
     } catch (err: unknown) {
       const e = err as { code?: string };
       if (e?.code === 'auth/email-already-in-use') {
@@ -88,7 +121,8 @@ export const Register: React.FC = () => {
       } else if (e?.code === 'auth/weak-password') {
         setErrors(prev => ({ ...prev, password: 'Senha muito fraca' }));
       } else {
-        toastError('Erro ao criar conta', 'Tente novamente em instantes.');
+        const errInfo = getAuthErrorMessage(err);
+        toastError(errInfo.title, errInfo.message);
       }
     } finally {
       setLoading(false);
@@ -98,13 +132,22 @@ export const Register: React.FC = () => {
   const handleGoogle = async () => {
     setLoadingGoogle(true);
     try {
-      const user = await loginWithGoogle();
-      success('Conta criada com Google!', `Bem-vindo, ${user.displayName?.split(' ')[0] || ''} 🎉`);
-      navigate('/');
+      const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
+      if (loggedUser) {
+        sessionStorage.removeItem('auth_return_url');
+        success('Conta criada com Google!', `Bem-vindo, ${loggedUser.displayName?.split(' ')[0] || ''} 🎉`);
+        if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
+          navigate('/admin', { replace: true });
+        } else if (userProfile && !userProfile.onboardingComplete) {
+          navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+        } else {
+          navigate(targetUrl, { replace: true });
+        }
+      }
     } catch (err: unknown) {
-      const e = err as { code?: string };
-      if (e?.code !== 'auth/popup-closed-by-user') {
-        toastError('Erro com Google', 'Não foi possível cadastrar com Google. Tente novamente.');
+      const errInfo = getAuthErrorMessage(err);
+      if (!errInfo.isCancelled) {
+        toastError(errInfo.title, errInfo.message);
       }
     } finally {
       setLoadingGoogle(false);
@@ -124,7 +167,13 @@ export const Register: React.FC = () => {
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       <AuthBackground />
       <div style={{ ...s.page, paddingTop: '28px', paddingBottom: '40px' }}>
-        <Link to="/login" style={s.backBtn} className="auth-back-btn" aria-label="Voltar para login">
+        <Link
+          to={targetUrl !== '/' ? `/login?returnUrl=${encodeURIComponent(targetUrl)}` : '/login'}
+          state={{ from: targetUrl }}
+          style={s.backBtn}
+          className="auth-back-btn"
+          aria-label="Voltar para login"
+        >
           <ArrowLeft size={18} />
         </Link>
 
@@ -142,7 +191,7 @@ export const Register: React.FC = () => {
           <h2 style={{ ...s.sectionTitle, marginBottom: '16px' }}>Criar sua conta</h2>
 
           {/* Google button */}
-          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle} label="Cadastrar com Google" />
+          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle || redirectLoading} label="Cadastrar com Google" />
 
           <div style={s.divider}>
             <div style={s.dividerLine} />
@@ -250,7 +299,13 @@ export const Register: React.FC = () => {
 
           <p style={{ textAlign: 'center', margin: '18px 0 0' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Já tem conta? </span>
-            <Link to="/login" style={s.authLink}>Faça login</Link>
+            <Link
+              to={targetUrl !== '/' ? `/login?returnUrl=${encodeURIComponent(targetUrl)}` : '/login'}
+              state={{ from: targetUrl }}
+              style={s.authLink}
+            >
+              Faça login
+            </Link>
           </p>
         </div>
       </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import { DEFAULT_SHIPPING } from '../hooks/useShippingConfig';
+import { sanitizeInternalRedirect } from '../utils/authRedirect';
 import { AuthBackground, AuthStyles, MercadoLogo } from './Login';
 import { MapPin, Phone, User, Check, Building2 } from 'lucide-react';
 
@@ -53,8 +54,15 @@ const maskPhone = (v: string) => {
 
 export const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, userProfile, updateUserProfile } = useAuth();
   const { error, success } = useToast();
+
+  const searchParams = new URLSearchParams(location.search);
+  const queryTarget = searchParams.get('returnUrl') || searchParams.get('from');
+  const stateTarget = (location.state as { from?: string })?.from;
+  const storedTarget = typeof window !== 'undefined' ? sessionStorage.getItem('auth_return_url') : null;
+  const targetUrl = sanitizeInternalRedirect(queryTarget || stateTarget || storedTarget, '/');
 
   const [cpf, setCpf] = useState(userProfile?.cpf || '');
   const [telefone, setTelefone] = useState(userProfile?.telefone || '');
@@ -69,9 +77,10 @@ export const Onboarding: React.FC = () => {
   useEffect(() => {
     // If user somehow lands here but is already fully onboarded, redirect
     if (userProfile?.onboardingComplete) {
-      navigate('/', { replace: true });
+      sessionStorage.removeItem('auth_return_url');
+      navigate(targetUrl, { replace: true });
     }
-  }, [userProfile, navigate]);
+  }, [userProfile, navigate, targetUrl]);
 
   useEffect(() => {
     const parseCondosData = (data: unknown): { name: string; fee: number }[] => {
@@ -195,8 +204,9 @@ export const Onboarding: React.FC = () => {
         onboardingComplete: true,
       });
 
+      sessionStorage.removeItem('auth_return_url');
       success('Tudo certo!', 'Seu cadastro foi concluído com sucesso.');
-      navigate('/', { replace: true });
+      navigate(targetUrl, { replace: true });
     } catch (e: unknown) {
       console.error(e);
       error('Erro ao salvar', (e as Error)?.message || 'Não foi possível concluir o cadastro.');

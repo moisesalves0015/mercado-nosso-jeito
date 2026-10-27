@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   getAuth,
   onAuthStateChanged,
@@ -15,6 +15,8 @@ import {
   setPersistence,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import {
@@ -26,6 +28,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app, db, storage } from '../firebase';
+import { isStandalonePwa, sanitizeInternalRedirect } from '../utils/authRedirect';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -54,9 +57,11 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   profileLoading: boolean;
+  redirectLoading: boolean;
+  redirectError: unknown | null;
   // Auth actions
   login: (email: string, password: string, rememberMe?: boolean) => Promise<FirebaseUser>;
-  loginWithGoogle: () => Promise<FirebaseUser>;
+  loginWithGoogle: (options?: { returnUrl?: string; preferRedirect?: boolean }) => Promise<FirebaseUser | null>;
   register: (data: RegisterData) => Promise<FirebaseUser>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -87,10 +92,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [redirectLoading, setRedirectLoading] = useState(false);
+  const [redirectError, setRedirectError] = useState<unknown | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
 
   const auth = getAuth(app);
+  const redirectProcessedRef = useRef(false);
+  const syncInFlightRef = useRef<Map<string, Promise<UserProfile>>>(new Map());
 
   const toDate = (ts: unknown): Date | undefined => {
     if (!ts) return undefined;
@@ -107,14 +116,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return undefined;
   };
 
-  // ── Fetch profile from Firestore ──────────────────────────
-  const fetchProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile | null> => {
-    try {
+  // ── Centralized Firestore profile sync ────────────────────
+  const syncProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile> => {
+    const inFlight = syncInFlightRef.current.get(firebaseUser.uid);
+    if (inFlight) return inFlight;
+
+    const task = (async (): Promise<UserProfile> => {
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const snap = await getDoc(userDocRef);
 
       if (snap.exists()) {
         const data = snap.data();
+        try {
+          const updates: Record<string, unknown> = {
+            lastLogin: serverTimestamp(),
+          };
+          if (!data.foto && firebaseUser.photoURL) {
+            updates.foto = firebaseUser.photoURL;
+          }
+          await updateDoc(userDocRef, updates);
+        } catch (e) {
+          console.warn('Failed to update lastLogin on existing profile:', e);
+        }
+
         const profile: UserProfile = {
           uid: firebaseUser.uid,
           name: data.name || firebaseUser.displayName || 'Usuário',
@@ -129,31 +153,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           referralRewarded: !!data.referralRewarded,
           createdAt: toDate(data.createdAt),
           updatedAt: toDate(data.updatedAt),
-          lastLogin: toDate(data.lastLogin),
+          lastLogin: new Date(),
           onboardingComplete: !!data.onboardingComplete,
         };
         return profile;
       } else {
-        // Auto-heal: create Firestore doc for existing Firebase Auth users.
-        // Role is always 'client' — admin must be assigned manually via Firestore console.
-        const profile: UserProfile = {
+        // New user creation — unified schema preserving referral and onboarding state
+        const referredBy = localStorage.getItem('referred_by') || null;
+        const newProfile: UserProfile = {
           uid: firebaseUser.uid,
           name: firebaseUser.displayName || 'Usuário',
           email: firebaseUser.email || '',
-          role: 'client',
-          referredBy: null,
-          firstOrderPlaced: false,
-          referralRewarded: false,
-        };
-        await setDoc(userDocRef, {
-          name: profile.name,
-          email: profile.email,
           telefone: '',
           cpf: '',
-          foto: '',
+          foto: firebaseUser.photoURL || '',
           role: 'client',
           unlockedBadges: [],
-          referredBy: null,
+          referredBy: referredBy,
+          firstOrderPlaced: false,
+          referralRewarded: false,
+          onboardingComplete: false,
+        };
+
+        await setDoc(userDocRef, {
+          name: newProfile.name,
+          email: newProfile.email,
+          telefone: '',
+          cpf: '',
+          foto: newProfile.foto,
+          role: 'client',
+          unlockedBadges: [],
+          referredBy: newProfile.referredBy,
           firstOrderPlaced: false,
           referralRewarded: false,
           createdAt: serverTimestamp(),
@@ -161,13 +191,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastLogin: serverTimestamp(),
           onboardingComplete: false,
         });
-        return profile;
+
+        return newProfile;
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
+    })();
+
+    syncInFlightRef.current.set(firebaseUser.uid, task);
+    try {
+      return await task;
+    } finally {
+      syncInFlightRef.current.delete(firebaseUser.uid);
     }
   }, []);
+
+  // ── Process getRedirectResult once in a central place ─────
+  useEffect(() => {
+    if (redirectProcessedRef.current) return;
+    redirectProcessedRef.current = true;
+
+    let isMounted = true;
+    const processRedirect = async () => {
+      try {
+        setRedirectLoading(true);
+        const result = await getRedirectResult(auth);
+        if (result?.user && isMounted) {
+          const profile = await syncProfile(result.user);
+          setUser(result.user);
+          setUserProfile(profile);
+          setIsAdmin(profile.role === 'admin');
+          setUserName(profile.name);
+        }
+      } catch (err: unknown) {
+        console.error('getRedirectResult error:', err);
+        if (isMounted) {
+          setRedirectError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setRedirectLoading(false);
+        }
+      }
+    };
+
+    processRedirect();
+    return () => {
+      isMounted = false;
+    };
+  }, [auth, syncProfile]);
 
   // ── onAuthStateChanged listener ──────────────────────────
   useEffect(() => {
@@ -176,9 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (firebaseUser) {
         setProfileLoading(true);
-        const profile = await fetchProfile(firebaseUser);
-        // Check Custom Claims for admin status first (preferred, no extra read).
-        // Falls back to profile.role for users created before Custom Claims migration.
+        const profile = await syncProfile(firebaseUser);
         const tokenResult = await firebaseUser.getIdTokenResult();
         const isBanned = tokenResult.claims['banned'] === true || profile?.role === 'banned';
 
@@ -211,23 +279,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [auth, fetchProfile]);
+  }, [auth, syncProfile]);
 
   // ── Login ────────────────────────────────────────────────
   const login = async (email: string, password: string, rememberMe = true): Promise<FirebaseUser> => {
     setLoading(true);
     try {
-      // Set persistence based on "remember me"
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(auth, email, password);
 
-      // Update lastLogin in Firestore
       try {
         await updateDoc(doc(db, 'users', credential.user.uid), {
           lastLogin: serverTimestamp(),
         });
       } catch {
-        // Non-critical — don't fail login if this fails
+        // Non-critical
       }
 
       return credential.user;
@@ -236,38 +302,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ── Login With Google ─────────────────────────────────
-  const loginWithGoogle = async (): Promise<FirebaseUser> => {
+  // ── Login With Google (PWA standalone redirect + browser popup with fallback) ──
+  const loginWithGoogle = async (options?: { returnUrl?: string; preferRedirect?: boolean }): Promise<FirebaseUser | null> => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    const credential = await signInWithPopup(auth, provider);
-    const firebaseUser = credential.user;
 
-    // Create or merge Firestore document
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const snap = await getDoc(userDocRef);
-    if (!snap.exists()) {
-      const referredBy = localStorage.getItem('referred_by') || null;
-      await setDoc(userDocRef, {
-        name: firebaseUser.displayName || 'Usuário Google',
-        email: firebaseUser.email || '',
-        telefone: '',
-        cpf: '',
-        foto: firebaseUser.photoURL || '',
-        role: 'client',
-        referredBy: referredBy,
-        firstOrderPlaced: false,
-        referralRewarded: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
-        onboardingComplete: false,
-      });
-    } else {
-      await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
+    const safeReturn = sanitizeInternalRedirect(options?.returnUrl, '/');
+    const inStandalone = isStandalonePwa();
+    const shouldRedirect = !!(options?.preferRedirect || inStandalone);
+
+    if (shouldRedirect) {
+      sessionStorage.setItem('auth_return_url', safeReturn);
+      setLoading(true);
+      await signInWithRedirect(auth, provider);
+      return null;
     }
 
-    return firebaseUser;
+    setLoading(true);
+    try {
+      const credential = await signInWithPopup(auth, provider);
+      const firebaseUser = credential.user;
+      const profile = await syncProfile(firebaseUser);
+      setUser(firebaseUser);
+      setUserProfile(profile);
+      setIsAdmin(profile.role === 'admin');
+      setUserName(profile.name);
+      return firebaseUser;
+    } catch (popupErr: unknown) {
+      const e = popupErr as { code?: string };
+      // Fallback to redirect if popup is blocked or unsupported in this browser environment
+      if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
+        console.warn('Popup blocked or not supported. Falling back to signInWithRedirect...');
+        sessionStorage.setItem('auth_return_url', safeReturn);
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+      throw popupErr;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── Register ─────────────────────────────────────────────
@@ -384,7 +457,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Force-refresh token to pick up any new Custom Claims (e.g., after setAdminClaim)
     const tokenResult = await user.getIdTokenResult(true);
     const hasAdminClaim = tokenResult.claims['admin'] === true;
-    const profile = await fetchProfile(user);
+    const profile = await syncProfile(user);
     if (profile) {
       setUserProfile(profile);
       setIsAdmin(hasAdminClaim || profile.role === 'admin');
@@ -401,6 +474,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isAdmin,
         profileLoading,
+        redirectLoading,
+        redirectError,
         login,
         loginWithGoogle,
         register,

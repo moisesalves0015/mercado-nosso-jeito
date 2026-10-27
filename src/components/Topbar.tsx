@@ -55,15 +55,22 @@ export const Topbar = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (navRef.current) {
-        const activeEl = navRef.current.querySelector('.topbar-nav-link.active');
-        if (activeEl) {
-          activeEl.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center'
-          });
-        }
+      const nav = navRef.current;
+      if (!nav) return;
+
+      const activeEl = nav.querySelector<HTMLElement>('.topbar-nav-link.active');
+      if (!activeEl) return;
+
+      if (nav.scrollWidth > nav.clientWidth) {
+        const navRect = nav.getBoundingClientRect();
+        const activeRect = activeEl.getBoundingClientRect();
+        const currentScrollLeft = nav.scrollLeft;
+        const targetScrollLeft = currentScrollLeft + (activeRect.left - navRect.left) - (nav.clientWidth / 2) + (activeEl.clientWidth / 2);
+
+        nav.scrollTo({
+          left: Math.max(0, targetScrollLeft),
+          behavior: 'smooth'
+        });
       }
     }, 100);
     return () => clearTimeout(timer);

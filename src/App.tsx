@@ -70,7 +70,8 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
   const isExemptRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
 
   if (user && userProfile && !isAdmin && !userProfile.onboardingComplete && !isExemptRoute) {
-    return <Navigate to="/onboarding" replace />;
+    const returnPath = `${location.pathname}${location.search}`;
+    return <Navigate to={`/onboarding?returnUrl=${encodeURIComponent(returnPath)}`} state={{ from: returnPath }} replace />;
   }
 
   return <>{children}</>;
