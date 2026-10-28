@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Snowflake, AlertOctagon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
-import { Topbar } from '../components/Topbar';
 import { defaultProducts } from '../data/defaultProducts';
 
 interface Product {
@@ -125,8 +124,6 @@ export const Bebidas = () => {
 
   return (
     <main className="app bebidas-page" style={{ paddingTop: 0 }}>
-      <Topbar />
-
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Bebidas Geladas</h1>

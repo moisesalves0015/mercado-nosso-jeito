@@ -8,6 +8,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
 import { AgeVerificationModal } from './components/AgeVerificationModal';
+import { Topbar } from './components/Topbar';
 // Eager: small, always-needed pages
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -54,6 +55,23 @@ function PageLoader() {
 
 function PageTransitionLayout() {
   const location = useLocation();
+  const isCategoryRoute = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
+
+  if (isCategoryRoute) {
+    return (
+      <>
+        <div className="category-topbar-wrapper">
+          <div className="app" style={{ paddingBottom: 0 }}>
+            <Topbar />
+          </div>
+        </div>
+        <div key={location.pathname} className="route-transition-wrapper">
+          <Outlet />
+        </div>
+      </>
+    );
+  }
+
   return (
     <div key={location.pathname} className="route-transition-wrapper">
       <Outlet />
@@ -65,11 +83,12 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, userProfile, loading, profileLoading, isAdmin } = useAuth();
   const location = useLocation();
 
+  const isExemptRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  if (isExemptRoute) return <>{children}</>;
+
   if (loading || profileLoading) return null; // Wait for profile
 
-  const isExemptRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
-
-  if (user && userProfile && !isAdmin && !userProfile.onboardingComplete && !isExemptRoute) {
+  if (user && userProfile && !isAdmin && !userProfile.onboardingComplete) {
     const returnPath = `${location.pathname}${location.search}`;
     return <Navigate to={`/onboarding?returnUrl=${encodeURIComponent(returnPath)}`} state={{ from: returnPath }} replace />;
   }

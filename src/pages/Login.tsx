@@ -72,45 +72,55 @@ export const MercadoLogo: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'm
 // ──────────────────────────────────────────────────────────────
 // Google Button
 // ──────────────────────────────────────────────────────────────
-export const GoogleSignInButton: React.FC<{ onClick: () => void; loading: boolean; label?: string }> = ({ onClick, loading, label = 'Entrar com Google' }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={loading}
-    style={{
-      width: '100%',
-      height: '46px',
-      background: 'var(--card-bg)',
-      border: '1px solid var(--border-primary)',
-      borderRadius: '12px',
-      color: 'var(--text-primary)',
-      fontWeight: 700,
-      fontSize: '13.5px',
-      cursor: loading ? 'not-allowed' : 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '10px',
-      fontFamily: "'Manrope', 'Outfit', sans-serif",
-      transition: 'all 0.2s ease',
-      opacity: loading ? 0.7 : 1,
-    }}
-    className="google-btn"
-  >
-    {loading ? (
-      <span style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'authSpin 0.7s linear infinite' }} />
-    ) : (
-      // Google G SVG
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
-    )}
-    {!loading && label}
-  </button>
-);
+export const GoogleSignInButton: React.FC<{
+  onClick: () => void;
+  loading: boolean;
+  disabled?: boolean;
+  label?: string;
+}> = ({ onClick, loading, disabled = false, label = 'Entrar com Google' }) => {
+  const isButtonDisabled = loading || disabled;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isButtonDisabled}
+      aria-busy={loading}
+      aria-label={label}
+      style={{
+        width: '100%',
+        height: '46px',
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '12px',
+        color: 'var(--text-primary)',
+        fontWeight: 700,
+        fontSize: '13.5px',
+        cursor: isButtonDisabled ? 'not-allowed' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        fontFamily: "'Manrope', 'Outfit', sans-serif",
+        transition: 'all 0.2s ease',
+        opacity: isButtonDisabled ? 0.7 : 1,
+      }}
+      className="google-btn"
+    >
+      {loading ? (
+        <span style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'authSpin 0.7s linear infinite' }} />
+      ) : (
+        // Google G SVG
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+      )}
+      {!loading && label}
+    </button>
+  );
+};
 
 // ──────────────────────────────────────────────────────────────
 // Shared auth page background — bg-supermercado + overlay
@@ -460,10 +470,13 @@ export const Login: React.FC = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const { login, loginWithGoogle, user, userProfile, loading, profileLoading, redirectLoading, redirectError } = useAuth();
+  const { login, loginWithGoogle, user, userProfile, loading, profileLoading, redirectLoading, redirectError, clearRedirectError } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isGoogleLoading = loadingGoogle || redirectLoading;
+  const isAnySubmitting = loadingLocal || loadingGoogle || redirectLoading;
 
   const searchParams = new URLSearchParams(location.search);
   const queryTarget = searchParams.get('returnUrl') || searchParams.get('from');
@@ -478,8 +491,9 @@ export const Login: React.FC = () => {
       if (!errInfo.isCancelled) {
         toastError(errInfo.title, errInfo.message);
       }
+      clearRedirectError();
     }
-  }, [redirectError, toastError]);
+  }, [redirectError, clearRedirectError, toastError]);
 
   // If already authenticated (or redirect completed), navigate forward
   useEffect(() => {
@@ -535,7 +549,9 @@ export const Login: React.FC = () => {
   };
 
   const handleGoogle = async () => {
+    if (isAnySubmitting) return;
     setLoadingGoogle(true);
+    clearRedirectError();
     try {
       const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
       if (loggedUser) {
@@ -583,7 +599,7 @@ export const Login: React.FC = () => {
           <h2 style={{ ...s.sectionTitle, marginBottom: '18px' }}>Entrar na sua conta</h2>
 
           {/* Google button — above the form */}
-          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle || redirectLoading} />
+          <GoogleSignInButton onClick={handleGoogle} loading={isGoogleLoading} disabled={isAnySubmitting} />
 
           {/* Divider */}
           <div style={s.divider}>
@@ -664,7 +680,7 @@ export const Login: React.FC = () => {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loadingLocal || loadingGoogle}
+              disabled={isAnySubmitting}
               style={{ ...s.submitBtn, opacity: loadingLocal ? 0.8 : 1, marginTop: '2px' }}
               className="auth-submit-btn"
             >

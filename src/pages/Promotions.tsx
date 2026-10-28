@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { PartyPopper, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
-import { Topbar } from '../components/Topbar';
 import { isProductPromotionCurrent } from '../utils/productPricing';
 
 interface Product {
@@ -41,8 +40,6 @@ export const Promotions = () => {
 
   return (
     <main className="app promotions-page" style={{ paddingTop: 0 }}>
-      <Topbar />
-
       {/* ── Page title ──────────────────────────── */}
       <div style={{ padding: '18px 16px 4px' }}>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Promoções Especiais</h1>

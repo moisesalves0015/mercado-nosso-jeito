@@ -11,7 +11,6 @@
  * Nenhum produto, preço ou métrica fictícia é gerado no front-end.
  */
 import { useMemo } from 'react';
-import { Topbar } from '../components/Topbar';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
 import { HomeHero } from '../components/home/HomeHero';
@@ -73,8 +72,6 @@ export const Home = () => {
     <div style={{ width: '100%', overflowX: 'hidden' }}>
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
-          <Topbar />
-
           {/* Convite de instalação do PWA */}
           <PwaInstallBanner />
 

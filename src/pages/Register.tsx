@@ -18,7 +18,7 @@ import {
 // ──────────────────────────────────────────────────────────────
 export const Register: React.FC = () => {
   const id = useId();
-  const { register, loginWithGoogle, user, userProfile, loading: authLoading, profileLoading, redirectLoading, redirectError } = useAuth();
+  const { register, loginWithGoogle, user, userProfile, loading: authLoading, profileLoading, redirectLoading, redirectError, clearRedirectError } = useAuth();
   const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,6 +42,9 @@ export const Register: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const isGoogleLoading = loadingGoogle || redirectLoading;
+  const isAnySubmitting = loading || loadingGoogle || redirectLoading;
+
   // Scroll to top on mount (register card is tall)
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -52,8 +55,9 @@ export const Register: React.FC = () => {
       if (!errInfo.isCancelled) {
         toastError(errInfo.title, errInfo.message);
       }
+      clearRedirectError();
     }
-  }, [redirectError, toastError]);
+  }, [redirectError, clearRedirectError, toastError]);
 
   // If already authenticated (or redirect completed), navigate forward
   useEffect(() => {
@@ -130,7 +134,9 @@ export const Register: React.FC = () => {
   };
 
   const handleGoogle = async () => {
+    if (isAnySubmitting) return;
     setLoadingGoogle(true);
+    clearRedirectError();
     try {
       const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
       if (loggedUser) {
@@ -191,7 +197,7 @@ export const Register: React.FC = () => {
           <h2 style={{ ...s.sectionTitle, marginBottom: '16px' }}>Criar sua conta</h2>
 
           {/* Google button */}
-          <GoogleSignInButton onClick={handleGoogle} loading={loadingGoogle || redirectLoading} label="Cadastrar com Google" />
+          <GoogleSignInButton onClick={handleGoogle} loading={isGoogleLoading} disabled={isAnySubmitting} label="Cadastrar com Google" />
 
           <div style={s.divider}>
             <div style={s.dividerLine} />
@@ -289,7 +295,7 @@ export const Register: React.FC = () => {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || loadingGoogle}
+              disabled={isAnySubmitting}
               style={{ ...s.submitBtn, opacity: loading ? 0.8 : 1 }}
               className="auth-submit-btn"
             >

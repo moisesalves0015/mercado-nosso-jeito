@@ -59,6 +59,7 @@ interface AuthContextType {
   profileLoading: boolean;
   redirectLoading: boolean;
   redirectError: unknown | null;
+  clearRedirectError: () => void;
   // Auth actions
   login: (email: string, password: string, rememberMe?: boolean) => Promise<FirebaseUser>;
   loginWithGoogle: (options?: { returnUrl?: string; preferRedirect?: boolean }) => Promise<FirebaseUser | null>;
@@ -100,6 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const auth = getAuth(app);
   const redirectProcessedRef = useRef(false);
   const syncInFlightRef = useRef<Map<string, Promise<UserProfile>>>(new Map());
+  const isGoogleAuthInFlightRef = useRef(false);
+
+  const clearRedirectError = useCallback(() => {
+    setRedirectError(null);
+  }, []);
 
   const toDate = (ts: unknown): Date | undefined => {
     if (!ts) return undefined;
@@ -211,8 +217,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let isMounted = true;
     const processRedirect = async () => {
+      const wasRedirectInProgress = typeof window !== 'undefined' && sessionStorage.getItem('auth_redirect_in_progress') === '1';
+
       try {
-        setRedirectLoading(true);
+        if (wasRedirectInProgress) {
+          setRedirectLoading(true);
+        }
         const result = await getRedirectResult(auth);
         if (result?.user && isMounted) {
           const profile = await syncProfile(result.user);
@@ -227,6 +237,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRedirectError(err);
         }
       } finally {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('auth_redirect_in_progress');
+        }
         if (isMounted) {
           setRedirectLoading(false);
         }
@@ -302,8 +315,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ── Login With Google (PWA standalone redirect + browser popup with fallback) ──
+  // ── Login With Google (PWA standalone redirect + browser popup) ──
   const loginWithGoogle = async (options?: { returnUrl?: string; preferRedirect?: boolean }): Promise<FirebaseUser | null> => {
+    if (isGoogleAuthInFlightRef.current) {
+      console.warn('Google authentication already in progress. Ignoring duplicate request.');
+      return null;
+    }
+
+    isGoogleAuthInFlightRef.current = true;
+    setRedirectError(null);
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -311,15 +332,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const inStandalone = isStandalonePwa();
     const shouldRedirect = !!(options?.preferRedirect || inStandalone);
 
-    if (shouldRedirect) {
-      sessionStorage.setItem('auth_return_url', safeReturn);
-      setLoading(true);
-      await signInWithRedirect(auth, provider);
-      return null;
-    }
-
-    setLoading(true);
     try {
+      if (shouldRedirect) {
+        sessionStorage.setItem('auth_return_url', safeReturn);
+        sessionStorage.setItem('auth_redirect_in_progress', '1');
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+
       const credential = await signInWithPopup(auth, provider);
       const firebaseUser = credential.user;
       const profile = await syncProfile(firebaseUser);
@@ -328,18 +348,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(profile.role === 'admin');
       setUserName(profile.name);
       return firebaseUser;
-    } catch (popupErr: unknown) {
-      const e = popupErr as { code?: string };
-      // Fallback to redirect if popup is blocked or unsupported in this browser environment
-      if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
-        console.warn('Popup blocked or not supported. Falling back to signInWithRedirect...');
-        sessionStorage.setItem('auth_return_url', safeReturn);
-        await signInWithRedirect(auth, provider);
-        return null;
-      }
-      throw popupErr;
     } finally {
-      setLoading(false);
+      isGoogleAuthInFlightRef.current = false;
     }
   };
 
@@ -476,6 +486,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profileLoading,
         redirectLoading,
         redirectError,
+        clearRedirectError,
         login,
         loginWithGoogle,
         register,

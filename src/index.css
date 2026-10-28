@@ -8364,23 +8364,45 @@ body.light-mode .category-item:hover .category-3d-icon {
   color: #FFDF73;
 }
 
-/* Page Route Transitions */
+/* =========================================================
+   PAGE ROUTE TRANSITIONS
+   Fluid, elegant page transition for Mercado Nosso Jeito.
+   Constrained to route content only: Topbar, BottomNav,
+   body, and viewport never displace. Zero lateral motion.
+========================================================= */
+
+.category-topbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: var(--bg-secondary);
+}
+
 .route-transition-wrapper {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  animation: routeFadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: routeFadeIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes routeFadeIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.995);
+    transform: translateY(12px);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility: disable transitions if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .route-transition-wrapper {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
 

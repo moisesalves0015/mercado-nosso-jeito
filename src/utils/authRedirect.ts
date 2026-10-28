@@ -61,7 +61,7 @@ export const getAuthErrorMessage = (err: unknown): AuthErrorInfo => {
   const e = err as { code?: string; message?: string };
   const code = e?.code || '';
 
-  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' || code === 'auth/redirect-cancelled-by-user') {
     return {
       title: 'Login cancelado',
       message: 'Você fechou a janela do Google antes de concluir o login.',
@@ -72,7 +72,7 @@ export const getAuthErrorMessage = (err: unknown): AuthErrorInfo => {
   if (code === 'auth/popup-blocked') {
     return {
       title: 'Popup bloqueado pelo navegador',
-      message: 'O navegador bloqueou a janela do Google. Permitindo popups ou aguarde o redirecionamento automático.',
+      message: 'O navegador bloqueou a janela do Google. Permita popups para este site e tente novamente.',
       isCancelled: false,
     };
   }
