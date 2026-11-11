@@ -8,10 +8,10 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, redirectLoading, profileLoading, isAdmin } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || redirectLoading || profileLoading) {
     return <AuthLoadingSkeleton />;
   }
 

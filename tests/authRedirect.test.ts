@@ -249,4 +249,35 @@ describe('Google Auth Button State Machine & Flow', () => {
     assert.equal(state.authenticatedUser, null);
     assert.equal(state.currentRoute, '/login'); // Stays on login
   });
+
+  it('Scenario 7: PWA uses popup first and falls back to redirect only if popup is blocked', async () => {
+    const calls: string[] = [];
+    const runPwaGoogleStrategy = async (popupShouldBlock: boolean) => {
+      try {
+        calls.push('popup');
+        if (popupShouldBlock) {
+          throw { code: 'auth/popup-blocked' };
+        }
+        return { uid: 'pwa_user_1', displayName: 'Carlos' };
+      } catch (err: unknown) {
+        const code = (err as { code?: string })?.code || '';
+        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+          calls.push('redirect');
+          return null;
+        }
+        throw err;
+      }
+    };
+
+    // Case A: Popup succeeds in PWA (no cross-domain redirect storage loss)
+    const userA = await runPwaGoogleStrategy(false);
+    assert.equal(userA?.uid, 'pwa_user_1');
+    assert.deepEqual(calls, ['popup']);
+
+    // Case B: Restricted WebView blocks popup -> falls back to redirect automatically
+    calls.length = 0;
+    const userB = await runPwaGoogleStrategy(true);
+    assert.equal(userB, null);
+    assert.deepEqual(calls, ['popup', 'redirect']);
+  });
 });

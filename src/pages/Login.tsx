@@ -184,6 +184,7 @@ export const AuthBackground: React.FC = () => (
 // ──────────────────────────────────────────────────────────────
 // Shared styles
 // ──────────────────────────────────────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components
 export const authStyles = {
   page: {
     minHeight: '100vh',
@@ -523,16 +524,9 @@ export const Login: React.FC = () => {
     if (!validateFields()) return;
     setLoadingLocal(true);
     try {
-      const loggedUser = await login(email, password, rememberMe);
-      sessionStorage.removeItem('auth_return_url');
+      await login(email, password, rememberMe);
       success('Login realizado!', `Bem-vindo de volta 👋`);
-      if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
-        navigate('/admin', { replace: true });
-      } else if (userProfile && !userProfile.onboardingComplete) {
-        navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
-      } else {
-        navigate(targetUrl, { replace: true });
-      }
+      // A navegação ocorre via useEffect assim que user e userProfile estiverem sincronizados no estado
     } catch (err: unknown) {
       const e = err as { code?: string };
       if (e?.code === 'auth/user-not-found' || e?.code === 'auth/wrong-password' || e?.code === 'auth/invalid-credential') {
@@ -555,15 +549,8 @@ export const Login: React.FC = () => {
     try {
       const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
       if (loggedUser) {
-        sessionStorage.removeItem('auth_return_url');
         success('Login com Google!', `Bem-vindo, ${loggedUser.displayName?.split(' ')[0] || ''} 👋`);
-        if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
-          navigate('/admin', { replace: true });
-        } else if (userProfile && !userProfile.onboardingComplete) {
-          navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
-        } else {
-          navigate(targetUrl, { replace: true });
-        }
+        // A navegação ocorre via useEffect assim que user e userProfile estiverem sincronizados no estado
       }
     } catch (err: unknown) {
       const errInfo = getAuthErrorMessage(err);

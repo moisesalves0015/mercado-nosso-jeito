@@ -28,7 +28,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app, db, storage } from '../firebase';
-import { isStandalonePwa, sanitizeInternalRedirect } from '../utils/authRedirect';
+import { sanitizeInternalRedirect } from '../utils/authRedirect';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -93,7 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [redirectLoading, setRedirectLoading] = useState(false);
+  const [redirectLoading, setRedirectLoading] = useState(() =>
+    typeof window !== 'undefined' && sessionStorage.getItem('auth_redirect_in_progress') === '1'
+  );
   const [redirectError, setRedirectError] = useState<unknown | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
@@ -102,6 +104,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const redirectProcessedRef = useRef(false);
   const syncInFlightRef = useRef<Map<string, Promise<UserProfile>>>(new Map());
   const isGoogleAuthInFlightRef = useRef(false);
+
+  // Garantir persistência local no navegador/PWA na inicialização sem quebrar o gesto de clique do popup
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn('Failed to set default auth persistence:', err);
+    });
+  }, [auth]);
 
   const clearRedirectError = useCallback(() => {
     setRedirectError(null);
@@ -127,78 +136,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const inFlight = syncInFlightRef.current.get(firebaseUser.uid);
     if (inFlight) return inFlight;
 
-    const task = (async (): Promise<UserProfile> => {
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      const snap = await getDoc(userDocRef);
+    const referredBy = typeof window !== 'undefined' ? (localStorage.getItem('referred_by') || null) : null;
+    const fallbackProfile: UserProfile = {
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || 'Usuário',
+      email: firebaseUser.email || '',
+      telefone: '',
+      cpf: '',
+      foto: firebaseUser.photoURL || '',
+      role: 'client',
+      unlockedBadges: [],
+      referredBy,
+      firstOrderPlaced: false,
+      referralRewarded: false,
+      onboardingComplete: false,
+    };
 
-      if (snap.exists()) {
-        const data = snap.data();
+    const task = (async (): Promise<UserProfile> => {
+      try {
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        let snap;
         try {
-          const updates: Record<string, unknown> = {
-            lastLogin: serverTimestamp(),
-          };
-          if (!data.foto && firebaseUser.photoURL) {
-            updates.foto = firebaseUser.photoURL;
-          }
-          await updateDoc(userDocRef, updates);
-        } catch (e) {
-          console.warn('Failed to update lastLogin on existing profile:', e);
+          snap = await getDoc(userDocRef);
+        } catch {
+          // Em PWAs mobile, ao fechar a janela do Google e retomar o app em primeiro plano,
+          // a conexão de rede pode levar alguns milissegundos para reativar.
+          await new Promise((r) => setTimeout(r, 250));
+          snap = await getDoc(userDocRef);
         }
 
-        const profile: UserProfile = {
-          uid: firebaseUser.uid,
-          name: data.name || firebaseUser.displayName || 'Usuário',
-          email: data.email || firebaseUser.email || '',
-          telefone: data.telefone || '',
-          cpf: data.cpf || '',
-          foto: data.foto || firebaseUser.photoURL || '',
-          role: data.role || 'client',
-          unlockedBadges: data.unlockedBadges || [],
-          referredBy: data.referredBy || null,
-          firstOrderPlaced: !!data.firstOrderPlaced,
-          referralRewarded: !!data.referralRewarded,
-          createdAt: toDate(data.createdAt),
-          updatedAt: toDate(data.updatedAt),
-          lastLogin: new Date(),
-          onboardingComplete: !!data.onboardingComplete,
-        };
-        return profile;
-      } else {
-        // New user creation — unified schema preserving referral and onboarding state
-        const referredBy = localStorage.getItem('referred_by') || null;
-        const newProfile: UserProfile = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || 'Usuário',
-          email: firebaseUser.email || '',
-          telefone: '',
-          cpf: '',
-          foto: firebaseUser.photoURL || '',
-          role: 'client',
-          unlockedBadges: [],
-          referredBy: referredBy,
-          firstOrderPlaced: false,
-          referralRewarded: false,
-          onboardingComplete: false,
-        };
+        if (snap.exists()) {
+          const data = snap.data();
+          try {
+            const updates: Record<string, unknown> = {
+              lastLogin: serverTimestamp(),
+            };
+            if (!data.foto && firebaseUser.photoURL) {
+              updates.foto = firebaseUser.photoURL;
+            }
+            await updateDoc(userDocRef, updates);
+          } catch (e) {
+            console.warn('Failed to update lastLogin on existing profile:', e);
+          }
 
-        await setDoc(userDocRef, {
-          name: newProfile.name,
-          email: newProfile.email,
-          telefone: '',
-          cpf: '',
-          foto: newProfile.foto,
-          role: 'client',
-          unlockedBadges: [],
-          referredBy: newProfile.referredBy,
-          firstOrderPlaced: false,
-          referralRewarded: false,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-          onboardingComplete: false,
-        });
+          const profile: UserProfile = {
+            uid: firebaseUser.uid,
+            name: data.name || firebaseUser.displayName || 'Usuário',
+            email: data.email || firebaseUser.email || '',
+            telefone: data.telefone || '',
+            cpf: data.cpf || '',
+            foto: data.foto || firebaseUser.photoURL || '',
+            role: data.role || 'client',
+            unlockedBadges: data.unlockedBadges || [],
+            referredBy: data.referredBy || null,
+            firstOrderPlaced: !!data.firstOrderPlaced,
+            referralRewarded: !!data.referralRewarded,
+            createdAt: toDate(data.createdAt),
+            updatedAt: toDate(data.updatedAt),
+            lastLogin: new Date(),
+            onboardingComplete: !!data.onboardingComplete,
+          };
+          return profile;
+        } else {
+          // New user creation — unified schema preserving referral and onboarding state
+          try {
+            await setDoc(userDocRef, {
+              name: fallbackProfile.name,
+              email: fallbackProfile.email,
+              telefone: '',
+              cpf: '',
+              foto: fallbackProfile.foto,
+              role: 'client',
+              unlockedBadges: [],
+              referredBy: fallbackProfile.referredBy,
+              firstOrderPlaced: false,
+              referralRewarded: false,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+              onboardingComplete: false,
+            });
+          } catch (createErr) {
+            console.warn('Failed to create initial user document in Firestore:', createErr);
+          }
 
-        return newProfile;
+          return fallbackProfile;
+        }
+      } catch (err) {
+        console.warn('syncProfile fallback activated due to Firestore error:', err);
+        return fallbackProfile;
       }
     })();
 
@@ -225,11 +251,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         const result = await getRedirectResult(auth);
         if (result?.user && isMounted) {
-          const profile = await syncProfile(result.user);
           setUser(result.user);
-          setUserProfile(profile);
-          setIsAdmin(profile.role === 'admin');
-          setUserName(profile.name);
+          const profile = await syncProfile(result.user);
+          if (isMounted) {
+            setUserProfile(profile);
+            setIsAdmin(profile.role === 'admin');
+            setUserName(profile.name);
+          }
         }
       } catch (err: unknown) {
         console.error('getRedirectResult error:', err);
@@ -259,36 +287,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (firebaseUser) {
         setProfileLoading(true);
-        const profile = await syncProfile(firebaseUser);
-        const tokenResult = await firebaseUser.getIdTokenResult();
-        const isBanned = tokenResult.claims['banned'] === true || profile?.role === 'banned';
+        try {
+          const [profile, tokenResult] = await Promise.all([
+            syncProfile(firebaseUser),
+            firebaseUser.getIdTokenResult().catch(() => null),
+          ]);
+          const isBanned = tokenResult?.claims?.['banned'] === true || profile?.role === 'banned';
 
-        if (isBanned) {
-          await signOut(auth);
-          setUser(null);
-          setUserProfile(null);
-          setIsAdmin(false);
-          setUserName('');
+          if (isBanned) {
+            await signOut(auth);
+            setUser(null);
+            setUserProfile(null);
+            setIsAdmin(false);
+            setUserName('');
+            alert('Esta conta foi suspensa por um administrador.');
+            return;
+          }
+
+          const hasAdminClaim = tokenResult?.claims?.['admin'] === true;
+          if (profile) {
+            setUserProfile(profile);
+            setIsAdmin(hasAdminClaim || profile.role === 'admin');
+            setUserName(profile.name);
+          }
+        } catch (err) {
+          console.error('Error syncing auth state:', err);
+        } finally {
           setProfileLoading(false);
           setLoading(false);
-          alert('Esta conta foi suspensa por um administrador.');
-          return;
         }
-
-        const hasAdminClaim = tokenResult.claims['admin'] === true;
-        if (profile) {
-          setUserProfile(profile);
-          setIsAdmin(hasAdminClaim || profile.role === 'admin');
-          setUserName(profile.name);
-        }
-        setProfileLoading(false);
       } else {
         setUserProfile(null);
         setIsAdmin(false);
         setUserName('');
+        setProfileLoading(false);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -300,22 +334,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = credential.user;
+      const profile = await syncProfile(firebaseUser);
+      setUser(firebaseUser);
+      setUserProfile(profile);
+      setIsAdmin(profile.role === 'admin');
+      setUserName(profile.name);
 
-      try {
-        await updateDoc(doc(db, 'users', credential.user.uid), {
-          lastLogin: serverTimestamp(),
-        });
-      } catch {
-        // Non-critical
-      }
-
-      return credential.user;
+      return firebaseUser;
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Login With Google (PWA standalone redirect + browser popup) ──
+  // ── Login With Google (Popup primary for PWA & browser, Redirect fallback) ──
   const loginWithGoogle = async (options?: { returnUrl?: string; preferRedirect?: boolean }): Promise<FirebaseUser | null> => {
     if (isGoogleAuthInFlightRef.current) {
       console.warn('Google authentication already in progress. Ignoring duplicate request.');
@@ -329,25 +361,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     provider.setCustomParameters({ prompt: 'select_account' });
 
     const safeReturn = sanitizeInternalRedirect(options?.returnUrl, '/');
-    const inStandalone = isStandalonePwa();
-    const shouldRedirect = !!(options?.preferRedirect || inStandalone);
 
     try {
-      if (shouldRedirect) {
+      if (options?.preferRedirect) {
         sessionStorage.setItem('auth_return_url', safeReturn);
         sessionStorage.setItem('auth_redirect_in_progress', '1');
         await signInWithRedirect(auth, provider);
         return null;
       }
 
-      const credential = await signInWithPopup(auth, provider);
-      const firebaseUser = credential.user;
-      const profile = await syncProfile(firebaseUser);
-      setUser(firebaseUser);
-      setUserProfile(profile);
-      setIsAdmin(profile.role === 'admin');
-      setUserName(profile.name);
-      return firebaseUser;
+      try {
+        const credential = await signInWithPopup(auth, provider);
+        const firebaseUser = credential.user;
+        setUser(firebaseUser);
+        const profile = await syncProfile(firebaseUser);
+        setUserProfile(profile);
+        setIsAdmin(profile.role === 'admin');
+        setUserName(profile.name);
+        return firebaseUser;
+      } catch (popupErr: unknown) {
+        const code = (popupErr as { code?: string })?.code || '';
+        // Se o ambiente bloquear popups nativamente (ex: WebView restrito), faz fallback automático para redirect
+        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+          sessionStorage.setItem('auth_return_url', safeReturn);
+          sessionStorage.setItem('auth_redirect_in_progress', '1');
+          await signInWithRedirect(auth, provider);
+          return null;
+        }
+        throw popupErr;
+      }
     } finally {
       isGoogleAuthInFlightRef.current = false;
     }
@@ -367,7 +409,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Role is always 'client' on self-registration.
       // To assign admin, use the Firestore console or an admin SDK script.
       const referredBy = localStorage.getItem('referred_by') || null;
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
+      const newProfile: UserProfile = {
+        uid: firebaseUser.uid,
         name: data.name,
         email: data.email,
         telefone: data.telefone || '',
@@ -378,12 +421,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         referredBy: referredBy,
         firstOrderPlaced: false,
         referralRewarded: false,
+        onboardingComplete: false,
+      };
+
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        name: newProfile.name,
+        email: newProfile.email,
+        telefone: newProfile.telefone,
+        cpf: newProfile.cpf,
+        foto: '',
+        role: 'client',
+        unlockedBadges: [],
+        referredBy: newProfile.referredBy,
+        firstOrderPlaced: false,
+        referralRewarded: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         onboardingComplete: false,
       });
 
+      setUser(firebaseUser);
+      setUserProfile(newProfile);
+      setIsAdmin(false);
       setUserName(data.name);
       return firebaseUser;
     } finally {

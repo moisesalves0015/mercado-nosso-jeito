@@ -114,9 +114,8 @@ export const Register: React.FC = () => {
     setLoading(true);
     try {
       await register({ name: name.trim(), email: email.trim(), password, telefone, cpf });
-      sessionStorage.removeItem('auth_return_url');
       success('Conta criada!', `Bem-vindo ao Mercado Nosso Jeito, ${name.split(' ')[0]}! 🎉`);
-      navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
+      // A navegação ocorre via useEffect assim que user e userProfile estiverem sincronizados no estado
     } catch (err: unknown) {
       const e = err as { code?: string };
       if (e?.code === 'auth/email-already-in-use') {
@@ -140,15 +139,8 @@ export const Register: React.FC = () => {
     try {
       const loggedUser = await loginWithGoogle({ returnUrl: targetUrl });
       if (loggedUser) {
-        sessionStorage.removeItem('auth_return_url');
         success('Conta criada com Google!', `Bem-vindo, ${loggedUser.displayName?.split(' ')[0] || ''} 🎉`);
-        if (loggedUser.email?.toLowerCase().startsWith('admin@')) {
-          navigate('/admin', { replace: true });
-        } else if (userProfile && !userProfile.onboardingComplete) {
-          navigate(`/onboarding?returnUrl=${encodeURIComponent(targetUrl)}`, { replace: true });
-        } else {
-          navigate(targetUrl, { replace: true });
-        }
+        // A navegação ocorre via useEffect assim que user e userProfile estiverem sincronizados no estado
       }
     } catch (err: unknown) {
       const errInfo = getAuthErrorMessage(err);
