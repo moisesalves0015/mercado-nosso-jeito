@@ -26,6 +26,15 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Check no real .env files are tracked
+        run: |
+          TRACKED=$(git ls-files ".env*" | grep -vE '^\.env(\.production)?\.example$|^\.env\.test$' || true)
+          if [ -n "$TRACKED" ]; then
+            echo "Real .env file(s) tracked in git:"
+            echo "$TRACKED"
+            exit 1
+          fi
+
       - name: Clean install dependencies (Root)
         run: npm ci
 
@@ -34,6 +43,9 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run Frontend Unit Tests
+        run: node --import tsx --test tests/adminAnalytics.test.ts tests/homeProducts.test.ts tests/authRedirect.test.ts tests/adminRoutesAndRbac.test.ts
 
       - name: Build Frontend
         run: npm run build

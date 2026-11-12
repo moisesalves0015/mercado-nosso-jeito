@@ -402,6 +402,7 @@ export const Clube = () => {
 
   const updateFirebaseDoc = updateFirebaseDocNonFinancial;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEarnCoins = async (_amount: number, _desc: string) => {
     if (!user || !activeAdSessionId) return;
     try {

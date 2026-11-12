@@ -359,7 +359,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     if (!user) return;
-    void refreshData();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void refreshData();
+    });
 
     getDoc(doc(db, 'settings', 'store'))
       .then((snap) => {
@@ -376,6 +379,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       })
       .catch(() => {});
+
+    return () => {
+      active = false;
+    };
   }, [user, refreshData]);
 
   const handleConfirmPayment = useCallback(

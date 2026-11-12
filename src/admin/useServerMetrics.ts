@@ -63,7 +63,13 @@ export function useServerMetrics(filters: {
   }, [filters.startDate, filters.endDate, filters.condominio]);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   return { metrics: data, loading, error, reload: load };
