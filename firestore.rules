@@ -174,10 +174,27 @@ service cloud.firestore {
       }
     }
 
-    // ─── Campaign Configs ─────────────────────────────────────────────────────
+    // ─── Campaign Configs & Ad Rewards ────────────────────────────────────────
     match /campaign_configs/{configId} {
       allow read: if isAuthenticated() && !isBanned();
       allow write: if isAdmin();
+    }
+
+    match /ad_campaigns/{campaignId} {
+      allow read: if isAuthenticated() && !isBanned();
+      allow write: if isAdmin();
+    }
+
+    match /ad_watch_sessions/{sessionId} {
+      allow read, write: if false; // Cloud Functions (Admin SDK) only
+    }
+
+    match /ad_usage/{usageId} {
+      allow read, write: if false; // Cloud Functions (Admin SDK) only
+    }
+
+    match /ad_watch_rate/{uid} {
+      allow read, write: if false; // Cloud Functions (Admin SDK) only
     }
 
     // ─── Diamond Transactions (Ledger) ────────────────────────────────────────

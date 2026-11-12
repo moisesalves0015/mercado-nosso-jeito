@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { applyStaffRole, requireAnyPermission, requirePermission, resolveAccess } from './admin/rbac';
 import { permissionsAllow } from './admin/permissions';
 import { writeAuditSafe } from './admin/audit';
+import { createAdRewardHandlers } from './adReward';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -1849,42 +1850,11 @@ export const validateCoupon = functions.https.onCall(async (data, context) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// claimAdReward — Callable; Grants diamonds for watching an ad securely
+// startAdWatchSession & claimAdReward — Server-authoritative ad reward flow
 // ─────────────────────────────────────────────────────────────────────────────
-export const claimAdReward = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
-  }
-  
-  const req = data as { idempotencyKey?: unknown };
-  if (typeof req.idempotencyKey !== 'string' || !req.idempotencyKey.trim()) {
-    throw new functions.https.HttpsError('invalid-argument', 'idempotencyKey inválido.');
-  }
-
-  const uid = context.auth.uid;
-  const key = req.idempotencyKey.trim();
-  const idempotencyKey = `ad-reward:${uid}:${key}`;
-  const now = new Date();
-  
-  const result = await db.runTransaction(async (transaction) => {
-    return grantReward(transaction, {
-      uid,
-      type: 'MISSION_REWARD',
-      amount: 5,
-      sourceId: 'ad',
-      idempotencyKey,
-      metadata: { action: 'watched_ad' },
-      historyEntry: {
-        desc: 'Recompensa por vídeo',
-        date: `Hoje, ${formatTime(now)}`,
-        value: '+5',
-        isPlus: true,
-      },
-    });
-  });
-
-  return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
-});
+const adRewardHandlers = createAdRewardHandlers({ grantReward });
+export const startAdWatchSession = adRewardHandlers.startAdWatchSession;
+export const claimAdReward = adRewardHandlers.claimAdReward;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // redeemReward — Callable; Spends diamonds to get a reward/coupon

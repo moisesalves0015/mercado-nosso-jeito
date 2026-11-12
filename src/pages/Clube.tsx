@@ -121,6 +121,8 @@ export const Clube = () => {
   const [vipProgress, setVipProgress] = useState<number>(0);
   const [vipTier, setVipTier] = useState<string>('Bronze');
   const [activeAd, setActiveAd] = useState<SponsorAd | null>(null);
+  const [activeAdSessionId, setActiveAdSessionId] = useState<string | null>(null);
+  const [adClaimLoading, setAdClaimLoading] = useState<boolean>(false);
   const [adTimer, setAdTimer] = useState<number>(3);
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
   const [successModal, setSuccessModal] = useState<{
@@ -400,16 +402,15 @@ export const Clube = () => {
 
   const updateFirebaseDoc = updateFirebaseDocNonFinancial;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEarnCoins = async (_amount: number, _desc: string) => {
-    if (!user) return;
+    if (!user || !activeAdSessionId) return;
     try {
-      const functions = getFunctions();
-      const claimAdReward = httpsCallable(functions, 'claimAdReward');
-      const idempotencyKey = crypto.randomUUID();
-      
-      const res = await claimAdReward({ idempotencyKey }) as { data: { success: boolean, newBalance?: number } };
-      
+      const fn = getFunctions();
+      const claimAdRewardFn = httpsCallable<
+        { sessionId: string },
+        { success: boolean; newBalance?: number; grantedAmount?: number }
+      >(fn, 'claimAdReward');
+      const res = await claimAdRewardFn({ sessionId: activeAdSessionId });
       if (res.data.success && res.data.newBalance !== undefined) {
         setPopBadge(true);
         setTimeout(() => setPopBadge(false), 2400);
@@ -445,10 +446,36 @@ export const Clube = () => {
     }
   };
 
-  const handleAdClick = (ad: SponsorAd) => {
-    setActiveAd(ad);
-    setAdTimer(ad.duration);
-    setIsAdPlaying(true);
+  const handleAdClick = async (ad: SponsorAd) => {
+    if (!user) {
+      alert('Faça login para assistir e ganhar recompensas.');
+      return;
+    }
+    if (ad.type === 'shipping') {
+      setActiveAdSessionId(null);
+      setActiveAd(ad);
+      setAdTimer(ad.duration);
+      setIsAdPlaying(true);
+      return;
+    }
+    try {
+      const fn = getFunctions();
+      const startSession = httpsCallable<
+        { campaignId: string },
+        { sessionId: string; minWatchSeconds: number; rewardDiamonds: number }
+      >(fn, 'startAdWatchSession');
+      const res = await startSession({ campaignId: String(ad.id) });
+      setActiveAdSessionId(res.data.sessionId);
+      setActiveAd({
+        ...ad,
+        duration: res.data.minWatchSeconds,
+        rewardVal: res.data.rewardDiamonds,
+      });
+      setAdTimer(res.data.minWatchSeconds);
+      setIsAdPlaying(true);
+    } catch (e: unknown) {
+      alert((e as Error)?.message || 'Campanha indisponível ou limite atingido no momento.');
+    }
   };
 
   const handleCopyReferralLink = () => {
@@ -976,35 +1003,64 @@ export const Clube = () => {
                 {/* Circular Story Countdown Timer (Turns into Close X Button when completed) */}
                 <div 
                   className={`clube-ad-theater-timer-circle ${adTimer === 0 ? 'ad-completed-closeable' : ''}`}
-                  onClick={() => {
-                    if (adTimer === 0) {
-                      // Finalize active ad playback
-                      setIsAdPlaying(false);
-                      
-                      // Trigger success modal setup
+                  onClick={async () => {
+                    if (adTimer === 0 && !adClaimLoading) {
                       if (activeAd.type === 'shipping') {
+                        setIsAdPlaying(false);
                         setSuccessModal({
                           title: 'Frete Grátis Ativado!',
                           desc: 'Seu cupom de frete grátis exclusivo da marca Do Bem já está disponível na carteira!',
                           coupon: 'DOBEMFRETE'
                         });
-                      } else {
+                        updateFirebaseDoc({
+                          completedAds: arrayUnion(activeAd.id)
+                        }).catch(e => console.error("Error saving completed ad:", e));
+                        setCompletedAds(prev => [...prev, activeAd.id]);
+                        setActiveAd(null);
+                        return;
+                      }
+
+                      if (!activeAdSessionId) {
+                        alert('Sessão de anúncio inválida. Reabra o anúncio para tentar novamente.');
+                        setIsAdPlaying(false);
+                        setActiveAd(null);
+                        return;
+                      }
+
+                      setAdClaimLoading(true);
+                      try {
+                        const fn = getFunctions();
+                        const claimAdRewardFn = httpsCallable<
+                          { sessionId: string },
+                          { success: boolean; newBalance: number; grantedAmount: number; alreadyProcessed?: boolean }
+                        >(fn, 'claimAdReward');
+                        const res = await claimAdRewardFn({ sessionId: activeAdSessionId });
+                        const credited = res.data.grantedAmount;
+                        setCoins(res.data.newBalance);
+                        setPopBadge(true);
+                        setTimeout(() => setPopBadge(false), 2400);
+                        setIsAdPlaying(false);
                         setSuccessModal({
-                          title: `+${activeAd.rewardVal} Diamantes Ganhos!`,
-                          desc: `Obrigado por assistir ao conteúdo patrocinado de ${activeAd.brand}. Seus diamantes foram adicionados.`,
+                          title: `+${credited} Diamantes Ganhos!`,
+                          desc: `Obrigado por assistir ao conteúdo patrocinado de ${activeAd.brand}. O servidor confirmou +${credited} diamantes.`,
                           coupon: 'CREDITADO',
-                          amountGained: activeAd.rewardVal,
+                          amountGained: credited,
                           description: `Anúncio Assistido (${activeAd.brand})`
                         });
+                        updateFirebaseDoc({
+                          completedAds: arrayUnion(activeAd.id)
+                        }).catch(e => console.error("Error saving completed ad:", e));
+                        setCompletedAds(prev => [...prev, activeAd.id]);
+                        setActiveAd(null);
+                        setActiveAdSessionId(null);
+                      } catch (err: unknown) {
+                        alert((err as Error)?.message || 'Não foi possível creditar a recompensa deste anúncio.');
+                        setIsAdPlaying(false);
+                        setActiveAd(null);
+                        setActiveAdSessionId(null);
+                      } finally {
+                        setAdClaimLoading(false);
                       }
-                      
-                      // Mark ad completed in Firestore and state
-                      updateFirebaseDoc({
-                        completedAds: arrayUnion(activeAd.id)
-                      }).catch(e => console.error("Error saving completed ad:", e));
-                      
-                      setCompletedAds(prev => [...prev, activeAd.id]);
-                      setActiveAd(null);
                     }
                   }}
                   style={adTimer === 0 ? { cursor: 'pointer' } : undefined}
