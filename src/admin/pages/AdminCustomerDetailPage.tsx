@@ -126,7 +126,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
         action={
           <Link
             to="/admin/customers"
-            className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+            className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] text-emerald-950 font-bold text-xs"
           >
             Voltar para Clientes
           </Link>
@@ -138,7 +138,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
   const isBanned = client.role === 'banned';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title={client.name || 'Morador'}
         subtitle={`UID: ${client.id} • Cadastrado em ${formatDateTime(client.createdAt)}`}
@@ -149,7 +149,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to={`/admin/support?uid=${encodeURIComponent(client.id)}`}
-              className="px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 font-bold text-xs inline-flex items-center gap-1.5"
+              className="px-3 py-2 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/30 font-semibold text-xs inline-flex items-center gap-1.5"
             >
               <Headphones size={14} />
               Novo Chamado p/ Morador
@@ -158,7 +158,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDiamondOpen(true)}
-                className="px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-bold text-xs inline-flex items-center gap-1.5"
+                className="px-3 py-2 rounded-lg bg-[var(--adm-gold-soft)] hover:bg-amber-500/20 text-[var(--adm-gold)] border border-[var(--adm-gold-border)] font-semibold text-xs inline-flex items-center gap-1.5"
               >
                 <Gem size={14} />
                 Ajustar Diamantes
@@ -168,7 +168,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setBanOpen(true)}
-                className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-bold text-xs inline-flex items-center gap-1.5"
+                className="px-3 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 font-semibold text-xs inline-flex items-center gap-1.5"
               >
                 <Ban size={14} />
                 Suspender Conta
@@ -178,28 +178,30 @@ export const AdminCustomerDetailPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column: Profile, Addresses & Clube VIP */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Profile Card */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <User size={16} className="text-amber-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+            <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <User size={16} className="text-[var(--adm-gold)]" />
               Dados Cadastrais (Minimização LGPD)
             </h2>
-            <div className="text-xs space-y-2 text-slate-300">
+            <div className="text-xs space-y-2 text-[var(--adm-text-muted)]">
               <div>
-                <span className="text-slate-400 block text-[11px]">E-mail</span>
-                <span className="font-bold text-white">{client.email || '—'}</span>
+                <span className="text-[var(--adm-text-dim)] block text-[11px]">E-mail</span>
+                <span className="font-semibold text-[var(--adm-text)]">{client.email || '—'}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[11px]">Telefone / WhatsApp</span>
-                <span className="font-bold text-white">{client.telefone || 'Não informado'}</span>
+                <span className="text-[var(--adm-text-dim)] block text-[11px]">Telefone / WhatsApp</span>
+                <span className="font-semibold text-[var(--adm-text)] tabular-nums">
+                  {client.telefone || 'Não informado'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">CPF</span>
-                  <span className="font-mono font-bold text-white">
+                  <span className="text-[var(--adm-text-dim)] block text-[11px]">CPF</span>
+                  <span className="font-mono font-semibold text-[var(--adm-text)] tabular-nums">
                     {maskCpf(client.cpf, revealCpf)}
                   </span>
                 </div>
@@ -207,7 +209,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRevealCpf((r) => !r)}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs inline-flex items-center gap-1"
+                    className="p-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text-muted)] text-xs inline-flex items-center gap-1"
                   >
                     {revealCpf ? <EyeOff size={13} /> : <Eye size={13} />}
                     {revealCpf ? 'Ocultar' : 'Revelar'}
@@ -215,49 +217,51 @@ export const AdminCustomerDetailPage: React.FC = () => {
                 )}
               </div>
               <div>
-                <span className="text-slate-400 block text-[11px]">Último Login</span>
-                <span>{formatDateTime(client.lastLogin)}</span>
+                <span className="text-[var(--adm-text-dim)] block text-[11px]">Último Login</span>
+                <span className="tabular-nums">{formatDateTime(client.lastLogin)}</span>
               </div>
             </div>
           </div>
 
           {/* Clube VIP Balance */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-                <Gem size={16} className="text-indigo-400" />
+              <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <Gem size={16} className="text-[var(--adm-gold)]" />
                 Clube VIP & Fidelidade
               </h2>
-              <span className="text-lg font-black text-indigo-400">
+              <span className="text-lg font-extrabold text-[var(--adm-gold)] tabular-nums">
                 {clube?.diamonds ?? client.diamonds ?? 0} 💎
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-center bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+            <div className="grid grid-cols-2 gap-2 text-center bg-[var(--adm-bg-subtle)] p-3 rounded-lg border border-[var(--adm-border)]">
               <div>
-                <div className="text-[10px] uppercase text-slate-400 font-bold">Total Gasto</div>
-                <div className="text-sm font-extrabold text-emerald-400">
+                <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Total Gasto</div>
+                <div className="text-sm font-bold text-emerald-300 tabular-nums">
                   {formatCurrency(totalSpent)}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase text-slate-400 font-bold">Pedidos</div>
-                <div className="text-sm font-extrabold text-white">{customerOrders.length}</div>
+                <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Pedidos</div>
+                <div className="text-sm font-bold text-[var(--adm-text)] tabular-nums">
+                  {customerOrders.length}
+                </div>
               </div>
             </div>
             {clube?.history && clube.history.length > 0 && (
               <div className="space-y-1.5 pt-2">
-                <div className="text-[11px] font-bold uppercase text-slate-400">
+                <div className="text-[11px] font-bold uppercase text-[var(--adm-text-dim)]">
                   Últimas Movimentações de Diamantes
                 </div>
                 {clube.history.slice(0, 4).map((h, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between text-xs bg-slate-950/50 px-2.5 py-1.5 rounded-lg border border-slate-800/70"
+                    className="flex items-center justify-between text-xs bg-[var(--adm-bg-subtle)] px-2.5 py-1.5 rounded-lg border border-[var(--adm-border)]"
                   >
-                    <span className="text-slate-300 truncate">{h.desc}</span>
+                    <span className="text-[var(--adm-text-muted)] truncate">{h.desc}</span>
                     <span
-                      className={`font-bold shrink-0 ${
-                        h.isPlus ? 'text-emerald-400' : 'text-rose-400'
+                      className={`font-bold shrink-0 tabular-nums ${
+                        h.isPlus ? 'text-emerald-300' : 'text-rose-300'
                       }`}
                     >
                       {h.value}
@@ -269,31 +273,31 @@ export const AdminCustomerDetailPage: React.FC = () => {
           </div>
 
           {/* Saved Addresses */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <MapPin size={16} className="text-emerald-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+            <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <MapPin size={16} className="text-emerald-300" />
               Endereços Cadastrados ({addresses.length})
             </h2>
             {addresses.length === 0 ? (
-              <p className="text-xs text-slate-400">Nenhum endereço salvo pelo morador.</p>
+              <p className="text-xs text-[var(--adm-text-muted)]">Nenhum endereço salvo pelo morador.</p>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {addresses.map((addr) => (
                   <div
                     key={addr.id}
-                    className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-0.5"
+                    className="p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] text-xs space-y-0.5"
                   >
-                    <div className="font-bold text-amber-300">
+                    <div className="font-bold text-[var(--adm-gold)]">
                       {addr.condominio || addr.label || 'Endereço'}
                     </div>
                     {(addr.bloco || addr.apartamento) && (
-                      <div className="text-white font-semibold">
+                      <div className="text-[var(--adm-text)] font-semibold">
                         {addr.bloco ? `Bloco ${addr.bloco} ` : ''}
                         {addr.apartamento ? `• Apto ${addr.apartamento}` : ''}
                       </div>
                     )}
                     {addr.street && (
-                      <div className="text-slate-300">
+                      <div className="text-[var(--adm-text-muted)]">
                         {addr.street}, {addr.number}
                       </div>
                     )}
@@ -305,19 +309,19 @@ export const AdminCustomerDetailPage: React.FC = () => {
         </div>
 
         {/* Right 2 Columns: Orders History & Support Tickets */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Customer Orders */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
-            <h2 className="text-base font-extrabold text-white mb-4 flex items-center gap-2">
-              <ShoppingBag size={17} className="text-amber-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+            <h2 className="text-base font-bold text-[var(--adm-text)] mb-4 flex items-center gap-2">
+              <ShoppingBag size={17} className="text-[var(--adm-gold)]" />
               Histórico de Pedidos ({customerOrders.length})
             </h2>
             {customerOrders.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center bg-slate-950/50 rounded-xl border border-slate-800">
+              <p className="text-xs text-[var(--adm-text-muted)] py-6 text-center bg-[var(--adm-bg-subtle)] rounded-lg border border-[var(--adm-border)]">
                 Este morador ainda não realizou pedidos.
               </p>
             ) : (
-              <div className="divide-y divide-slate-800/80">
+              <div className="divide-y divide-[var(--adm-border)]">
                 {customerOrders.map((o) => (
                   <div
                     key={o.id}
@@ -327,24 +331,24 @@ export const AdminCustomerDetailPage: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           to={`/admin/orders/${o.id}`}
-                          className="font-mono font-extrabold text-amber-400 hover:underline text-xs"
+                          className="font-mono font-bold text-[var(--adm-gold)] hover:underline text-xs tabular-nums"
                         >
                           #{(o.orderNumber || o.id).slice(0, 8).toUpperCase()}
                         </Link>
                         <OrderStatusBadge status={o.status} />
                         <PaymentStatusBadge status={o.paymentStatus} />
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1">
+                      <div className="text-[11px] text-[var(--adm-text-dim)] mt-1 tabular-nums">
                         {formatDateTime(o.createdAt)} • {o.items?.length || 0} itens
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-emerald-400">
+                      <span className="text-sm font-bold text-emerald-300 tabular-nums">
                         {formatCurrency(o.total)}
                       </span>
                       <Link
                         to={`/admin/orders/${o.id}`}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700"
+                        className="px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-semibold text-[var(--adm-text)] border border-[var(--adm-border)]"
                       >
                         Abrir
                       </Link>
@@ -356,25 +360,25 @@ export const AdminCustomerDetailPage: React.FC = () => {
           </div>
 
           {/* Customer Support Tickets */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Headphones size={17} className="text-sky-400" />
+              <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <Headphones size={17} className="text-sky-300" />
                 Chamados de Suporte ({customerTickets.length})
               </h2>
               <Link
                 to={`/admin/support?uid=${encodeURIComponent(client.id)}`}
-                className="text-xs font-bold text-sky-400 hover:underline"
+                className="text-xs font-semibold text-sky-300 hover:underline"
               >
                 + Registrar Atendimento
               </Link>
             </div>
             {customerTickets.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center bg-slate-950/50 rounded-xl border border-slate-800">
+              <p className="text-xs text-[var(--adm-text-muted)] py-6 text-center bg-[var(--adm-bg-subtle)] rounded-lg border border-[var(--adm-border)]">
                 Nenhum chamado de suporte registrado para este morador.
               </p>
             ) : (
-              <div className="divide-y divide-slate-800/80">
+              <div className="divide-y divide-[var(--adm-border)]">
                 {customerTickets.map((t) => (
                   <div
                     key={t.id}
@@ -384,21 +388,21 @@ export const AdminCustomerDetailPage: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           to={`/admin/support/${t.id}`}
-                          className="font-mono font-bold text-sky-400 hover:underline text-xs"
+                          className="font-mono font-bold text-sky-300 hover:underline text-xs tabular-nums"
                         >
                           {t.ticketNumber || `#${t.id.slice(0, 8)}`}
                         </Link>
-                        <span className="text-xs font-bold text-white">{t.subject}</span>
+                        <span className="text-xs font-semibold text-[var(--adm-text)]">{t.subject}</span>
                         <TicketStatusBadge status={t.status} />
                         <PriorityBadge priority={t.priority} />
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1">
+                      <div className="text-[11px] text-[var(--adm-text-dim)] mt-1 tabular-nums">
                         {formatDateTime(t.createdAt)} • Categoria: {t.category}
                       </div>
                     </div>
                     <Link
                       to={`/admin/support/${t.id}`}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700 self-start sm:self-center"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-semibold text-[var(--adm-text)] border border-[var(--adm-border)] self-start sm:self-center"
                     >
                       Ver Chamado
                     </Link>
@@ -413,28 +417,28 @@ export const AdminCustomerDetailPage: React.FC = () => {
       {/* Diamond Modal */}
       {diamondOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[var(--adm-text)]">
               Ajustar Diamantes — {client.name}
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Quantidade (+ crédito / - débito)
                 </label>
                 <input
                   type="number"
                   value={diamondAmount}
                   onChange={(e) => setDiamondAmount(Number(e.target.value))}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white"
+                  className="adm-input w-full px-3 py-2 text-sm tabular-nums"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Justificativa Auditada *
                 </label>
                 <textarea
@@ -442,7 +446,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
                   value={diamondReason}
                   onChange={(e) => setDiamondReason(e.target.value)}
                   placeholder="Informe o motivo do ajuste..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white"
+                  className="adm-input w-full px-3 py-2 text-xs"
                 />
               </div>
             </div>
@@ -450,7 +454,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDiamondOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-xs font-semibold text-[var(--adm-text-muted)]"
               >
                 Cancelar
               </button>
@@ -465,7 +469,7 @@ export const AdminCustomerDetailPage: React.FC = () => {
                   );
                   if (ok) setDiamondOpen(false);
                 }}
-                className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 text-xs font-bold"
               >
                 Aplicar Ajuste
               </button>

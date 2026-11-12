@@ -13,7 +13,7 @@ export const AdminNotFoundPage: React.FC = () => {
       action={
         <Link
           to="/admin/dashboard"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs"
         >
           <ArrowLeft size={14} />
           Voltar para Visão Geral

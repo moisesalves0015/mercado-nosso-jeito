@@ -72,7 +72,7 @@ export const AdminSupportDetailPage: React.FC = () => {
         action={
           <Link
             to="/admin/support"
-            className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+            className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
           >
             Voltar para Fila de Suporte
           </Link>
@@ -122,7 +122,7 @@ export const AdminSupportDetailPage: React.FC = () => {
                 type="button"
                 onClick={handleClaimTicket}
                 disabled={actionLoading === `ticket-${ticket.id}`}
-                className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 text-xs font-bold inline-flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
               >
                 <UserCheck size={14} />
                 Assumir Atendimento
@@ -132,49 +132,51 @@ export const AdminSupportDetailPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Columns: Initial Description + Timeline + Reply Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Original Request */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-2">
-            <div className="text-xs font-extrabold uppercase tracking-wider text-amber-400">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--adm-gold)]">
               Relato Inicial do Chamado
             </div>
-            <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-[var(--adm-text)] whitespace-pre-wrap leading-relaxed">
               {ticket.description}
             </p>
           </div>
 
           {/* Timeline */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4">
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <Clock size={17} className="text-sky-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <Clock size={17} className="text-sky-300" />
               Histórico de Interações & Notas ({ticket.timeline?.length || 0})
             </h2>
 
             {!ticket.timeline || ticket.timeline.length === 0 ? (
-              <p className="text-xs text-slate-400">Nenhuma interação registrada ainda.</p>
+              <p className="text-xs text-[var(--adm-text-muted)]">
+                Nenhuma interação registrada ainda.
+              </p>
             ) : (
               <div className="space-y-3">
                 {ticket.timeline.map((ev, i) => (
                   <div
                     key={i}
-                    className={`p-3.5 rounded-xl border text-xs ${
+                    className={`p-3.5 rounded-lg border text-xs ${
                       ev.internal
                         ? 'bg-amber-950/25 border-amber-500/30 text-amber-100'
-                        : 'bg-slate-950/70 border-slate-800 text-slate-200'
+                        : 'bg-[var(--adm-bg-subtle)] border-[var(--adm-border)] text-[var(--adm-text)]'
                     }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2 font-bold">
                         <span>{ev.actorRole === 'client' ? 'Morador' : `Equipe (${ev.actorRole || 'Staff'})`}</span>
                         {ev.internal && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] uppercase">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-200 text-[10px] uppercase">
                             <Lock size={10} /> Nota Interna
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
                         {formatDateTime(ev.createdAtMillis)}
                       </span>
                     </div>
@@ -189,22 +191,22 @@ export const AdminSupportDetailPage: React.FC = () => {
           {canEdit && (
             <form
               onSubmit={handleSubmitUpdate}
-              className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4"
+              className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4"
             >
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <MessageSquare size={17} className="text-emerald-400" />
+              <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <MessageSquare size={17} className="text-emerald-300" />
                 Registrar Tratativa / Atualizar Status
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Novo Status
                   </label>
                   <select
                     value={nextStatus}
                     onChange={(e) => setNextStatus(e.target.value as SupportTicket['status'])}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                    className="adm-input w-full px-3 py-2 font-semibold"
                   >
                     <option value="open">Aberto</option>
                     <option value="in_progress">Em Atendimento</option>
@@ -215,13 +217,13 @@ export const AdminSupportDetailPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Prioridade
                   </label>
                   <select
                     value={nextPriority}
                     onChange={(e) => setNextPriority(e.target.value as SupportTicket['priority'])}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                    className="adm-input w-full px-3 py-2 font-semibold"
                   >
                     <option value="low">Baixa</option>
                     <option value="medium">Média</option>
@@ -232,7 +234,7 @@ export const AdminSupportDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Mensagem ou Anotação da Equipe
                 </label>
                 <textarea
@@ -240,22 +242,22 @@ export const AdminSupportDetailPage: React.FC = () => {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Descreva a solução adotada, orientação ao morador ou nota operacional..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400"
+                  className="adm-input w-full px-3.5 py-2.5 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <label className="inline-flex items-center gap-2 text-xs text-[var(--adm-text-muted)] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={internal}
                     onChange={(e) => setInternal(e.target.checked)}
-                    className="rounded border-slate-700 bg-slate-950 text-amber-500"
+                    className="rounded accent-emerald-500"
                   />
                   <span>Marcar como nota interna (visível apenas para a equipe)</span>
                 </label>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {ticket.status !== 'resolved' && (
                     <button
                       type="button"
@@ -268,7 +270,7 @@ export const AdminSupportDetailPage: React.FC = () => {
                           internal,
                         })
                       }
-                      className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold inline-flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-xs font-semibold inline-flex items-center gap-1.5"
                     >
                       <CheckCircle2 size={14} />
                       Marcar Resolvido
@@ -278,7 +280,7 @@ export const AdminSupportDetailPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={actionLoading === `ticket-${ticket.id}`}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold inline-flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 text-xs font-bold inline-flex items-center gap-1.5"
                   >
                     <Send size={14} />
                     Salvar Atualização
@@ -290,20 +292,22 @@ export const AdminSupportDetailPage: React.FC = () => {
         </div>
 
         {/* Right Column: Context Cards */}
-        <div className="space-y-6">
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <User size={16} className="text-indigo-400" />
+        <div className="space-y-5">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+            <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <User size={16} className="text-emerald-300" />
               Morador Vinculado
             </h2>
             <div className="text-xs space-y-1">
               <div className="font-bold text-white text-sm">{ticket.customerName}</div>
-              {ticket.customerEmail && <div className="text-slate-400">{ticket.customerEmail}</div>}
-              <div className="text-[11px] text-slate-400 font-mono">UID: {ticket.uid}</div>
+              {ticket.customerEmail && (
+                <div className="text-[var(--adm-text-muted)]">{ticket.customerEmail}</div>
+              )}
+              <div className="text-[11px] text-[var(--adm-text-dim)] font-mono">UID: {ticket.uid}</div>
               <div className="pt-2">
                 <Link
                   to={`/admin/customers/${ticket.uid}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 font-bold text-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--adm-brand-soft)] hover:bg-emerald-500/20 text-emerald-200 border border-[var(--adm-brand-border)] font-semibold text-xs"
                 >
                   Abrir Ficha 360° do Morador
                 </Link>
@@ -312,16 +316,18 @@ export const AdminSupportDetailPage: React.FC = () => {
           </div>
 
           {ticket.orderId && (
-            <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
-              <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-                <ShoppingBag size={16} className="text-amber-400" />
+            <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+              <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <ShoppingBag size={16} className="text-[var(--adm-gold)]" />
                 Pedido Relacionado
               </h2>
               <div className="text-xs space-y-2">
-                <div className="font-mono font-bold text-amber-400">#{ticket.orderId}</div>
+                <div className="font-mono font-bold text-[var(--adm-gold)] tabular-nums">
+                  #{ticket.orderId}
+                </div>
                 <Link
                   to={`/admin/orders/${ticket.orderId}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold text-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--adm-gold-soft)] hover:bg-amber-500/20 text-[var(--adm-gold)] border border-[var(--adm-gold-border)] font-semibold text-xs"
                 >
                   Inspecionar Pedido
                 </Link>
@@ -329,13 +335,15 @@ export const AdminSupportDetailPage: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-2 text-xs">
-            <div className="font-bold text-white">Responsável pelo Chamado</div>
-            <div className="text-slate-300">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-2 text-xs">
+            <div className="font-bold text-[var(--adm-text)]">Responsável pelo Chamado</div>
+            <div className="text-[var(--adm-text-muted)]">
               {ticket.assignedName ? (
                 <span>Atribuído a: {ticket.assignedName}</span>
               ) : (
-                <span className="text-slate-400">Ainda não atribuído a um operador específico</span>
+                <span className="text-[var(--adm-text-dim)]">
+                  Ainda não atribuído a um operador específico
+                </span>
               )}
             </div>
           </div>

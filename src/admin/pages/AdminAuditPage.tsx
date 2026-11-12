@@ -90,7 +90,7 @@ export const AdminAuditPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Trilha de Auditoria Imutável"
         subtitle="Registro de todas as operações críticas, atribuições de papéis, ajustes de estoque e tentativas de acesso negadas."
@@ -99,7 +99,7 @@ export const AdminAuditPage: React.FC = () => {
           <button
             type="button"
             onClick={() => loadAudit(null)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Atualizar Trilha
@@ -108,14 +108,14 @@ export const AdminAuditPage: React.FC = () => {
       />
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 shadow-lg text-xs">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
         <div>
-          <label className="block font-bold uppercase text-slate-400 mb-1">Módulo</label>
+          <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">Módulo</label>
           <select
             value={moduleFilter}
             onChange={(e) => updateParam('module', e.target.value)}
             aria-label="Filtrar auditoria por módulo"
-            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-white font-bold"
+            className="adm-input w-full px-3 py-2 font-semibold"
           >
             <option value="">Todos os Módulos</option>
             {MODULES.map((m) => (
@@ -127,12 +127,12 @@ export const AdminAuditPage: React.FC = () => {
         </div>
 
         <div>
-          <label className="block font-bold uppercase text-slate-400 mb-1">Resultado</label>
+          <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">Resultado</label>
           <select
             value={resultFilter}
             onChange={(e) => updateParam('result', e.target.value)}
             aria-label="Filtrar auditoria por resultado"
-            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-white font-bold"
+            className="adm-input w-full px-3 py-2 font-semibold"
           >
             <option value="">Todos os Resultados</option>
             <option value="success">Sucesso (Autorizado)</option>
@@ -142,7 +142,7 @@ export const AdminAuditPage: React.FC = () => {
         </div>
 
         <div>
-          <label className="block font-bold uppercase text-slate-400 mb-1">
+          <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
             ID da Entidade / Alvo
           </label>
           <input
@@ -150,7 +150,7 @@ export const AdminAuditPage: React.FC = () => {
             value={entityIdFilter}
             onChange={(e) => updateParam('entityId', e.target.value)}
             placeholder="UID, ID de pedido ou produto..."
-            className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-white placeholder-slate-400"
+            className="adm-input w-full px-3 py-2 placeholder-[var(--adm-text-dim)]"
           />
         </div>
       </div>
@@ -171,47 +171,47 @@ export const AdminAuditPage: React.FC = () => {
             return (
               <div
                 key={entry.id}
-                className={`bg-slate-900/90 border rounded-2xl p-4 transition-all shadow-md ${
-                  isDenied ? 'border-rose-500/40' : 'border-slate-800/90'
+                className={`bg-[var(--adm-surface)] border rounded-[10px] p-4 transition-colors ${
+                  isDenied ? 'border-rose-500/40' : 'border-[var(--adm-border)]'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
                           isDenied
-                            ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                            : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
+                            : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
                         }`}
                       >
                         {isDenied ? <ShieldAlert size={11} /> : <CheckCircle2 size={11} />}
                         {isDenied ? 'NEGADO' : 'SUCESSO'}
                       </span>
-                      <span className="font-mono text-xs font-extrabold text-amber-400">
+                      <span className="font-mono text-xs font-bold text-[var(--adm-gold)]">
                         {entry.action}
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">
+                      <span className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--adm-surface-elevated)] border border-[var(--adm-border)] text-[var(--adm-text-muted)] font-semibold">
                         {entry.module}
                       </span>
                       <RoleBadge roleId={entry.actorRole} />
                     </div>
 
-                    <div className="text-xs text-slate-300 flex flex-wrap items-center gap-2">
+                    <div className="text-xs text-[var(--adm-text-muted)] flex flex-wrap items-center gap-2">
                       <span>
-                        Ator: <strong className="font-mono text-white">{entry.actorUid}</strong>
+                        Ator: <strong className="font-mono text-[var(--adm-text)]">{entry.actorUid}</strong>
                       </span>
                       <span>
                         • Alvo ({entry.entityType}):{' '}
-                        <strong className="font-mono text-white">{entry.entityId}</strong>
+                        <strong className="font-mono text-[var(--adm-text)]">{entry.entityId}</strong>
                       </span>
-                      <span className="text-slate-400">
+                      <span className="text-[var(--adm-text-dim)] tabular-nums">
                         • {formatDateTime(entry.createdAtMillis)}
                       </span>
                     </div>
 
                     {entry.reason && (
-                      <div className="text-xs text-slate-300 italic mt-1">
+                      <div className="text-xs text-[var(--adm-text-muted)] italic mt-1">
                         Justificativa: "{entry.reason}"
                       </div>
                     )}
@@ -221,7 +221,7 @@ export const AdminAuditPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 inline-flex items-center gap-1 self-start sm:self-center shrink-0"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-xs font-semibold text-[var(--adm-text)] inline-flex items-center gap-1 self-start sm:self-center shrink-0"
                     >
                       <span>Inspecionar Diff</span>
                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
@@ -230,17 +230,17 @@ export const AdminAuditPage: React.FC = () => {
                 </div>
 
                 {isExpanded && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-800 text-xs font-mono">
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 overflow-x-auto">
-                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-[var(--adm-border)] text-xs font-mono">
+                    <div className="p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] overflow-x-auto">
+                      <div className="text-[10px] font-bold uppercase text-[var(--adm-text-dim)] mb-1">
                         Estado Anterior (Before)
                       </div>
-                      <pre className="text-[11px] text-slate-300">
+                      <pre className="text-[11px] text-[var(--adm-text-muted)]">
                         {JSON.stringify(entry.before ?? null, null, 2)}
                       </pre>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 overflow-x-auto">
-                      <div className="text-[10px] font-bold uppercase text-emerald-400 mb-1">
+                    <div className="p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] overflow-x-auto">
+                      <div className="text-[10px] font-bold uppercase text-emerald-300 mb-1">
                         Estado Posterior (After)
                       </div>
                       <pre className="text-[11px] text-emerald-200">
@@ -259,7 +259,7 @@ export const AdminAuditPage: React.FC = () => {
                 type="button"
                 disabled={loading}
                 onClick={() => loadAudit(nextCursor)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-extrabold text-white border border-slate-700"
+                className="px-5 py-2.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-bold text-[var(--adm-text)] border border-[var(--adm-border)]"
               >
                 {loading ? 'Carregando...' : 'Carregar Mais Eventos'}
               </button>

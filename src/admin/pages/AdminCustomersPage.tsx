@@ -90,7 +90,7 @@ export const AdminCustomersPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Clientes & CRM 360°"
         subtitle="Base de moradores do condomínio, histórico de compras, saldo do Clube VIP e atendimento integrado."
@@ -98,11 +98,11 @@ export const AdminCustomersPage: React.FC = () => {
       />
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-3 shadow-lg">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3">
         <div className="relative">
           <Search
             size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-text-dim)] pointer-events-none"
           />
           <input
             type="search"
@@ -110,11 +110,11 @@ export const AdminCustomersPage: React.FC = () => {
             onChange={(e) => updateParam('q', e.target.value)}
             placeholder="Buscar morador por nome, e-mail, telefone ou UID..."
             aria-label="Buscar morador"
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-white placeholder-slate-400"
+            className="adm-input w-full pl-9 pr-4 py-2 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {[
             { id: 'all', label: 'Todos os Moradores' },
             { id: 'vip', label: 'Recorrentes / VIP' },
@@ -125,10 +125,10 @@ export const AdminCustomersPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => updateParam('segment', tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 segment === tab.id
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-950/80 text-slate-300 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
               }`}
             >
               {tab.label}
@@ -156,29 +156,31 @@ export const AdminCustomersPage: React.FC = () => {
             return (
               <div
                 key={client.id}
-                className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-lg transition-all"
+                className="bg-[var(--adm-surface)] border border-[var(--adm-border)] hover:border-[var(--adm-border-strong)] rounded-[10px] p-4 sm:p-5 flex flex-col justify-between gap-4 transition-colors"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <Link
                         to={`/admin/customers/${client.id}`}
-                        className="text-sm font-extrabold text-white hover:text-amber-400 truncate block"
+                        className="text-sm font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate block"
                       >
                         {client.name || 'Morador sem nome'}
                       </Link>
-                      <div className="text-xs text-slate-400 truncate">{client.email}</div>
+                      <div className="text-xs text-[var(--adm-text-muted)] truncate">{client.email}</div>
                       {client.telefone && (
-                        <div className="text-[11px] text-slate-400 mt-0.5">{client.telefone}</div>
+                        <div className="text-[11px] text-[var(--adm-text-dim)] mt-0.5 tabular-nums">
+                          {client.telefone}
+                        </div>
                       )}
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border shrink-0 ${
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border shrink-0 ${
                         isBanned
-                          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                          ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
                           : client.role === 'admin'
-                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                          : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          ? 'bg-[var(--adm-gold-soft)] text-[var(--adm-gold)] border-[var(--adm-gold-border)]'
+                          : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
                       }`}
                     >
                       {isBanned ? 'Suspenso' : client.role === 'admin' ? 'Staff' : 'Ativo'}
@@ -186,31 +188,31 @@ export const AdminCustomersPage: React.FC = () => {
                   </div>
 
                   {/* Mini KPIs */}
-                  <div className="grid grid-cols-3 gap-2 mt-4 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center">
+                  <div className="grid grid-cols-3 gap-2 mt-3.5 p-2.5 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] text-center">
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">Pedidos</div>
-                      <div className="text-xs font-extrabold text-white mt-0.5">
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Pedidos</div>
+                      <div className="text-xs font-bold text-[var(--adm-text)] mt-0.5 tabular-nums">
                         {stats.orderCount}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">LTV Pago</div>
-                      <div className="text-xs font-extrabold text-emerald-400 mt-0.5">
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">LTV Pago</div>
+                      <div className="text-xs font-bold text-emerald-300 mt-0.5 tabular-nums">
                         {formatCurrency(stats.totalSpent)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">CPF</div>
-                      <div className="text-[11px] font-mono text-slate-300 mt-0.5">
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">CPF</div>
+                      <div className="text-[11px] font-mono text-[var(--adm-text-muted)] mt-0.5 tabular-nums">
                         {maskCpf(client.cpf, false)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-400 mt-3 flex items-center justify-between">
+                  <div className="text-[11px] text-[var(--adm-text-dim)] mt-3 flex items-center justify-between tabular-nums">
                     <span>Último acesso: {formatDateTime(client.lastLogin)}</span>
                     {stats.openTickets > 0 && (
-                      <span className="text-sky-400 font-bold">
+                      <span className="text-sky-300 font-semibold">
                         {stats.openTickets} chamado(s)
                       </span>
                     )}
@@ -218,7 +220,7 @@ export const AdminCustomersPage: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-[var(--adm-border)] flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {canEditDiamonds && !isBanned && (
                       <button
@@ -228,7 +230,7 @@ export const AdminCustomersPage: React.FC = () => {
                           setDiamondAmount(50);
                           setDiamondReason('');
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-bold inline-flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-gold-soft)] hover:bg-amber-500/20 text-[var(--adm-gold)] border border-[var(--adm-gold-border)] text-xs font-semibold inline-flex items-center gap-1"
                         title="Creditar ou debitar diamantes com auditoria"
                       >
                         <Gem size={13} />
@@ -239,7 +241,7 @@ export const AdminCustomersPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBanTarget(client)}
-                        className="p-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30"
+                        className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30"
                         title="Suspender conta do morador"
                         aria-label="Suspender conta"
                       >
@@ -250,7 +252,7 @@ export const AdminCustomersPage: React.FC = () => {
 
                   <Link
                     to={`/admin/customers/${client.id}`}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
                   >
                     <Eye size={13} />
                     Ficha 360°
@@ -265,32 +267,32 @@ export const AdminCustomersPage: React.FC = () => {
       {/* Diamond Grant Modal */}
       {diamondTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Gem size={18} className="text-indigo-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <Gem size={18} className="text-[var(--adm-gold)]" />
               Ajustar Diamantes — {diamondTarget.name}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--adm-text-muted)]">
               Use valor positivo para bonificar ou negativo para estornar diamantes do Clube VIP.
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Quantidade de Diamantes
                 </label>
                 <input
                   type="number"
                   value={diamondAmount}
                   onChange={(e) => setDiamondAmount(Number(e.target.value))}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white"
+                  className="adm-input w-full px-3 py-2 text-sm tabular-nums"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Motivo Auditado *
                 </label>
                 <textarea
@@ -298,7 +300,7 @@ export const AdminCustomersPage: React.FC = () => {
                   value={diamondReason}
                   onChange={(e) => setDiamondReason(e.target.value)}
                   placeholder="Ex: Cortesia por atraso na entrega #1024"
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white"
+                  className="adm-input w-full px-3 py-2 text-xs"
                 />
               </div>
             </div>
@@ -306,7 +308,7 @@ export const AdminCustomersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDiamondTarget(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-xs font-semibold text-[var(--adm-text-muted)]"
               >
                 Cancelar
               </button>
@@ -325,7 +327,7 @@ export const AdminCustomersPage: React.FC = () => {
                   );
                   if (ok) setDiamondTarget(null);
                 }}
-                className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] disabled:opacity-50 text-emerald-950 text-xs font-bold inline-flex items-center gap-1.5"
               >
                 <ShoppingBag size={13} />
                 Confirmar Lançamento

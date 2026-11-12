@@ -96,7 +96,7 @@ export const AdminSupportPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Suporte & Chamados (CRM)"
         subtitle="Fila centralizada de solicitações de moradores, ocorrências de pedidos e histórico auditado."
@@ -106,7 +106,7 @@ export const AdminSupportPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
             >
               <Plus size={15} />
               Registrar Chamado
@@ -116,12 +116,12 @@ export const AdminSupportPage: React.FC = () => {
       />
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-3 shadow-lg">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-text-dim)] pointer-events-none"
             />
             <input
               type="search"
@@ -129,7 +129,7 @@ export const AdminSupportPage: React.FC = () => {
               onChange={(e) => updateParam('q', e.target.value)}
               placeholder="Buscar por protocolo, assunto, morador ou ID do pedido..."
               aria-label="Buscar chamados"
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-white placeholder-slate-400"
+              className="adm-input w-full pl-9 pr-4 py-2 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
             />
           </div>
 
@@ -137,7 +137,7 @@ export const AdminSupportPage: React.FC = () => {
             value={priorityFilter}
             onChange={(e) => updateParam('priority', e.target.value)}
             aria-label="Filtrar por prioridade"
-            className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs font-bold text-slate-200"
+            className="adm-input px-3 py-2 text-xs font-semibold"
           >
             <option value="all">Todas as Prioridades</option>
             <option value="urgent">Urgente</option>
@@ -160,10 +160,10 @@ export const AdminSupportPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => updateParam('status', tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 statusFilter === tab.id
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-950/80 text-slate-300 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
               }`}
             >
               {tab.label}
@@ -182,7 +182,7 @@ export const AdminSupportPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
-                className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs"
               >
                 Abrir Primeiro Chamado
               </button>
@@ -190,40 +190,40 @@ export const AdminSupportPage: React.FC = () => {
           }
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {filteredTickets.map((t) => (
             <div
               key={t.id}
-              className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md transition-all"
+              className="bg-[var(--adm-surface)] border border-[var(--adm-border)] hover:border-[var(--adm-border-strong)] rounded-[10px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors"
             >
               <div className="space-y-1.5 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     to={`/admin/support/${t.id}`}
-                    className="font-mono text-xs font-extrabold text-sky-400 hover:underline"
+                    className="font-mono text-xs font-bold text-[var(--adm-gold)] hover:underline tabular-nums"
                   >
                     {t.ticketNumber || `#${t.id.slice(0, 8)}`}
                   </Link>
                   <TicketStatusBadge status={t.status} />
                   <PriorityBadge priority={t.priority} />
-                  <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--adm-surface-elevated)] text-[var(--adm-text-muted)] border border-[var(--adm-border)] font-semibold">
                     {t.category}
                   </span>
                 </div>
 
                 <Link
                   to={`/admin/support/${t.id}`}
-                  className="text-sm sm:text-base font-extrabold text-white hover:text-amber-400 block truncate"
+                  className="text-sm sm:text-base font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] block truncate"
                 >
                   {t.subject}
                 </Link>
 
-                <p className="text-xs text-slate-400 line-clamp-2">{t.description}</p>
+                <p className="text-xs text-[var(--adm-text-muted)] line-clamp-2">{t.description}</p>
 
-                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400">
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-[var(--adm-text-dim)]">
                   <Link
                     to={`/admin/customers/${t.uid}`}
-                    className="inline-flex items-center gap-1 text-slate-300 hover:text-amber-300 font-semibold"
+                    className="inline-flex items-center gap-1 text-[var(--adm-text-muted)] hover:text-[var(--adm-gold)] font-semibold"
                   >
                     <User size={12} />
                     {t.customerName || 'Morador'}
@@ -231,13 +231,13 @@ export const AdminSupportPage: React.FC = () => {
                   {t.orderId && (
                     <Link
                       to={`/admin/orders/${t.orderId}`}
-                      className="inline-flex items-center gap-1 text-amber-400 hover:underline font-mono"
+                      className="inline-flex items-center gap-1 text-[var(--adm-gold)] hover:underline font-mono tabular-nums"
                     >
                       <ShoppingBag size={12} />
                       Pedido #{t.orderId.slice(0, 8).toUpperCase()}
                     </Link>
                   )}
-                  <span>• Aberto em {formatDateTime(t.createdAt)}</span>
+                  <span className="tabular-nums">• Aberto em {formatDateTime(t.createdAt)}</span>
                   {t.assignedName && <span>• Resp: {t.assignedName}</span>}
                 </div>
               </div>
@@ -245,7 +245,7 @@ export const AdminSupportPage: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <Link
                   to={`/admin/support/${t.id}`}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-bold inline-flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] border border-[var(--adm-border)] text-xs font-semibold inline-flex items-center gap-1.5"
                 >
                   <Eye size={14} />
                   Tratar Chamado
@@ -259,20 +259,21 @@ export const AdminSupportPage: React.FC = () => {
       {/* Create Ticket Modal */}
       {createOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-lg w-full p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Headphones size={18} className="text-sky-400" />
+              <h3 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <Headphones size={18} className="text-emerald-300" />
                 Registrar Novo Chamado de Suporte
               </h3>
               <button
                 type="button"
                 onClick={() => setCreateOpen(false)}
-                className="p-1 text-slate-400 hover:text-white"
+                className="p-1 text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] rounded-md"
+                aria-label="Fechar modal"
               >
                 <X size={18} />
               </button>
@@ -281,7 +282,7 @@ export const AdminSupportPage: React.FC = () => {
             <form onSubmit={handleSubmitNew} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Morador (Opcional / UID)
                   </label>
                   <input
@@ -290,7 +291,7 @@ export const AdminSupportPage: React.FC = () => {
                     value={targetUid}
                     onChange={(e) => setTargetUid(e.target.value)}
                     placeholder="UID do morador..."
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                    className="adm-input w-full px-3 py-2"
                   />
                   <datalist id="crm-clients-list">
                     {clients.slice(0, 50).map((c) => (
@@ -302,7 +303,7 @@ export const AdminSupportPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     ID do Pedido Vinculado
                   </label>
                   <input
@@ -310,20 +311,20 @@ export const AdminSupportPage: React.FC = () => {
                     value={orderId}
                     onChange={(e) => setOrderId(e.target.value)}
                     placeholder="Opcional..."
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                    className="adm-input w-full px-3 py-2"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Categoria
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                    className="adm-input w-full px-3 py-2"
                   >
                     <option value="Pedido / Entrega">Pedido / Entrega</option>
                     <option value="Pagamento / Pix">Pagamento / Pix</option>
@@ -334,13 +335,13 @@ export const AdminSupportPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Prioridade
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as SupportTicket['priority'])}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                    className="adm-input w-full px-3 py-2"
                   >
                     <option value="low">Baixa</option>
                     <option value="medium">Média</option>
@@ -351,7 +352,7 @@ export const AdminSupportPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Assunto *
                 </label>
                 <input
@@ -361,12 +362,12 @@ export const AdminSupportPage: React.FC = () => {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Resumo objetivo da solicitação..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Descrição Detalhada *
                 </label>
                 <textarea
@@ -376,7 +377,7 @@ export const AdminSupportPage: React.FC = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Relato do morador ou observação inicial do atendimento..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
@@ -384,14 +385,14 @@ export const AdminSupportPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] border border-[var(--adm-border)] font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading === 'ticket-create'}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold"
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold"
                 >
                   Criar Chamado
                 </button>

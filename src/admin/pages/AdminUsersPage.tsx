@@ -110,7 +110,7 @@ export const AdminUsersPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Equipe & Controle de Acessos (RBAC)"
         subtitle="Gerencie membros da equipe, atribua papéis granulares e suspenda/arquive acessos de forma reversível e auditada."
@@ -119,7 +119,7 @@ export const AdminUsersPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/admin/roles"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
             >
               <KeyRound size={15} />
               Matriz de Papéis
@@ -127,8 +127,9 @@ export const AdminUsersPage: React.FC = () => {
             <button
               type="button"
               onClick={fetchStaff}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+              className="p-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] border border-[var(--adm-border)]"
               title="Recarregar lista"
+              aria-label="Recarregar lista"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -136,7 +137,7 @@ export const AdminUsersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setAssignOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
               >
                 <UserPlus size={15} />
                 Atribuir Papel a Membro
@@ -147,7 +148,7 @@ export const AdminUsersPage: React.FC = () => {
       />
 
       {/* Status Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         {[
           { id: 'all', label: 'Todos os Membros' },
           { id: 'active', label: 'Ativos' },
@@ -158,10 +159,10 @@ export const AdminUsersPage: React.FC = () => {
             key={tab.id}
             type="button"
             onClick={() => setStatusFilter(tab.id as typeof statusFilter)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
               statusFilter === tab.id
-                ? 'bg-amber-500 text-slate-950'
-                : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                : 'bg-[var(--adm-surface)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
             }`}
           >
             {tab.label}
@@ -170,7 +171,7 @@ export const AdminUsersPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-xs text-slate-400">
+        <div className="p-12 text-center text-xs text-[var(--adm-text-muted)]">
           Consultando atribuições de acesso no servidor...
         </div>
       ) : filteredStaff.length === 0 ? (
@@ -190,44 +191,48 @@ export const AdminUsersPage: React.FC = () => {
             return (
               <div
                 key={m.uid}
-                className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-lg"
+                className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 flex flex-col justify-between gap-4"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Link
                           to={`/admin/users/${m.uid}`}
-                          className="text-sm font-extrabold text-white hover:text-amber-400 truncate"
+                          className="text-sm font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate"
                         >
                           {m.name || m.email || m.uid}
                         </Link>
                         {isSelf && (
-                          <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-amber-300">
+                          <span className="px-2 py-0.5 rounded-md bg-[var(--adm-gold-soft)] border border-[var(--adm-gold-border)] text-[10px] font-bold text-[var(--adm-gold)]">
                             Você
                           </span>
                         )}
                         {m.legacy && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/15 text-[10px] font-bold text-amber-300 border border-amber-500/30">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-[10px] font-bold text-amber-200 border border-amber-500/30">
                             Legado (Migrar)
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-400 truncate">{m.email || 'Sem e-mail'}</div>
-                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">UID: {m.uid}</div>
+                      <div className="text-xs text-[var(--adm-text-muted)] truncate">
+                        {m.email || 'Sem e-mail'}
+                      </div>
+                      <div className="text-[11px] font-mono text-[var(--adm-text-dim)] mt-0.5">
+                        UID: {m.uid}
+                      </div>
                     </div>
 
                     <RoleBadge roleId={m.roleId} status={m.status} />
                   </div>
 
                   {m.notes && (
-                    <p className="text-xs text-slate-300 mt-3 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <p className="text-xs text-[var(--adm-text-muted)] mt-3 p-2.5 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)]">
                       {m.notes}
                     </p>
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                <div className="pt-3 border-t border-[var(--adm-border)] flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {canModifyThisMember && m.status === 'active' && (
                       <>
@@ -236,7 +241,7 @@ export const AdminUsersPage: React.FC = () => {
                           onClick={() =>
                             setStatusModal({ member: m, nextStatus: 'suspended' })
                           }
-                          className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/30 text-xs font-semibold inline-flex items-center gap-1"
                         >
                           <PauseCircle size={13} />
                           Suspender
@@ -246,7 +251,7 @@ export const AdminUsersPage: React.FC = () => {
                           onClick={() =>
                             setStatusModal({ member: m, nextStatus: 'archived' })
                           }
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 text-xs font-semibold inline-flex items-center gap-1"
                         >
                           <Archive size={13} />
                           Arquivar
@@ -260,7 +265,7 @@ export const AdminUsersPage: React.FC = () => {
                         onClick={() =>
                           setStatusModal({ member: m, nextStatus: 'active' })
                         }
-                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold inline-flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-xs font-semibold inline-flex items-center gap-1"
                       >
                         <CheckCircle2 size={13} />
                         Restaurar Acesso
@@ -270,7 +275,7 @@ export const AdminUsersPage: React.FC = () => {
 
                   <Link
                     to={`/admin/users/${m.uid}`}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-bold inline-flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] border border-[var(--adm-border)] text-xs font-semibold inline-flex items-center gap-1.5"
                   >
                     <Eye size={13} />
                     Detalhes & Permissões
@@ -285,20 +290,21 @@ export const AdminUsersPage: React.FC = () => {
       {/* Assign Role Modal */}
       {assignOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-md w-full p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Plus size={18} className="text-amber-400" />
+              <h3 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <Plus size={18} className="text-[var(--adm-gold)]" />
                 Atribuir ou Alterar Papel da Equipe
               </h3>
               <button
                 type="button"
                 onClick={() => setAssignOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] p-1 rounded-md"
+                aria-label="Fechar modal"
               >
                 <X size={18} />
               </button>
@@ -306,7 +312,7 @@ export const AdminUsersPage: React.FC = () => {
 
             <form onSubmit={handleAssignSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   E-mail ou UID do Usuário *
                 </label>
                 <input
@@ -315,18 +321,18 @@ export const AdminUsersPage: React.FC = () => {
                   value={targetInput}
                   onChange={(e) => setTargetInput(e.target.value)}
                   placeholder="operador@loja.com ou UID..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Papel RBAC *
                 </label>
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                  className="adm-input w-full px-3 py-2 font-semibold"
                 >
                   {DEFAULT_ROLES.filter(
                     (r) => r.id !== 'superadmin' || staffAccess.isSuperadmin,
@@ -339,7 +345,7 @@ export const AdminUsersPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Motivo para Trilha de Auditoria *
                 </label>
                 <input
@@ -349,12 +355,12 @@ export const AdminUsersPage: React.FC = () => {
                   value={assignReason}
                   onChange={(e) => setAssignReason(e.target.value)}
                   placeholder="Ex: Contratação para turno noturno de separação"
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Observações Internas (Opcional)
                 </label>
                 <input
@@ -362,7 +368,7 @@ export const AdminUsersPage: React.FC = () => {
                   value={assignNotes}
                   onChange={(e) => setAssignNotes(e.target.value)}
                   placeholder="Turno, condomínio alocado..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
@@ -370,14 +376,14 @@ export const AdminUsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAssignOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text-muted)] font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold"
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold"
                 >
                   {submitting ? 'Salvando...' : 'Confirmar Papel'}
                 </button>

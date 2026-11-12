@@ -78,7 +78,7 @@ export const AdminReportsPage: React.FC = () => {
             <select
               value={condominio}
               onChange={(e) => setCondominio(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+              className="adm-input px-3 py-2 text-xs"
             >
               <option value="all">Todos os condomínios</option>
               {(serverMetrics?.availableCondominios ?? []).map((c) => (
@@ -89,18 +89,18 @@ export const AdminReportsPage: React.FC = () => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+              className="adm-input px-2.5 py-1.5 text-xs tabular-nums"
             />
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+              className="adm-input px-2.5 py-1.5 text-xs tabular-nums"
             />
             <button
               type="button"
               onClick={() => void reload()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] border border-[var(--adm-border)] text-xs font-semibold"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Atualizar
@@ -110,12 +110,12 @@ export const AdminReportsPage: React.FC = () => {
       />
 
       {error && (
-        <div className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-xs text-rose-200 flex items-center justify-between gap-3">
+        <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-xs text-rose-200 flex items-center justify-between gap-3">
           <span>{error}</span>
           <button
             type="button"
             onClick={() => void reload()}
-            className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 font-bold"
+            className="px-3 py-1 rounded-md bg-rose-500/20 hover:bg-rose-500/30 font-bold"
           >
             Tentar novamente
           </button>
@@ -123,7 +123,7 @@ export const AdminReportsPage: React.FC = () => {
       )}
 
       {loading && !serverMetrics && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-xs text-slate-400">
+        <div className="rounded-lg border border-[var(--adm-border)] bg-[var(--adm-surface)] px-4 py-3 text-xs text-[var(--adm-text-muted)]">
           Carregando agregações consolidadas do servidor...
         </div>
       )}
@@ -141,7 +141,7 @@ export const AdminReportsPage: React.FC = () => {
           value={`${summary.completionRate}%`}
           subtitle={`${summary.validCount} de ${summary.totalOrders} pedidos`}
           icon={<CheckCircle2 size={18} />}
-          tone="indigo"
+          tone="emerald"
         />
         <MetricCard
           label="Ticket Médio"
@@ -159,25 +159,25 @@ export const AdminReportsPage: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Monthly Revenue */}
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
-          <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
-            <BarChart3 size={17} className="text-emerald-400" />
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+          <h2 className="text-base font-bold text-[var(--adm-text)] mb-1 flex items-center gap-2">
+            <BarChart3 size={17} className="text-emerald-300" />
             Evolução de Receita (Últimos 6 Meses)
           </h2>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-[var(--adm-text-muted)] mb-4">
             Receita mensal reconhecida (pedidos pagos e não cancelados)
           </p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
+                <XAxis dataKey="month" stroke="#9ab0a3" fontSize={12} />
+                <YAxis stroke="#9ab0a3" fontSize={12} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
+                    backgroundColor: '#0b1811',
                     borderColor: '#334155',
                     borderRadius: '12px',
                     color: '#f8fafc',
@@ -187,9 +187,9 @@ export const AdminReportsPage: React.FC = () => {
                   type="monotone"
                   dataKey="receita"
                   name="Receita (R$)"
-                  stroke="#10b981"
+                  stroke="#22c55e"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: '#10b981' }}
+                  dot={{ r: 4, fill: '#22c55e' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -197,30 +197,30 @@ export const AdminReportsPage: React.FC = () => {
         </div>
 
         {/* Weekly Volume */}
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
-          <h2 className="text-base font-extrabold text-white mb-1 flex items-center gap-2">
-            <ShoppingBag size={17} className="text-amber-400" />
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+          <h2 className="text-base font-bold text-[var(--adm-text)] mb-1 flex items-center gap-2">
+            <ShoppingBag size={17} className="text-[var(--adm-gold)]" />
             Volume de Pedidos & Receita (7 Dias)
           </h2>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-[var(--adm-text-muted)] mb-4">
             Desempenho diário de vendas aprovadas na última semana
           </p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
+                <XAxis dataKey="day" stroke="#9ab0a3" fontSize={12} />
+                <YAxis stroke="#9ab0a3" fontSize={12} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
-                    borderRadius: '12px',
-                    color: '#f8fafc',
+                    backgroundColor: '#0b1811',
+                    borderColor: 'rgba(148,184,161,0.28)',
+                    borderRadius: '8px',
+                    color: '#f1f5f2',
                   }}
                 />
-                <Bar dataKey="vendas" name="Receita (R$)" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="pedidos" name="Qtd Pedidos" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="vendas" name="Receita (R$)" fill="#d4af73" radius={[5, 5, 0, 0]} />
+                <Bar dataKey="pedidos" name="Qtd Pedidos" fill="#22c55e" radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

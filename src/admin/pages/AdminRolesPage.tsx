@@ -90,7 +90,7 @@ export const AdminRolesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Papéis & Matriz de Permissões (RBAC)"
         subtitle="Inspecione e customize permissões por módulo e ação. Alterações são versionadas e auditadas."
@@ -99,7 +99,7 @@ export const AdminRolesPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/admin/users"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
             >
               <ShieldCheck size={15} />
               Equipe & Acessos
@@ -109,7 +109,7 @@ export const AdminRolesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSeedModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-gold)] font-semibold text-xs border border-[var(--adm-border)]"
                   title="Inicializar catálogo de papéis no Firestore de forma aditiva"
                 >
                   <Database size={14} />
@@ -118,7 +118,7 @@ export const AdminRolesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={startNewRole}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs"
                 >
                   <Plus size={15} />
                   Novo Papel Customizado
@@ -129,18 +129,19 @@ export const AdminRolesPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         {/* Left Sidebar: Roles List */}
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--adm-text-dim)]">
               Catálogo de Papéis
             </span>
             <button
               type="button"
               onClick={fetchRoles}
-              className="text-slate-400 hover:text-white p-1"
+              className="text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] p-1"
               title="Atualizar papéis"
+              aria-label="Atualizar papéis"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -156,35 +157,37 @@ export const AdminRolesPage: React.FC = () => {
                   setIsCreatingNew(false);
                   setSelectedRoleId(r.id);
                 }}
-                className={`w-full text-left p-3.5 rounded-2xl border transition-all ${
+                className={`w-full text-left p-3.5 rounded-[10px] border transition-colors ${
                   active
-                    ? 'bg-amber-500/15 border-amber-500/40 text-white shadow-md'
-                    : 'bg-slate-900/80 border-slate-800/90 text-slate-300 hover:bg-slate-800/70'
+                    ? 'bg-[var(--adm-brand-soft)] border-[var(--adm-brand-border)] text-[var(--adm-text)]'
+                    : 'bg-[var(--adm-surface)] border-[var(--adm-border)] text-[var(--adm-text-muted)] hover:bg-[var(--adm-surface-elevated)]'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-extrabold text-white">{r.label}</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-950 text-slate-400">
+                  <span className="text-xs font-bold text-[var(--adm-text)]">{r.label}</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--adm-bg-subtle)] text-[var(--adm-text-dim)] border border-[var(--adm-border)]">
                     {r.id}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{r.description}</p>
+                <p className="text-[11px] text-[var(--adm-text-muted)] mt-1 line-clamp-2">
+                  {r.description}
+                </p>
               </button>
             );
           })}
         </div>
 
         {/* Right 3 Columns: Permission Matrix */}
-        <div className="lg:col-span-3 bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div className="lg:col-span-3 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--adm-border)]">
             <div>
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <KeyRound size={18} className="text-amber-400" />
+              <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <KeyRound size={18} className="text-[var(--adm-gold)]" />
                 {isCreatingNew
                   ? 'Criar Novo Papel Customizado'
                   : `Matriz de Permissões — ${currentRole?.label}`}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--adm-text-muted)] mt-0.5">
                 {!isCreatingNew && selectedRoleId === 'superadmin'
                   ? 'O papel Superadmin possui acesso irrestrito (*) e é imutável por segurança.'
                   : 'Marque ou desmarque as ações permitidas em cada módulo abaixo.'}
@@ -195,7 +198,7 @@ export const AdminRolesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSaveModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs inline-flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5 shrink-0"
               >
                 <Save size={14} />
                 Salvar Papel
@@ -207,7 +210,7 @@ export const AdminRolesPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             {isCreatingNew && (
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Identificador (slug) *
                 </label>
                 <input
@@ -217,12 +220,12 @@ export const AdminRolesPage: React.FC = () => {
                     setCustomRoleId(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                   }
                   placeholder="ex: supervisor_turno"
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-mono"
+                  className="adm-input w-full px-3 py-2 font-mono"
                 />
               </div>
             )}
             <div>
-              <label className="block font-bold uppercase text-slate-400 mb-1">
+              <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                 Nome de Exibição *
               </label>
               <input
@@ -230,11 +233,11 @@ export const AdminRolesPage: React.FC = () => {
                 disabled={!canManageRoles || (!isCreatingNew && selectedRoleId === 'superadmin')}
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                className="adm-input w-full px-3 py-2 font-semibold"
               />
             </div>
             <div className={isCreatingNew ? '' : 'sm:col-span-2'}>
-              <label className="block font-bold uppercase text-slate-400 mb-1">
+              <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                 Descrição Operacional
               </label>
               <input
@@ -242,28 +245,28 @@ export const AdminRolesPage: React.FC = () => {
                 disabled={!canManageRoles || (!isCreatingNew && selectedRoleId === 'superadmin')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                className="adm-input w-full px-3 py-2"
               />
             </div>
           </div>
 
           {/* Matrix Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-[var(--adm-border)]">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-950 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                  <th className="py-3 px-3">Módulo</th>
+                <tr className="bg-[var(--adm-bg-subtle)] text-[10px] font-bold uppercase tracking-wider text-[var(--adm-text-muted)] border-b border-[var(--adm-border)]">
+                  <th scope="col" className="py-3 px-3">Módulo</th>
                   {ACTIONS.map((act) => (
-                    <th key={act} className="py-3 px-2 text-center">
+                    <th scope="col" key={act} className="py-3 px-2 text-center">
                       {ACTION_LABELS[act]}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-[var(--adm-border)]">
                 {MODULES.map((mod) => (
-                  <tr key={mod} className="hover:bg-slate-800/30">
-                    <td className="py-2.5 px-3 font-bold text-white whitespace-nowrap">
+                  <tr key={mod} className="hover:bg-[var(--adm-surface-elevated)]/40">
+                    <td className="py-2.5 px-3 font-semibold text-[var(--adm-text)] whitespace-nowrap">
                       {MODULE_LABELS[mod]}
                     </td>
                     {ACTIONS.map((act) => {
@@ -278,10 +281,10 @@ export const AdminRolesPage: React.FC = () => {
                             disabled={!canManageRoles || isSuper}
                             onClick={() => togglePermission(perm)}
                             aria-label={`${MODULE_LABELS[mod]} - ${ACTION_LABELS[act]}`}
-                            className={`w-6 h-6 rounded-lg inline-flex items-center justify-center border transition-colors ${
+                            className={`w-6 h-6 rounded-md inline-flex items-center justify-center border transition-colors ${
                               checked
-                                ? 'bg-amber-500 border-amber-400 text-slate-950'
-                                : 'bg-slate-950 border-slate-800 text-transparent hover:border-slate-600'
+                                ? 'bg-[var(--adm-brand)] border-emerald-400 text-emerald-950'
+                                : 'bg-[var(--adm-bg-subtle)] border-[var(--adm-border)] text-transparent hover:border-[var(--adm-border-strong)]'
                             }`}
                           >
                             <Check size={13} strokeWidth={3} />

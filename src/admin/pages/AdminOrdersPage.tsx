@@ -84,7 +84,7 @@ export const AdminOrdersPage: React.FC = () => {
   }, [orders]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Gestão de Pedidos"
         subtitle="Acompanhe a fila de separação, confirme pagamentos Pix e gerencie entregas no condomínio."
@@ -92,12 +92,12 @@ export const AdminOrdersPage: React.FC = () => {
       />
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-4 shadow-lg">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3.5">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-text-dim)] pointer-events-none"
             />
             <input
               type="search"
@@ -105,17 +105,17 @@ export const AdminOrdersPage: React.FC = () => {
               onChange={(e) => updateParam('q', e.target.value)}
               placeholder="Buscar por #código, morador, condomínio ou apartamento..."
               aria-label="Filtrar pedidos por texto"
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-white placeholder-slate-400"
+              className="adm-input w-full pl-9 pr-4 py-2 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter size={15} className="text-slate-400 shrink-0" />
+            <Filter size={15} className="text-[var(--adm-text-dim)] shrink-0" />
             <select
               value={paymentFilter}
               onChange={(e) => updateParam('payment', e.target.value)}
               aria-label="Filtrar por status de pagamento"
-              className="rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none px-3 py-2 text-xs font-bold text-slate-200"
+              className="adm-input px-3 py-2 text-xs font-semibold"
             >
               <option value="all">Todos os Pagamentos</option>
               <option value="awaiting_confirmation">Aguardando Conciliação Pix</option>
@@ -136,16 +136,16 @@ export const AdminOrdersPage: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => updateParam('status', tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                   active
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'bg-slate-950/80 text-slate-300 hover:text-white border border-slate-800'
+                    ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                    : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    active ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-800 text-slate-400'
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] tabular-nums ${
+                    active ? 'bg-black/20 text-emerald-950' : 'bg-[var(--adm-surface-elevated)] text-[var(--adm-text-dim)]'
                   }`}
                 >
                   {count}
@@ -167,7 +167,7 @@ export const AdminOrdersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSearchParams({}, { replace: true })}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-semibold text-[var(--adm-text)] border border-[var(--adm-border)]"
               >
                 Limpar Filtros
               </button>
@@ -177,164 +177,170 @@ export const AdminOrdersPage: React.FC = () => {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden lg:block bg-slate-900/90 border border-slate-800/90 rounded-2xl overflow-hidden shadow-lg">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                  <th className="py-3.5 px-4">Pedido</th>
-                  <th className="py-3.5 px-4">Morador / Destino</th>
-                  <th className="py-3.5 px-4">Status Operacional</th>
-                  <th className="py-3.5 px-4">Pagamento</th>
-                  <th className="py-3.5 px-4">Total</th>
-                  <th className="py-3.5 px-4 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 text-xs">
-                {filteredOrders.map((order) => {
-                  const canConfirmPix =
-                    canApprovePayment &&
-                    order.status !== 'cancelled' &&
-                    order.paymentStatus !== 'approved';
-                  const isPaidOrOnDelivery =
-                    order.paymentStatus === 'approved' || order.paymentStatus === 'on_delivery';
+          <div className="hidden lg:block bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--adm-border)] bg-[var(--adm-bg-subtle)] text-[11px] font-bold uppercase tracking-wider text-[var(--adm-text-muted)]">
+                    <th scope="col" className="py-3 px-4">Pedido</th>
+                    <th scope="col" className="py-3 px-4">Morador / Destino</th>
+                    <th scope="col" className="py-3 px-4">Status Operacional</th>
+                    <th scope="col" className="py-3 px-4">Pagamento</th>
+                    <th scope="col" className="py-3 px-4">Total</th>
+                    <th scope="col" className="py-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--adm-border)] text-xs">
+                  {filteredOrders.map((order) => {
+                    const canConfirmPix =
+                      canApprovePayment &&
+                      order.status !== 'cancelled' &&
+                      order.paymentStatus !== 'approved';
+                    const isPaidOrOnDelivery =
+                      order.paymentStatus === 'approved' || order.paymentStatus === 'on_delivery';
 
-                  return (
-                    <tr key={order.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-4 align-top">
-                        <Link
-                          to={`/admin/orders/${order.id}`}
-                          className="font-mono font-extrabold text-amber-400 hover:underline text-sm"
-                        >
-                          #{(order.orderNumber || order.id).slice(0, 8).toUpperCase()}
-                        </Link>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          {formatDateTime(order.createdAt)}
-                        </div>
-                        <div className="text-[11px] text-slate-400">
-                          {order.items?.length || 0} {(order.items?.length || 0) === 1 ? 'item' : 'itens'}
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4 align-top">
-                        {order.uid ? (
+                    return (
+                      <tr key={order.id} className="hover:bg-[var(--adm-surface-elevated)]/60 transition-colors">
+                        <td className="py-3 px-4 align-top">
                           <Link
-                            to={`/admin/customers/${order.uid}`}
-                            className="font-bold text-white hover:text-amber-300 transition-colors"
+                            to={`/admin/orders/${order.id}`}
+                            className="font-mono font-bold text-[var(--adm-gold)] hover:underline text-sm tabular-nums"
                           >
-                            {order.userName || 'Morador'}
+                            #{(order.orderNumber || order.id).slice(0, 8).toUpperCase()}
                           </Link>
-                        ) : (
-                          <span className="font-bold text-white">{order.userName || 'Morador'}</span>
-                        )}
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          {order.address?.condominio
-                            ? `${order.address.condominio}${
-                                order.address.bloco ? ` • Bl. ${order.address.bloco}` : ''
-                              }${order.address.apartamento ? ` • Apto ${order.address.apartamento}` : ''}`
-                            : order.address?.street
-                            ? `${order.address.street}, ${order.address.number || ''}`
-                            : 'Retirada / Condomínio'}
-                        </div>
-                      </td>
+                          <div className="text-[11px] text-[var(--adm-text-dim)] mt-0.5 tabular-nums">
+                            {formatDateTime(order.createdAt)}
+                          </div>
+                          <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
+                            {order.items?.length || 0} {(order.items?.length || 0) === 1 ? 'item' : 'itens'}
+                          </div>
+                        </td>
 
-                      <td className="py-3.5 px-4 align-top">
-                        <OrderStatusBadge status={order.status} />
-                      </td>
-
-                      <td className="py-3.5 px-4 align-top">
-                        <PaymentStatusBadge status={order.paymentStatus} />
-                        {order.paymentMethod && (
-                          <div className="text-[11px] text-slate-400 mt-1">{order.paymentMethod}</div>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-4 align-top font-black text-emerald-400 text-sm">
-                        {formatCurrency(order.total)}
-                      </td>
-
-                      <td className="py-3.5 px-4 align-top text-right">
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          {canConfirmPix && (
-                            <button
-                              type="button"
-                              disabled={actionLoading === `pay-${order.id}`}
-                              onClick={() => handleConfirmPayment(order.id)}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold text-[11px] inline-flex items-center gap-1"
-                              title="Confirmar recebimento Pix"
+                        <td className="py-3 px-4 align-top">
+                          {order.uid ? (
+                            <Link
+                              to={`/admin/customers/${order.uid}`}
+                              className="font-semibold text-[var(--adm-text)] hover:text-[var(--adm-gold)] transition-colors"
                             >
-                              <CheckCircle2 size={12} />
-                              Confirmar Pix
-                            </button>
+                              {order.userName || 'Morador'}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-[var(--adm-text)]">
+                              {order.userName || 'Morador'}
+                            </span>
                           )}
+                          <div className="text-[11px] text-[var(--adm-text-muted)] mt-0.5">
+                            {order.address?.condominio
+                              ? `${order.address.condominio}${
+                                  order.address.bloco ? ` • Bl. ${order.address.bloco}` : ''
+                                }${order.address.apartamento ? ` • Apto ${order.address.apartamento}` : ''}`
+                              : order.address?.street
+                              ? `${order.address.street}, ${order.address.number || ''}`
+                              : 'Retirada / Condomínio'}
+                          </div>
+                        </td>
 
-                          {canEditOrder &&
-                            order.status === 'confirmed' &&
-                            isPaidOrOnDelivery && (
+                        <td className="py-3 px-4 align-top">
+                          <OrderStatusBadge status={order.status} />
+                        </td>
+
+                        <td className="py-3 px-4 align-top">
+                          <PaymentStatusBadge status={order.paymentStatus} />
+                          {order.paymentMethod && (
+                            <div className="text-[11px] text-[var(--adm-text-dim)] mt-1">
+                              {order.paymentMethod}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 align-top font-bold text-emerald-300 text-sm tabular-nums">
+                          {formatCurrency(order.total)}
+                        </td>
+
+                        <td className="py-3 px-4 align-top text-right">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            {canConfirmPix && (
+                              <button
+                                type="button"
+                                disabled={actionLoading === `pay-${order.id}`}
+                                onClick={() => handleConfirmPayment(order.id)}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 font-semibold text-[11px] inline-flex items-center gap-1"
+                                title="Confirmar recebimento Pix"
+                              >
+                                <CheckCircle2 size={12} />
+                                Confirmar Pix
+                              </button>
+                            )}
+
+                            {canEditOrder &&
+                              order.status === 'confirmed' &&
+                              isPaidOrOnDelivery && (
+                                <button
+                                  type="button"
+                                  disabled={actionLoading === `status-${order.id}`}
+                                  onClick={() => handleUpdateOrderStatus(order.id, 'preparing')}
+                                  className="px-2.5 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-200 border border-teal-500/30 font-semibold text-[11px]"
+                                >
+                                  Separar
+                                </button>
+                              )}
+
+                            {canEditOrder && order.status === 'preparing' && (
                               <button
                                 type="button"
                                 disabled={actionLoading === `status-${order.id}`}
-                                onClick={() => handleUpdateOrderStatus(order.id, 'preparing')}
-                                className="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-bold text-[11px]"
+                                onClick={() => handleUpdateOrderStatus(order.id, 'delivering')}
+                                className="px-2.5 py-1.5 rounded-lg bg-lime-500/15 hover:bg-lime-500/25 text-lime-200 border border-lime-500/30 font-semibold text-[11px] inline-flex items-center gap-1"
                               >
-                                Separar
+                                <Truck size={12} />
+                                Expedir
                               </button>
                             )}
 
-                          {canEditOrder && order.status === 'preparing' && (
-                            <button
-                              type="button"
-                              disabled={actionLoading === `status-${order.id}`}
-                              onClick={() => handleUpdateOrderStatus(order.id, 'delivering')}
-                              className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-bold text-[11px] inline-flex items-center gap-1"
-                            >
-                              <Truck size={12} />
-                              Expedir
-                            </button>
-                          )}
-
-                          {canEditOrder && order.status === 'delivering' && (
-                            <button
-                              type="button"
-                              disabled={actionLoading === `status-${order.id}`}
-                              onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold text-[11px]"
-                            >
-                              Entregue
-                            </button>
-                          )}
-
-                          {canEditOrder &&
-                            order.status !== 'cancelled' &&
-                            order.status !== 'delivered' && (
+                            {canEditOrder && order.status === 'delivering' && (
                               <button
                                 type="button"
-                                onClick={() => setCancelTarget(order)}
-                                className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30"
-                                title="Cancelar pedido com estorno de estoque"
-                                aria-label="Cancelar pedido"
+                                disabled={actionLoading === `status-${order.id}`}
+                                onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 font-semibold text-[11px]"
                               >
-                                <XCircle size={14} />
+                                Entregue
                               </button>
                             )}
 
-                          <Link
-                            to={`/admin/orders/${order.id}`}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-[11px] inline-flex items-center gap-1"
-                          >
-                            <Eye size={12} />
-                            Detalhes
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {canEditOrder &&
+                              order.status !== 'cancelled' &&
+                              order.status !== 'delivered' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setCancelTarget(order)}
+                                  className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30"
+                                  title="Cancelar pedido com estorno de estoque"
+                                  aria-label="Cancelar pedido"
+                                >
+                                  <XCircle size={14} />
+                                </button>
+                              )}
+
+                            <Link
+                              to={`/admin/orders/${order.id}`}
+                              className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] border border-[var(--adm-border)] font-semibold text-[11px] inline-flex items-center gap-1"
+                            >
+                              <Eye size={12} />
+                              Detalhes
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile & Tablet Cards */}
-          <div className="lg:hidden space-y-3">
+          <div className="lg:hidden space-y-2.5">
             {filteredOrders.map((order) => {
               const canConfirmPix =
                 canApprovePayment &&
@@ -343,28 +349,28 @@ export const AdminOrdersPage: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-3 shadow-md"
+                  className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <Link
                         to={`/admin/orders/${order.id}`}
-                        className="font-mono font-extrabold text-amber-400 text-sm"
+                        className="font-mono font-bold text-[var(--adm-gold)] text-sm tabular-nums"
                       >
                         #{(order.orderNumber || order.id).slice(0, 8).toUpperCase()}
                       </Link>
-                      <div className="text-xs font-bold text-white mt-0.5">
+                      <div className="text-xs font-semibold text-[var(--adm-text)] mt-0.5 truncate">
                         {order.userName || 'Morador'}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
                         {formatDateTime(order.createdAt)}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-base font-black text-emerald-400">
+                    <div className="text-right shrink-0">
+                      <div className="text-base font-bold text-emerald-300 tabular-nums">
                         {formatCurrency(order.total)}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
                         {order.items?.length || 0} itens
                       </div>
                     </div>
@@ -375,13 +381,13 @@ export const AdminOrdersPage: React.FC = () => {
                     <PaymentStatusBadge status={order.paymentStatus} />
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+                  <div className="pt-2.5 border-t border-[var(--adm-border)] flex flex-wrap items-center justify-between gap-2">
                     {canConfirmPix ? (
                       <button
                         type="button"
                         disabled={actionLoading === `pay-${order.id}`}
                         onClick={() => handleConfirmPayment(order.id)}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs inline-flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1"
                       >
                         <CheckCircle2 size={13} />
                         Confirmar Pix
@@ -392,7 +398,7 @@ export const AdminOrdersPage: React.FC = () => {
 
                     <Link
                       to={`/admin/orders/${order.id}`}
-                      className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
                     >
                       <Eye size={13} />
                       Abrir Pedido

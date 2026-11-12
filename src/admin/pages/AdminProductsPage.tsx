@@ -74,7 +74,7 @@ export const AdminProductsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Catálogo de Produtos"
         subtitle="Gerencie preços, margens, fotos, categorias e visibilidade dos produtos na vitrine do condomínio."
@@ -83,7 +83,7 @@ export const AdminProductsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/admin/inventory"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
             >
               <Boxes size={15} />
               Controle de Estoque
@@ -91,7 +91,7 @@ export const AdminProductsPage: React.FC = () => {
             {canEdit && (
               <Link
                 to="/admin/products/new"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
               >
                 <Plus size={15} />
                 Novo Produto
@@ -102,12 +102,12 @@ export const AdminProductsPage: React.FC = () => {
       />
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-3 shadow-lg">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search
               size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-text-dim)] pointer-events-none"
             />
             <input
               type="search"
@@ -115,7 +115,7 @@ export const AdminProductsPage: React.FC = () => {
               onChange={(e) => updateParam('q', e.target.value)}
               placeholder="Buscar produto por nome, SKU, código de barras (EAN) ou categoria..."
               aria-label="Buscar produtos"
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-white placeholder-slate-400"
+              className="adm-input w-full pl-9 pr-4 py-2 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
             />
           </div>
 
@@ -123,7 +123,7 @@ export const AdminProductsPage: React.FC = () => {
             value={categoryFilter}
             onChange={(e) => updateParam('category', e.target.value)}
             aria-label="Filtrar por categoria"
-            className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs font-bold text-slate-200"
+            className="adm-input px-3 py-2 text-xs font-semibold"
           >
             <option value="all">Todas as Categorias ({categories.length})</option>
             {categories.map((cat) => (
@@ -145,10 +145,10 @@ export const AdminProductsPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => updateParam('status', tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 statusFilter === tab.id
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-950/80 text-slate-300 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
               }`}
             >
               {tab.label}
@@ -166,7 +166,7 @@ export const AdminProductsPage: React.FC = () => {
             canEdit && (
               <Link
                 to="/admin/products/new"
-                className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
               >
                 <Plus size={14} />
                 Cadastrar Produto
@@ -188,8 +188,10 @@ export const AdminProductsPage: React.FC = () => {
             return (
               <div
                 key={p.id}
-                className={`bg-slate-900/90 border rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-lg transition-all ${
-                  isActive ? 'border-slate-800/90 hover:border-slate-700' : 'border-slate-800/40 opacity-75'
+                className={`bg-[var(--adm-surface)] border rounded-[10px] p-4 flex flex-col justify-between gap-3 transition-colors ${
+                  isActive
+                    ? 'border-[var(--adm-border)] hover:border-[var(--adm-border-strong)]'
+                    : 'border-[var(--adm-border)] opacity-75'
                 }`}
               >
                 <div>
@@ -198,33 +200,33 @@ export const AdminProductsPage: React.FC = () => {
                       <img
                         src={p.image}
                         alt={p.title}
-                        className="w-16 h-16 rounded-xl object-cover bg-slate-950 border border-slate-800 shrink-0"
+                        className="w-16 h-16 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <div className="w-16 h-16 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] flex items-center justify-center text-[var(--adm-text-dim)] shrink-0">
                         <Package size={22} />
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[var(--adm-surface-elevated)] text-[var(--adm-text-muted)] border border-[var(--adm-border)]">
                           {p.category || 'Geral'}
                         </span>
                         {p.featured && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 inline-flex items-center gap-0.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--adm-gold-soft)] text-[var(--adm-gold)] border border-[var(--adm-gold-border)] inline-flex items-center gap-0.5">
                             <Star size={10} /> Destaque
                           </span>
                         )}
                       </div>
                       <Link
                         to={`/admin/products/${p.id}`}
-                        className="text-sm font-extrabold text-white hover:text-amber-400 line-clamp-2 leading-snug"
+                        className="text-sm font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] line-clamp-2 leading-snug"
                       >
                         {p.title}
                       </Link>
                       {p.sku && (
-                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                        <div className="text-[11px] font-mono text-[var(--adm-text-dim)] mt-0.5 tabular-nums">
                           SKU: {p.sku}
                         </div>
                       )}
@@ -232,28 +234,28 @@ export const AdminProductsPage: React.FC = () => {
                   </div>
 
                   {/* Price, Cost & Stock */}
-                  <div className="grid grid-cols-3 gap-2 mt-4 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center">
+                  <div className="grid grid-cols-3 gap-2 mt-3.5 p-2.5 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] text-center">
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">Venda</div>
-                      <div className="text-xs font-black text-emerald-400 mt-0.5">
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Venda</div>
+                      <div className="text-xs font-bold text-emerald-300 mt-0.5 tabular-nums">
                         {formatCurrency(price)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">Margem</div>
-                      <div className="text-xs font-extrabold text-white mt-0.5">
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Margem</div>
+                      <div className="text-xs font-bold text-[var(--adm-text)] mt-0.5 tabular-nums">
                         {margin !== null ? `${margin}%` : '—'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-slate-400 font-bold">Estoque</div>
+                      <div className="text-[10px] uppercase text-[var(--adm-text-dim)] font-bold">Estoque</div>
                       <div
-                        className={`text-xs font-extrabold mt-0.5 ${
+                        className={`text-xs font-bold mt-0.5 tabular-nums ${
                           stock === 0
-                            ? 'text-rose-400'
+                            ? 'text-rose-300'
                             : stock <= minStock
-                            ? 'text-amber-400'
-                            : 'text-white'
+                            ? 'text-amber-300'
+                            : 'text-[var(--adm-text)]'
                         }`}
                       >
                         {stock} un.
@@ -263,14 +265,14 @@ export const AdminProductsPage: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-[var(--adm-border)] flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {canEdit && (
                       <button
                         type="button"
                         disabled={actionLoading === `toggle-${p.id}`}
                         onClick={() => handleToggleProductActive(p)}
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                        className="p-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] border border-[var(--adm-border)]"
                         title={isActive ? 'Pausar na vitrine' : 'Reativar na vitrine'}
                       >
                         {isActive ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -280,7 +282,7 @@ export const AdminProductsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setArchiveTarget(p)}
-                        className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30"
+                        className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30"
                         title="Arquivar produto com justificativa"
                       >
                         <Archive size={14} />
@@ -290,7 +292,7 @@ export const AdminProductsPage: React.FC = () => {
 
                   <Link
                     to={`/admin/products/${p.id}`}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
                   >
                     <Edit3 size={13} />
                     Editar Ficha

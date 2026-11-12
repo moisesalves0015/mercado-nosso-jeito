@@ -53,20 +53,20 @@ export const AdminLoyaltyPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Fidelidade, Clube VIP & Roleta"
         subtitle="Gerencie missões de diamantes, catálogo de resgates e regras da roleta diária de prêmios."
         badge="Gamificação"
         actions={
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <div className="flex items-center gap-1.5 bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] p-1 rounded-lg">
             <button
               type="button"
               onClick={() => setSearchParams({ tab: 'clube' }, { replace: true })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1.5 ${
                 activeTab === 'clube'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'text-[var(--adm-text-muted)] hover:text-[var(--adm-text)]'
               }`}
             >
               <Sparkles size={14} />
@@ -75,10 +75,10 @@ export const AdminLoyaltyPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSearchParams({ tab: 'roleta' }, { replace: true })}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1.5 ${
                 activeTab === 'roleta'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'text-[var(--adm-text-muted)] hover:text-[var(--adm-text)]'
               }`}
             >
               <Gift size={14} />
@@ -91,22 +91,22 @@ export const AdminLoyaltyPage: React.FC = () => {
       {activeTab === 'roleta' ? (
         <form
           onSubmit={handleSaveRoleta}
-          className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-6 max-w-xl shadow-lg space-y-5"
+          className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 sm:p-6 max-w-xl space-y-5"
         >
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <Gift size={18} className="text-amber-400" />
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <Gift size={18} className="text-[var(--adm-gold)]" />
               Parâmetros da Roleta Diária
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-[var(--adm-text-muted)] mt-1">
               Controle a disponibilidade da roleta para os moradores e o limite diário de giros por conta.
             </p>
           </div>
 
-          <label className="flex items-center justify-between p-4 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer">
+          <label className="flex items-center justify-between p-4 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] cursor-pointer">
             <div>
-              <div className="text-xs font-bold text-white">Roleta Ativa no App</div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs font-bold text-[var(--adm-text)]">Roleta Ativa no App</div>
+              <div className="text-[11px] text-[var(--adm-text-muted)]">
                 Quando desativada, o widget da roleta fica oculto na tela inicial.
               </div>
             </div>
@@ -115,12 +115,12 @@ export const AdminLoyaltyPage: React.FC = () => {
               checked={roletaActive}
               disabled={!canEdit}
               onChange={(e) => setRoletaActive(e.target.checked)}
-              className="w-4 h-4 rounded accent-amber-500"
+              className="w-4 h-4 rounded accent-emerald-500"
             />
           </label>
 
           <div>
-            <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">
+            <label className="block text-xs font-bold uppercase text-[var(--adm-text-muted)] mb-1.5">
               Limite Diário de Giros por Morador
             </label>
             <input
@@ -130,7 +130,7 @@ export const AdminLoyaltyPage: React.FC = () => {
               disabled={!canEdit}
               value={roletaLimit}
               onChange={(e) => setRoletaLimit(Math.max(1, Number(e.target.value)))}
-              className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-bold"
+              className="adm-input w-full px-3.5 py-2 text-sm font-bold tabular-nums"
             />
           </div>
 
@@ -138,7 +138,7 @@ export const AdminLoyaltyPage: React.FC = () => {
             <button
               type="submit"
               disabled={savingRoleta}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs inline-flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-2"
             >
               <Save size={15} />
               {savingRoleta ? 'Salvando...' : 'Salvar Configuração da Roleta'}
@@ -146,7 +146,7 @@ export const AdminLoyaltyPage: React.FC = () => {
           )}
         </form>
       ) : (
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 sm:p-6 shadow-lg">
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 sm:p-6">
           <AdminClube />
         </div>
       )}

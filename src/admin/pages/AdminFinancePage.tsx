@@ -86,7 +86,7 @@ export const AdminFinancePage: React.FC = () => {
   const realMarginPct = simSalePrice > 0 ? (netProfit / simSalePrice) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Financeiro & Conciliação Pix"
         subtitle="Conciliação auditada de pagamentos Pix, receita reconhecida, margem real do catálogo e simulador de precificação."
@@ -121,36 +121,36 @@ export const AdminFinancePage: React.FC = () => {
           value={`${financeStats.avgMarginPct.toFixed(1)}%`}
           subtitle={`${financeStats.riskProducts.length} produtos com margem < 18%`}
           icon={<Calculator size={18} />}
-          tone={financeStats.riskProducts.length > 0 ? 'rose' : 'indigo'}
+          tone={financeStats.riskProducts.length > 0 ? 'rose' : 'emerald'}
         />
       </div>
 
       {/* Pix Reconciliation Queue */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <CheckCircle2 size={18} className="text-emerald-400" />
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-emerald-300" />
               Fila de Conciliação Pix
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--adm-text-muted)]">
               Confira o extrato bancário da chave Pix e aprove os pedidos abaixo para liberar a separação.
             </p>
           </div>
           <Link
             to="/admin/settings"
-            className="text-xs font-bold text-amber-400 hover:underline"
+            className="text-xs font-semibold text-[var(--adm-gold)] hover:underline"
           >
             Configurar Chave Pix
           </Link>
         </div>
 
         {financeStats.awaitingPix.length === 0 ? (
-          <div className="py-8 text-center text-xs text-slate-400 bg-slate-950/50 rounded-xl border border-slate-800">
+          <div className="py-8 text-center text-xs text-[var(--adm-text-muted)] bg-[var(--adm-bg-subtle)] rounded-lg border border-[var(--adm-border)]">
             Nenhum pedido aguardando confirmação de pagamento Pix no momento.
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/80">
+          <div className="divide-y divide-[var(--adm-border)]">
             {financeStats.awaitingPix.map((o) => (
               <div
                 key={o.id}
@@ -160,20 +160,22 @@ export const AdminFinancePage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       to={`/admin/orders/${o.id}`}
-                      className="font-mono text-xs font-extrabold text-amber-400 hover:underline"
+                      className="font-mono text-xs font-bold text-[var(--adm-gold)] hover:underline tabular-nums"
                     >
                       #{(o.orderNumber || o.id).slice(0, 8).toUpperCase()}
                     </Link>
-                    <span className="text-xs font-bold text-white">{o.userName || 'Morador'}</span>
+                    <span className="text-xs font-semibold text-[var(--adm-text)]">
+                      {o.userName || 'Morador'}
+                    </span>
                     <PaymentStatusBadge status={o.paymentStatus} />
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
                     Criado em {formatDateTime(o.createdAt)} • {o.items?.length || 0} itens
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-sm font-black text-emerald-400 mr-1">
+                  <span className="text-sm font-bold text-emerald-300 mr-1 tabular-nums">
                     {formatCurrency(o.total)}
                   </span>
                   <input
@@ -184,7 +186,7 @@ export const AdminFinancePage: React.FC = () => {
                     }
                     placeholder="ID E2E / Ref comprovante..."
                     aria-label="Referência do comprovante Pix"
-                    className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-400 w-44"
+                    className="adm-input px-3 py-1.5 text-xs placeholder-[var(--adm-text-dim)] w-44"
                   />
                   <button
                     type="button"
@@ -192,7 +194,7 @@ export const AdminFinancePage: React.FC = () => {
                     onClick={() =>
                       handleConfirmPayment(o.id, pixRefs[o.id]?.trim() || undefined)
                     }
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs inline-flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] disabled:opacity-50 text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
                   >
                     <CheckCircle2 size={14} />
                     Aprovar Pix
@@ -205,21 +207,21 @@ export const AdminFinancePage: React.FC = () => {
       </div>
 
       {/* Margin Risk Alerts + Pricing Simulator */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Margin Risk Products */}
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4">
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <AlertTriangle size={17} className="text-rose-400" />
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <AlertTriangle size={17} className="text-rose-300" />
               Alertas de Margem Comprimida (&lt; 18%)
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--adm-text-muted)]">
               Produtos ativos cujo preço de venda está próximo ou abaixo do custo de reposição
             </p>
           </div>
 
           {financeStats.riskProducts.length === 0 ? (
-            <p className="text-xs text-slate-400 py-6 text-center bg-slate-950/50 rounded-xl border border-slate-800">
+            <p className="text-xs text-[var(--adm-text-muted)] py-6 text-center bg-[var(--adm-bg-subtle)] rounded-lg border border-[var(--adm-border)]">
               Nenhum produto com margem crítica identificado.
             </p>
           ) : (
@@ -228,19 +230,19 @@ export const AdminFinancePage: React.FC = () => {
                 <Link
                   key={p.id}
                   to={`/admin/products/${p.id}`}
-                  className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800 text-xs transition-colors"
+                  className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[var(--adm-bg-subtle)] hover:bg-[var(--adm-surface-elevated)] border border-[var(--adm-border)] text-xs transition-colors"
                 >
                   <div className="min-w-0">
-                    <div className="font-bold text-white truncate">{p.title}</div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="font-semibold text-[var(--adm-text)] truncate">{p.title}</div>
+                    <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
                       Custo: {formatCurrency(p.costPrice)} → Venda: {formatCurrency(p.price)}
                     </div>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded font-black shrink-0 ${
+                    className={`px-2 py-0.5 rounded-md font-bold shrink-0 tabular-nums ${
                       p.marginPct < 0
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                        ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
+                        : 'bg-amber-500/15 text-amber-200 border border-amber-500/30'
                     }`}
                   >
                     {p.marginPct.toFixed(1)}%
@@ -252,20 +254,20 @@ export const AdminFinancePage: React.FC = () => {
         </div>
 
         {/* Interactive Profit Simulator */}
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4">
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <Calculator size={17} className="text-indigo-400" />
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <Calculator size={17} className="text-[var(--adm-gold)]" />
               Simulador de Lucro & Cashback (Clube VIP)
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--adm-text-muted)]">
               Simule o impacto do custo de mercadoria e diamantes concedidos na margem líquida unitária
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="block font-bold uppercase text-slate-400 mb-1">
+              <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                 Preço de Venda (R$)
               </label>
               <input
@@ -273,11 +275,11 @@ export const AdminFinancePage: React.FC = () => {
                 step="0.1"
                 value={simSalePrice}
                 onChange={(e) => setSimSalePrice(Number(e.target.value))}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                className="adm-input w-full px-3 py-2 font-bold tabular-nums"
               />
             </div>
             <div>
-              <label className="block font-bold uppercase text-slate-400 mb-1">
+              <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                 Custo Unitário (R$)
               </label>
               <input
@@ -285,48 +287,48 @@ export const AdminFinancePage: React.FC = () => {
                 step="0.1"
                 value={simCostPrice}
                 onChange={(e) => setSimCostPrice(Number(e.target.value))}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                className="adm-input w-full px-3 py-2 font-bold tabular-nums"
               />
             </div>
             <div>
-              <label className="block font-bold uppercase text-slate-400 mb-1">
+              <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                 Diamantes (💎)
               </label>
               <input
                 type="number"
                 value={simDiamonds}
                 onChange={(e) => setSimDiamonds(Number(e.target.value))}
-                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white font-bold"
+                className="adm-input w-full px-3 py-2 font-bold tabular-nums"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-center">
+          <div className="grid grid-cols-3 gap-3 p-4 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] text-center">
             <div>
-              <div className="text-[10px] font-bold uppercase text-slate-400">Custo Cashback</div>
-              <div className="text-sm font-bold text-indigo-300 mt-0.5">
+              <div className="text-[10px] font-bold uppercase text-[var(--adm-text-dim)]">Custo Cashback</div>
+              <div className="text-sm font-bold text-[var(--adm-gold)] mt-0.5 tabular-nums">
                 {formatCurrency(diamondCashbackCost)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold uppercase text-slate-400">Lucro Unitário</div>
+              <div className="text-[10px] font-bold uppercase text-[var(--adm-text-dim)]">Lucro Unitário</div>
               <div
-                className={`text-sm font-black mt-0.5 ${
-                  netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                className={`text-sm font-bold mt-0.5 tabular-nums ${
+                  netProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'
                 }`}
               >
                 {formatCurrency(netProfit)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold uppercase text-slate-400">Margem Real</div>
+              <div className="text-[10px] font-bold uppercase text-[var(--adm-text-dim)]">Margem Real</div>
               <div
-                className={`text-sm font-black mt-0.5 ${
+                className={`text-sm font-bold mt-0.5 tabular-nums ${
                   realMarginPct >= 20
-                    ? 'text-emerald-400'
+                    ? 'text-emerald-300'
                     : realMarginPct >= 0
-                    ? 'text-amber-400'
-                    : 'text-rose-400'
+                    ? 'text-amber-300'
+                    : 'text-rose-300'
                 }`}
               >
                 {realMarginPct.toFixed(1)}%

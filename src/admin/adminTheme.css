@@ -1,0 +1,112 @@
+/* Scoped design tokens & operational utilities for the Mercado Nosso Jeito admin console */
+
+.admin-shell {
+  --adm-bg: #08120c;
+  --adm-bg-subtle: #0c1912;
+  --adm-surface: #0f2017;
+  --adm-surface-elevated: #142a1e;
+  --adm-surface-hover: #193425;
+  --adm-surface-glass: rgba(11, 24, 17, 0.88);
+  --adm-border: rgba(148, 184, 161, 0.16);
+  --adm-border-strong: rgba(148, 184, 161, 0.28);
+
+  --adm-text: #f1f5f2;
+  --adm-text-muted: #b4c4ba;
+  --adm-text-dim: #7e9487;
+
+  --adm-brand: #22c55e;
+  --adm-brand-hover: #16a34a;
+  --adm-brand-soft: rgba(34, 197, 94, 0.12);
+  --adm-brand-border: rgba(34, 197, 94, 0.32);
+
+  --adm-gold: #d4af73;
+  --adm-gold-soft: rgba(212, 175, 115, 0.12);
+  --adm-gold-border: rgba(212, 175, 115, 0.34);
+
+  --adm-radius-sm: 6px;
+  --adm-radius-md: 8px;
+  --adm-radius-lg: 10px;
+  --adm-radius-xl: 12px;
+
+  background-color: var(--adm-bg);
+  color: var(--adm-text);
+  overflow-x: clip;
+}
+
+/* Selective frosted glass ONLY for floating surfaces (topbar, menus, modal overlays) */
+.admin-shell .adm-glass {
+  background-color: var(--adm-surface-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .admin-shell .adm-glass {
+    background-color: #0b1811;
+  }
+}
+
+.admin-shell .adm-panel {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-lg);
+}
+
+.admin-shell .adm-panel-elevated {
+  background-color: var(--adm-surface-elevated);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-lg);
+}
+
+.admin-shell .adm-input {
+  background-color: var(--adm-bg-subtle);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-md);
+  color: var(--adm-text);
+}
+
+.admin-shell .adm-input:focus {
+  outline: none;
+  border-color: var(--adm-brand);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.22);
+}
+
+.admin-shell :focus-visible {
+  outline: 2px solid var(--adm-brand);
+  outline-offset: 2px;
+}
+
+.admin-shell .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle custom scrollbar for dense tables and sidebar */
+.admin-shell ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.admin-shell ::-webkit-scrollbar-track {
+  background: var(--adm-bg-subtle);
+}
+
+.admin-shell ::-webkit-scrollbar-thumb {
+  background: rgba(148, 184, 161, 0.24);
+  border-radius: 4px;
+}
+
+.admin-shell ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 184, 161, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell *,
+  .admin-shell *::before,
+  .admin-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

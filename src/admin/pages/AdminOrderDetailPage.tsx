@@ -71,7 +71,7 @@ export const AdminOrderDetailPage: React.FC = () => {
 
   if (fetching) {
     return (
-      <div className="p-12 text-center text-sm text-slate-400">
+      <div className="p-12 text-center text-sm text-[var(--adm-text-muted)]">
         Carregando ficha completa do pedido...
       </div>
     );
@@ -86,7 +86,7 @@ export const AdminOrderDetailPage: React.FC = () => {
         action={
           <Link
             to="/admin/orders"
-            className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+            className="px-4 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs"
           >
             Voltar para Fila de Pedidos
           </Link>
@@ -99,7 +99,7 @@ export const AdminOrderDetailPage: React.FC = () => {
     order.paymentStatus === 'approved' || order.paymentStatus === 'on_delivery';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title={`Pedido #${(order.orderNumber || order.id).slice(0, 10).toUpperCase()}`}
         subtitle={`Criado em ${formatDateTime(order.createdAt)} • ID: ${order.id}`}
@@ -111,7 +111,7 @@ export const AdminOrderDetailPage: React.FC = () => {
             <PaymentStatusBadge status={order.paymentStatus} />
             <Link
               to={`/admin/support?orderId=${encodeURIComponent(order.id)}&uid=${encodeURIComponent(order.uid || '')}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-sky-300 border border-slate-700"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-semibold text-sky-200 border border-[var(--adm-border)]"
             >
               <Headphones size={14} />
               Abrir Chamado deste Pedido
@@ -120,17 +120,17 @@ export const AdminOrderDetailPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Columns: Items + Financial Breakdown + Timeline */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-5">
           {/* Order Items */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
-            <h2 className="text-base font-extrabold text-white mb-4 flex items-center gap-2">
-              <Package size={17} className="text-amber-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+            <h2 className="text-base font-bold text-[var(--adm-text)] mb-4 flex items-center gap-2">
+              <Package size={17} className="text-[var(--adm-gold)]" />
               Itens para Separação ({order.items?.length || 0})
             </h2>
 
-            <div className="divide-y divide-slate-800/80">
+            <div className="divide-y divide-[var(--adm-border)]">
               {(order.items || []).map((item, idx) => (
                 <div
                   key={`${item.id || idx}-${idx}`}
@@ -141,10 +141,10 @@ export const AdminOrderDetailPage: React.FC = () => {
                       <img
                         src={item.image}
                         alt={item.title}
-                        className="w-11 h-11 rounded-xl object-cover bg-slate-950 border border-slate-800 shrink-0"
+                        className="w-11 h-11 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                       />
                     ) : (
-                      <div className="w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <div className="w-11 h-11 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] flex items-center justify-center text-[var(--adm-text-dim)] shrink-0">
                         <Package size={16} />
                       </div>
                     )}
@@ -152,21 +152,21 @@ export const AdminOrderDetailPage: React.FC = () => {
                       {item.id ? (
                         <Link
                           to={`/admin/products/${item.id}`}
-                          className="text-xs sm:text-sm font-bold text-white hover:text-amber-400 truncate block"
+                          className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate block"
                         >
                           {item.title}
                         </Link>
                       ) : (
-                        <div className="text-xs sm:text-sm font-bold text-white truncate">
+                        <div className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] truncate">
                           {item.title}
                         </div>
                       )}
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-[var(--adm-text-muted)] tabular-nums">
                         {item.quantity}x {formatCurrency(item.price)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm font-extrabold text-white shrink-0">
+                  <div className="text-sm font-bold text-[var(--adm-text)] shrink-0 tabular-nums">
                     {formatCurrency(Number(item.price || 0) * Number(item.quantity || 1))}
                   </div>
                 </div>
@@ -174,54 +174,54 @@ export const AdminOrderDetailPage: React.FC = () => {
             </div>
 
             {/* Totals Breakdown */}
-            <div className="mt-4 pt-4 border-t border-slate-800 space-y-2 text-xs">
+            <div className="mt-4 pt-4 border-t border-[var(--adm-border)] space-y-2 text-xs">
               {order.subtotal !== undefined && (
-                <div className="flex justify-between text-slate-300">
+                <div className="flex justify-between text-[var(--adm-text-muted)]">
                   <span>Subtotal dos itens</span>
-                  <span className="font-bold">{formatCurrency(order.subtotal)}</span>
+                  <span className="font-semibold tabular-nums">{formatCurrency(order.subtotal)}</span>
                 </div>
               )}
               {order.shippingFee !== undefined && (
-                <div className="flex justify-between text-slate-300">
+                <div className="flex justify-between text-[var(--adm-text-muted)]">
                   <span>Taxa de entrega</span>
-                  <span className="font-bold">
+                  <span className="font-semibold tabular-nums">
                     {Number(order.shippingFee) === 0 ? 'Grátis' : formatCurrency(order.shippingFee)}
                   </span>
                 </div>
               )}
               {Number(order.discountValue || 0) > 0 && (
-                <div className="flex justify-between text-emerald-400">
+                <div className="flex justify-between text-emerald-300">
                   <span>
                     Desconto aplicado {order.couponCode ? `(${order.couponCode})` : ''}
                   </span>
-                  <span className="font-bold">- {formatCurrency(order.discountValue)}</span>
+                  <span className="font-semibold tabular-nums">- {formatCurrency(order.discountValue)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center text-sm sm:text-base font-black text-white pt-2 border-t border-slate-800/80">
+              <div className="flex justify-between items-center text-sm sm:text-base font-bold text-[var(--adm-text)] pt-2 border-t border-[var(--adm-border)]">
                 <span>Total Calculado no Servidor</span>
-                <span className="text-emerald-400 text-lg">{formatCurrency(order.total)}</span>
+                <span className="text-emerald-300 text-lg tabular-nums">{formatCurrency(order.total)}</span>
               </div>
             </div>
           </div>
 
           {/* Order Timeline */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
-            <h2 className="text-base font-extrabold text-white mb-4 flex items-center gap-2">
-              <Clock size={17} className="text-sky-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+            <h2 className="text-base font-bold text-[var(--adm-text)] mb-4 flex items-center gap-2">
+              <Clock size={17} className="text-sky-300" />
               Linha do Tempo & Auditoria do Pedido
             </h2>
             {!order.timeline || order.timeline.length === 0 ? (
-              <p className="text-xs text-slate-400">Sem eventos detalhados registrados.</p>
+              <p className="text-xs text-[var(--adm-text-muted)]">Sem eventos detalhados registrados.</p>
             ) : (
-              <ol className="relative border-l border-slate-800 ml-3 space-y-4">
+              <ol className="relative border-l border-[var(--adm-border)] ml-3 space-y-4">
                 {order.timeline.map((ev, i) => (
                   <li key={i} className="ml-4">
-                    <span className="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full bg-amber-400 border-2 border-slate-900" />
-                    <div className="text-xs font-bold text-white">{ev.label}</div>
-                    <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
+                    <span className="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full bg-[var(--adm-brand)] border-2 border-[var(--adm-surface)]" />
+                    <div className="text-xs font-bold text-[var(--adm-text)]">{ev.label}</div>
+                    <div className="text-[11px] text-[var(--adm-text-muted)] flex flex-wrap items-center gap-2 mt-0.5 tabular-nums">
                       <span>{formatDateTime(ev.timestamp)}</span>
                       {ev.actor && <span>• Ator: {ev.actor}</span>}
-                      {ev.details && <span className="text-amber-300">• {ev.details}</span>}
+                      {ev.details && <span className="text-[var(--adm-gold)]">• {ev.details}</span>}
                     </div>
                   </li>
                 ))}
@@ -231,18 +231,18 @@ export const AdminOrderDetailPage: React.FC = () => {
         </div>
 
         {/* Right Column: Actions + Customer + Address */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Operational Control Card */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4">
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <CreditCard size={17} className="text-emerald-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
+            <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <CreditCard size={17} className="text-emerald-300" />
               Ações de Conciliação & Status
             </h2>
 
             {/* Pix Confirmation Box */}
             {order.status !== 'cancelled' && order.paymentStatus !== 'approved' && (
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-2.5">
-                <div className="text-xs font-bold text-emerald-300">
+              <div className="p-3.5 rounded-lg bg-emerald-950/30 border border-emerald-500/30 space-y-2.5">
+                <div className="text-xs font-bold text-emerald-200">
                   Conciliação Financeira (Pix / Entrega)
                 </div>
                 <input
@@ -250,13 +250,13 @@ export const AdminOrderDetailPage: React.FC = () => {
                   value={pixRef}
                   onChange={(e) => setPixRef(e.target.value)}
                   placeholder="ID E2E / Comprovante Pix (opcional)"
-                  className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-white placeholder-slate-400"
+                  className="adm-input w-full px-3 py-1.5 text-xs placeholder-[var(--adm-text-dim)]"
                 />
                 <button
                   type="button"
                   disabled={!canApprovePayment || actionLoading === `pay-${order.id}`}
                   onClick={() => handleConfirmPayment(order.id, pixRef.trim() || undefined)}
-                  className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs inline-flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] disabled:opacity-50 text-emerald-950 font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <CheckCircle2 size={15} />
                   Confirmar Recebimento Agora
@@ -267,7 +267,7 @@ export const AdminOrderDetailPage: React.FC = () => {
             {/* Status Transitions */}
             {order.status !== 'cancelled' && canEditOrder && (
               <div className="space-y-2.5 pt-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--adm-text-muted)]">
                   Avançar Etapa Operacional
                 </label>
                 <input
@@ -275,7 +275,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                   value={statusNote}
                   onChange={(e) => setStatusNote(e.target.value)}
                   placeholder="Observação na timeline (ex: Entregue na portaria)"
-                  className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-400"
+                  className="adm-input w-full px-3 py-2 text-xs placeholder-[var(--adm-text-dim)]"
                 />
 
                 <div className="grid grid-cols-2 gap-2">
@@ -289,7 +289,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                     onClick={() =>
                       handleUpdateOrderStatus(order.id, 'preparing', statusNote.trim() || undefined)
                     }
-                    className="px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 disabled:opacity-40 text-indigo-200 border border-indigo-500/30 font-bold text-xs"
+                    className="px-3 py-2 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 disabled:opacity-40 text-teal-200 border border-teal-500/30 font-semibold text-xs"
                   >
                     1. Em Preparo
                   </button>
@@ -303,7 +303,7 @@ export const AdminOrderDetailPage: React.FC = () => {
                     onClick={() =>
                       handleUpdateOrderStatus(order.id, 'delivering', statusNote.trim() || undefined)
                     }
-                    className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 disabled:opacity-40 text-purple-200 border border-purple-500/30 font-bold text-xs inline-flex items-center justify-center gap-1"
+                    className="px-3 py-2 rounded-lg bg-lime-500/15 hover:bg-lime-500/25 disabled:opacity-40 text-lime-200 border border-lime-500/30 font-semibold text-xs inline-flex items-center justify-center gap-1"
                   >
                     <Truck size={13} />
                     2. Saiu p/ Entrega
@@ -318,13 +318,13 @@ export const AdminOrderDetailPage: React.FC = () => {
                   onClick={() =>
                     handleUpdateOrderStatus(order.id, 'delivered', statusNote.trim() || undefined)
                   }
-                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-extrabold text-xs"
+                  className="w-full py-2.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] disabled:opacity-40 text-emerald-950 font-bold text-xs"
                 >
                   3. Marcar como Entregue ao Morador
                 </button>
 
                 {!isPaidOrOnDelivery && (
-                  <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
+                  <p className="text-[11px] text-amber-200 bg-amber-500/10 border border-amber-500/25 rounded-lg p-2">
                     Regra Comercial: confirme o recebimento Pix antes de avançar para separação ou rota.
                   </p>
                 )}
@@ -333,11 +333,11 @@ export const AdminOrderDetailPage: React.FC = () => {
 
             {/* Cancel Button */}
             {order.status !== 'cancelled' && order.status !== 'delivered' && canEditOrder && (
-              <div className="pt-3 border-t border-slate-800">
+              <div className="pt-3 border-t border-[var(--adm-border)]">
                 <button
                   type="button"
                   onClick={() => setCancelModalOpen(true)}
-                  className="w-full py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-bold text-xs inline-flex items-center justify-center gap-1.5"
+                  className="w-full py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 font-semibold text-xs inline-flex items-center justify-center gap-1.5"
                 >
                   <XCircle size={14} />
                   Cancelar Pedido e Estornar Estoque
@@ -347,20 +347,20 @@ export const AdminOrderDetailPage: React.FC = () => {
           </div>
 
           {/* Customer Info */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-3">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <User size={16} className="text-indigo-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+            <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <User size={16} className="text-emerald-300" />
               Dados do Morador
             </h2>
             <div className="text-xs space-y-1.5">
-              <div className="font-bold text-white text-sm">{order.userName || 'Cliente'}</div>
-              {order.userEmail && <div className="text-slate-400">{order.userEmail}</div>}
-              {order.userPhone && <div className="text-slate-300">{order.userPhone}</div>}
+              <div className="font-bold text-[var(--adm-text)] text-sm">{order.userName || 'Cliente'}</div>
+              {order.userEmail && <div className="text-[var(--adm-text-muted)]">{order.userEmail}</div>}
+              {order.userPhone && <div className="text-[var(--adm-text-muted)]">{order.userPhone}</div>}
               {order.uid && (
                 <div className="pt-2">
                   <Link
                     to={`/admin/customers/${order.uid}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 font-bold text-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--adm-brand-soft)] hover:bg-emerald-500/20 text-emerald-200 border border-[var(--adm-brand-border)] font-semibold text-xs"
                   >
                     Abrir Ficha 360° do Morador
                   </Link>
@@ -370,18 +370,18 @@ export const AdminOrderDetailPage: React.FC = () => {
           </div>
 
           {/* Delivery Address */}
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-2">
-            <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-              <MapPin size={16} className="text-amber-400" />
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-2">
+            <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+              <MapPin size={16} className="text-[var(--adm-gold)]" />
               Endereço de Entrega
             </h2>
             {order.address ? (
-              <div className="text-xs text-slate-300 space-y-1 leading-relaxed">
+              <div className="text-xs text-[var(--adm-text-muted)] space-y-1 leading-relaxed">
                 {order.address.condominio && (
-                  <div className="font-bold text-amber-300">{order.address.condominio}</div>
+                  <div className="font-bold text-[var(--adm-gold)]">{order.address.condominio}</div>
                 )}
                 {(order.address.bloco || order.address.apartamento) && (
-                  <div className="font-semibold text-white">
+                  <div className="font-semibold text-[var(--adm-text)]">
                     {order.address.bloco ? `Bloco ${order.address.bloco} ` : ''}
                     {order.address.apartamento ? `• Apto ${order.address.apartamento}` : ''}
                   </div>
@@ -393,16 +393,16 @@ export const AdminOrderDetailPage: React.FC = () => {
                   </div>
                 )}
                 {order.address.neighborhood && (
-                  <div className="text-slate-400">
+                  <div className="text-[var(--adm-text-dim)]">
                     {order.address.neighborhood} • {order.address.city}/{order.address.state}
                   </div>
                 )}
                 {order.address.referencia && (
-                  <div className="text-slate-400 italic">Ref: {order.address.referencia}</div>
+                  <div className="text-[var(--adm-text-dim)] italic">Ref: {order.address.referencia}</div>
                 )}
               </div>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--adm-text-muted)]">
                 Modalidade: {order.deliveryMethod || 'Entrega no condomínio'}
               </p>
             )}

@@ -135,7 +135,7 @@ export const AdminInventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Estoque & Inventário"
         subtitle="Controle transacional de saldo físico, alertas de ruptura e histórico auditado de movimentações."
@@ -143,7 +143,7 @@ export const AdminInventoryPage: React.FC = () => {
         actions={
           <Link
             to="/admin/products"
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"
+            className="px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
           >
             Ver Catálogo de Produtos
           </Link>
@@ -157,7 +157,7 @@ export const AdminInventoryPage: React.FC = () => {
           value={stats.totalUnits}
           subtitle={`Em ${activeProducts.length} produtos ativos`}
           icon={<Boxes size={18} />}
-          tone="indigo"
+          tone="emerald"
         />
         <MetricCard
           label="Produtos Esgotados (Zero)"
@@ -183,11 +183,11 @@ export const AdminInventoryPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-3 shadow-lg">
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3">
         <div className="relative">
           <Search
             size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--adm-text-dim)] pointer-events-none"
           />
           <input
             type="search"
@@ -195,7 +195,7 @@ export const AdminInventoryPage: React.FC = () => {
             onChange={(e) => updateParam('q', e.target.value)}
             placeholder="Buscar item por título, SKU, corredor/localização ou fornecedor..."
             aria-label="Buscar no inventário"
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 focus:outline-none text-xs sm:text-sm text-white placeholder-slate-400"
+            className="adm-input w-full pl-9 pr-4 py-2 text-xs sm:text-sm placeholder-[var(--adm-text-dim)]"
           />
         </div>
 
@@ -210,10 +210,10 @@ export const AdminInventoryPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => updateParam('level', tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 levelFilter === tab.id
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-950/80 text-slate-300 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
+                  : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
               }`}
             >
               {tab.label}
@@ -222,9 +222,9 @@ export const AdminInventoryPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Inventory List */}
-        <div className="lg:col-span-2 space-y-3">
+        <div className="lg:col-span-2 space-y-2.5">
           {filteredProducts.length === 0 ? (
             <EmptyState
               icon={<Boxes size={22} />}
@@ -238,28 +238,28 @@ export const AdminInventoryPage: React.FC = () => {
               return (
                 <div
                   key={p.id}
-                  className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md"
+                  className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {p.image ? (
                       <img
                         src={p.image}
                         alt={p.title}
-                        className="w-12 h-12 rounded-xl object-cover bg-slate-950 border border-slate-800 shrink-0"
+                        className="w-12 h-12 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <div className="w-12 h-12 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] flex items-center justify-center text-[var(--adm-text-dim)] shrink-0">
                         <Package size={18} />
                       </div>
                     )}
                     <div className="min-w-0">
                       <Link
                         to={`/admin/products/${p.id}`}
-                        className="text-sm font-extrabold text-white hover:text-amber-400 truncate block"
+                        className="text-sm font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate block"
                       >
                         {p.title}
                       </Link>
-                      <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
+                      <div className="text-[11px] text-[var(--adm-text-dim)] flex flex-wrap items-center gap-2 mt-0.5 tabular-nums">
                         <span>{p.category}</span>
                         {p.sku && <span>• SKU: {p.sku}</span>}
                         {p.location && <span>• Local: {p.location}</span>}
@@ -271,12 +271,12 @@ export const AdminInventoryPage: React.FC = () => {
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                     <div className="text-right">
                       <span
-                        className={`px-2.5 py-1 rounded-xl text-xs font-black border ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-bold border tabular-nums ${
                           s === 0
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            ? 'bg-rose-500/20 text-rose-200 border-rose-500/40'
                             : s <= min
-                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                            : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-amber-500/15 text-amber-200 border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
                         }`}
                       >
                         {s} {p.unit || 'un.'}
@@ -288,7 +288,7 @@ export const AdminInventoryPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => openAdjustModal(p, 'add')}
-                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold inline-flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-500/30 text-xs font-semibold inline-flex items-center gap-1"
                         >
                           <Plus size={13} />
                           Entrada
@@ -296,7 +296,7 @@ export const AdminInventoryPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => openAdjustModal(p, 'remove')}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold"
+                          className="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 text-xs font-semibold"
                         >
                           Baixa
                         </button>
@@ -310,13 +310,13 @@ export const AdminInventoryPage: React.FC = () => {
         </div>
 
         {/* Recent Stock History */}
-        <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg h-fit space-y-4">
-          <h2 className="text-sm font-extrabold text-white flex items-center gap-2">
-            <History size={16} className="text-amber-400" />
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 h-fit space-y-4">
+          <h2 className="text-sm font-bold text-[var(--adm-text)] flex items-center gap-2">
+            <History size={16} className="text-[var(--adm-gold)]" />
             Últimas Movimentações Auditadas
           </h2>
           {recentMovements.length === 0 ? (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--adm-text-muted)]">
               Nenhuma movimentação manual registrada recentemente.
             </p>
           ) : (
@@ -324,26 +324,28 @@ export const AdminInventoryPage: React.FC = () => {
               {recentMovements.map((m, idx) => (
                 <div
                   key={`${m.productId}-${idx}`}
-                  className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-1"
+                  className="p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] text-xs space-y-1"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <Link
                       to={`/admin/products/${m.productId}`}
-                      className="font-bold text-white hover:text-amber-400 truncate"
+                      className="font-semibold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate"
                     >
                       {m.productTitle}
                     </Link>
                     <span
-                      className={`font-black inline-flex items-center gap-0.5 shrink-0 ${
-                        m.delta >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      className={`font-bold inline-flex items-center gap-0.5 shrink-0 tabular-nums ${
+                        m.delta >= 0 ? 'text-emerald-300' : 'text-rose-300'
                       }`}
                     >
                       {m.delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                       {m.delta >= 0 ? `+${m.delta}` : m.delta} un.
                     </span>
                   </div>
-                  <div className="text-slate-300">{m.note}</div>
-                  <div className="text-[10px] text-slate-400">{formatDateTime(m.date)}</div>
+                  <div className="text-[var(--adm-text-muted)]">{m.note}</div>
+                  <div className="text-[10px] text-[var(--adm-text-dim)] tabular-nums">
+                    {formatDateTime(m.date)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -354,33 +356,34 @@ export const AdminInventoryPage: React.FC = () => {
       {/* Transactional Stock Adjustment Modal */}
       {adjustTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-md w-full p-5 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-extrabold text-white">
+              <h3 className="text-base font-bold text-[var(--adm-text)]">
                 {deltaMode === 'add' ? 'Registrar Entrada de Estoque' : 'Registrar Baixa de Estoque'}
               </h3>
               <button
                 type="button"
                 onClick={() => setAdjustTarget(null)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] p-1 rounded-md"
+                aria-label="Fechar modal"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300 mb-4">
-              Produto: <span className="font-bold text-amber-300">{adjustTarget.title}</span> (Saldo atual:{' '}
-              <span className="font-bold text-white">{adjustTarget.stock ?? 0} un.</span>)
+            <p className="text-xs text-[var(--adm-text-muted)] mb-4">
+              Produto: <span className="font-bold text-[var(--adm-gold)]">{adjustTarget.title}</span> (Saldo atual:{' '}
+              <span className="font-bold text-[var(--adm-text)] tabular-nums">{adjustTarget.stock ?? 0} un.</span>)
             </p>
 
             <form onSubmit={handleSubmitAdjust} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Quantidade ({deltaMode === 'add' ? '+' : '-'}) *
                   </label>
                   <input
@@ -390,11 +393,11 @@ export const AdminInventoryPage: React.FC = () => {
                     required
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white font-bold"
+                    className="adm-input w-full px-3 py-2 text-sm font-bold tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold uppercase text-slate-400 mb-1">
+                  <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                     Estoque Mínimo (Alerta)
                   </label>
                   <input
@@ -402,13 +405,13 @@ export const AdminInventoryPage: React.FC = () => {
                     min={0}
                     value={minStockVal}
                     onChange={(e) => setMinStockVal(Math.max(0, Number(e.target.value)))}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white"
+                    className="adm-input w-full px-3 py-2 text-sm tabular-nums"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-400 mb-1">
+                <label className="block font-bold uppercase text-[var(--adm-text-muted)] mb-1">
                   Motivo / Documento para Auditoria *
                 </label>
                 <input
@@ -418,7 +421,7 @@ export const AdminInventoryPage: React.FC = () => {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Ex: Nota Fiscal 1092, Contagem física, Vencimento..."
-                  className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+                  className="adm-input w-full px-3 py-2"
                 />
               </div>
 
@@ -426,16 +429,16 @@ export const AdminInventoryPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAdjustTarget(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text-muted)] font-semibold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading === `stock-${adjustTarget.id}`}
-                  className={`px-4 py-2 rounded-xl font-extrabold ${
+                  className={`px-4 py-2 rounded-lg font-bold ${
                     deltaMode === 'add'
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                      ? 'bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950'
                       : 'bg-rose-600 hover:bg-rose-500 text-white'
                   }`}
                 >
