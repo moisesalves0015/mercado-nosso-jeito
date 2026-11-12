@@ -640,7 +640,8 @@ describe('support ticket & inventory callables', () => {
     expect(updated).toMatchObject({ success: true, status: 'resolved', priority: 'medium' });
     const afterDoc = fakeDb.read(`support_tickets/${ticketId}`);
     expect(afterDoc?.status).toBe('resolved');
-    expect((afterDoc?.timeline as unknown[]).length).toBe(2);
+    const actions = (afterDoc?.timeline as Array<{ action: string }>).map((e) => e.action);
+    expect(actions).toEqual(expect.arrayContaining(['created', 'status:resolved', 'assignment', 'public_reply']));
     expect(auditDocs().some((l) => l.action === 'ticket.update' && l.entityId === ticketId)).toBe(true);
   });
 

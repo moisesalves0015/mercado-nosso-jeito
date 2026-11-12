@@ -416,6 +416,13 @@ export const adminListAudit = functions.https.onCall(async (data, context) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const VALID_TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
 const VALID_TICKET_STATUSES = ['open', 'in_progress', 'waiting_customer', 'resolved', 'archived'] as const;
+const ALLOWED_TICKET_TRANSITIONS: Record<string, readonly string[]> = {
+  open: ['in_progress', 'waiting_customer', 'resolved', 'archived'],
+  in_progress: ['open', 'waiting_customer', 'resolved', 'archived'],
+  waiting_customer: ['in_progress', 'resolved', 'archived'],
+  resolved: ['in_progress', 'archived'],
+  archived: ['open'],
+};
 
 export const adminCreateSupportTicket = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new HttpsError('unauthenticated', 'Autenticação necessária.');
@@ -505,7 +512,7 @@ export const adminCreateSupportTicket = functions.https.onCall(async (data, cont
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// adminUpdateSupportTicket — updates status, priority, assignee, or adds note
+// adminUpdateSupportTicket — granular per-field auth, transitions, trusted assignee
 // ─────────────────────────────────────────────────────────────────────────────
 export const adminUpdateSupportTicket = functions.https.onCall(async (data, context) => {
   const req = (data ?? {}) as {
@@ -513,7 +520,6 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
     status?: unknown;
     priority?: unknown;
     assignedTo?: unknown;
-    assignedName?: unknown;
     note?: unknown;
     internal?: unknown;
   };
@@ -523,6 +529,7 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
   const newPriority = typeof req.priority === 'string' && req.priority.trim() ? req.priority.trim() : undefined;
   const note = typeof req.note === 'string' && req.note.trim() ? req.note.trim().slice(0, 1500) : undefined;
   const internal = req.internal === true;
+  const hasAssignmentField = req.assignedTo !== undefined;
 
   if (newStatus && !(VALID_TICKET_STATUSES as readonly string[]).includes(newStatus)) {
     throw new HttpsError('invalid-argument', 'Status de ticket inválido.');
@@ -531,10 +538,31 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
     throw new HttpsError('invalid-argument', 'Prioridade de ticket inválida.');
   }
 
-  const requiredPerm = newStatus === 'archived'
-    ? ['suporte:archive', 'suporte:edit']
-    : ['suporte:edit', 'suporte:approve'];
-  const actor = await requireAnyPermission(context.auth, requiredPerm);
+  // Base staff check
+  const actor = await requireAnyPermission(context.auth, [
+    'suporte:edit',
+    'suporte:approve',
+    'suporte:archive',
+    'suporte:restore',
+  ]);
+
+  // Granular per-field authorization
+  if (newStatus === 'archived') {
+    await requirePermission(context.auth, 'suporte:archive');
+  } else if (newStatus) {
+    await requireAnyPermission(context.auth, ['suporte:edit', 'suporte:approve']);
+  }
+  if (newPriority) {
+    await requirePermission(context.auth, 'suporte:edit');
+  }
+  if (hasAssignmentField) {
+    await requireAnyPermission(context.auth, ['suporte:edit', 'suporte:approve']);
+  }
+  if (note && internal) {
+    await requirePermission(context.auth, 'suporte:edit');
+  } else if (note && !internal) {
+    await requireAnyPermission(context.auth, ['suporte:edit', 'suporte:approve']);
+  }
 
   return db().runTransaction(async (tx) => {
     const ref = db().collection('support_tickets').doc(ticketId);
@@ -544,30 +572,123 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
     const current = snap.data() as Record<string, unknown>;
     const prevStatus = String(current.status ?? 'open');
     const prevPriority = String(current.priority ?? 'medium');
+    const prevAssignedTo = (current.assignedTo as string | null | undefined) ?? null;
+    const prevAssignedName = (current.assignedName as string | null | undefined) ?? null;
+
+    if (newStatus && newStatus !== prevStatus) {
+      if (prevStatus === 'archived') {
+        await requireAnyPermission(context.auth, ['suporte:restore', 'suporte:archive']);
+      }
+      const allowed = ALLOWED_TICKET_TRANSITIONS[prevStatus] ?? [];
+      if (!allowed.includes(newStatus)) {
+        throw new HttpsError('failed-precondition', `Transição de status inválida: ${prevStatus} -> ${newStatus}.`);
+      }
+    }
+
+    let nextAssignedTo: string | null = prevAssignedTo;
+    let nextAssignedName: string | null = prevAssignedName;
+    if (hasAssignmentField) {
+      if (req.assignedTo === null || (typeof req.assignedTo === 'string' && !req.assignedTo.trim())) {
+        nextAssignedTo = null;
+        nextAssignedName = null;
+      } else {
+        const targetUid = str(req.assignedTo, 'assignedTo', 1, 128);
+        const [raSnap, userSnap] = await Promise.all([
+          tx.get(db().collection('role_assignments').doc(targetUid)),
+          tx.get(db().collection('users').doc(targetUid)),
+        ]);
+        if (!userSnap.exists) {
+          throw new HttpsError('failed-precondition', 'Responsável não encontrado no cadastro.');
+        }
+        const userData = userSnap.data() as { role?: string; name?: string; email?: string };
+        if (userData.role === 'banned') {
+          throw new HttpsError('failed-precondition', 'Responsável está banido e não pode receber chamados.');
+        }
+        const raData = raSnap.exists ? (raSnap.data() as { status?: string }) : null;
+        const isActiveStaff = raData ? raData.status === 'active' : userData.role === 'admin';
+        if (!isActiveStaff) {
+          throw new HttpsError('failed-precondition', 'Responsável deve ser um membro ativo da equipe.');
+        }
+        nextAssignedTo = targetUid;
+        // Derive assignedName strictly from trusted user record (ignore any client-sent assignedName)
+        nextAssignedName =
+          (typeof userData.name === 'string' && userData.name.trim()) ||
+          (typeof userData.email === 'string' && userData.email.trim()) ||
+          targetUid;
+      }
+    }
+
+    const statusChanged = Boolean(newStatus && newStatus !== prevStatus);
+    const priorityChanged = Boolean(newPriority && newPriority !== prevPriority);
+    const assignmentChanged = hasAssignmentField && nextAssignedTo !== prevAssignedTo;
+
+    if (!statusChanged && !priorityChanged && !assignmentChanged && !note) {
+      throw new HttpsError('invalid-argument', 'Nenhuma alteração ou nota informada.');
+    }
 
     const updates: Record<string, unknown> = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedBy: actor.uid,
     };
-
-    if (newStatus) updates.status = newStatus;
-    if (newPriority) updates.priority = newPriority;
-    if (req.assignedTo !== undefined) {
-      updates.assignedTo = typeof req.assignedTo === 'string' && req.assignedTo.trim() ? req.assignedTo.trim() : null;
-      updates.assignedName = typeof req.assignedName === 'string' && req.assignedName.trim() ? req.assignedName.trim().slice(0, 80) : null;
+    if (statusChanged && newStatus) updates.status = newStatus;
+    if (priorityChanged && newPriority) updates.priority = newPriority;
+    if (assignmentChanged) {
+      updates.assignedTo = nextAssignedTo;
+      updates.assignedName = nextAssignedName;
     }
 
+    const nowMillis = Date.now();
     const timeline = Array.isArray(current.timeline) ? [...(current.timeline as unknown[])] : [];
-    timeline.push({
-      action: newStatus && newStatus !== prevStatus ? `status:${newStatus}` : 'note',
-      actorUid: actor.uid,
-      actorRole: actor.roleId,
-      note: note ?? (newStatus ? `Status alterado para ${newStatus}` : 'Ticket atualizado'),
-      internal,
-      createdAtMillis: Date.now(),
-    });
-    updates.timeline = timeline.slice(-100);
+    const actionsPerformed: string[] = [];
 
+    if (statusChanged && newStatus) {
+      actionsPerformed.push('status_change');
+      timeline.push({
+        action: `status:${newStatus}`,
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        note: `Status alterado de ${prevStatus} para ${newStatus}`,
+        internal: false,
+        createdAtMillis: nowMillis,
+      });
+    }
+    if (priorityChanged && newPriority) {
+      actionsPerformed.push('priority_change');
+      timeline.push({
+        action: `priority:${newPriority}`,
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        note: `Prioridade alterada de ${prevPriority} para ${newPriority}`,
+        internal: true,
+        createdAtMillis: nowMillis,
+      });
+    }
+    if (assignmentChanged) {
+      actionsPerformed.push('assignment_change');
+      timeline.push({
+        action: 'assignment',
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        note: nextAssignedTo
+          ? `Chamado atribuído para ${nextAssignedName} (${nextAssignedTo})`
+          : 'Atribuição removida',
+        internal: true,
+        createdAtMillis: nowMillis,
+      });
+    }
+    if (note) {
+      actionsPerformed.push(internal ? 'internal_note' : 'public_reply');
+      timeline.push({
+        action: internal ? 'internal_note' : 'public_reply',
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        note,
+        internal,
+        createdAtMillis: nowMillis,
+      });
+    }
+
+    updates.timeline = timeline.slice(-100);
     tx.update(ref, updates);
 
     await writeAudit(
@@ -575,20 +696,39 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
         actorUid: actor.uid,
         actorRole: actor.roleId,
         actorPermissions: actor.permissions,
-        action: 'ticket.update',
+        action: actionsPerformed.length === 1 ? `ticket.${actionsPerformed[0]}` : 'ticket.update',
         module: 'suporte',
         entityType: 'support_ticket',
         entityId: ticketId,
-        reason: note ?? `Status: ${newStatus ?? prevStatus}`,
-        before: { status: prevStatus, priority: prevPriority },
-        after: { status: newStatus ?? prevStatus, priority: newPriority ?? prevPriority },
+        reason: note ?? actionsPerformed.join(', '),
+        before: {
+          status: prevStatus,
+          priority: prevPriority,
+          assignedTo: prevAssignedTo,
+          assignedName: prevAssignedName,
+        },
+        after: {
+          status: statusChanged ? newStatus : prevStatus,
+          priority: priorityChanged ? newPriority : prevPriority,
+          assignedTo: nextAssignedTo,
+          assignedName: nextAssignedName,
+          actionsPerformed,
+          noteType: note ? (internal ? 'internal' : 'external') : null,
+        },
         result: 'success',
         source: 'callable',
       },
       tx,
     );
 
-    return { success: true, ticketId, status: newStatus ?? prevStatus, priority: newPriority ?? prevPriority };
+    return {
+      success: true,
+      ticketId,
+      status: statusChanged ? newStatus : prevStatus,
+      priority: priorityChanged ? newPriority : prevPriority,
+      assignedTo: nextAssignedTo,
+      assignedName: nextAssignedName,
+    };
   });
 });
 

@@ -101,7 +101,6 @@ export const AdminSupportDetailPage: React.FC = () => {
       ticketId: ticket.id,
       status: ticket.status === 'open' ? 'in_progress' : ticket.status,
       assignedTo: user.uid,
-      assignedName: userProfile?.name || user.email || 'Operador',
       note: `Chamado assumido por ${userProfile?.name || 'Operador'}`,
       internal: true,
     });
