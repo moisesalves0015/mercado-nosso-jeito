@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import {
   Ban,
   Eye,
@@ -11,7 +11,7 @@ import {
   ShoppingBag,
   User,
 } from 'lucide-react';
-import { db } from '../../firebase';
+import { functions } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { isRecognizedSale } from '../../utils/adminAnalytics';
 import { useAdminData, type AdminClient } from '../AdminDataContext';
@@ -79,30 +79,18 @@ export const AdminCustomerDetailPage: React.FC = () => {
   useEffect(() => {
     if (!customerId) return;
     let active = true;
-
-    if (!liveClient) {
-      getDoc(doc(db, 'users', customerId))
-        .then((snap) => {
-          if (active && snap.exists()) {
-            setFetchedClient({ id: snap.id, ...snap.data() } as AdminClient);
-          }
-        })
-        .catch(() => {});
-    }
-
-    getDocs(collection(db, 'users', customerId, 'addresses'))
-      .then((snap) => {
-        if (active) {
-          setAddresses(snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedAddress)));
+    const fn = httpsCallable<
+      { customerId: string },
+      { customer: AdminClient; addresses: SavedAddress[]; clube: ClubeProfileDoc | null }
+    >(functions, 'adminGetCustomer');
+    fn({ customerId })
+      .then((res) => {
+        if (!active) return;
+        if (res.data?.customer && !liveClient) {
+          setFetchedClient(res.data.customer);
         }
-      })
-      .catch(() => {});
-
-    getDoc(doc(db, 'users', customerId, 'clube', 'profile'))
-      .then((snap) => {
-        if (active && snap.exists()) {
-          setClube(snap.data() as ClubeProfileDoc);
-        }
+        setAddresses(res.data?.addresses || []);
+        setClube(res.data?.clube || null);
       })
       .catch(() => {});
 

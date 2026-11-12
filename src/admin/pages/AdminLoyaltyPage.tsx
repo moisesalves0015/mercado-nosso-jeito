@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { Gift, Save, Sparkles } from 'lucide-react';
-import { db } from '../../firebase';
+import { db, functions } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminClube } from '../../pages/AdminClube';
 import { useAdminData } from '../AdminDataContext';
@@ -36,15 +37,13 @@ export const AdminLoyaltyPage: React.FC = () => {
     e.preventDefault();
     setSavingRoleta(true);
     try {
-      await setDoc(
-        doc(db, 'configs', 'roleta'),
-        {
+      const fn = httpsCallable(functions, 'adminUpdateLoyaltyConfig');
+      await fn({
+        payload: {
           active: roletaActive,
           dailyLimit: Number(roletaLimit),
-          updatedAt: new Date().toISOString(),
         },
-        { merge: true },
-      );
+      });
       showToast('Configurações da Roleta Premiável salvas!', 'ok');
     } catch {
       showToast('Erro ao salvar configurações da Roleta.', 'err');

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import {
   CheckCircle2,
   Clock,
@@ -12,7 +12,7 @@ import {
   User,
   XCircle,
 } from 'lucide-react';
-import { db } from '../../firebase';
+import { functions } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData, type AdminOrder } from '../AdminDataContext';
 import {
@@ -50,10 +50,11 @@ export const AdminOrderDetailPage: React.FC = () => {
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFetching(true);
-    getDoc(doc(db, 'orders', orderId))
-      .then((snap) => {
-        if (active && snap.exists()) {
-          setFetchedOrder({ id: snap.id, ...snap.data() } as AdminOrder);
+    const fn = httpsCallable<{ orderId: string }, { order: AdminOrder }>(functions, 'adminGetOrder');
+    fn({ orderId })
+      .then((res) => {
+        if (active && res.data?.order) {
+          setFetchedOrder(res.data.order);
         }
       })
       .catch(() => {})

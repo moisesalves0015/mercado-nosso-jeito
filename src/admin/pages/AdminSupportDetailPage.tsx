@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import {
   CheckCircle2,
   Clock,
@@ -12,7 +12,7 @@ import {
   User,
   UserCheck,
 } from 'lucide-react';
-import { db } from '../../firebase';
+import { functions } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData, type SupportTicket } from '../AdminDataContext';
 import {
@@ -48,13 +48,13 @@ export const AdminSupportDetailPage: React.FC = () => {
     }
     if (!ticketId) return;
     let active = true;
-    getDoc(doc(db, 'support_tickets', ticketId))
-      .then((snap) => {
-        if (active && snap.exists()) {
-          const data = { id: snap.id, ...snap.data() } as SupportTicket;
-          setFetchedTicket(data);
-          setNextStatus(data.status);
-          setNextPriority(data.priority);
+    const fn = httpsCallable<{ ticketId: string }, { ticket: SupportTicket }>(functions, 'adminGetTicket');
+    fn({ ticketId })
+      .then((res) => {
+        if (active && res.data?.ticket) {
+          setFetchedTicket(res.data.ticket);
+          setNextStatus(res.data.ticket.status);
+          setNextPriority(res.data.ticket.priority);
         }
       })
       .catch(() => {});

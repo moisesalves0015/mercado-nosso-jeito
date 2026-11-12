@@ -1,14 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import {
-  collection,
-  doc,
-  getDoc,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-} from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -109,6 +100,7 @@ export interface AdminClient {
   email: string;
   telefone?: string;
   cpf?: string;
+  cpfMasked?: string | null;
   foto?: string;
   role: string;
   diamonds?: number;
@@ -171,6 +163,14 @@ interface AdminDataContextValue {
   storeSettings: StoreSettings;
   shippingSettings: ShippingSettings;
   loading: boolean;
+  dataError: string | null;
+  ordersHasMore: boolean;
+  customersHasMore: boolean;
+  ticketsHasMore: boolean;
+  refreshData: () => Promise<void>;
+  loadMoreOrders: () => Promise<void>;
+  loadMoreCustomers: () => Promise<void>;
+  loadMoreTickets: () => Promise<void>;
   actionLoading: string | null;
   feedback: { msg: string; type: 'ok' | 'err' } | null;
   showToast: (msg: string, type?: 'ok' | 'err') => void;
@@ -206,11 +206,15 @@ interface AdminDataContextValue {
 const AdminDataContext = createContext<AdminDataContextValue | undefined>(undefined);
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, staffAccess, canAny } = useAuth();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [ordersCursor, setOrdersCursor] = useState<number | null>(null);
+  const [customersCursor, setCustomersCursor] = useState<string | null>(null);
+  const [ticketsCursor, setTicketsCursor] = useState<number | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
     pixKey: '',
     pixName: '',
@@ -235,50 +239,127 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 4500);
   }, []);
 
+  const canReadOrders = canAny(['pedidos:view', 'financeiro:view', 'suporte:view']);
+  const canReadProducts = canAny(['produtos:view', 'estoque:view']);
+  const canReadCustomers = canAny(['clientes:view', 'crm:view', 'suporte:view']);
+  const canReadTickets = canAny(['suporte:view']);
+
+  const refreshData = useCallback(async () => {
+    if (!user || !staffAccess?.isStaff) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setDataError(null);
+    try {
+      const tasks: Array<Promise<void>> = [];
+
+      if (canReadOrders) {
+        const fn = httpsCallable<{ limit: number }, { orders: AdminOrder[]; nextCursor: number | null }>(
+          functions,
+          'adminListOrders',
+        );
+        tasks.push(
+          fn({ limit: 50 }).then((res) => {
+            setOrders(res.data.orders || []);
+            setOrdersCursor(res.data.nextCursor ?? null);
+          }),
+        );
+      } else {
+        setOrders([]);
+        setOrdersCursor(null);
+      }
+
+      if (canReadProducts) {
+        const fn = httpsCallable<{ limit: number }, { products: AdminProduct[]; nextCursor: string | null }>(
+          functions,
+          'adminListProducts',
+        );
+        tasks.push(
+          fn({ limit: 150 }).then((res) => {
+            setProducts(res.data.products || []);
+          }),
+        );
+      } else {
+        setProducts([]);
+      }
+
+      if (canReadCustomers) {
+        const fn = httpsCallable<{ limit: number }, { customers: AdminClient[]; nextCursor: string | null }>(
+          functions,
+          'adminListCustomers',
+        );
+        tasks.push(
+          fn({ limit: 50 }).then((res) => {
+            setClients(res.data.customers || []);
+            setCustomersCursor(res.data.nextCursor ?? null);
+          }),
+        );
+      } else {
+        setClients([]);
+        setCustomersCursor(null);
+      }
+
+      if (canReadTickets) {
+        const fn = httpsCallable<{ limit: number }, { tickets: SupportTicket[]; nextCursor: number | null }>(
+          functions,
+          'adminListTickets',
+        );
+        tasks.push(
+          fn({ limit: 50 }).then((res) => {
+            setTickets(res.data.tickets || []);
+            setTicketsCursor(res.data.nextCursor ?? null);
+          }),
+        );
+      } else {
+        setTickets([]);
+        setTicketsCursor(null);
+      }
+
+      await Promise.all(tasks);
+    } catch (err: unknown) {
+      setDataError((err as { message?: string })?.message || 'Erro ao carregar dados operacionais.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, staffAccess?.isStaff, canReadOrders, canReadProducts, canReadCustomers, canReadTickets]);
+
+  const loadMoreOrders = useCallback(async () => {
+    if (!ordersCursor || !canReadOrders) return;
+    const fn = httpsCallable<
+      { limit: number; startAfterMillis: number },
+      { orders: AdminOrder[]; nextCursor: number | null }
+    >(functions, 'adminListOrders');
+    const res = await fn({ limit: 50, startAfterMillis: ordersCursor });
+    setOrders((prev) => [...prev, ...(res.data.orders || [])]);
+    setOrdersCursor(res.data.nextCursor ?? null);
+  }, [ordersCursor, canReadOrders]);
+
+  const loadMoreCustomers = useCallback(async () => {
+    if (!customersCursor || !canReadCustomers) return;
+    const fn = httpsCallable<
+      { limit: number; startAfterId: string },
+      { customers: AdminClient[]; nextCursor: string | null }
+    >(functions, 'adminListCustomers');
+    const res = await fn({ limit: 50, startAfterId: customersCursor });
+    setClients((prev) => [...prev, ...(res.data.customers || [])]);
+    setCustomersCursor(res.data.nextCursor ?? null);
+  }, [customersCursor, canReadCustomers]);
+
+  const loadMoreTickets = useCallback(async () => {
+    if (!ticketsCursor || !canReadTickets) return;
+    const fn = httpsCallable<
+      { limit: number; startAfterMillis: number },
+      { tickets: SupportTicket[]; nextCursor: number | null }
+    >(functions, 'adminListTickets');
+    const res = await fn({ limit: 50, startAfterMillis: ticketsCursor });
+    setTickets((prev) => [...prev, ...(res.data.tickets || [])]);
+    setTicketsCursor(res.data.nextCursor ?? null);
+  }, [ticketsCursor, canReadTickets]);
+
   useEffect(() => {
     if (!user) return;
-
-    const unsubOrders = onSnapshot(
-      query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(200)),
-      (snap) => {
-        setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AdminOrder)));
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-      },
-    );
-
-    const unsubProducts = onSnapshot(
-      query(collection(db, 'products'), limit(300)),
-      (snap) => {
-        setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AdminProduct)));
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-      },
-    );
-
-    const unsubUsers = onSnapshot(
-      query(collection(db, 'users'), limit(250)),
-      (snap) => {
-        setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AdminClient)));
-      },
-      () => {
-        // Non-rule-admin staff roles might not have direct users collection listener access
-      },
-    );
-
-    const unsubTickets = onSnapshot(
-      query(collection(db, 'support_tickets'), orderBy('createdAt', 'desc'), limit(200)),
-      (snap) => {
-        setTickets(snap.docs.map((d) => ({ id: d.id, ...d.data() } as SupportTicket)));
-      },
-      () => {
-        // Gracefully ignore if collection is empty or restricted
-      },
-    );
+    void refreshData();
 
     getDoc(doc(db, 'settings', 'store'))
       .then((snap) => {
@@ -295,14 +376,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       })
       .catch(() => {});
-
-    return () => {
-      unsubOrders();
-      unsubProducts();
-      unsubUsers();
-      unsubTickets();
-    };
-  }, [user]);
+  }, [user, refreshData]);
 
   const handleConfirmPayment = useCallback(
     async (orderId: string, paymentReference?: string, note?: string): Promise<boolean> => {
@@ -421,18 +495,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     async (productId: string, reason: string): Promise<boolean> => {
       setActionLoading(`archive-${productId}`);
       try {
-        await setDoc(
-          doc(db, 'products', productId),
-          {
-            active: false,
-            archivedAt: new Date().toISOString(),
-            archivedBy: user?.uid ?? null,
-            archiveReason: reason,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
+        const fn = httpsCallable(functions, 'adminArchiveProduct');
+        await fn({ productId, reason });
         showToast('Produto arquivado e ocultado do catálogo.', 'ok');
+        await refreshData();
         return true;
       } catch (err: unknown) {
         showToast((err as { message?: string })?.message || 'Erro ao arquivar produto.', 'err');
@@ -441,7 +507,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setActionLoading(null);
       }
     },
-    [showToast, user],
+    [showToast, refreshData],
   );
 
   const handleToggleProductActive = useCallback(
@@ -449,18 +515,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setActionLoading(`toggle-${product.id}`);
       try {
         const nextActive = !(product.active ?? true);
-        await setDoc(
-          doc(db, 'products', product.id),
-          {
-            active: nextActive,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
+        const fn = httpsCallable(functions, 'adminToggleProductActive');
+        await fn({ productId: product.id, active: nextActive });
         showToast(
           nextActive ? 'Produto ativado no catálogo!' : 'Produto pausado no catálogo.',
           'ok',
         );
+        await refreshData();
         return true;
       } catch (err: unknown) {
         showToast((err as { message?: string })?.message || 'Erro ao alterar visibilidade.', 'err');
@@ -469,7 +530,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setActionLoading(null);
       }
     },
-    [showToast],
+    [showToast, refreshData],
   );
 
   const handleCreateTicket = useCallback(
@@ -530,7 +591,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     async (next: StoreSettings): Promise<boolean> => {
       setActionLoading('save-store');
       try {
-        await setDoc(doc(db, 'settings', 'store'), next, { merge: true });
+        const fn = httpsCallable(functions, 'adminUpdateSettings');
+        await fn({ settingId: 'store', payload: next });
         setStoreSettings(next);
         showToast('Configurações de recebimento e contato salvas!', 'ok');
         return true;
@@ -548,7 +610,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     async (next: ShippingSettings): Promise<boolean> => {
       setActionLoading('save-shipping');
       try {
-        await setDoc(doc(db, 'settings', 'shipping'), next, { merge: true });
+        const fn = httpsCallable(functions, 'adminUpdateSettings');
+        await fn({ settingId: 'shipping', payload: next });
         setShippingSettings(next);
         showToast('Regras de frete por condomínio salvas!', 'ok');
         return true;
@@ -572,6 +635,14 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         storeSettings,
         shippingSettings,
         loading,
+        dataError,
+        ordersHasMore: Boolean(ordersCursor),
+        customersHasMore: Boolean(customersCursor),
+        ticketsHasMore: Boolean(ticketsCursor),
+        refreshData,
+        loadMoreOrders,
+        loadMoreCustomers,
+        loadMoreTickets,
         actionLoading,
         feedback,
         showToast,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, runTransaction, collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase';
 import {
   ArrowLeft, Save, Package, DollarSign, Target,
   Image as ImageIcon, Shield, AlertCircle, BarChart2,
@@ -256,8 +257,9 @@ export const AdminProductDetail: React.FC = () => {
   const loadAnalytics = async (prodId: string) => {
     setLoadingAnalytics(true);
     try {
-      const snap = await getDocs(collection(db, 'orders'));
-      const allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown>));
+      const fn = httpsCallable<{ limit: number }, { orders: Array<Record<string, unknown>> }>(functions, 'adminListOrders');
+      const res = await fn({ limit: 100 });
+      const allOrders = res.data?.orders || [];
 
       let totalOrders = 0;
       let totalQty = 0;
@@ -462,11 +464,18 @@ export const AdminProductDetail: React.FC = () => {
 
 
     try {
+      const fn = httpsCallable(functions, 'adminUpsertProduct');
       if (isNew) {
-        const newId = 'prod-' + Date.now();
-        await setDoc(doc(db, 'products', newId), { id: newId, ...data, createdAt: new Date().toISOString() });
+        const { stock: initialStock, ...rest } = data;
+        await fn({
+          ...rest,
+          initialStock: typeof initialStock === 'number' ? initialStock : 0,
+        });
       } else {
-        await updateDoc(doc(db, 'products', id!), data);
+        await fn({
+          productId: id!,
+          ...data,
+        });
       }
       alert('Produto salvo com sucesso!');
       navigate('/admin/products');

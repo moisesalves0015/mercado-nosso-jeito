@@ -182,10 +182,25 @@ export class FakeQuery {
       .filter((d) => this.filters.every(([f, v]) => d.data[f] === v));
     if (this.order) {
       const { field, dir } = this.order;
-      docs.sort((a, b) => (dir === 'desc' ? -1 : 1) * (orderValue(a.data[field]) - orderValue(b.data[field])));
+      const valOf = (d: { id: string; data: Data }) => (field === '__name__' ? d.id : d.data[field]);
+      docs.sort((a, b) => {
+        const av = valOf(a);
+        const bv = valOf(b);
+        if (field === '__name__' || (typeof av === 'string' && typeof bv === 'string')) {
+          return (dir === 'desc' ? -1 : 1) * String(av).localeCompare(String(bv));
+        }
+        return (dir === 'desc' ? -1 : 1) * (orderValue(av) - orderValue(bv));
+      });
       if (this.cursor !== undefined) {
-        const c = orderValue(this.cursor);
-        docs = docs.filter((d) => (dir === 'desc' ? orderValue(d.data[field]) < c : orderValue(d.data[field]) > c));
+        if (field === '__name__') {
+          const c = String(this.cursor);
+          docs = docs.filter((d) =>
+            dir === 'desc' ? d.id.localeCompare(c) < 0 : d.id.localeCompare(c) > 0,
+          );
+        } else {
+          const c = orderValue(this.cursor);
+          docs = docs.filter((d) => (dir === 'desc' ? orderValue(d.data[field]) < c : orderValue(d.data[field]) > c));
+        }
       }
     }
     if (this.max !== null) docs = docs.slice(0, this.max);
@@ -266,6 +281,7 @@ export function buildAdminMock() {
   const firestore: any = () => fakeDb;
   firestore.FieldValue = { serverTimestamp: () => SERVER_TS, increment: incrementOf };
   firestore.Timestamp = FakeTimestamp;
+  firestore.FieldPath = { documentId: () => '__name__' };
   return {
     initializeApp: () => undefined,
     firestore,

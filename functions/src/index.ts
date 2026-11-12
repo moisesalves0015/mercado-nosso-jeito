@@ -1964,3 +1964,4 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (_data, contex
 // Admin portal: RBAC / SUPERADMIN / audit callables (see ./admin)
 // ─────────────────────────────────────────────────────────────────────────────
 export * from './admin/callables';
+export * from './admin/opsCallables';
