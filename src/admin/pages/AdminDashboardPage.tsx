@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -8,6 +8,7 @@ import {
   DollarSign,
   Headphones,
   Plus,
+  RefreshCw,
   ShoppingBag,
   TrendingUp,
   Users,
@@ -25,12 +26,8 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  buildCatalogCategoryData,
-  buildWeeklySalesData,
-  isRecognizedSale,
-} from '../../utils/adminAnalytics';
 import { useAdminData } from '../AdminDataContext';
+import { useServerMetrics } from '../useServerMetrics';
 import {
   formatCurrency,
   formatDateTime,
@@ -44,12 +41,17 @@ import {
 
 export const AdminDashboardPage: React.FC = () => {
   const { can } = useAuth();
-  const { orders, products, clients, tickets } = useAdminData();
+  const { orders, products, tickets } = useAdminData();
+  const [condominio, setCondominio] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const { metrics: serverMetrics, loading: metricsLoading, error: metricsError, reload } = useServerMetrics({
+    startDate,
+    endDate,
+    condominio,
+  });
 
   const metrics = useMemo(() => {
-    const validSales = orders.filter((o) => isRecognizedSale(o));
-    const totalRevenue = validSales.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-    const avgTicket = validSales.length > 0 ? totalRevenue / validSales.length : 0;
     const pendingOrders = orders.filter(
       (o) => o.status === 'pending' || o.status === 'confirmed' || o.status === 'preparing',
     );
@@ -63,28 +65,79 @@ export const AdminDashboardPage: React.FC = () => {
       (t) => t.status === 'open' || t.status === 'in_progress',
     );
 
+    const t = serverMetrics?.totals;
     return {
-      totalRevenue,
-      validSalesCount: validSales.length,
-      avgTicket,
+      totalRevenue: t?.grossRevenue ?? 0,
+      validSalesCount: t?.recognizedSalesCount ?? 0,
+      avgTicket: t?.averageTicket ?? 0,
+      totalCustomersCount: t?.totalCustomersCount ?? 0,
+      pendingCount: t?.pendingOrdersCount ?? pendingOrders.length,
+      awaitingPixCount: t?.awaitingPixCount ?? awaitingPix.length,
+      lowStockCount: t?.lowStockCount ?? lowStockProducts.length,
+      openTicketsCount: t?.openTicketsCount ?? openTickets.length,
       pendingOrders,
       awaitingPix,
       lowStockProducts,
       openTickets,
     };
-  }, [orders, products, tickets]);
+  }, [orders, products, tickets, serverMetrics]);
 
-  const weeklySalesData = useMemo(() => buildWeeklySalesData(orders), [orders]);
-  const categoryData = useMemo(() => buildCatalogCategoryData(products), [products]);
+  const weeklySalesData = useMemo(
+    () =>
+      (serverMetrics?.weeklySeries ?? []).map((d) => ({
+        day: d.label,
+        total: d.revenue,
+        pedidos: d.orders,
+      })),
+    [serverMetrics],
+  );
+  const categoryData = useMemo(() => {
+    const COLORS = ['#10b981', '#f59e0b', '#38bdf8', '#a855f7', '#ec4899', '#64748b'];
+    return (serverMetrics?.categoryCounts ?? []).map((c, idx) => ({
+      name: c.category,
+      value: c.count,
+      color: COLORS[idx % COLORS.length],
+    }));
+  }, [serverMetrics]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Visão Geral da Operação"
-        subtitle="Acompanhamento em tempo real dos pedidos, conciliação Pix, estoque e atendimento do condomínio."
-        badge="Tempo Real"
+        subtitle="Totais consolidados no servidor (sem truncamento), conciliação Pix, estoque e atendimento do condomínio."
+        badge="Server-Side"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={condominio}
+              onChange={(e) => setCondominio(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+            >
+              <option value="all">Todos os condomínios</option>
+              {(serverMetrics?.availableCondominios ?? []).map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200"
+            />
+            <button
+              type="button"
+              onClick={() => void reload()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
+            >
+              <RefreshCw size={14} className={metricsLoading ? 'animate-spin' : ''} />
+              Atualizar
+            </button>
             {can('produtos:create') && (
               <Link
                 to="/admin/products/new"
@@ -107,6 +160,25 @@ export const AdminDashboardPage: React.FC = () => {
         }
       />
 
+      {metricsError && (
+        <div className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-xs text-rose-200 flex items-center justify-between gap-3">
+          <span>{metricsError}</span>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 font-bold"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {metricsLoading && !serverMetrics && (
+        <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-xs text-slate-400">
+          Calculando totais consolidados no servidor...
+        </div>
+      )}
+
       {/* Primary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
@@ -119,8 +191,8 @@ export const AdminDashboardPage: React.FC = () => {
         />
         <MetricCard
           label="Pedidos em Operação"
-          value={metrics.pendingOrders.length}
-          subtitle={`${metrics.awaitingPix.length} aguardando Pix`}
+          value={metrics.pendingCount}
+          subtitle={`${metrics.awaitingPixCount} aguardando Pix`}
           icon={<ShoppingBag size={18} />}
           tone="amber"
           to="/admin/orders"
@@ -128,28 +200,34 @@ export const AdminDashboardPage: React.FC = () => {
         <MetricCard
           label="Ticket Médio"
           value={formatCurrency(metrics.avgTicket)}
-          subtitle={`${clients.length} moradores cadastrados`}
+          subtitle={`${metrics.totalCustomersCount} moradores cadastrados`}
           icon={<TrendingUp size={18} />}
           tone="indigo"
           to="/admin/customers"
         />
         <MetricCard
           label="Chamados em Aberto"
-          value={metrics.openTickets.length}
-          subtitle={`${tickets.length} chamados totais`}
+          value={metrics.openTicketsCount}
+          subtitle={`Total consolidado no servidor`}
           icon={<Headphones size={18} />}
           tone="sky"
           to="/admin/support"
         />
         <MetricCard
           label="Alertas de Estoque"
-          value={metrics.lowStockProducts.length}
-          subtitle={`De ${products.length} itens no catálogo`}
+          value={metrics.lowStockCount}
+          subtitle={`De ${serverMetrics?.totals.totalProductsCount ?? products.length} itens no catálogo`}
           icon={<Boxes size={18} />}
-          tone={metrics.lowStockProducts.length > 0 ? 'rose' : 'emerald'}
+          tone={metrics.lowStockCount > 0 ? 'rose' : 'emerald'}
           to="/admin/inventory"
         />
       </div>
+
+      {serverMetrics && (
+        <div className="text-[11px] text-slate-400 px-1">
+          Critério: Moeda {serverMetrics.meta.currency} • Fuso {serverMetrics.meta.timezone} • Receita considera pedidos não cancelados com pagamento aprovado.
+        </div>
+      )}
 
       {/* Priority Operational Action Queues */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
