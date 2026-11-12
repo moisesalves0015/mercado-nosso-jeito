@@ -285,7 +285,7 @@ const AdminShellInner: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+    <div className="admin-shell min-h-screen bg-slate-950 text-slate-100 flex">
       {/* Desktop Sidebar */}
       <aside
         className={`hidden lg:flex flex-col bg-slate-900/95 border-r border-slate-800/90 shrink-0 transition-all duration-200 sticky top-0 h-screen ${

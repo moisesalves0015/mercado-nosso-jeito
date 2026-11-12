@@ -28,6 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@tailwindcss/vite": "^4.3.5",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
@@ -40,6 +41,7 @@
     "firebase-tools": "^15.30.2",
     "globals": "^17.6.0",
     "jest": "^30.5.2",
+    "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
