@@ -8,7 +8,7 @@ import {
   normalizePermissions,
   permissionsAllow,
 } from './permissions';
-import { StaffAccess, StaffStatus, applyStaffRole, requirePermission, requireReason, resolveAccess } from './rbac';
+import { StaffAccess, StaffStatus, applyStaffRole, requireAnyPermission, requirePermission, requireReason, resolveAccess } from './rbac';
 import { writeAudit, writeAuditSafe } from './audit';
 
 /**
@@ -409,4 +409,265 @@ export const adminListAudit = functions.https.onCall(async (data, context) => {
   const nextCursor = last ? ((last.data() as { createdAt?: { toMillis?: () => number } }).createdAt?.toMillis?.() ?? null) : null;
 
   return { entries, nextCursor };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminCreateSupportTicket — creates a support ticket (by customer or staff)
+// ─────────────────────────────────────────────────────────────────────────────
+const VALID_TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
+const VALID_TICKET_STATUSES = ['open', 'in_progress', 'waiting_customer', 'resolved', 'archived'] as const;
+
+export const adminCreateSupportTicket = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new HttpsError('unauthenticated', 'Autenticação necessária.');
+  const req = (data ?? {}) as {
+    uid?: unknown;
+    subject?: unknown;
+    category?: unknown;
+    description?: unknown;
+    orderId?: unknown;
+    priority?: unknown;
+  };
+
+  const subject = str(req.subject, 'subject', 4, 140);
+  const category = typeof req.category === 'string' && req.category.trim() ? req.category.trim().slice(0, 60) : 'Geral';
+  const description = str(req.description, 'description', 5, 1500);
+  const orderId = typeof req.orderId === 'string' && req.orderId.trim() ? req.orderId.trim().slice(0, 128) : null;
+  const priorityRaw = typeof req.priority === 'string' ? req.priority.trim() : 'medium';
+  const priority = (VALID_TICKET_PRIORITIES as readonly string[]).includes(priorityRaw) ? priorityRaw : 'medium';
+
+  const callerAccess = await resolveAccess({ uid: context.auth.uid, token: context.auth.token });
+  if (callerAccess.status === 'banned') {
+    throw new HttpsError('permission-denied', 'Conta suspensa.');
+  }
+
+  let targetUid = context.auth.uid;
+  if (typeof req.uid === 'string' && req.uid.trim() && req.uid.trim() !== context.auth.uid) {
+    await requirePermission(context.auth, 'suporte:create');
+    targetUid = req.uid.trim();
+  }
+
+  const userSnap = await db().collection('users').doc(targetUid).get();
+  const userData = (userSnap.exists ? userSnap.data() : {}) as { name?: string; email?: string; role?: string };
+  if (userData?.role === 'banned') {
+    throw new HttpsError('permission-denied', 'Conta suspensa.');
+  }
+
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const ticketRef = db().collection('support_tickets').doc();
+  const ticketNumber = `TCK-${Date.now().toString().slice(-5)}${ticketRef.id.slice(-4).toUpperCase()}`;
+
+  const docData: Record<string, unknown> = {
+    ticketNumber,
+    uid: targetUid,
+    customerName: userData?.name ?? 'Cliente',
+    customerEmail: userData?.email ?? null,
+    subject,
+    category,
+    description,
+    orderId,
+    priority,
+    status: 'open',
+    assignedTo: null,
+    assignedName: null,
+    createdBy: context.auth.uid,
+    createdAt: now,
+    updatedAt: now,
+    timeline: [
+      {
+        action: 'created',
+        actorUid: context.auth.uid,
+        actorRole: callerAccess.isStaff ? callerAccess.roleId : 'client',
+        note: description,
+        createdAtMillis: Date.now(),
+      },
+    ],
+  };
+
+  await ticketRef.set(docData);
+
+  if (callerAccess.isStaff) {
+    await writeAuditSafe({
+      actorUid: callerAccess.uid,
+      actorRole: callerAccess.roleId,
+      actorPermissions: callerAccess.permissions,
+      action: 'ticket.create',
+      module: 'suporte',
+      entityType: 'support_ticket',
+      entityId: ticketRef.id,
+      reason: subject,
+      after: { status: 'open', priority, targetUid, orderId },
+      result: 'success',
+      source: 'callable',
+    });
+  }
+
+  return { success: true, ticketId: ticketRef.id, ticketNumber };
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminUpdateSupportTicket — updates status, priority, assignee, or adds note
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminUpdateSupportTicket = functions.https.onCall(async (data, context) => {
+  const req = (data ?? {}) as {
+    ticketId?: unknown;
+    status?: unknown;
+    priority?: unknown;
+    assignedTo?: unknown;
+    assignedName?: unknown;
+    note?: unknown;
+    internal?: unknown;
+  };
+
+  const ticketId = str(req.ticketId, 'ticketId', 2, 128);
+  const newStatus = typeof req.status === 'string' && req.status.trim() ? req.status.trim() : undefined;
+  const newPriority = typeof req.priority === 'string' && req.priority.trim() ? req.priority.trim() : undefined;
+  const note = typeof req.note === 'string' && req.note.trim() ? req.note.trim().slice(0, 1500) : undefined;
+  const internal = req.internal === true;
+
+  if (newStatus && !(VALID_TICKET_STATUSES as readonly string[]).includes(newStatus)) {
+    throw new HttpsError('invalid-argument', 'Status de ticket inválido.');
+  }
+  if (newPriority && !(VALID_TICKET_PRIORITIES as readonly string[]).includes(newPriority)) {
+    throw new HttpsError('invalid-argument', 'Prioridade de ticket inválida.');
+  }
+
+  const requiredPerm = newStatus === 'archived'
+    ? ['suporte:archive', 'suporte:edit']
+    : ['suporte:edit', 'suporte:approve'];
+  const actor = await requireAnyPermission(context.auth, requiredPerm);
+
+  return db().runTransaction(async (tx) => {
+    const ref = db().collection('support_tickets').doc(ticketId);
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'Ticket não encontrado.');
+
+    const current = snap.data() as Record<string, unknown>;
+    const prevStatus = String(current.status ?? 'open');
+    const prevPriority = String(current.priority ?? 'medium');
+
+    const updates: Record<string, unknown> = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: actor.uid,
+    };
+
+    if (newStatus) updates.status = newStatus;
+    if (newPriority) updates.priority = newPriority;
+    if (req.assignedTo !== undefined) {
+      updates.assignedTo = typeof req.assignedTo === 'string' && req.assignedTo.trim() ? req.assignedTo.trim() : null;
+      updates.assignedName = typeof req.assignedName === 'string' && req.assignedName.trim() ? req.assignedName.trim().slice(0, 80) : null;
+    }
+
+    const timeline = Array.isArray(current.timeline) ? [...(current.timeline as unknown[])] : [];
+    timeline.push({
+      action: newStatus && newStatus !== prevStatus ? `status:${newStatus}` : 'note',
+      actorUid: actor.uid,
+      actorRole: actor.roleId,
+      note: note ?? (newStatus ? `Status alterado para ${newStatus}` : 'Ticket atualizado'),
+      internal,
+      createdAtMillis: Date.now(),
+    });
+    updates.timeline = timeline.slice(-100);
+
+    tx.update(ref, updates);
+
+    await writeAudit(
+      {
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        actorPermissions: actor.permissions,
+        action: 'ticket.update',
+        module: 'suporte',
+        entityType: 'support_ticket',
+        entityId: ticketId,
+        reason: note ?? `Status: ${newStatus ?? prevStatus}`,
+        before: { status: prevStatus, priority: prevPriority },
+        after: { status: newStatus ?? prevStatus, priority: newPriority ?? prevPriority },
+        result: 'success',
+        source: 'callable',
+      },
+      tx,
+    );
+
+    return { success: true, ticketId, status: newStatus ?? prevStatus, priority: newPriority ?? prevPriority };
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminAdjustStock — transactional stock adjustment with audit & stock_history
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminAdjustStock = functions.https.onCall(async (data, context) => {
+  const actor = await requirePermission(context.auth, 'estoque:edit');
+  const req = (data ?? {}) as { productId?: unknown; delta?: unknown; reason?: unknown; minStock?: unknown };
+
+  const productId = str(req.productId, 'productId', 1, 128);
+  const delta = Number(req.delta);
+  if (!Number.isInteger(delta) || delta === 0 || Math.abs(delta) > 10_000) {
+    throw new HttpsError('invalid-argument', 'delta deve ser um inteiro diferente de zero entre -10000 e 10000.');
+  }
+  const reason = requireReason(req.reason, 3, 250);
+  const newMinStock = req.minStock !== undefined && req.minStock !== null ? Number(req.minStock) : undefined;
+  if (newMinStock !== undefined && (!Number.isInteger(newMinStock) || newMinStock < 0)) {
+    throw new HttpsError('invalid-argument', 'minStock deve ser um inteiro não negativo.');
+  }
+
+  return db().runTransaction(async (tx) => {
+    const prodRef = db().collection('products').doc(productId);
+    const snap = await tx.get(prodRef);
+    if (!snap.exists) throw new HttpsError('not-found', 'Produto não encontrado.');
+
+    const prod = snap.data() as Record<string, unknown>;
+    const prevStock = typeof prod.stock === 'number' && Number.isInteger(prod.stock) ? prod.stock : 0;
+    const nextStock = Math.max(0, prevStock + delta);
+    const appliedDelta = nextStock - prevStock;
+
+    const history = Array.isArray(prod.stockHistory) ? [...(prod.stockHistory as unknown[])] : [];
+    const nowIso = new Date().toISOString();
+    const nextHistory = [
+      { delta: appliedDelta, note: reason, date: nowIso, actorUid: actor.uid },
+      ...history,
+    ].slice(0, 30);
+
+    const updates: Record<string, unknown> = {
+      stock: nextStock,
+      stockHistory: nextHistory,
+      updatedAt: nowIso,
+    };
+    if (newMinStock !== undefined) {
+      updates.minStock = newMinStock;
+    }
+
+    tx.update(prodRef, updates);
+
+    const histRef = prodRef.collection('stock_history').doc();
+    tx.set(histRef, {
+      productId,
+      previousStock: prevStock,
+      newStock: nextStock,
+      delta: appliedDelta,
+      reason,
+      actorUid: actor.uid,
+      actorRole: actor.roleId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await writeAudit(
+      {
+        actorUid: actor.uid,
+        actorRole: actor.roleId,
+        actorPermissions: actor.permissions,
+        action: 'inventory.adjust_stock',
+        module: 'estoque',
+        entityType: 'product',
+        entityId: productId,
+        reason,
+        before: { stock: prevStock },
+        after: { stock: nextStock, delta: appliedDelta },
+        result: 'success',
+        source: 'callable',
+      },
+      tx,
+    );
+
+    return { success: true, productId, previousStock: prevStock, stock: nextStock, appliedDelta, history: nextHistory };
+  });
 });

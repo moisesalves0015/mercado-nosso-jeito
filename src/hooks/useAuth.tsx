@@ -29,6 +29,13 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app, db, storage } from '../firebase';
 import { sanitizeInternalRedirect } from '../utils/authRedirect';
+import {
+  EMPTY_STAFF_ACCESS,
+  permissionsAllow,
+  permissionsAllowAny,
+  resolveFrontendStaffAccess,
+  type FrontendStaffAccess,
+} from '../admin/permissions';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -56,6 +63,10 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isStaff: boolean;
+  staffAccess: FrontendStaffAccess;
+  can: (permission: string) => boolean;
+  canAny: (permissions: readonly string[]) => boolean;
   profileLoading: boolean;
   redirectLoading: boolean;
   redirectError: unknown | null;
@@ -98,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
   const [redirectError, setRedirectError] = useState<unknown | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [staffAccess, setStaffAccess] = useState<FrontendStaffAccess>(EMPTY_STAFF_ACCESS);
   const [userName, setUserName] = useState('');
 
   const auth = getAuth(app);
@@ -115,6 +127,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearRedirectError = useCallback(() => {
     setRedirectError(null);
   }, []);
+
+  const syncStaffAccess = useCallback(
+    async (
+      firebaseUser: FirebaseUser,
+      userRole?: string | null,
+      tokenClaims?: Record<string, unknown> | null,
+    ): Promise<FrontendStaffAccess> => {
+      try {
+        const assignSnap = await getDoc(doc(db, 'role_assignments', firebaseUser.uid)).catch(() => null);
+        const assignmentDoc =
+          assignSnap && assignSnap.exists()
+            ? (assignSnap.data() as { roleId?: string; status?: string })
+            : null;
+
+        let customRoleDoc: { permissions?: string[]; active?: boolean } | null = null;
+        if (
+          assignmentDoc?.status === 'active' &&
+          assignmentDoc.roleId &&
+          assignmentDoc.roleId !== 'superadmin'
+        ) {
+          const roleSnap = await getDoc(doc(db, 'roles', assignmentDoc.roleId)).catch(() => null);
+          if (roleSnap && roleSnap.exists()) {
+            customRoleDoc = roleSnap.data() as { permissions?: string[]; active?: boolean };
+          }
+        }
+
+        return resolveFrontendStaffAccess({
+          uid: firebaseUser.uid,
+          userRole,
+          tokenClaims,
+          assignmentDoc,
+          customRoleDoc,
+        });
+      } catch {
+        return resolveFrontendStaffAccess({
+          uid: firebaseUser.uid,
+          userRole,
+          tokenClaims,
+          assignmentDoc: null,
+          customRoleDoc: null,
+        });
+      }
+    },
+    [],
+  );
 
   const toDate = (ts: unknown): Date | undefined => {
     if (!ts) return undefined;
@@ -299,15 +356,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(null);
             setUserProfile(null);
             setIsAdmin(false);
+            setStaffAccess(EMPTY_STAFF_ACCESS);
             setUserName('');
             alert('Esta conta foi suspensa por um administrador.');
             return;
           }
 
-          const hasAdminClaim = tokenResult?.claims?.['admin'] === true;
           if (profile) {
+            const resolvedAccess = await syncStaffAccess(
+              firebaseUser,
+              profile.role,
+              (tokenResult?.claims as Record<string, unknown>) ?? null,
+            );
             setUserProfile(profile);
-            setIsAdmin(hasAdminClaim || profile.role === 'admin');
+            setStaffAccess(resolvedAccess);
+            setIsAdmin(resolvedAccess.isStaff);
             setUserName(profile.name);
           }
         } catch (err) {
@@ -319,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUserProfile(null);
         setIsAdmin(false);
+        setStaffAccess(EMPTY_STAFF_ACCESS);
         setUserName('');
         setProfileLoading(false);
         setLoading(false);
@@ -326,7 +390,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [auth, syncProfile]);
+  }, [auth, syncProfile, syncStaffAccess]);
 
   // ── Login ────────────────────────────────────────────────
   const login = async (email: string, password: string, rememberMe = true): Promise<FirebaseUser> => {
@@ -456,6 +520,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOut(auth);
     setUserProfile(null);
     setIsAdmin(false);
+    setStaffAccess(EMPTY_STAFF_ACCESS);
     setUserName('');
   };
 
@@ -526,15 +591,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfileLoading(true);
     // Force-refresh token to pick up any new Custom Claims (e.g., after setAdminClaim)
     const tokenResult = await user.getIdTokenResult(true);
-    const hasAdminClaim = tokenResult.claims['admin'] === true;
     const profile = await syncProfile(user);
     if (profile) {
+      const resolvedAccess = await syncStaffAccess(
+        user,
+        profile.role,
+        (tokenResult.claims as Record<string, unknown>) ?? null,
+      );
       setUserProfile(profile);
-      setIsAdmin(hasAdminClaim || profile.role === 'admin');
+      setStaffAccess(resolvedAccess);
+      setIsAdmin(resolvedAccess.isStaff);
       setUserName(profile.name);
     }
     setProfileLoading(false);
   };
+
+  const can = useCallback(
+    (permission: string) => permissionsAllow(staffAccess.permissions, permission),
+    [staffAccess.permissions],
+  );
+
+  const canAny = useCallback(
+    (permissions: readonly string[]) => permissionsAllowAny(staffAccess.permissions, permissions),
+    [staffAccess.permissions],
+  );
 
   return (
     <AuthContext.Provider
@@ -543,6 +623,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userProfile,
         loading,
         isAdmin,
+        isStaff: staffAccess.isStaff,
+        staffAccess,
+        can,
+        canAny,
         profileLoading,
         redirectLoading,
         redirectError,

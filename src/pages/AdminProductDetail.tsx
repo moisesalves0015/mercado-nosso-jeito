@@ -299,6 +299,7 @@ export const AdminProductDetail: React.FC = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeTab === 'analytics' && !isNew && id) loadAnalytics(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, id, isNew]);
 
   // ─── Image Upload ──────────────────────────────────────────────────────────
@@ -468,7 +469,7 @@ export const AdminProductDetail: React.FC = () => {
         await updateDoc(doc(db, 'products', id!), data);
       }
       alert('Produto salvo com sucesso!');
-      navigate('/admin');
+      navigate('/admin/products');
     } catch (e) {
       console.error(e);
       alert('Erro ao salvar produto.');
@@ -577,7 +578,7 @@ export const AdminProductDetail: React.FC = () => {
         {/* Main header row */}
         <div style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => navigate('/admin')} style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, color: crmTheme.textPrimary, width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: crmTheme.shadowSm }}>
+            <button onClick={() => navigate('/admin/products')} style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, color: crmTheme.textPrimary, width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: crmTheme.shadowSm }}>
               <ArrowLeft size={16} />
             </button>
             <div>

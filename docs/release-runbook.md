@@ -94,3 +94,42 @@ Durante a fase de testes com o grupo piloto (1º a 3º dia):
 - [ ] Smoke test cliente + admin no staging (pedido Pix de ponta a ponta, cancelamento e estoque).
 - [ ] Canal de atendimento visível e responsável de plantão definido.
 - [ ] Procedimento presencial de verificação de idade para produtos restritos validado.
+
+---
+
+## 6. Arquitetura do Painel Administrativo, CRM e Governança RBAC
+
+### 6.1 Mapa de Rotas Administrativas (`/admin/*`)
+
+| Rota | Módulo | Permissão Necessária (Qualquer) | Descrição |
+| :--- | :--- | :--- | :--- |
+| `/admin/dashboard` | Visão Geral | `dashboard:view` | KPIs em tempo real, fila operacional de pedidos, alertas de estoque e chamados abertos. |
+| `/admin/orders` | Pedidos | `pedidos:view`, `pedidos:edit`, `pedidos:approve` | Lista de pedidos com filtros persistidos na URL (`?status=`, `?payment=`, `?q=`). |
+| `/admin/orders/:orderId` | Detalhe do Pedido | `pedidos:view`, `pedidos:edit`, `pedidos:approve` | Ficha completa do pedido, conciliação Pix, transição de status, cancelamento auditado e timeline. |
+| `/admin/customers` | Clientes | `clientes:view`, `crm:view` | Base de moradores com segmentos (`all`, `vip`, `inactive`, `banned`) e lançamento de diamantes. |
+| `/admin/customers/:customerId` | Ficha 360° do Morador | `clientes:view`, `crm:view` | Perfil com minimização de CPF (LGPD), endereços, Clube VIP, histórico de pedidos e chamados. |
+| `/admin/support` | Suporte & Chamados | `suporte:view`, `suporte:edit`, `crm:view` | Fila de atendimento ao morador (`support_tickets`) com filtros de prioridade e abertura de ticket. |
+| `/admin/support/:ticketId` | Tratativa de Chamado | `suporte:view`, `suporte:edit`, `crm:view` | Conversa, notas internas da equipe, atribuição de operador e resolução auditada. |
+| `/admin/products` | Catálogo de Produtos | `produtos:view`, `produtos:edit` | Gestão de catálogo, preços, margens, categorias, visibilidade e arquivamento reversível. |
+| `/admin/products/new` / `/admin/products/:id` | Ficha do Produto | `produtos:view`, `produtos:edit`, `produtos:create` | Cadastro e edição detalhada de produto, simulador de margem e histórico de estoque. |
+| `/admin/inventory` | Estoque & Inventário | `estoque:view`, `estoque:edit`, `produtos:view` | Alertas de ruptura/estoque mínimo e ajuste transacional via `adminAdjustStock`. |
+| `/admin/finance` | Financeiro & Pix | `financeiro:view`, `financeiro:approve` | Fila dedicada de conciliação Pix, alertas de margem comprimida e simulador de lucro líquido. |
+| `/admin/marketing` | Marketing & Cupons | `marketing:view`, `marketing:edit` | Gestão de banners, vitrines e cupons promocionais. |
+| `/admin/loyalty` | Fidelidade & Roleta | `clube:view`, `clube:edit`, `marketing:edit` | Clube VIP (missões e recompensas) e configuração da Roleta Diária. |
+| `/admin/reports` | Relatórios & BI | `relatorios:view`, `dashboard:view` | Evolução de receita (6 meses), desempenho semanal e SLA operacional. |
+| `/admin/users` / `/admin/users/:uid` | Equipe & Acessos | `usuarios:view`, `usuarios:admin` | Gestão de membros da equipe, atribuição de papéis e suspensão/arquivamento reversível. |
+| `/admin/roles` | Papéis & Permissões | `usuarios:view`, `usuarios:admin` | Matriz interativa de permissões (`MODULES × ACTIONS`) e sincronização aditiva do catálogo base. |
+| `/admin/audit` | Trilha de Auditoria | `auditoria:view`, `auditoria:admin` | Explorador imutável de `audit_logs` com filtros, paginação por cursor e inspetor de diff (`before`/`after`). |
+| `/admin/settings` | Configurações | `configuracoes:view`, `configuracoes:edit` | Dados de recebimento Pix, WhatsApp de plantão e taxas de entrega por condomínio. |
+
+### 6.2 Papéis RBAC Padrão (`role_assignments/{uid}`)
+
+- **`superadmin`**: Acesso irrestrito (`*`), incluindo governança de administradores e papéis. Protegido contra auto-remoção e remoção do último superadmin ativo.
+- **`admin`**: Gestão operacional completa da loja, exceto governança crítica (`usuarios:admin`, `auditoria:export`, `configuracoes:admin`).
+- **`operacoes`**: Separação, expedição e cancelamento de pedidos (`pedidos:*`), ajuste de estoque (`estoque:edit`) e suporte operacional.
+- **`financeiro`**: Conciliação de pagamentos Pix (`financeiro:approve`, `pedidos:approve`), relatórios e leitura de auditoria.
+- **`marketing`**: Campanhas, cupons, Clube VIP, Roleta e CRM.
+- **`suporte`**: Atendimento de chamados (`suporte:*`), CRM e consulta de pedidos/clientes.
+- **`catalogo`**: Cadastro de produtos (`produtos:*`) e gestão de inventário (`estoque:*`).
+- **`analista`**: Acesso estritamente leitura a `dashboard:view` e `relatorios:view`.
+

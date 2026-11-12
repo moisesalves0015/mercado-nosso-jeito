@@ -53,6 +53,7 @@ export const storage = getStorage(app);
 
 // Initialize Firebase Functions (for Callable Functions like createOrder)
 export const fns = getFunctions(app);
+export const functions = fns;
 
 // Analytics — lazy, safe for non-browser environments
 export const analytics = typeof window !== "undefined"

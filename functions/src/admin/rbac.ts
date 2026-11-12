@@ -133,6 +133,34 @@ export async function requirePermission(auth: AuthLike | undefined, permission: 
   return access;
 }
 
+/**
+ * Throws unless the caller holds at least one of the listed `permissions`.
+ * Denials by staff members are audited (best effort).
+ */
+export async function requireAnyPermission(auth: AuthLike | undefined, permissions: string[]): Promise<StaffAccess> {
+  if (!auth) throw new HttpsError('unauthenticated', 'Autenticação necessária.');
+  const access = await resolveAccess(auth);
+  const allowed = access.isStaff && permissions.some((p) => permissionsAllow(access.permissions, p));
+  if (!allowed) {
+    if (access.isStaff) {
+      const primary = permissions[0] ?? 'unknown:view';
+      await writeAuditSafe({
+        actorUid: access.uid,
+        actorRole: access.roleId,
+        actorPermissions: access.permissions,
+        action: 'permission_denied',
+        module: primary.split(':')[0],
+        entityType: 'permission',
+        entityId: permissions.join('|'),
+        result: 'denied',
+        source: 'callable',
+      });
+    }
+    throw new HttpsError('permission-denied', 'Você não tem permissão para esta ação.');
+  }
+  return access;
+}
+
 /** Sensitive operations must carry a human reason (stored in the audit log). */
 export function requireReason(value: unknown, min = 5, max = 300): string {
   if (typeof value !== 'string' || value.trim().length < min || value.trim().length > max) {
@@ -167,7 +195,7 @@ export interface ApplyStaffRoleResult {
 
 async function syncClaims(targetUid: string, roleId: string | null, revoke: boolean): Promise<void> {
   const auth = admin.auth();
-  let existing: Record<string, unknown> = {};
+  let existing: Record<string, unknown>;
   try {
     existing = ((await auth.getUser(targetUid)).customClaims ?? {}) as Record<string, unknown>;
   } catch {

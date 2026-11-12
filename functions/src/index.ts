@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { applyStaffRole, requirePermission } from './admin/rbac';
+import { applyStaffRole, requireAnyPermission, requirePermission, resolveAccess } from './admin/rbac';
+import { permissionsAllow } from './admin/permissions';
+import { writeAuditSafe } from './admin/audit';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -756,23 +758,6 @@ async function checkIsCallerBanned(contextAuth: { uid: string; token?: Record<st
   }
 }
 
-/**
- * Checks whether the caller has administrator privileges.
- * Automatically denies access if the user is banned (even if their token still carries admin: true).
- */
-async function checkIsCallerAdmin(contextAuth: { uid: string; token?: Record<string, unknown> }): Promise<boolean> {
-  if (contextAuth.token && contextAuth.token['banned'] === true) return false;
-  try {
-    const snap = await db.collection('users').doc(contextAuth.uid).get();
-    if (snap.exists && snap.data()?.role === 'banned') return false;
-    if (contextAuth.token && contextAuth.token['admin'] === true) return true;
-    return snap.exists && snap.data()?.role === 'admin';
-  } catch {
-    return false;
-  }
-}
-
-
 // ─────────────────────────────────────────────────────────────────────────────
 // createOrder — Callable; all price/stock/coupon/shipping logic runs server-side
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1259,14 +1244,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
 // adminGrantDiamonds — Callable; routes all admin diamond grants through ledger
 // ─────────────────────────────────────────────────────────────────────────────
 export const adminGrantDiamonds = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
-  }
-
-  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
-  if (!isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem conceder diamantes.');
-  }
+  const actor = await requireAnyPermission(context.auth, ['clube:edit', 'clube:admin', 'clientes:edit']);
 
   const req = data as { targetUid?: unknown; amount?: unknown; reason?: unknown; idempotencyKey?: unknown };
 
@@ -1293,16 +1271,16 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
   const amount    = req.amount as number;
   const reason    = req.reason.trim();
   const now       = new Date();
-  const idempotencyKey = `admin-grant:${context.auth.uid}:${targetUid}:${req.idempotencyKey.trim()}`;
+  const idempotencyKey = `admin-grant:${actor.uid}:${targetUid}:${req.idempotencyKey.trim()}`;
 
   const result = await db.runTransaction(async (transaction) => {
     return grantReward(transaction, {
       uid: targetUid,
       type: 'ADMIN_GRANT',
       amount,
-      sourceId:        `admin:${context.auth!.uid}`,
+      sourceId:        `admin:${actor.uid}`,
       idempotencyKey,
-      metadata: { adminUid: context.auth!.uid, reason },
+      metadata: { adminUid: actor.uid, reason },
       historyEntry: {
         desc:   `Ajuste administrativo: ${reason}`,
         date:   `Hoje, ${formatTime(now)}`,
@@ -1312,7 +1290,23 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
     });
   });
 
-  functions.logger.info('adminGrantDiamonds', { targetUid, amount, adminUid: context.auth.uid, reason });
+  if (!result.alreadyProcessed) {
+    await writeAuditSafe({
+      actorUid: actor.uid,
+      actorRole: actor.roleId,
+      actorPermissions: actor.permissions,
+      action: 'diamonds.grant',
+      module: 'clube',
+      entityType: 'user',
+      entityId: targetUid,
+      reason,
+      after: { amount, newBalance: result.newBalance },
+      result: 'success',
+      source: 'callable',
+    });
+  }
+
+  functions.logger.info('adminGrantDiamonds', { targetUid, amount, adminUid: actor.uid, reason });
 
   return { success: true, newBalance: result.newBalance, alreadyProcessed: result.alreadyProcessed };
 });
@@ -1321,14 +1315,7 @@ export const adminGrantDiamonds = functions.https.onCall(async (data, context) =
 // adminBanUser — Callable; bans user account completely (Auth disabled + claims + Firestore)
 // ─────────────────────────────────────────────────────────────────────────────
 export const adminBanUser = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
-  }
-
-  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
-  if (!isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem banir contas.');
-  }
+  const actor = await requireAnyPermission(context.auth, ['usuarios:archive', 'usuarios:admin', 'clientes:archive']);
 
   const req = data as { targetUid?: unknown; reason?: unknown };
   if (typeof req.targetUid !== 'string' || !req.targetUid.trim()) {
@@ -1336,7 +1323,7 @@ export const adminBanUser = functions.https.onCall(async (data, context) => {
   }
 
   const targetUid = req.targetUid.trim();
-  const callerUid = context.auth.uid;
+  const callerUid = actor.uid;
   const reason    = typeof req.reason === 'string' && req.reason.trim() ? req.reason.trim() : 'Suspensão administrativa';
 
   if (targetUid === callerUid) {
@@ -1371,6 +1358,20 @@ export const adminBanUser = functions.https.onCall(async (data, context) => {
     banReason: reason,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, { merge: true });
+
+  await writeAuditSafe({
+    actorUid: actor.uid,
+    actorRole: actor.roleId,
+    actorPermissions: actor.permissions,
+    action: 'user.ban',
+    module: 'usuarios',
+    entityType: 'user',
+    entityId: targetUid,
+    reason,
+    after: { role: 'banned' },
+    result: 'success',
+    source: 'callable',
+  });
 
   functions.logger.info('adminBanUser', { targetUid, callerUid, reason });
 
@@ -1449,9 +1450,13 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
   }
 
-  const isAdmin = await checkIsCallerAdmin({ uid: callerUid, token: context.auth.token });
+  const access = await resolveAccess({ uid: callerUid, token: context.auth.token });
+  const canCancelAny =
+    access.isStaff &&
+    (permissionsAllow(access.permissions, 'pedidos:edit') ||
+      permissionsAllow(access.permissions, 'pedidos:approve'));
 
-  return await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
     const orderRef = db.collection('orders').doc(orderId);
     const orderSnap = await transaction.get(orderRef);
 
@@ -1461,7 +1466,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
 
     const orderData = orderSnap.data()!;
 
-    if (orderData.uid !== callerUid && !isAdmin) {
+    if (orderData.uid !== callerUid && !canCancelAny) {
       throw new functions.https.HttpsError('permission-denied', 'Você não tem permissão para cancelar este pedido.');
     }
 
@@ -1471,7 +1476,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     }
 
     // Users can only cancel while pending or confirmed (before preparation starts)
-    if (orderData.status !== 'pending' && orderData.status !== 'confirmed' && !isAdmin) {
+    if (orderData.status !== 'pending' && orderData.status !== 'confirmed' && !canCancelAny) {
       throw new functions.https.HttpsError(
         'failed-precondition',
         'Não é possível cancelar um pedido em preparação ou entrega. Contate o suporte.',
@@ -1488,7 +1493,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     transaction.set(idempotencyRef, {
       requestedAt: admin.firestore.FieldValue.serverTimestamp(),
       by: callerUid,
-      reason: reason || (isAdmin ? 'Cancelado pelo administrador' : 'Cancelado pelo cliente'),
+      reason: reason || (canCancelAny ? 'Cancelado pelo administrador' : 'Cancelado pelo cliente'),
     });
 
     // Refund stock atomically (only if not already refunded)
@@ -1512,7 +1517,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
       status: 'cancelled',
       label: `Pedido Cancelado${cancelReason}`,
       timestamp: admin.firestore.Timestamp.now(),
-      actor: isAdmin ? 'Administrador' : 'Cliente',
+      actor: canCancelAny ? 'Administrador' : 'Cliente',
     };
 
     const updatePayload: Record<string, unknown> = {
@@ -1531,12 +1536,34 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
 
     transaction.update(orderRef, updatePayload);
 
-    return { success: true };
+    return {
+      success: true,
+      previousStatus: String(orderData.status ?? ''),
+      orderOwnerUid: String(orderData.uid ?? ''),
+    };
   });
+
+  if (canCancelAny) {
+    await writeAuditSafe({
+      actorUid: access.uid,
+      actorRole: access.roleId,
+      module: 'pedidos',
+      action: 'order.cancel',
+      entityType: 'order',
+      entityId: orderId,
+      before: { status: result.previousStatus, uid: result.orderOwnerUid },
+      after: { status: 'cancelled' },
+      reason: reason || 'Cancelado pelo painel administrativo',
+      result: 'success',
+      source: 'callable',
+    });
+  }
+
+  return { success: true };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// confirmPayment — Callable; admin only
+// confirmPayment — Callable; requires financeiro:approve or pedidos:approve
 // Confirms payment atomically and transitions order to confirmed
 // ─────────────────────────────────────────────────────────────────────────────
 export const confirmPayment = functions.https.onCall(async (data, context) => {
@@ -1544,10 +1571,7 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
-  if (!isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem confirmar pagamento.');
-  }
+  const actor = await requireAnyPermission(context.auth, ['financeiro:approve', 'pedidos:approve']);
 
   const { orderId, paymentMethod, paymentReference, note } = data as {
     orderId?: string;
@@ -1560,7 +1584,11 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'orderId é obrigatório.');
   }
 
-  return await db.runTransaction(async (transaction) => {
+  let alreadyApproved = false;
+  let previousPaymentStatus = '';
+  let previousStatus = '';
+
+  const txResult = await db.runTransaction(async (transaction) => {
     const orderRef = db.collection('orders').doc(orderId);
     const orderSnap = await transaction.get(orderRef);
 
@@ -1576,8 +1604,12 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
 
     // Idempotency: if already approved, return success without duplicate timeline
     if (orderData.paymentStatus === 'approved') {
+      alreadyApproved = true;
       return { success: true, message: 'Pagamento já estava aprovado.' };
     }
+
+    previousPaymentStatus = String(orderData.paymentStatus ?? '');
+    previousStatus = String(orderData.status ?? '');
 
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
     const existingTimeline = (orderData.timeline ?? []) as unknown[];
@@ -1615,10 +1647,32 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
 
     return { success: true, orderId };
   });
+
+  if (!alreadyApproved) {
+    await writeAuditSafe({
+      actorUid: actor.uid,
+      actorRole: actor.roleId,
+      module: 'financeiro',
+      action: 'order.payment.confirm',
+      entityType: 'order',
+      entityId: orderId,
+      before: { status: previousStatus, paymentStatus: previousPaymentStatus },
+      after: {
+        status: previousStatus === 'pending' ? 'confirmed' : previousStatus,
+        paymentStatus: 'approved',
+        paymentReference: paymentReference || null,
+      },
+      reason: note || null,
+      result: 'success',
+      source: 'callable',
+    });
+  }
+
+  return txResult;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// updateOrderStatus — Callable; admin only
+// updateOrderStatus — Callable; requires pedidos:edit or pedidos:approve
 // Advances operational status with strict business checks
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateOrderStatus = functions.https.onCall(async (data, context) => {
@@ -1626,10 +1680,7 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
-  if (!isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem atualizar o status.');
-  }
+  const actor = await requireAnyPermission(context.auth, ['pedidos:edit', 'pedidos:approve']);
 
   const { orderId, status, note } = data as { orderId?: string; status?: string; note?: string };
   if (!orderId || !status) {
@@ -1649,7 +1700,9 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('invalid-argument', `Status inválido: ${status}`);
   }
 
-  return await db.runTransaction(async (transaction) => {
+  let previousStatus = '';
+
+  const txResult = await db.runTransaction(async (transaction) => {
     const orderRef = db.collection('orders').doc(orderId);
     const orderSnap = await transaction.get(orderRef);
 
@@ -1658,6 +1711,7 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
     }
 
     const orderData = orderSnap.data()!;
+    previousStatus = String(orderData.status ?? '');
 
     if (orderData.status === 'cancelled') {
       throw new functions.https.HttpsError('failed-precondition', 'Pedido cancelado não pode ter o status alterado.');
@@ -1722,6 +1776,22 @@ export const updateOrderStatus = functions.https.onCall(async (data, context) =>
 
     return { success: true, status };
   });
+
+  await writeAuditSafe({
+    actorUid: actor.uid,
+    actorRole: actor.roleId,
+    module: 'pedidos',
+    action: 'order.status.update',
+    entityType: 'order',
+    entityId: orderId,
+    before: { status: previousStatus },
+    after: { status },
+    reason: note || null,
+    result: 'success',
+    source: 'callable',
+  });
+
+  return txResult;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1865,15 +1935,12 @@ export const redeemReward = functions.https.onCall(async (data, context) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // adminCleanAllDiamonds — Callable; Cleans all diamond data securely
 // ─────────────────────────────────────────────────────────────────────────────
-export const adminCleanAllDiamonds = functions.https.onCall(async (data, context) => {
+export const adminCleanAllDiamonds = functions.https.onCall(async (_data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
 
-  const isAdmin = await checkIsCallerAdmin({ uid: context.auth.uid, token: context.auth.token });
-  if (!isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem limpar os dados.');
-  }
+  const actor = await requireAnyPermission(context.auth, ['clube:admin', 'clube:delete']);
 
   const usersSnap = await db.collection('users').get();
   
@@ -1904,6 +1971,20 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (data, context
   if (count % 400 !== 0) {
     await batch.commit();
   }
+
+  await writeAuditSafe({
+    actorUid: actor.uid,
+    actorRole: actor.roleId,
+    module: 'clube',
+    action: 'diamonds.clean_all',
+    entityType: 'clube',
+    entityId: 'all_users',
+    before: null,
+    after: { usersCleared: count },
+    reason: 'Limpeza administrativa do Clube',
+    result: 'success',
+    source: 'callable',
+  });
 
   functions.logger.info('adminCleanAllDiamonds executed', { adminUid: context.auth.uid, usersCleared: count });
   return { success: true, usersCleared: count };

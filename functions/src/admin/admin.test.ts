@@ -17,12 +17,19 @@ import {
   adminSetStaffStatus,
   adminUpsertRole,
   adminBanUser,
+  adminGrantDiamonds,
+  confirmPayment,
+  updateOrderStatus,
+  cancelOrder,
+  adminCreateSupportTicket,
+  adminUpdateSupportTicket,
+  adminAdjustStock,
   setAdminClaim,
 } from '../index';
 import { sanitizeForAudit } from './audit';
 import { ALL_PERMISSIONS, DEFAULT_ROLES_BY_ID, normalizePermissions, permissionsAllow } from './permissions';
 
-type Callable = { run: (data: unknown, ctx: unknown) => Promise<Record<string, any>> };
+type Callable = { run: (data: unknown, ctx: unknown) => Promise<Record<string, unknown>> };
 const call = (fn: unknown, data: unknown, ctx: unknown) => (fn as Callable).run(data, ctx);
 const ctx = (uid: string, token: Record<string, unknown> = {}) => ({ auth: { uid, token } });
 const anonymous = { auth: undefined };
@@ -44,7 +51,7 @@ function seedStaff(uid: string, roleId: string, status = 'active') {
   fakeDb.seed(`role_assignments/${uid}`, { uid, roleId, status });
 }
 
-const auditDocs = () => fakeDb.listPaths('audit_logs/').map((p) => fakeDb.read(p) as Record<string, any>);
+const auditDocs = () => fakeDb.listPaths('audit_logs/').map((p) => fakeDb.read(p) as Record<string, unknown>);
 const REASON = 'Motivo válido para auditoria';
 
 beforeEach(() => {
@@ -86,7 +93,12 @@ describe('audit sanitization', () => {
       password: 'x',
       nested: { apiKey: 'k', ok: 1 },
       long: 'a'.repeat(1000),
-    }) as Record<string, any>;
+    }) as {
+      cpf: string;
+      password: string;
+      nested: { apiKey: string; ok: number };
+      long: string;
+    };
     expect(out.cpf).toBe('[redacted]');
     expect(out.password).toBe('[redacted]');
     expect(out.nested.apiKey).toBe('[redacted]');
@@ -464,7 +476,8 @@ describe('listing', () => {
     seedStaff('op', 'operacoes');
     seedUser('legacy1', 'admin');
     const r = await call(adminListStaff, {}, ctx('sa'));
-    const byUid = Object.fromEntries((r.staff as any[]).map((s) => [s.uid, s]));
+    const staffList = r.staff as Array<{ uid: string; roleId: string; legacy: boolean }>;
+    const byUid = Object.fromEntries(staffList.map((s) => [s.uid, s]));
     expect(byUid.sa).toMatchObject({ roleId: 'superadmin', legacy: false });
     expect(byUid.legacy1).toMatchObject({ roleId: 'admin', legacy: true });
     await expectCode(call(adminListStaff, {}, ctx('op')), 'permission-denied');
@@ -474,9 +487,10 @@ describe('listing', () => {
     seedStaff('sa', 'superadmin');
     fakeDb.seed('roles/custom_x', { id: 'custom_x', label: 'Custom', permissions: ['pedidos:view'], active: true });
     const r = await call(adminListRoles, {}, ctx('sa'));
-    const ids = (r.roles as any[]).map((x) => x.id);
+    const rolesList = r.roles as Array<{ id: string; permissions: string[] }>;
+    const ids = rolesList.map((x) => x.id);
     expect(ids).toEqual(expect.arrayContaining(['superadmin', 'admin', 'operacoes', 'financeiro', 'marketing', 'suporte', 'catalogo', 'analista', 'custom_x']));
-    expect(r.roles.find((x: any) => x.id === 'superadmin').permissions).toEqual(['*']);
+    expect(rolesList.find((x) => x.id === 'superadmin')?.permissions).toEqual(['*']);
   });
 });
 
@@ -508,18 +522,155 @@ describe('adminListAudit', () => {
     seedAudit('a3', 3000);
     seedAudit('a4', 4000, { result: 'denied' });
 
+    type AuditItem = { id: string; createdAtMillis: number };
     const all = await call(adminListAudit, { limit: 2 }, ctx('sa'));
-    expect(all.entries.map((e: any) => e.id)).toEqual(['a4', 'a3']);
+    const allEntries = all.entries as AuditItem[];
+    expect(allEntries.map((e) => e.id)).toEqual(['a4', 'a3']);
     expect(all.nextCursor).toBe(3000);
 
     const page2 = await call(adminListAudit, { limit: 2, startAfterMillis: all.nextCursor }, ctx('sa'));
-    expect(page2.entries.map((e: any) => e.id)).toEqual(['a2', 'a1']);
+    const page2Entries = page2.entries as AuditItem[];
+    expect(page2Entries.map((e) => e.id)).toEqual(['a2', 'a1']);
 
     const byModule = await call(adminListAudit, { module: 'pedidos' }, ctx('sa'));
-    expect(byModule.entries.map((e: any) => e.id)).toEqual(['a2']);
+    const byModuleEntries = byModule.entries as AuditItem[];
+    expect(byModuleEntries.map((e) => e.id)).toEqual(['a2']);
 
     const combined = await call(adminListAudit, { module: 'usuarios', result: 'denied' }, ctx('sa'));
-    expect(combined.entries.map((e: any) => e.id)).toEqual(['a4']);
-    expect(combined.entries[0].createdAtMillis).toBe(4000);
+    const combinedEntries = combined.entries as AuditItem[];
+    expect(combinedEntries.map((e) => e.id)).toEqual(['a4']);
+    expect(combinedEntries[0].createdAtMillis).toBe(4000);
+  });
+});
+
+describe('granular RBAC on operational callables & suspended staff blocking', () => {
+  beforeEach(() => {
+    fakeDb.seed('orders/o1', {
+      uid: 'cust1',
+      status: 'pending',
+      paymentStatus: 'awaiting_confirmation',
+      paymentMethod: 'Pix',
+      items: [{ id: 'p1', title: 'Item 1', price: 10, quantity: 1 }],
+      timeline: [],
+    });
+    fakeDb.seed('products/p1', { title: 'Item 1', price: 10, stock: 5 });
+    seedUser('cust1', 'client');
+  });
+
+  it('suspended admin with stale admin:true claim is denied on confirmPayment, updateOrderStatus, cancelOrder, adminGrantDiamonds, adminBanUser', async () => {
+    seedStaff('sus_adm', 'admin', 'suspended');
+    const staleCtx = ctx('sus_adm', { admin: true });
+
+    await expectCode(call(confirmPayment, { orderId: 'o1' }, staleCtx), 'permission-denied');
+    await expectCode(call(updateOrderStatus, { orderId: 'o1', status: 'confirmed' }, staleCtx), 'permission-denied');
+    await expectCode(call(cancelOrder, { orderId: 'o1', reason: 'Fraude' }, staleCtx), 'permission-denied');
+    await expectCode(call(adminGrantDiamonds, { targetUid: 'cust1', amount: 10, reason: REASON, idempotencyKey: 'k1' }, staleCtx), 'permission-denied');
+    await expectCode(call(adminBanUser, { targetUid: 'cust1', reason: REASON }, staleCtx), 'permission-denied');
+  });
+
+  it('financeiro role can confirmPayment, operacoes role can updateOrderStatus and cancelOrder, suporte cannot confirmPayment', async () => {
+    seedStaff('fin', 'financeiro');
+    seedStaff('op', 'operacoes');
+    seedStaff('sup', 'suporte');
+
+    await expectCode(call(confirmPayment, { orderId: 'o1' }, ctx('sup')), 'permission-denied');
+
+    const payRes = await call(confirmPayment, { orderId: 'o1', paymentReference: 'E2E123' }, ctx('fin'));
+    expect(payRes.success).toBe(true);
+    expect(fakeDb.read('orders/o1')?.paymentStatus).toBe('approved');
+
+    const statusRes = await call(updateOrderStatus, { orderId: 'o1', status: 'preparing' }, ctx('op'));
+    expect(statusRes.success).toBe(true);
+    expect(fakeDb.read('orders/o1')?.status).toBe('preparing');
+
+    const cancelRes = await call(cancelOrder, { orderId: 'o1', reason: 'Item avariado' }, ctx('op'));
+    expect(cancelRes.success).toBe(true);
+    expect(fakeDb.read('orders/o1')?.status).toBe('cancelled');
+  });
+});
+
+describe('support ticket & inventory callables', () => {
+  it('allows customer to open a support ticket and suporte staff to update status/timeline with audit', async () => {
+    seedUser('cust1', 'client');
+    seedStaff('sup1', 'suporte');
+    seedStaff('fin1', 'financeiro');
+
+    const created = await call(
+      adminCreateSupportTicket,
+      {
+        subject: 'Item faltando no pedido',
+        category: 'pedido',
+        priority: 'high',
+        orderId: 'ORD-100',
+        description: 'Faltou 1 refrigerante no meu pedido entregue hoje.',
+      },
+      ctx('cust1'),
+    );
+
+    expect(created.success).toBe(true);
+    const ticketId = String(created.ticketId);
+    const ticketDoc = fakeDb.read(`support_tickets/${ticketId}`);
+    expect(ticketDoc).toMatchObject({
+      uid: 'cust1',
+      subject: 'Item faltando no pedido',
+      status: 'open',
+      priority: 'high',
+      orderId: 'ORD-100',
+    });
+
+    // financeiro does not have suporte:edit
+    await expectCode(
+      call(adminUpdateSupportTicket, { ticketId, status: 'in_progress', note: 'Analisando' }, ctx('fin1')),
+      'permission-denied',
+    );
+
+    // suporte can update status and add timeline note
+    const updated = await call(
+      adminUpdateSupportTicket,
+      {
+        ticketId,
+        status: 'resolved',
+        priority: 'medium',
+        assignedTo: 'sup1',
+        assignedName: 'Suporte 1',
+        note: 'Item reenviado ao apartamento com pedido de desculpas.',
+      },
+      ctx('sup1'),
+    );
+    expect(updated).toMatchObject({ success: true, status: 'resolved', priority: 'medium' });
+    const afterDoc = fakeDb.read(`support_tickets/${ticketId}`);
+    expect(afterDoc?.status).toBe('resolved');
+    expect((afterDoc?.timeline as unknown[]).length).toBe(2);
+    expect(auditDocs().some((l) => l.action === 'ticket.update' && l.entityId === ticketId)).toBe(true);
+  });
+
+  it('adjusts product stock transactionally with reason, stock_history and audit', async () => {
+    seedStaff('op1', 'operacoes');
+    seedStaff('sup1', 'suporte');
+    fakeDb.seed('products/prod1', { title: 'Arroz 5kg', price: 25, stock: 10 });
+
+    await expectCode(
+      call(adminAdjustStock, { productId: 'prod1', delta: 5, reason: 'Reposição' }, ctx('sup1')),
+      'permission-denied',
+    );
+
+    const adj = await call(
+      adminAdjustStock,
+      { productId: 'prod1', delta: 8, reason: 'Entrada NF 4412' },
+      ctx('op1'),
+    );
+    expect(adj).toMatchObject({ success: true, previousStock: 10, stock: 18, appliedDelta: 8 });
+    expect(fakeDb.read('products/prod1')?.stock).toBe(18);
+
+    // Clamps to 0 when delta exceeds current stock
+    const clampRes = await call(
+      adminAdjustStock,
+      { productId: 'prod1', delta: -25, reason: 'Baixa de inventário' },
+      ctx('op1'),
+    );
+    expect(clampRes).toMatchObject({ success: true, previousStock: 18, stock: 0, appliedDelta: -18 });
+    expect(fakeDb.read('products/prod1')?.stock).toBe(0);
+    expect(fakeDb.listPaths('products/prod1/stock_history/')).toHaveLength(2);
+    expect(auditDocs().some((l) => l.action === 'inventory.adjust_stock' && l.entityId === 'prod1')).toBe(true);
   });
 });

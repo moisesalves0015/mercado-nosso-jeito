@@ -1,14 +1,21 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
+import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { getRoleLabel } from '../admin/permissions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  requiredPermissions?: readonly string[];
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { user, loading, redirectLoading, profileLoading, isAdmin } = useAuth();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  adminOnly = false,
+  requiredPermissions,
+}) => {
+  const { user, loading, redirectLoading, profileLoading, isAdmin, isStaff, staffAccess, canAny } = useAuth();
   const location = useLocation();
 
   if (loading || redirectLoading || profileLoading) {
@@ -20,8 +27,32 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminO
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isAdmin && !isStaff) {
     return <Navigate to="/" replace />;
+  }
+
+  if (requiredPermissions && requiredPermissions.length > 0 && !canAny(requiredPermissions)) {
+    return (
+      <div className="max-w-xl mx-auto my-12 bg-slate-900/90 border border-amber-500/30 rounded-2xl p-8 text-center shadow-2xl">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
+          <ShieldAlert size={28} />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Acesso Restrito a Este Módulo</h2>
+        <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+          Seu perfil atual (<span className="font-semibold text-amber-300">{getRoleLabel(staffAccess.roleId)}</span>) não possui as permissões necessárias para acessar esta rota.
+        </p>
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 mb-6 text-xs text-slate-400 font-mono">
+          Permissão exigida: {requiredPermissions.join(' ou ')}
+        </div>
+        <Link
+          to="/admin/dashboard"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Voltar para Visão Geral
+        </Link>
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { MercadoLogo, AuthBackground, AuthStyles } from './Login';
 import { useToast } from '../contexts/ToastContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
+import { useAuth } from '../hooks/useAuth';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -130,31 +133,31 @@ const CONTACTS: {
   bg: string;
   action: () => void;
 }[] = [
-  {
-    type: 'whatsapp', title: 'WhatsApp', subtitle: 'Resposta em minutos',
-    available: true, waitTime: '~5 min',
-    icon: <MessageCircle size={18} />, color: '#25D366', bg: 'rgba(37,211,102,0.1)',
-    action: () => window.open('https://wa.me/5500000000000?text=Olá! Preciso de ajuda com meu pedido.', '_blank'),
-  },
-  {
-    type: 'chat', title: 'Chat ao vivo', subtitle: 'Seg–Sex 8h às 22h',
-    available: true, waitTime: '~2 min',
-    icon: <Bot size={18} />, color: '#6366F1', bg: 'rgba(99,102,241,0.1)',
-    action: () => {},
-  },
-  {
-    type: 'email', title: 'E-mail', subtitle: 'Resposta em até 24h',
-    available: true,
-    icon: <Mail size={18} />, color: '#D4AF37', bg: 'rgba(212,175,55,0.1)',
-    action: () => window.open('mailto:suporte@mercadonossojeito.com.br', '_blank'),
-  },
-  {
-    type: 'phone', title: 'Telefone', subtitle: 'Seg–Sex 8h às 18h',
-    available: false,
-    icon: <Phone size={18} />, color: '#10B981', bg: 'rgba(16,185,129,0.1)',
-    action: () => window.open('tel:+5500000000000', '_blank'),
-  },
-];
+    {
+      type: 'whatsapp', title: 'WhatsApp', subtitle: 'Resposta em minutos',
+      available: true, waitTime: '~5 min',
+      icon: <MessageCircle size={18} />, color: '#25D366', bg: 'rgba(37,211,102,0.1)',
+      action: () => window.open('https://wa.me/5500000000000?text=Olá! Preciso de ajuda com meu pedido.', '_blank'),
+    },
+    {
+      type: 'chat', title: 'Chat ao vivo', subtitle: 'Seg–Sex 8h às 22h',
+      available: true, waitTime: '~2 min',
+      icon: <Bot size={18} />, color: '#6366F1', bg: 'rgba(99,102,241,0.1)',
+      action: () => { },
+    },
+    {
+      type: 'email', title: 'E-mail', subtitle: 'Resposta em até 24h',
+      available: true,
+      icon: <Mail size={18} />, color: '#D4AF37', bg: 'rgba(212,175,55,0.1)',
+      action: () => window.open('mailto:suporte@mercadonossojeito.com.br', '_blank'),
+    },
+    {
+      type: 'phone', title: 'Telefone', subtitle: 'Seg–Sex 8h às 18h',
+      available: false,
+      icon: <Phone size={18} />, color: '#10B981', bg: 'rgba(16,185,129,0.1)',
+      action: () => window.open('tel:+5500000000000', '_blank'),
+    },
+  ];
 
 // ──────────────────────────────────────────────────────────────
 // FAQ Accordion
@@ -275,20 +278,39 @@ const ContactCard: React.FC<typeof CONTACTS[0]> = ({ title, subtitle, available,
 // Feedback form
 // ──────────────────────────────────────────────────────────────
 const FeedbackForm: React.FC = () => {
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
+  const { user } = useAuth();
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [msg, setMsg] = useState('');
   const [sent, setSent] = useState(false);
+  const [ticketProtocol, setTicketProtocol] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   const handle = async () => {
     if (rating === 0) return;
     setSending(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSending(false);
-    setSent(true);
-    success('Obrigado!', 'Seu feedback foi enviado com sucesso.');
+    try {
+      if (user) {
+        const createTicket = httpsCallable<
+          { subject: string; category: string; description: string; priority: string },
+          { success: boolean; ticketNumber: string }
+        >(functions, 'adminCreateSupportTicket');
+        const res = await createTicket({
+          subject: `Avaliação / Suporte do Morador (${rating}/5 estrelas)`,
+          category: rating <= 2 ? 'Reclamação / Suporte' : 'Feedback / Atendimento',
+          description: msg.trim().length >= 5 ? msg.trim() : `Avaliação enviada pelo app: ${rating} estrela(s).`,
+          priority: rating <= 2 ? 'high' : 'medium',
+        });
+        setTicketProtocol(res.data.ticketNumber);
+      }
+      setSent(true);
+      success('Chamado registrado!', 'Sua mensagem foi encaminhada à equipe do condomínio.');
+    } catch {
+      showError('Erro ao enviar', 'Não foi possível registrar seu chamado agora.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (sent) {
@@ -297,7 +319,9 @@ const FeedbackForm: React.FC = () => {
         <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
           <Check size={22} color="#10B981" />
         </div>
-        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>Feedback enviado!</div>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          {ticketProtocol ? `Chamado ${ticketProtocol} Registrado!` : 'Feedback enviado!'}
+        </div>
         <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Sua avaliação nos ajuda a melhorar.</div>
       </div>
     );
@@ -454,7 +478,7 @@ export const Support: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
               { icon: <Clock size={16} />, color: '#10B981', bg: 'rgba(16,185,129,0.1)', label: 'Tempo médio', value: '5 min' },
-              { icon: <Zap size={16} />,   color: '#D4AF37', bg: 'rgba(212,175,55,0.1)', label: 'Resoluções', value: '98%' },
+              { icon: <Zap size={16} />, color: '#D4AF37', bg: 'rgba(212,175,55,0.1)', label: 'Resoluções', value: '98%' },
             ].map(s => (
               <div key={s.label} style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: 36, height: 36, borderRadius: '11px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>

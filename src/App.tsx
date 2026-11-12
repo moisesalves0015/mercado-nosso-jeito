@@ -1,5 +1,5 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams, Outlet } from 'react-router-dom';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { db } from './firebase';
@@ -9,6 +9,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
 import { AgeVerificationModal } from './components/AgeVerificationModal';
 import { Topbar } from './components/Topbar';
+import { LEGACY_ADMIN_REDIRECTS } from './admin/routes';
 // Eager: small, always-needed pages
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -28,7 +29,6 @@ import { Padaria } from './pages/Padaria';
 const Orders          = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
 const Profile         = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const Checkout        = lazy(() => import('./pages/Checkout').then(m => ({ default: m.Checkout })));
-const Admin           = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const AdminProductDetail = lazy(() => import('./pages/AdminProductDetail').then(m => ({ default: m.AdminProductDetail })));
 const Clube           = lazy(() => import('./pages/Clube').then(m => ({ default: m.Clube })));
 const Roleta          = lazy(() => import('./pages/Roleta').then(m => ({ default: m.Roleta })));
@@ -36,6 +36,36 @@ const Addresses       = lazy(() => import('./pages/Addresses').then(m => ({ defa
 const Coupons         = lazy(() => import('./pages/Coupons').then(m => ({ default: m.Coupons })));
 const Support         = lazy(() => import('./pages/Support').then(m => ({ default: m.Support })));
 const BadgesCenter    = lazy(() => import('./pages/BadgesCenter').then(m => ({ default: m.BadgesCenter })));
+
+// Lazy: Modular Admin CRM Shell & Route Pages
+const AdminLayout             = lazy(() => import('./admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage      = lazy(() => import('./admin/pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminOrdersPage         = lazy(() => import('./admin/pages/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })));
+const AdminOrderDetailPage    = lazy(() => import('./admin/pages/AdminOrderDetailPage').then(m => ({ default: m.AdminOrderDetailPage })));
+const AdminCustomersPage      = lazy(() => import('./admin/pages/AdminCustomersPage').then(m => ({ default: m.AdminCustomersPage })));
+const AdminCustomerDetailPage = lazy(() => import('./admin/pages/AdminCustomerDetailPage').then(m => ({ default: m.AdminCustomerDetailPage })));
+const AdminSupportPage        = lazy(() => import('./admin/pages/AdminSupportPage').then(m => ({ default: m.AdminSupportPage })));
+const AdminSupportDetailPage  = lazy(() => import('./admin/pages/AdminSupportDetailPage').then(m => ({ default: m.AdminSupportDetailPage })));
+const AdminProductsPage       = lazy(() => import('./admin/pages/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
+const AdminInventoryPage      = lazy(() => import('./admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })));
+const AdminFinancePage        = lazy(() => import('./admin/pages/AdminFinancePage').then(m => ({ default: m.AdminFinancePage })));
+const AdminMarketingPage      = lazy(() => import('./admin/pages/AdminMarketingPage').then(m => ({ default: m.AdminMarketingPage })));
+const AdminLoyaltyPage        = lazy(() => import('./admin/pages/AdminLoyaltyPage').then(m => ({ default: m.AdminLoyaltyPage })));
+const AdminReportsPage        = lazy(() => import('./admin/pages/AdminReportsPage').then(m => ({ default: m.AdminReportsPage })));
+const AdminUsersPage          = lazy(() => import('./admin/pages/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminUserDetailPage     = lazy(() => import('./admin/pages/AdminUserDetailPage').then(m => ({ default: m.AdminUserDetailPage })));
+const AdminRolesPage          = lazy(() => import('./admin/pages/AdminRolesPage').then(m => ({ default: m.AdminRolesPage })));
+const AdminAuditPage          = lazy(() => import('./admin/pages/AdminAuditPage').then(m => ({ default: m.AdminAuditPage })));
+const AdminSettingsPage       = lazy(() => import('./admin/pages/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+const AdminNotFoundPage       = lazy(() => import('./admin/pages/AdminNotFoundPage').then(m => ({ default: m.AdminNotFoundPage })));
+
+function LegacyProductRedirect() {
+  const { id } = useParams<{ id: string }>();
+  if (!id || id === 'novo' || id === 'new') {
+    return <Navigate to="/admin/products/new" replace />;
+  }
+  return <Navigate to={`/admin/products/${encodeURIComponent(id)}`} replace />;
+}
 
 // Fallback shown while a lazy page is loading
 function PageLoader() {
@@ -239,22 +269,188 @@ function AppContent() {
           } />
           <Route path="/support" element={<Support />} />
           
-          {/* Protected Admin Route */}
-          <Route path="/admin" element={
-            <ProtectedRoute adminOnly>
-              <Admin />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/:tab" element={
-            <ProtectedRoute adminOnly>
-              <Admin />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/produto/:id" element={
-            <ProtectedRoute adminOnly>
-              <AdminProductDetail />
-            </ProtectedRoute>
-          } />
+          {/* Protected Admin Nested Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute requiredPermissions={['dashboard:view']}>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="orders"
+              element={
+                <ProtectedRoute requiredPermissions={['pedidos:view', 'pedidos:edit', 'pedidos:approve']}>
+                  <AdminOrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="orders/:orderId"
+              element={
+                <ProtectedRoute requiredPermissions={['pedidos:view', 'pedidos:edit', 'pedidos:approve']}>
+                  <AdminOrderDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="customers"
+              element={
+                <ProtectedRoute requiredPermissions={['clientes:view', 'crm:view']}>
+                  <AdminCustomersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="customers/:customerId"
+              element={
+                <ProtectedRoute requiredPermissions={['clientes:view', 'crm:view']}>
+                  <AdminCustomerDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="support"
+              element={
+                <ProtectedRoute requiredPermissions={['suporte:view', 'suporte:edit', 'crm:view']}>
+                  <AdminSupportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="support/:ticketId"
+              element={
+                <ProtectedRoute requiredPermissions={['suporte:view', 'suporte:edit', 'crm:view']}>
+                  <AdminSupportDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:view', 'produtos:edit']}>
+                  <AdminProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products/new"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:create', 'produtos:edit']}>
+                  <AdminProductDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products/:id"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:view', 'produtos:edit']}>
+                  <AdminProductDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="inventory"
+              element={
+                <ProtectedRoute requiredPermissions={['estoque:view', 'estoque:edit', 'produtos:view']}>
+                  <AdminInventoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="finance"
+              element={
+                <ProtectedRoute requiredPermissions={['financeiro:view', 'financeiro:approve']}>
+                  <AdminFinancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="marketing"
+              element={
+                <ProtectedRoute requiredPermissions={['marketing:view', 'marketing:edit']}>
+                  <AdminMarketingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="loyalty"
+              element={
+                <ProtectedRoute requiredPermissions={['clube:view', 'clube:edit', 'marketing:edit']}>
+                  <AdminLoyaltyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute requiredPermissions={['relatorios:view', 'dashboard:view']}>
+                  <AdminReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <ProtectedRoute requiredPermissions={['usuarios:view', 'usuarios:admin']}>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users/:uid"
+              element={
+                <ProtectedRoute requiredPermissions={['usuarios:view', 'usuarios:admin']}>
+                  <AdminUserDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="roles"
+              element={
+                <ProtectedRoute requiredPermissions={['usuarios:view', 'usuarios:admin']}>
+                  <AdminRolesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="audit"
+              element={
+                <ProtectedRoute requiredPermissions={['auditoria:view', 'auditoria:admin']}>
+                  <AdminAuditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute requiredPermissions={['configuracoes:view', 'configuracoes:edit']}>
+                  <AdminSettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Legacy redirects */}
+            <Route path="produto/:id" element={<LegacyProductRedirect />} />
+            {LEGACY_ADMIN_REDIRECTS.map((r) => (
+              <Route
+                key={r.from}
+                path={r.from.replace(/^\/admin\//, '')}
+                element={<Navigate to={r.to} replace />}
+              />
+            ))}
+            <Route path="*" element={<AdminNotFoundPage />} />
+          </Route>
         </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -262,7 +458,7 @@ function AppContent() {
         </Suspense>
       </GlobalOnboardingGuard>
 
-      {location.pathname !== '/onboarding' && <BottomNav />}
+      {location.pathname !== '/onboarding' && !location.pathname.startsWith('/admin') && <BottomNav />}
 
       {showTrigger && (
         <div 
