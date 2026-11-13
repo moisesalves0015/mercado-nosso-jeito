@@ -6,10 +6,19 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
+import { isStandalonePwa } from "./utils/authRedirect";
+
+const productionAppDomain = 'mercado-nosso-jeito.vercel.app';
+const useSameOriginAuth = typeof window !== 'undefined'
+  && window.location.hostname === productionAppDomain
+  && isStandalonePwa();
+const authDomain = useSameOriginAuth
+  ? productionAppDomain
+  : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
 
 const requiredEnvVars = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -34,7 +43,7 @@ if (missing.length > 0) {
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
