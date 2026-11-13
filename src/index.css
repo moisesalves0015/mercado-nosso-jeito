@@ -495,6 +495,122 @@ h1, h2, h3, .logo-main, .logo-sub, .product-price,
 }
 
 /* =========================================================
+   PADRÃO GLOBAL DE BOTÕES & CTAS (STANDARDIZED BUTTON SYSTEM)
+========================================================= */
+
+button, input[type="button"], input[type="submit"], .btn-base {
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Primary CTA Button (Alta Conversão, Ações Principais) */
+.btn-primary, .app-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FFDF73, #D4AF37);
+  color: #090705;
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover, .app-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.38);
+}
+
+.btn-primary:active, .app-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled, .app-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Secondary Action Button (Ações Neutras, Voltar, Cancelar) */
+.btn-secondary, .app-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover, .app-btn-secondary:hover {
+  background: var(--border-primary);
+  border-color: var(--border-gold);
+}
+
+.btn-secondary:active, .app-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Compact / Filter Action Button */
+.btn-compact, .app-btn-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Icon Action Button (Header, Floating Actions) */
+.btn-icon-round, .header-icon-btn, .categories-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--back-btn-bg);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-icon-round:active, .header-icon-btn:active, .categories-back-btn:active {
+  transform: scale(0.92);
+}
+
+/* =========================================================
    BACKGROUND
 ========================================================= */
 
@@ -524,15 +640,15 @@ h1, h2, h3, .logo-main, .logo-sub, .product-price,
   z-index: 10;
   width: min(414px, 100%);
   margin: auto;
-  padding: 0px 0px 80px 0px;
-  /* Removed side padding so headers and scrolls bleed naturally */
+  padding: 0px 0px calc(84px + env(safe-area-inset-bottom, 0px)) 0px;
+  /* Balanced bottom padding accounting for OS gesture bars */
 }
 
 @media (min-width: 768px) {
   .app {
     width: 100%;
     max-width: 960px;
-    padding: 0px 0px 100px 0px;
+    padding: 0px 0px calc(100px + env(safe-area-inset-bottom, 0px)) 0px;
   }
 }
 
@@ -1956,13 +2072,13 @@ body.light-mode .topbar-search-container {
 
 .products {
   display: flex;
-  gap: 12px;
-  /* Espaçamento maior para a sombra não quebrar abruptamente */
+  gap: 10px;
+  /* Espaçamento otimizado para maior densidade visual sem colisão */
   overflow-x: auto;
   overflow-y: visible;
   scrollbar-width: none;
-  padding-top: 14px;
-  padding-bottom: 24px;
+  padding-top: 12px;
+  padding-bottom: 18px;
   padding-right: 0px;
   padding-left: 0px;
 }
@@ -1970,24 +2086,24 @@ body.light-mode .topbar-search-container {
 .products::before,
 .products::after {
   content: '';
-  flex: 0 0 8px;
+  flex: 0 0 6px;
 }
 
 .condo-favorites-scroll {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
   overflow-y: visible;
   scrollbar-width: none;
-  padding-top: 16px;
-  padding-bottom: 24px;
-  margin-top: -12px;
-  margin-bottom: -16px;
+  padding-top: 14px;
+  padding-bottom: 18px;
+  margin-top: -10px;
+  margin-bottom: -12px;
 }
 .condo-favorites-scroll::before,
 .condo-favorites-scroll::after {
   content: '';
-  flex: 0 0 8px;
+  flex: 0 0 6px;
 }
 .condo-favorites-scroll::-webkit-scrollbar {
   display: none;
@@ -2108,14 +2224,14 @@ body.light-mode .topbar-search-container {
 
 /* Maintain exact mobile styling for horizontal scroll lists */
 .products .product-card {
-  width: calc((100% - 16px) / 4.25);
+  width: calc((100% - 12px) / 4.15);
   /* Exactly 4 full cards plus a portion of the 5th card on screen */
-  max-width: 104px;
-  /* Increased slightly to match 4.25 distribution beautifully */
-  max-height: 180px;
+  max-width: 108px;
+  min-width: 92px;
+  max-height: 184px;
   padding: 4px;
-  margin-top: 4px;
-  padding-bottom: 8px;
+  margin-top: 2px;
+  padding-bottom: 6px;
 }
 
 .product-image-wrapper {
@@ -2618,57 +2734,49 @@ body.light-mode .topbar-search-container {
   left: 50%;
   transform: translateX(-50%);
   bottom: 0;
-  height: 74px;
-  /* Increased from 60px to push items up and clear iPhone home bar! */
+  height: calc(66px + env(safe-area-inset-bottom, 0px));
   background: var(--bg-secondary);
-  /* Solid premium background */
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 110;
   border-top: 1.2px solid var(--border-gold);
-  /* Elegant gold top line */
   border-top-left-radius: 16px;
-  /* High fidelity curved top-corners */
   border-top-right-radius: 16px;
-  padding-bottom: 14px;
-  /* Push items up to clear native iOS home indicator bar! */
+  padding-top: 4px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--card-shadow);
+  box-sizing: border-box;
 }
 
 .floating-mini-cart {
   position: fixed;
   left: 50%;
-  bottom: 74px;
-  /* Rests right above the bottom-nav */
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  /* Rests right above the bottom-nav with OS safe-area support */
   background: var(--bg-secondary);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1.2px solid var(--border-gold);
   box-shadow: var(--card-shadow);
-  z-index: 99;
-  /* Exactly behind bottom-nav (z-index: 100) */
+  z-index: 105;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   border-top-left-radius: 16px;
-  /* Match bottom-nav elegance */
   border-top-right-radius: 16px;
   overflow: hidden;
-  /* Emerges slowly from behind the bottom nav */
-  animation: slideUpCart 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUpCart 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slideUpCart {
   0% {
-    transform: translate(-50%, 74px);
-    /* Pushed down behind the 74px bottom nav */
+    transform: translate(-50%, calc(66px + env(safe-area-inset-bottom, 0px)));
     opacity: 0.2;
   }
 
   100% {
     transform: translate(-50%, 0);
-    /* Pops up to rest on top */
     opacity: 1;
   }
 }
@@ -2681,12 +2789,13 @@ body.light-mode .topbar-search-container {
   gap: 3px;
   text-decoration: none;
   color: var(--text-muted);
-  /* Elegant gray-white for inactive */
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 4px 10px;
   border-radius: 12px;
   transition: all 0.25s ease;
+  min-height: 44px; /* Accessible touch target */
+  box-sizing: border-box;
 }
 
 .bottom-nav a.active {
@@ -4239,24 +4348,40 @@ body.light-mode .topbar-search-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 12px 8px 100px;
-  /* Reduced padding and gap to fit 3 columns on mobile screen widths */
+  padding: 10px 8px calc(88px + env(safe-area-inset-bottom, 0px));
   justify-items: center;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 340px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 8px 6px calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 640px) {
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    padding: 12px 20px 100px;
-    /* Reduced top padding */
+    gap: 12px;
+    padding: 12px 14px calc(96px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 @media (min-width: 1024px) {
   .products-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    padding: 16px 20px calc(108px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1280px) {
+  .products-grid {
     grid-template-columns: repeat(6, 1fr);
-    gap: 20px;
+    gap: 16px;
   }
 }
 

@@ -9,12 +9,20 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide completely on login, register, and admin pages
-  const isHiddenRoute = ['/login', '/register'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  // Hide completely on login, register, forgot-password and admin pages
+  const isHiddenRoute = ['/login', '/register', '/forgot-password'].includes(location.pathname) || location.pathname.startsWith('/admin');
   if (isHiddenRoute) return null;
 
-  const hiddenMiniCartRoutes = ['/cart', '/clube', '/profile', '/checkout'];
-  const showMiniCart = totalItems > 0 && !hiddenMiniCartRoutes.includes(location.pathname);
+  // Showcase routes where product catalogs/cards are rendered
+  const isShowcaseRoute = (pathname: string): boolean => {
+    if (pathname === '/') return true;
+    if (['/categories', '/promotions', '/search', '/bebidas', '/padaria', '/eletronicos', '/tabacaria'].includes(pathname)) return true;
+    if (pathname.startsWith('/product/')) return true;
+    return false;
+  };
+
+  // Mini-cart is ONLY visible on showcase pages, never on non-showcase pages (orders, profile, coupons, support, clube, roleta, cart, checkout, etc.)
+  const showMiniCart = totalItems > 0 && isShowcaseRoute(location.pathname);
   const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
   const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);
   const progressPercent = Math.min(100, (totalPrice / freeShippingThreshold) * 100);

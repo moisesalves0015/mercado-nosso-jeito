@@ -84,14 +84,8 @@ export function Cart() {
           }}>
             <button
               onClick={() => navigate(-1)}
-              style={{
-                background: 'var(--back-btn-bg)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: '50%',
-                width: '38px', height: '38px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
-              }}
+              className="btn-icon-round"
+              aria-label="Voltar"
             >
               <ArrowLeft size={18} />
             </button>
@@ -256,8 +250,8 @@ export function Cart() {
             </div>
 
             <button
-              className="premium-btn-rainbow"
-              style={{ width: '100%', marginTop: 10, padding: '12px 0', borderRadius: 8, fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, opacity: checkoutLoading ? 0.7 : 1 }}
+              className="btn-primary"
+              style={{ width: '100%', marginTop: 12, height: 48, fontSize: 13.5, letterSpacing: '0.2px', opacity: checkoutLoading ? 0.7 : 1 }}
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >

@@ -570,10 +570,10 @@ export function Checkout() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button onClick={() => setStep('delivery')} style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                <button onClick={() => setStep('delivery')} className="btn-secondary" style={{ flex: 1 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
-                <button onClick={() => void handleFinish()} disabled={loading} style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13, opacity: loading ? 0.7 : 1 }}>
+                <button onClick={() => void handleFinish()} disabled={loading} className="btn-primary" style={{ flex: 2 }}>
                   {loading ? 'Processando...' : <><ShieldCheck size={16} /> Finalizar</>}
                 </button>
               </div>
