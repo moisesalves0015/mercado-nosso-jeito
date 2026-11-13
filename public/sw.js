@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mercado-v2';
+const CACHE_NAME = 'mercado-v3';
 const ASSETS = [
   '/',
   '/index.html',

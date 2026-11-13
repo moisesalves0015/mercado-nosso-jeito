@@ -186,9 +186,28 @@
             }
           }).catch((err) => console.error('Erro ao desregistrar Service Worker:', err));
         } else {
+          let reloadingAfterUpdate = false;
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              if (reloadingAfterUpdate) return;
+              reloadingAfterUpdate = true;
+              window.location.reload();
+            });
+          }
+
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-              .then((reg) => console.log('Service Worker registrado com sucesso:', reg.scope))
+            navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+              .then((reg) => {
+                console.log('Service Worker registrado com sucesso:', reg.scope);
+                const checkForUpdate = () => {
+                  if (document.visibilityState === 'visible') {
+                    reg.update().catch((err) => console.error('Erro ao verificar atualização do PWA:', err));
+                  }
+                };
+                checkForUpdate();
+                window.setInterval(checkForUpdate, 5 * 60 * 1000);
+                document.addEventListener('visibilitychange', checkForUpdate);
+              })
               .catch((err) => console.error('Erro ao registrar Service Worker:', err));
           });
         }
