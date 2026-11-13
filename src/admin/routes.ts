@@ -256,6 +256,27 @@ export function resolveAdminBreadcrumbs(pathname: string): BreadcrumbSegment[] {
     return crumbs;
   }
 
+  if (clean === '/admin/marketing/campaigns') {
+    crumbs.push({ label: 'Marketing & Cupons', to: '/admin/marketing' });
+    crumbs.push({ label: 'Anúncios Patrocinados' });
+    return crumbs;
+  }
+
+  if (clean === '/admin/marketing/campaigns/new') {
+    crumbs.push({ label: 'Marketing & Cupons', to: '/admin/marketing' });
+    crumbs.push({ label: 'Anúncios Patrocinados', to: '/admin/marketing/campaigns' });
+    crumbs.push({ label: 'Nova Campanha' });
+    return crumbs;
+  }
+
+  const campaignMatch = clean.match(/^\/admin\/marketing\/campaigns\/([^/]+)$/);
+  if (campaignMatch) {
+    crumbs.push({ label: 'Marketing & Cupons', to: '/admin/marketing' });
+    crumbs.push({ label: 'Anúncios Patrocinados', to: '/admin/marketing/campaigns' });
+    crumbs.push({ label: `Campanha #${decodeURIComponent(campaignMatch[1]).slice(0, 12)}` });
+    return crumbs;
+  }
+
   const userMatch = clean.match(/^\/admin\/users\/([^/]+)$/);
   if (userMatch) {
     crumbs.push({ label: 'Equipe & Acessos', to: '/admin/users' });

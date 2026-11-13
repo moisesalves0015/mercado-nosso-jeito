@@ -259,4 +259,52 @@ describe('Firestore Rules - RBAC, superadmin and audit (Fase 1)', () => {
       await assertFails(db.collection('audit_logs').doc('l1').delete());
     }
   });
+
+  // ── Sponsored Campaigns & Legacy Clube Collections ─────────────────────────
+  it('ad_campaigns: normal users cannot read drafts/private data or write; staff can read; nobody writes directly', async () => {
+    await seed((db) =>
+      db.collection('ad_campaigns').doc('camp_draft').set({
+        title: 'Rascunho Privado',
+        status: 'draft',
+        active: false,
+        internalNotes: 'Dados comerciais privados',
+      }),
+    );
+    await assignment('mkt1', 'marketing');
+    await assignment('a1', 'admin');
+
+    const customerDb = testEnv.authenticatedContext('customer').firestore();
+    const mktDb = testEnv.authenticatedContext('mkt1').firestore();
+    const adminDb = testEnv.authenticatedContext('a1', { admin: true }).firestore();
+
+    await assertFails(customerDb.collection('ad_campaigns').doc('camp_draft').get());
+    await assertFails(customerDb.collection('ad_campaigns').doc('camp_new').set({ title: 'Fake' }));
+    await assertSucceeds(mktDb.collection('ad_campaigns').doc('camp_draft').get());
+    await assertFails(mktDb.collection('ad_campaigns').doc('camp_draft').update({ status: 'active' }));
+    await assertSucceeds(adminDb.collection('ad_campaigns').doc('camp_draft').get());
+    await assertFails(adminDb.collection('ad_campaigns').doc('camp_draft').update({ status: 'active' }));
+  });
+
+  it('premium_offers & diamond_rewards & clube profile: legacy protected, no direct diamond tampering', async () => {
+    await seed((db) => db.collection('premium_offers').doc('leg1').set({ brand: 'Legado' }));
+    await seed((db) => db.collection('diamond_rewards').doc('rew1').set({ title: 'Cupom', cost: 100 }));
+    await seed((db) => db.collection('users').doc('customer').collection('clube').doc('profile').set({ diamonds: 10 }));
+    await assignment('mkt1', 'marketing');
+
+    const customerDb = testEnv.authenticatedContext('customer').firestore();
+    const mktDb = testEnv.authenticatedContext('mkt1').firestore();
+
+    // premium_offers: staff reads for migration, customer denied, nobody writes
+    await assertFails(customerDb.collection('premium_offers').doc('leg1').get());
+    await assertSucceeds(mktDb.collection('premium_offers').doc('leg1').get());
+    await assertFails(mktDb.collection('premium_offers').doc('leg1').delete());
+
+    // diamond_rewards: authenticated reads, customer cannot write
+    await assertSucceeds(customerDb.collection('diamond_rewards').doc('rew1').get());
+    await assertFails(customerDb.collection('diamond_rewards').doc('rew2').set({ title: 'Hack', cost: 0 }));
+
+    // users/{uid}/clube/profile: owner reads, cannot write diamonds or completedAds directly
+    await assertSucceeds(customerDb.collection('users').doc('customer').collection('clube').doc('profile').get());
+    await assertFails(customerDb.collection('users').doc('customer').collection('clube').doc('profile').update({ diamonds: 99999 }));
+  });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -13,16 +13,19 @@ import {
   ExternalLink,
   Truck,
   Trophy,
-  X
+  X,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { SeasonRanking } from '../components/SeasonRanking';
 import { db } from '../firebase';
-import { doc, onSnapshot, collection, query, where, arrayUnion } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
 import { performCheckinTransaction } from '../services/checkinService';
 import { useOrders } from '../hooks/useOrders';
 import { useCart } from '../hooks/useCart';
+import { type PublicSponsoredCampaign, isSafeActionUrl } from '../shared/sponsoredCampaign';
 
 interface Mission {
   id: string;
@@ -32,20 +35,6 @@ interface Mission {
   progressText: string;
   completed: boolean;
   type: 'checkin' | 'ad' | 'order' | 'refer' | 'combo';
-}
-
-interface SponsorAd {
-  id: string;
-  brand: string;
-  title?: string;
-  desc: string;
-  logo: string;
-  rewardVal: number;
-  type: 'coins' | 'shipping';
-  buttonLabel?: string;
-  bannerImage: string;
-  duration: number;
-  category?: string;
 }
 
 interface RewardItem {
@@ -120,10 +109,12 @@ export const Clube = () => {
   const [checkedIn, setCheckedIn] = useState<boolean>(false);
   const [vipProgress, setVipProgress] = useState<number>(0);
   const [vipTier, setVipTier] = useState<string>('Bronze');
-  const [activeAd, setActiveAd] = useState<SponsorAd | null>(null);
+  const [activeAd, setActiveAd] = useState<PublicSponsoredCampaign | null>(null);
   const [activeAdSessionId, setActiveAdSessionId] = useState<string | null>(null);
+  const [adStartLoadingId, setAdStartLoadingId] = useState<string | null>(null);
   const [adClaimLoading, setAdClaimLoading] = useState<boolean>(false);
-  const [adTimer, setAdTimer] = useState<number>(3);
+  const [adClaimError, setAdClaimError] = useState<string | null>(null);
+  const [adTimer, setAdTimer] = useState<number>(15);
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
   const [successModal, setSuccessModal] = useState<{
     title: string;
@@ -141,7 +132,9 @@ export const Clube = () => {
   // Dynamic points history ledgers
   const [history, setHistory] = useState<Array<{id: string; desc: string; date: string; value: string; isPlus: boolean}>>([]);
 
-  const [sponsorAds, setSponsorAds] = useState<SponsorAd[]>([]);
+  const [sponsorAds, setSponsorAds] = useState<PublicSponsoredCampaign[]>([]);
+  const [adsLoading, setAdsLoading] = useState<boolean>(false);
+  const [adsError, setAdsError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [profileMissions, setProfileMissions] = useState<{ order: boolean; refer: boolean; combo: boolean }>({ order: false, refer: false, combo: false });
   const [referredUsers, setReferredUsers] = useState<ReferredUser[]>([]);
@@ -159,16 +152,62 @@ export const Clube = () => {
     return () => unsubRefer();
   }, [user]);
 
-  // Fetch dynamic configurations from Admin Collections
+  const loadPublicAds = useCallback(async () => {
+    if (!user) {
+      setSponsorAds([]);
+      return;
+    }
+    setAdsLoading(true);
+    setAdsError(null);
+    try {
+      const fn = getFunctions();
+      const listFn = httpsCallable<unknown, { campaigns: PublicSponsoredCampaign[] }>(fn, 'listPublicAdCampaigns');
+      const res = await listFn({});
+      setSponsorAds(res.data.campaigns ?? []);
+    } catch (err) {
+      console.error('Erro ao carregar campanhas patrocinadas:', err);
+      setAdsError('Não foi possível carregar as ofertas patrocinadas agora.');
+    } finally {
+      setAdsLoading(false);
+    }
+  }, [user]);
+
+  // Fetch dynamic configurations (campaigns via callable, diamond_rewards via Firestore)
   useEffect(() => {
-    const unsub2 = onSnapshot(collection(db, 'premium_offers'), snap => {
-      setSponsorAds(snap.docs.map(d => ({ id: d.id, ...d.data() } as SponsorAd)));
-    });
-    const unsub3 = onSnapshot(collection(db, 'diamond_rewards'), snap => {
-      setRewards(snap.docs.map(d => ({ id: d.id, ...d.data() } as RewardItem)));
-    });
-    return () => { unsub2(); unsub3(); };
-  }, []);
+    let active = true;
+    if (user) {
+      const listFn = httpsCallable<unknown, { campaigns: PublicSponsoredCampaign[] }>(
+        getFunctions(),
+        'listPublicAdCampaigns',
+      );
+      listFn({})
+        .then((res) => {
+          if (active) {
+            setSponsorAds(res.data.campaigns ?? []);
+            setAdsError(null);
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            console.error('Erro ao carregar campanhas patrocinadas:', err);
+            setAdsError('Não foi possível carregar as ofertas patrocinadas agora.');
+          }
+        });
+    }
+    const unsub3 = onSnapshot(
+      collection(db, 'diamond_rewards'),
+      (snap) => {
+        setRewards(snap.docs.map((d) => ({ id: d.id, ...d.data() } as RewardItem)));
+      },
+      (err) => {
+        console.warn('Erro ao ler diamond_rewards:', err);
+      },
+    );
+    return () => {
+      active = false;
+      unsub3();
+    };
+  }, [user]);
 
   // Firebase Connection and Initialization
   useEffect(() => {
@@ -371,6 +410,20 @@ export const Clube = () => {
     return () => clearInterval(interval);
   }, [isAdPlaying, adTimer]);
 
+  // Lock scrolling & support Escape when ad theater overlay is open
+  useEffect(() => {
+    if (!isAdPlaying) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !adClaimLoading) {
+        setIsAdPlaying(false);
+        setActiveAd(null);
+        setAdClaimError(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isAdPlaying, adClaimLoading]);
+
   // Lock scrolling when success modal or ad theater overlay is open
   useEffect(() => {
     if (successModal || isAdPlaying) {
@@ -385,22 +438,6 @@ export const Clube = () => {
       document.documentElement.style.overflow = '';
     };
   }, [successModal, isAdPlaying]);
-
-  // updateFirebaseDoc — kept only for non-financial fields (completedAds, etc.)
-  // IMPORTANT: Do NOT use this for diamonds, history, or mission completion.
-  // Those are exclusively updated via Cloud Functions (grantReward, claimMissionReward).
-  const updateFirebaseDocNonFinancial = async (updates: Record<string, unknown>) => {
-    if (!user) return;
-    const clubeRef = doc(db, 'users', user.uid, 'clube', 'profile');
-    try {
-      const { updateDoc } = await import('firebase/firestore');
-      await updateDoc(clubeRef, updates);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const updateFirebaseDoc = updateFirebaseDocNonFinancial;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleEarnCoins = async (_amount: number, _desc: string) => {
@@ -447,35 +484,143 @@ export const Clube = () => {
     }
   };
 
-  const handleAdClick = async (ad: SponsorAd) => {
+  const handleAdClick = async (ad: PublicSponsoredCampaign) => {
     if (!user) {
-      alert('Faça login para assistir e ganhar recompensas.');
+      setAdsError('Faça login para assistir e resgatar recompensas.');
       return;
     }
-    if (ad.type === 'shipping') {
-      setActiveAdSessionId(null);
+    setAdClaimError(null);
+
+    // Recupera sessão em aberto no servidor após queda de rede sem duplicar sessão
+    const nowMs = new Date().getTime();
+    if (ad.activeSession && ad.activeSession.expiresAtMillis > nowMs) {
+      const elapsedSec = Math.floor((nowMs - ad.activeSession.startedAtMillis) / 1000);
+      const remaining = Math.max(0, ad.activeSession.minWatchSeconds - elapsedSec);
+      setActiveAdSessionId(ad.activeSession.sessionId);
       setActiveAd(ad);
-      setAdTimer(ad.duration);
+      setAdTimer(remaining);
       setIsAdPlaying(true);
       return;
     }
+
+    setAdStartLoadingId(ad.id);
     try {
       const fn = getFunctions();
       const startSession = httpsCallable<
         { campaignId: string },
-        { sessionId: string; minWatchSeconds: number; rewardDiamonds: number }
+        {
+          sessionId: string;
+          minWatchSeconds: number;
+          rewardDiamonds: number;
+          rewardType: PublicSponsoredCampaign['rewardType'];
+          rewardCouponCode: string | null;
+        }
       >(fn, 'startAdWatchSession');
       const res = await startSession({ campaignId: String(ad.id) });
       setActiveAdSessionId(res.data.sessionId);
       setActiveAd({
         ...ad,
-        duration: res.data.minWatchSeconds,
-        rewardVal: res.data.rewardDiamonds,
+        durationSeconds: res.data.minWatchSeconds,
+        rewardDiamonds: res.data.rewardDiamonds,
+        rewardType: res.data.rewardType,
+        rewardCouponCode: res.data.rewardCouponCode,
       });
       setAdTimer(res.data.minWatchSeconds);
       setIsAdPlaying(true);
     } catch (e: unknown) {
-      alert((e as Error)?.message || 'Campanha indisponível ou limite atingido no momento.');
+      setAdsError((e as Error)?.message || 'Campanha indisponível ou limite atingido no momento.');
+    } finally {
+      setAdStartLoadingId(null);
+    }
+  };
+
+  const handleCloseAdPlayer = () => {
+    if (adClaimLoading) return;
+    setIsAdPlaying(false);
+    setActiveAd(null);
+    setAdClaimError(null);
+  };
+
+  const handleClaimAdReward = async () => {
+    if (!activeAd || !activeAdSessionId || adTimer > 0 || adClaimLoading) return;
+    setAdClaimLoading(true);
+    setAdClaimError(null);
+    try {
+      const fn = getFunctions();
+      const claimAdRewardFn = httpsCallable<
+        { sessionId: string },
+        {
+          success: boolean;
+          rewardType: PublicSponsoredCampaign['rewardType'];
+          newBalance?: number;
+          grantedAmount: number;
+          grantedCouponCode?: string | null;
+          rewardTerms?: string;
+          alreadyProcessed?: boolean;
+        }
+      >(fn, 'claimAdReward');
+      const res = await claimAdRewardFn({ sessionId: activeAdSessionId });
+      const { rewardType, grantedAmount, newBalance, grantedCouponCode, rewardTerms } = res.data;
+
+      if (typeof newBalance === 'number') {
+        setCoins(newBalance);
+        setPopBadge(true);
+        setTimeout(() => setPopBadge(false), 2400);
+      }
+
+      setCompletedAds((prev) => (prev.includes(activeAd.id) ? prev : [...prev, activeAd.id]));
+      setIsAdPlaying(false);
+      setActiveAdSessionId(null);
+
+      if (rewardType === 'diamonds') {
+        setSuccessModal({
+          title: `+${grantedAmount} Diamantes Confirmados!`,
+          desc: `O servidor confirmou +${grantedAmount} diamantes pela visualização de ${activeAd.brand}.`,
+          coupon: 'CREDITADO',
+          amountGained: grantedAmount,
+          description: `Anúncio (${activeAd.brand})`,
+        });
+      } else if (rewardType === 'shipping' || rewardType === 'coupon') {
+        setSuccessModal({
+          title: rewardType === 'shipping' ? 'Benefício de Frete Liberado!' : 'Cupom de Patrocinador Liberado!',
+          desc: rewardTerms || `Use o código ${grantedCouponCode ?? ''} conforme as regras da campanha.`,
+          coupon: grantedCouponCode || 'LIBERADO',
+        });
+      } else {
+        setSuccessModal({
+          title: 'Visualização Concluída!',
+          desc: `Você concluiu o conteúdo patrocinado de ${activeAd.brand}.`,
+          coupon: 'CONCLUÍDO',
+        });
+      }
+
+      setActiveAd(null);
+      void loadPublicAds();
+    } catch (err: unknown) {
+      // Mantém activeAdSessionId preservado para o usuário tentar novamente sem perder a sessão
+      setAdClaimError((err as Error)?.message || 'Falha de conexão ao confirmar recompensa. Tente novamente.');
+    } finally {
+      setAdClaimLoading(false);
+    }
+  };
+
+  const handleAdCtaAction = (ad: PublicSponsoredCampaign) => {
+    if (ad.ctaActionType === 'none') return;
+    if (!isSafeActionUrl(ad.ctaActionType, ad.ctaTarget)) {
+      setAdClaimError('Link de destino indisponível ou inválido.');
+      return;
+    }
+    if (ad.ctaActionType === 'whatsapp' || ad.ctaActionType === 'external_url') {
+      window.open(ad.ctaTarget, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (ad.ctaActionType === 'redeem_benefit') {
+      if (ad.ctaTarget.startsWith('/')) {
+        setIsAdPlaying(false);
+        navigate(ad.ctaTarget);
+      } else if (adTimer === 0 && activeAdSessionId) {
+        void handleClaimAdReward();
+      }
     }
   };
 
@@ -834,83 +979,177 @@ export const Clube = () => {
       {/* ÁREA DE ANÚNCIOS OPCIONAIS (SPONSORED) */}
       <div className="clube-section-title-row">
         <h3>Ofertas Patrocinadas Premium</h3>
+        <button
+          type="button"
+          onClick={() => void loadPublicAds()}
+          disabled={adsLoading}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.16)',
+            color: 'rgba(255,255,255,0.8)',
+            borderRadius: 8,
+            padding: '4px 10px',
+            fontSize: 11,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            cursor: 'pointer',
+          }}
+        >
+          <RefreshCw size={12} className={adsLoading ? 'animate-spin' : ''} />
+          Atualizar
+        </button>
       </div>
-      <div className="clube-ads-grid-vertical">
-        {sponsorAds.map((ad) => {
-          const isCompleted = completedAds.includes(ad.id);
-          const brandClass = `brand-${ad.brand.toLowerCase().replace(/\s+/g, '')}`;
-          
-          return (
-            <div className={`clube-ad-card-vertical ${brandClass} ${isCompleted ? 'completed' : ''}`} key={ad.id}>
-              {/* TOP BANNER VISUAL */}
-              <div className="clube-ad-banner-wrapper">
-                <img src={ad.bannerImage} alt={ad.brand} className="clube-ad-banner" />
-                <div className="clube-ad-banner-overlay-dark" />
-                
-                {/* Floating Tags */}
-                <span className="clube-ad-category-tag">{ad.category || 'Parceiro'}</span>
-                <span className="clube-ad-duration-tag">{ad.duration}s</span>
-              </div>
-              
-              {/* BRAND LOGO CIRCLE (overlapped floating) */}
-              <div className="clube-ad-logo-wrapper">
-                <div className="clube-ad-logo-box">
-                  <img src={ad.logo} alt={ad.brand} />
-                </div>
-              </div>
-              
-              {/* CARD DETAILS */}
-              <div className="clube-ad-details">
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span className="clube-ad-brand-tag-vertical">{ad.brand}</span>
-                </div>
-                <h4 className="clube-ad-title-vertical">{ad.title || `${ad.brand} Especial`}</h4>
-                <p className="clube-ad-desc-vertical">{ad.desc}</p>
-                
-                {/* Reward Pill */}
-                <div className="clube-ad-reward-wrapper">
-                  {isCompleted ? (
-                    <div className="clube-ad-reward-badge-vertical completed">
-                      <span>CONCLUÍDO</span>
-                    </div>
-                  ) : ad.rewardVal > 0 ? (
-                    <div className="clube-ad-reward-badge-vertical">
-                      <PremiumDiamondSVG size={9} fill="#FFDF73" color="#FFDF73" />
-                      <span>+{ad.rewardVal}</span>
-                    </div>
-                  ) : (
-                    <div className="clube-ad-reward-badge-vertical free">
-                      <span>FRETE GRÁTIS</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* FULL WIDTH ACTION BUTTON */}
-              <div className="clube-ad-action-wrapper">
-                <button 
-                  className={`clube-ad-btn-vertical ${isCompleted ? 'completed' : ''}`}
-                  onClick={() => !isCompleted && handleAdClick(ad)}
-                  disabled={isCompleted}
-                >
-                  {isCompleted 
-                    ? (ad.type === 'shipping' ? 'Ativado' : 'Concluído') 
-                    : (ad.type === 'shipping' ? 'Ativar Frete' : 'Assistir')
-                  }
-                </button>
-              </div>
 
-              {/* GLASS COMPLETED COVER */}
-              {isCompleted && (
-                <div className="clube-ad-completed-overlay">
-                  <div className="clube-ad-completed-check">✓</div>
-                  <span>Resgatado</span>
+      {adsError && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 14,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: 'rgba(239,68,68,0.12)',
+            border: '1px solid rgba(239,68,68,0.35)',
+            color: '#fecaca',
+            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <AlertCircle size={14} /> {adsError}
+          </span>
+          <button
+            type="button"
+            onClick={() => void loadPublicAds()}
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              border: 'none',
+              color: '#fff',
+              borderRadius: 6,
+              padding: '4px 10px',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {adsLoading && sponsorAds.length === 0 ? (
+        <div style={{ padding: '20px 0', textAlign: 'center', color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>
+          Carregando campanhas patrocinadas...
+        </div>
+      ) : sponsorAds.length === 0 ? (
+        <div style={{ padding: '18px 14px', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: 12, border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: 16 }}>
+          Nenhuma campanha patrocinada disponível para o seu condomínio no momento.
+        </div>
+      ) : (
+        <div className="clube-ads-grid-vertical">
+          {sponsorAds.map((ad) => {
+            const isCompleted = !ad.canClaim || completedAds.includes(ad.id);
+            const hasActiveSession = Boolean(ad.activeSession);
+            const isStarting = adStartLoadingId === ad.id;
+
+            return (
+              <div className={`clube-ad-card-vertical ${isCompleted ? 'completed' : ''}`} key={ad.id}>
+                {/* TOP BANNER VISUAL */}
+                <div className="clube-ad-banner-wrapper">
+                  {ad.bannerUrl ? (
+                    <img src={ad.bannerUrl} alt={ad.brand} className="clube-ad-banner" />
+                  ) : (
+                    <div className="clube-ad-banner" style={{ background: 'linear-gradient(135deg, #0d261a, #163b28)' }} />
+                  )}
+                  <div className="clube-ad-banner-overlay-dark" />
+
+                  <span className="clube-ad-category-tag">{ad.category || 'Parceiro'}</span>
+                  <span className="clube-ad-duration-tag">{ad.durationSeconds}s</span>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+
+                {/* BRAND LOGO CIRCLE */}
+                <div className="clube-ad-logo-wrapper">
+                  <div className="clube-ad-logo-box">
+                    {ad.logoUrl ? (
+                      <img src={ad.logoUrl} alt={ad.brand} />
+                    ) : (
+                      <span style={{ fontWeight: 900, fontSize: 13, color: '#D4AF73' }}>
+                        {ad.brand.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* CARD DETAILS */}
+                <div className="clube-ad-details">
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                    <span className="clube-ad-brand-tag-vertical">{ad.brand}</span>
+                  </div>
+                  <h4 className="clube-ad-title-vertical">{ad.title}</h4>
+                  <p className="clube-ad-desc-vertical">{ad.description}</p>
+
+                  {/* Oferta configurada (recompensa só é confirmada pelo servidor após conclusão) */}
+                  <div className="clube-ad-reward-wrapper">
+                    {isCompleted ? (
+                      <div className="clube-ad-reward-badge-vertical completed">
+                        <span>CONCLUÍDO</span>
+                      </div>
+                    ) : ad.rewardType === 'diamonds' ? (
+                      <div className="clube-ad-reward-badge-vertical">
+                        <PremiumDiamondSVG size={9} fill="#FFDF73" color="#FFDF73" />
+                        <span>Oferta: {ad.rewardDiamonds} diamantes</span>
+                      </div>
+                    ) : ad.rewardType === 'shipping' ? (
+                      <div className="clube-ad-reward-badge-vertical free">
+                        <span>BENEFÍCIO FRETE</span>
+                      </div>
+                    ) : ad.rewardType === 'coupon' ? (
+                      <div className="clube-ad-reward-badge-vertical free">
+                        <span>CUPOM PARCEIRO</span>
+                      </div>
+                    ) : (
+                      <div className="clube-ad-reward-badge-vertical">
+                        <span>CONTEÚDO</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* FULL WIDTH ACTION BUTTON */}
+                <div className="clube-ad-action-wrapper">
+                  <button
+                    type="button"
+                    className={`clube-ad-btn-vertical ${isCompleted ? 'completed' : ''}`}
+                    onClick={() => !isCompleted && void handleAdClick(ad)}
+                    disabled={isCompleted || isStarting}
+                    aria-label={isCompleted ? `${ad.title} concluído` : `Abrir campanha ${ad.title}`}
+                  >
+                    {isStarting
+                      ? 'Iniciando...'
+                      : isCompleted
+                        ? 'Concluído'
+                        : hasActiveSession
+                          ? 'Retomar'
+                          : ad.rewardType === 'shipping' || ad.rewardType === 'coupon'
+                            ? 'Ver Oferta'
+                            : 'Assistir'}
+                  </button>
+                </div>
+
+                {isCompleted && (
+                  <div className="clube-ad-completed-overlay">
+                    <div className="clube-ad-completed-check">✓</div>
+                    <span>Concluído</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* SISTEMA DE MOEDAS E WALLET LEDGER */}
       <div className="clube-wallet-section">
@@ -979,115 +1218,97 @@ export const Clube = () => {
       {isAdPlaying && activeAd && createPortal((() => {
         const radius = 18;
         const circumference = 2 * Math.PI * radius; // ~113.097
-        const progressOffset = circumference - (adTimer / activeAd.duration) * circumference;
-        const brandColorClass = `brand-${activeAd.brand.toLowerCase().replace(/\s+/g, '')}`;
+        const totalDuration = Math.max(1, activeAd.durationSeconds);
+        const progressOffset = circumference - (adTimer / totalDuration) * circumference;
 
         return (
-          <div className={`clube-ad-theater-overlay ${brandColorClass}`}>
+          <div className="clube-ad-theater-overlay" role="dialog" aria-modal="true" aria-label={`Campanha ${activeAd.title}`}>
             <div className="clube-ad-theater-screen">
-              {/* Main Ad Banner Display */}
-              <img src={activeAd.bannerImage} alt={activeAd.brand} className="clube-ad-theater-billboard" />
+              {activeAd.bannerUrl ? (
+                <img src={activeAd.bannerUrl} alt={activeAd.brand} className="clube-ad-theater-billboard" />
+              ) : (
+                <div className="clube-ad-theater-billboard" style={{ background: 'linear-gradient(160deg, #0b1f14, #143624)' }} />
+              )}
               <div className="clube-ad-theater-shade" />
 
-              {/* Top Bar with Watermark and Circular Timer */}
+              {/* Top Bar with Brand, Return/Close Button and Circular Timer */}
               <div className="clube-ad-theater-top-bar">
                 <div className="clube-ad-theater-brand-box">
                   <div className="clube-ad-theater-logo">
-                    <img src={activeAd.logo} alt={activeAd.brand} />
+                    {activeAd.logoUrl ? (
+                      <img src={activeAd.logoUrl} alt={activeAd.brand} />
+                    ) : (
+                      <span style={{ fontWeight: 900, fontSize: 12, color: '#FFDF73' }}>
+                        {activeAd.brand.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div>
-                    <span className="clube-ad-theater-sponsor-label">Patrocinador Oficial</span>
+                    <span className="clube-ad-theater-sponsor-label">Patrocinador</span>
                     <h4 className="clube-ad-theater-brand-name">{activeAd.brand}</h4>
                   </div>
                 </div>
 
-                {/* Circular Story Countdown Timer (Turns into Close X Button when completed) */}
-                <div 
-                  className={`clube-ad-theater-timer-circle ${adTimer === 0 ? 'ad-completed-closeable' : ''}`}
-                  onClick={async () => {
-                    if (adTimer === 0 && !adClaimLoading) {
-                      if (activeAd.type === 'shipping') {
-                        setIsAdPlaying(false);
-                        setSuccessModal({
-                          title: 'Frete Grátis Ativado!',
-                          desc: 'Seu cupom de frete grátis exclusivo da marca Do Bem já está disponível na carteira!',
-                          coupon: 'DOBEMFRETE'
-                        });
-                        updateFirebaseDoc({
-                          completedAds: arrayUnion(activeAd.id)
-                        }).catch(e => console.error("Error saving completed ad:", e));
-                        setCompletedAds(prev => [...prev, activeAd.id]);
-                        setActiveAd(null);
-                        return;
-                      }
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseAdPlayer}
+                    disabled={adClaimLoading}
+                    aria-label="Fechar e voltar ao Clube"
+                    style={{
+                      background: 'rgba(0,0,0,0.55)',
+                      border: '1px solid rgba(255,255,255,0.22)',
+                      color: '#fff',
+                      borderRadius: 999,
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={13} />
+                    Voltar
+                  </button>
 
-                      if (!activeAdSessionId) {
-                        alert('Sessão de anúncio inválida. Reabra o anúncio para tentar novamente.');
-                        setIsAdPlaying(false);
-                        setActiveAd(null);
-                        return;
+                  {/* Circular Countdown Timer */}
+                  <button
+                    type="button"
+                    className={`clube-ad-theater-timer-circle ${adTimer === 0 ? 'ad-completed-closeable' : ''}`}
+                    onClick={() => {
+                      if (adTimer === 0 && !adClaimLoading) {
+                        void handleClaimAdReward();
                       }
-
-                      setAdClaimLoading(true);
-                      try {
-                        const fn = getFunctions();
-                        const claimAdRewardFn = httpsCallable<
-                          { sessionId: string },
-                          { success: boolean; newBalance: number; grantedAmount: number; alreadyProcessed?: boolean }
-                        >(fn, 'claimAdReward');
-                        const res = await claimAdRewardFn({ sessionId: activeAdSessionId });
-                        const credited = res.data.grantedAmount;
-                        setCoins(res.data.newBalance);
-                        setPopBadge(true);
-                        setTimeout(() => setPopBadge(false), 2400);
-                        setIsAdPlaying(false);
-                        setSuccessModal({
-                          title: `+${credited} Diamantes Ganhos!`,
-                          desc: `Obrigado por assistir ao conteúdo patrocinado de ${activeAd.brand}. O servidor confirmou +${credited} diamantes.`,
-                          coupon: 'CREDITADO',
-                          amountGained: credited,
-                          description: `Anúncio Assistido (${activeAd.brand})`
-                        });
-                        updateFirebaseDoc({
-                          completedAds: arrayUnion(activeAd.id)
-                        }).catch(e => console.error("Error saving completed ad:", e));
-                        setCompletedAds(prev => [...prev, activeAd.id]);
-                        setActiveAd(null);
-                        setActiveAdSessionId(null);
-                      } catch (err: unknown) {
-                        alert((err as Error)?.message || 'Não foi possível creditar a recompensa deste anúncio.');
-                        setIsAdPlaying(false);
-                        setActiveAd(null);
-                        setActiveAdSessionId(null);
-                      } finally {
-                        setAdClaimLoading(false);
-                      }
-                    }
-                  }}
-                  style={adTimer === 0 ? { cursor: 'pointer' } : undefined}
-                >
-                  <svg width="46" height="46" viewBox="0 0 46 46">
-                    <circle 
-                      cx="23" 
-                      cy="23" 
-                      r={radius} 
-                      className="clube-ad-theater-timer-bg"
-                    />
-                    <circle 
-                      cx="23" 
-                      cy="23" 
-                      r={radius} 
-                      className="clube-ad-theater-timer-fill"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={adTimer === 0 ? 0 : progressOffset}
-                      style={adTimer === 0 ? { stroke: '#FFDF73' } : undefined}
-                    />
-                  </svg>
-                  {adTimer === 0 ? (
-                    <span className="clube-ad-theater-timer-text" style={{ fontSize: 16, fontWeight: 900, color: '#FFDF73' }}>✕</span>
-                  ) : (
-                    <span className="clube-ad-theater-timer-text">{adTimer}s</span>
-                  )}
+                    }}
+                    disabled={adTimer > 0 || adClaimLoading}
+                    aria-label={adTimer === 0 ? 'Confirmar recompensa no servidor' : `Aguarde ${adTimer} segundos`}
+                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: adTimer === 0 ? 'pointer' : 'default' }}
+                  >
+                    <svg width="46" height="46" viewBox="0 0 46 46">
+                      <circle
+                        cx="23"
+                        cy="23"
+                        r={radius}
+                        className="clube-ad-theater-timer-bg"
+                      />
+                      <circle
+                        cx="23"
+                        cy="23"
+                        r={radius}
+                        className="clube-ad-theater-timer-fill"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={adTimer === 0 ? 0 : progressOffset}
+                        style={adTimer === 0 ? { stroke: '#FFDF73' } : undefined}
+                      />
+                    </svg>
+                    {adTimer === 0 ? (
+                      <span className="clube-ad-theater-timer-text" style={{ fontSize: 14, fontWeight: 900, color: '#FFDF73' }}>✓</span>
+                    ) : (
+                      <span className="clube-ad-theater-timer-text">{adTimer}s</span>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -1095,58 +1316,65 @@ export const Clube = () => {
               <div className="clube-ad-theater-bottom-spotlight">
                 <div className="clube-ad-theater-subtitles">
                   <h3 className="clube-ad-theater-ad-title" style={{ color: '#fff', fontSize: 16, fontWeight: 900, margin: '6px 0 2px' }}>{activeAd.title}</h3>
-                  <p className="clube-ad-theater-ad-desc" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, margin: '0 0 8px' }}>{activeAd.desc}</p>
-                  <p className="clube-ad-theater-reward-hint" style={{ color: adTimer === 0 ? '#34C759' : '#FFDF73', fontSize: 10.5, fontWeight: 800 }}>
-                    {adTimer === 0 
-                      ? "Recompensa Liberada! 🎉"
-                      : (activeAd.rewardVal > 0 
-                          ? `Aguarde mais ${adTimer} segundos para resgatar +${activeAd.rewardVal} Diamantes!` 
-                          : `Aguarde mais ${adTimer} segundos para ativar o seu Frete Grátis!`
-                        )
-                    }
+                  <p className="clube-ad-theater-ad-desc" style={{ color: 'rgba(255,255,255,0.78)', fontSize: 11.5, margin: '0 0 8px' }}>{activeAd.description}</p>
+                  <p className="clube-ad-theater-reward-hint" style={{ color: adTimer === 0 ? '#34C759' : '#FFDF73', fontSize: 11, fontWeight: 800 }}>
+                    {adTimer === 0
+                      ? 'Contagem concluída! Confirme abaixo para validar e receber no servidor.'
+                      : `Aguarde ${adTimer}s para liberar a solicitação de recompensa (${activeAd.rewardTerms}).`}
                   </p>
                 </div>
 
-                {/* Interactive Sponsor spotlight CTA button */}
-                <div className="clube-ad-theater-cta-wrapper" style={{ margin: '12px 0 16px', display: 'flex', justifyContent: 'center' }}>
-                  <button 
-                    className="clube-ad-theater-action-cta"
-                    onClick={() => {
-                      if (activeAd.brand === 'Melitta') {
-                        alert('Abrindo WhatsApp do Consultor de Café Melitta no Condomínio...');
-                      } else if (activeAd.brand === 'Danone Grego') {
-                        alert('Redirecionando para o Site Oficial da Danone Grego...');
-                      } else {
-                        alert('Resgatando Cupom de Frete Grátis Do Bem...');
-                      }
+                {adClaimError && (
+                  <div
+                    role="alert"
+                    style={{
+                      margin: '8px 0',
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: 'rgba(239,68,68,0.18)',
+                      border: '1px solid rgba(239,68,68,0.4)',
+                      color: '#fecaca',
+                      fontSize: 11,
                     }}
                   >
-                    {activeAd.brand === 'Melitta' && (
-                      <>
-                        <MessageCircle size={13} fill="currentColor" />
-                        <span>Falar no WhatsApp</span>
-                      </>
-                    )}
-                    {activeAd.brand === 'Danone Grego' && (
-                      <>
-                        <ExternalLink size={13} />
-                        <span>Visitar Site Oficial</span>
-                      </>
-                    )}
-                    {activeAd.brand === 'Do Bem' && (
-                      <>
-                        <Truck size={13} />
-                        <span>Ativar Frete Grátis</span>
-                      </>
-                    )}
-                  </button>
+                    {adClaimError}
+                  </div>
+                )}
+
+                {/* Confirmar Recompensa (após timer === 0) + CTA configurado da campanha */}
+                <div className="clube-ad-theater-cta-wrapper" style={{ margin: '12px 0 16px', display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {adTimer === 0 && (
+                    <button
+                      type="button"
+                      className="clube-ad-theater-action-cta"
+                      onClick={() => void handleClaimAdReward()}
+                      disabled={adClaimLoading}
+                      style={{ background: '#22c55e', color: '#052e16', fontWeight: 900 }}
+                    >
+                      <CheckCircle size={14} />
+                      <span>{adClaimLoading ? 'Confirmando no servidor...' : adClaimError ? 'Tentar Confirmar Novamente' : 'Confirmar Recompensa'}</span>
+                    </button>
+                  )}
+
+                  {activeAd.ctaActionType !== 'none' && activeAd.ctaLabel && isSafeActionUrl(activeAd.ctaActionType, activeAd.ctaTarget) && (
+                    <button
+                      type="button"
+                      className="clube-ad-theater-action-cta"
+                      onClick={() => handleAdCtaAction(activeAd)}
+                    >
+                      {activeAd.ctaActionType === 'whatsapp' && <MessageCircle size={13} fill="currentColor" />}
+                      {activeAd.ctaActionType === 'external_url' && <ExternalLink size={13} />}
+                      {activeAd.ctaActionType === 'redeem_benefit' && <Truck size={13} />}
+                      <span>{activeAd.ctaLabel}</span>
+                    </button>
+                  )}
                 </div>
 
-                {/* Simulated Interactive Video Timeline Progress Bar */}
+                {/* Interactive Timeline Progress Bar */}
                 <div className="clube-ad-theater-timeline-track">
-                  <div 
-                    className="clube-ad-theater-timeline-fill" 
-                    style={{ width: `${((activeAd.duration - adTimer) / activeAd.duration) * 100}%` }}
+                  <div
+                    className="clube-ad-theater-timeline-fill"
+                    style={{ width: `${((totalDuration - adTimer) / totalDuration) * 100}%` }}
                   />
                 </div>
               </div>

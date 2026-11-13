@@ -1853,6 +1853,7 @@ export const validateCoupon = functions.https.onCall(async (data, context) => {
 // startAdWatchSession & claimAdReward — Server-authoritative ad reward flow
 // ─────────────────────────────────────────────────────────────────────────────
 const adRewardHandlers = createAdRewardHandlers({ grantReward });
+export const listPublicAdCampaigns = adRewardHandlers.listPublicAdCampaigns;
 export const startAdWatchSession = adRewardHandlers.startAdWatchSession;
 export const claimAdReward = adRewardHandlers.claimAdReward;
 
@@ -1966,3 +1967,4 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (_data, contex
 export * from './admin/callables';
 export * from './admin/opsCallables';
 export * from './admin/metricsCallables';
+export * from './adCampaignAdmin';

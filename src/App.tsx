@@ -50,6 +50,7 @@ const AdminProductsPage       = lazy(() => import('./admin/pages/AdminProductsPa
 const AdminInventoryPage      = lazy(() => import('./admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })));
 const AdminFinancePage        = lazy(() => import('./admin/pages/AdminFinancePage').then(m => ({ default: m.AdminFinancePage })));
 const AdminMarketingPage      = lazy(() => import('./admin/pages/AdminMarketingPage').then(m => ({ default: m.AdminMarketingPage })));
+const AdminSponsoredCampaignsPage = lazy(() => import('./admin/pages/AdminSponsoredCampaignsPage').then(m => ({ default: m.AdminSponsoredCampaignsPage })));
 const AdminLoyaltyPage        = lazy(() => import('./admin/pages/AdminLoyaltyPage').then(m => ({ default: m.AdminLoyaltyPage })));
 const AdminReportsPage        = lazy(() => import('./admin/pages/AdminReportsPage').then(m => ({ default: m.AdminReportsPage })));
 const AdminUsersPage          = lazy(() => import('./admin/pages/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
@@ -380,6 +381,22 @@ function AppContent() {
               element={
                 <ProtectedRoute requiredPermissions={['marketing:view', 'marketing:edit']}>
                   <AdminMarketingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="marketing/campaigns"
+              element={
+                <ProtectedRoute requiredPermissions={['marketing:view', 'marketing:create', 'marketing:edit', 'marketing:publish']}>
+                  <AdminSponsoredCampaignsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="marketing/campaigns/:id"
+              element={
+                <ProtectedRoute requiredPermissions={['marketing:view', 'marketing:create', 'marketing:edit', 'marketing:publish']}>
+                  <AdminSponsoredCampaignsPage />
                 </ProtectedRoute>
               }
             />

@@ -180,7 +180,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Sponsored campaigns contain private budget, contact, and draft/paused states.
+    // Residents consume eligible active campaigns exclusively via `listPublicAdCampaigns`.
+    // Staff mutations go exclusively through audited Cloud Functions (`adminSaveAdCampaign`, `adminSetAdCampaignStatus`).
     match /ad_campaigns/{campaignId} {
+      allow read: if isStaff() || isAdmin();
+      allow write: if false; // Cloud Functions (Admin SDK) only
+    }
+
+    // Legacy collections kept read-only for backward-compatible migration inspection (never deleted).
+    match /premium_offers/{offerId} {
+      allow read: if isStaff() || isAdmin();
+      allow write: if false;
+    }
+
+    match /diamond_rewards/{rewardId} {
       allow read: if isAuthenticated() && !isBanned();
       allow write: if isAdmin();
     }
