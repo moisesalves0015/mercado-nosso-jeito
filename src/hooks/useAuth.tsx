@@ -99,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const auth = getAuth(app);
   const redirectProcessedRef = useRef(false);
+  const redirectMountedRef = useRef(false);
   const syncInFlightRef = useRef<Map<string, Promise<UserProfile>>>(new Map());
 
   const toDate = (ts: unknown): Date | undefined => {
@@ -206,36 +207,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ── Process getRedirectResult once in a central place ─────
   useEffect(() => {
-    if (redirectProcessedRef.current) return;
+    // StrictMode replays effects in development. Re-arm the shared mounted flag
+    // so the first (and only) redirect lookup can finish after that replay.
+    redirectMountedRef.current = true;
+    if (redirectProcessedRef.current) {
+      return () => {
+        redirectMountedRef.current = false;
+      };
+    }
     redirectProcessedRef.current = true;
 
-    let isMounted = true;
     const processRedirect = async () => {
       try {
         setRedirectLoading(true);
         const result = await getRedirectResult(auth);
-        if (result?.user && isMounted) {
-          const profile = await syncProfile(result.user);
+        if (result?.user && redirectMountedRef.current) {
           setUser(result.user);
-          setUserProfile(profile);
-          setIsAdmin(profile.role === 'admin');
-          setUserName(profile.name);
+          setProfileLoading(true);
+          const profile = await syncProfile(result.user);
+          if (redirectMountedRef.current) {
+            setUserProfile(profile);
+            setIsAdmin(profile.role === 'admin');
+            setUserName(profile.name);
+          }
         }
       } catch (err: unknown) {
         console.error('getRedirectResult error:', err);
-        if (isMounted) {
+        if (redirectMountedRef.current) {
           setRedirectError(err);
         }
       } finally {
-        if (isMounted) {
+        if (redirectMountedRef.current) {
           setRedirectLoading(false);
+          setProfileLoading(false);
         }
       }
     };
 
     processRedirect();
     return () => {
-      isMounted = false;
+      redirectMountedRef.current = false;
     };
   }, [auth, syncProfile]);
 
@@ -244,8 +255,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
-      if (firebaseUser) {
-        setProfileLoading(true);
+      if (!firebaseUser) {
+        setUserProfile(null);
+        setIsAdmin(false);
+        setUserName('');
+        setProfileLoading(false);
+        setLoading(false);
+        return;
+      }
+
+      setProfileLoading(true);
+      try {
         const profile = await syncProfile(firebaseUser);
         const tokenResult = await firebaseUser.getIdTokenResult();
         const isBanned = tokenResult.claims['banned'] === true || profile?.role === 'banned';
@@ -256,8 +276,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserProfile(null);
           setIsAdmin(false);
           setUserName('');
-          setProfileLoading(false);
-          setLoading(false);
           alert('Esta conta foi suspensa por um administrador.');
           return;
         }
@@ -268,14 +286,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAdmin(hasAdminClaim || profile.role === 'admin');
           setUserName(profile.name);
         }
-        setProfileLoading(false);
-      } else {
+      } catch (err: unknown) {
+        // Firebase Auth can be valid even when Firestore is temporarily unavailable.
+        // Keep the authenticated session usable instead of leaving the login guard pending.
+        console.error('Error syncing authenticated user profile:', err);
         setUserProfile(null);
         setIsAdmin(false);
         setUserName('');
+      } finally {
+        setProfileLoading(false);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     return () => unsubscribe();
