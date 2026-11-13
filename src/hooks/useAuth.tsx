@@ -114,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const auth = getAuth(app);
   const redirectProcessedRef = useRef(false);
+  const redirectMountedRef = useRef(false);
   const syncInFlightRef = useRef<Map<string, Promise<UserProfile>>>(new Map());
   const isGoogleAuthInFlightRef = useRef(false);
 
@@ -295,10 +296,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ── Process getRedirectResult once in a central place ─────
   useEffect(() => {
-    if (redirectProcessedRef.current) return;
+    // StrictMode replays effects in development. Re-arm the shared mounted flag
+    // so the first (and only) redirect lookup can finish after that replay.
+    redirectMountedRef.current = true;
+    if (redirectProcessedRef.current) {
+      return () => {
+        redirectMountedRef.current = false;
+      };
+    }
     redirectProcessedRef.current = true;
 
-    let isMounted = true;
     const processRedirect = async () => {
       const wasRedirectInProgress = typeof window !== 'undefined' && sessionStorage.getItem('auth_redirect_in_progress') === '1';
 
@@ -307,10 +314,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRedirectLoading(true);
         }
         const result = await getRedirectResult(auth);
-        if (result?.user && isMounted) {
+        if (result?.user && redirectMountedRef.current) {
           setUser(result.user);
+          setProfileLoading(true);
           const profile = await syncProfile(result.user);
-          if (isMounted) {
+          if (redirectMountedRef.current) {
             setUserProfile(profile);
             setIsAdmin(profile.role === 'admin');
             setUserName(profile.name);
@@ -318,22 +326,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err: unknown) {
         console.error('getRedirectResult error:', err);
-        if (isMounted) {
+        if (redirectMountedRef.current) {
           setRedirectError(err);
         }
       } finally {
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem('auth_redirect_in_progress');
         }
-        if (isMounted) {
+        if (redirectMountedRef.current) {
           setRedirectLoading(false);
+          setProfileLoading(false);
         }
       }
     };
 
     processRedirect();
     return () => {
-      isMounted = false;
+      redirectMountedRef.current = false;
     };
   }, [auth, syncProfile]);
 
@@ -373,8 +382,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAdmin(resolvedAccess.isStaff);
             setUserName(profile.name);
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('Error syncing auth state:', err);
+          setUserProfile(null);
+          setIsAdmin(false);
+          setStaffAccess(EMPTY_STAFF_ACCESS);
+          setUserName('');
         } finally {
           setProfileLoading(false);
           setLoading(false);
@@ -398,6 +411,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       const credential = await signInWithEmailAndPassword(auth, email, password);
+      updateDoc(doc(db, 'users', credential.user.uid), {
+        lastLogin: serverTimestamp(),
+      }).catch(() => {});
+
       const firebaseUser = credential.user;
       const profile = await syncProfile(firebaseUser);
       setUser(firebaseUser);

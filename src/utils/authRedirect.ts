@@ -77,6 +77,14 @@ export const getAuthErrorMessage = (err: unknown): AuthErrorInfo => {
     };
   }
 
+  if (code === 'auth/operation-not-supported-in-this-environment') {
+    return {
+      title: 'Login Google não suportado neste modo',
+      message: 'Este PWA não conseguiu abrir a janela de autenticação. Abra o app pelo navegador do celular e tente novamente.',
+      isCancelled: false,
+    };
+  }
+
   if (code === 'auth/unauthorized-domain') {
     const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'este domínio';
     return {
