@@ -1054,9 +1054,10 @@ export const Clube = () => {
             const isCompleted = !ad.canClaim || completedAds.includes(ad.id);
             const hasActiveSession = Boolean(ad.activeSession);
             const isStarting = adStartLoadingId === ad.id;
+            const brandClass = ad.brand ? 'brand-' + ad.brand.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
             return (
-              <div className={`clube-ad-card-vertical ${isCompleted ? 'completed' : ''}`} key={ad.id}>
+              <div className={`clube-ad-card-vertical ${brandClass} ${isCompleted ? 'completed' : ''}`} key={ad.id}>
                 {/* TOP BANNER VISUAL */}
                 <div className="clube-ad-banner-wrapper">
                   {ad.bannerUrl ? (
@@ -1221,8 +1222,10 @@ export const Clube = () => {
         const totalDuration = Math.max(1, activeAd.durationSeconds);
         const progressOffset = circumference - (adTimer / totalDuration) * circumference;
 
+        const activeAdBrandClass = activeAd.brand ? 'brand-' + activeAd.brand.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
         return (
-          <div className="clube-ad-theater-overlay" role="dialog" aria-modal="true" aria-label={`Campanha ${activeAd.title}`}>
+          <div className={`clube-ad-theater-overlay ${activeAdBrandClass}`} role="dialog" aria-modal="true" aria-label={`Campanha ${activeAd.title}`}>
             <div className="clube-ad-theater-screen">
               {activeAd.bannerUrl ? (
                 <img src={activeAd.bannerUrl} alt={activeAd.brand} className="clube-ad-theater-billboard" />
