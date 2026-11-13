@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
-import { publicCallable } from './invoker';
 import { writeAudit } from './admin/audit';
 import { requireAnyPermission, requirePermission, requireReason } from './admin/rbac';
 import {
@@ -12,7 +11,7 @@ const db = () => admin.firestore();
 const HttpsError = functions.https.HttpsError;
 const ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
 
-export const adminListAdCampaigns = publicCallable.https.onCall(async (_data, context) => {
+export const adminListAdCampaigns = functions.https.onCall(async (_data, context) => {
   await requireAnyPermission(context.auth, [
     'marketing:view',
     'marketing:create',
@@ -41,7 +40,7 @@ export const adminListAdCampaigns = publicCallable.https.onCall(async (_data, co
   return { campaigns, legacyOffers };
 });
 
-export const adminSaveAdCampaign = publicCallable.https.onCall(async (data, context) => {
+export const adminSaveAdCampaign = functions.https.onCall(async (data, context) => {
   const req = (data ?? {}) as {
     campaignId?: unknown;
     payload?: Record<string, unknown>;
@@ -178,7 +177,7 @@ export const adminSaveAdCampaign = publicCallable.https.onCall(async (data, cont
 
 export type AdCampaignTransitionAction = 'publish' | 'pause' | 'end' | 'archive' | 'restore';
 
-export const adminSetAdCampaignStatus = publicCallable.https.onCall(async (data, context) => {
+export const adminSetAdCampaignStatus = functions.https.onCall(async (data, context) => {
   const req = (data ?? {}) as {
     campaignId?: unknown;
     action?: unknown;

@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions';
-import { publicCallable } from './invoker';
 import * as admin from 'firebase-admin';
 import { applyStaffRole, requireAnyPermission, requirePermission, resolveAccess } from './admin/rbac';
 import { permissionsAllow } from './admin/permissions';
@@ -256,7 +255,7 @@ export const initClubeProfile = functions.https.onCall(async (_data, context) =>
 // ─────────────────────────────────────────────────────────────────────────────
 // dailyCheckin — idempotent via idempotencyKey in diamond_transactions
 // ─────────────────────────────────────────────────────────────────────────────
-export const dailyCheckin = publicCallable.https.onCall(async (_data, context) => {
+export const dailyCheckin = functions.https.onCall(async (_data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -349,7 +348,7 @@ export const dailyCheckin = publicCallable.https.onCall(async (_data, context) =
 // ─────────────────────────────────────────────────────────────────────────────
 // spinRoulette — type-validated, backend-drawn prize, idempotent for free spins
 // ─────────────────────────────────────────────────────────────────────────────
-export const spinRoulette = publicCallable.https.onCall(async (data, context) => {
+export const spinRoulette = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -604,7 +603,7 @@ export const processOrderDelivered = functions.firestore
 // ─────────────────────────────────────────────────────────────────────────────
 // claimMissionReward — callable; backend recalculates eligibility before grant
 // ─────────────────────────────────────────────────────────────────────────────
-export const claimMissionReward = publicCallable.https.onCall(async (data, context) => {
+export const claimMissionReward = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -1245,7 +1244,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // adminGrantDiamonds — Callable; routes all admin diamond grants through ledger
 // ─────────────────────────────────────────────────────────────────────────────
-export const adminGrantDiamonds = publicCallable.https.onCall(async (data, context) => {
+export const adminGrantDiamonds = functions.https.onCall(async (data, context) => {
   const actor = await requireAnyPermission(context.auth, ['clube:edit', 'clube:admin', 'clientes:edit']);
 
   const req = data as { targetUid?: unknown; amount?: unknown; reason?: unknown; idempotencyKey?: unknown };
@@ -1437,7 +1436,7 @@ export const setAdminClaim = functions.https.onCall(async (data, context) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // cancelOrder — Callable; allows a user to cancel their own order or admin to cancel
 // ─────────────────────────────────────────────────────────────────────────────
-export const cancelOrder = publicCallable.https.onCall(async (data, context) => {
+export const cancelOrder = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -1677,7 +1676,7 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
 // updateOrderStatus — Callable; requires pedidos:edit or pedidos:approve
 // Advances operational status with strict business checks
 // ─────────────────────────────────────────────────────────────────────────────
-export const updateOrderStatus = publicCallable.https.onCall(async (data, context) => {
+export const updateOrderStatus = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -1799,7 +1798,7 @@ export const updateOrderStatus = publicCallable.https.onCall(async (data, contex
 // ─────────────────────────────────────────────────────────────────────────────
 // validateCoupon — Callable; securely check a coupon without revealing the full document
 // ─────────────────────────────────────────────────────────────────────────────
-export const validateCoupon = publicCallable.https.onCall(async (data, context) => {
+export const validateCoupon = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
@@ -1861,7 +1860,7 @@ export const claimAdReward = adRewardHandlers.claimAdReward;
 // ─────────────────────────────────────────────────────────────────────────────
 // redeemReward — Callable; Spends diamonds to get a reward/coupon
 // ─────────────────────────────────────────────────────────────────────────────
-export const redeemReward = publicCallable.https.onCall(async (data, context) => {
+export const redeemReward = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Autenticação necessária.');
   }
