@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { publicCallable } from './invoker';
 import * as crypto from 'crypto';
 import {
   AdRewardType,
@@ -227,7 +228,7 @@ export function createAdRewardHandlers(deps: {
   const db = () => admin.firestore();
   const now = deps.now ?? (() => Date.now());
 
-  const listPublicAdCampaigns = functions.https.onCall(async (_data, context) => {
+  const listPublicAdCampaigns = publicCallable.https.onCall(async (_data, context) => {
     if (!context.auth) {
       throw new HttpsError('unauthenticated', 'Autenticação necessária.');
     }
@@ -323,7 +324,7 @@ export function createAdRewardHandlers(deps: {
     return { campaigns };
   });
 
-  const startAdWatchSession = functions.https.onCall(async (data, context) => {
+  const startAdWatchSession = publicCallable.https.onCall(async (data, context) => {
     if (!context.auth) {
       throw new HttpsError('unauthenticated', 'Autenticação necessária.');
     }
@@ -447,7 +448,7 @@ export function createAdRewardHandlers(deps: {
     });
   });
 
-  const claimAdReward = functions.https.onCall(async (data, context) => {
+  const claimAdReward = publicCallable.https.onCall(async (data, context) => {
     if (!context.auth) {
       throw new HttpsError('unauthenticated', 'Autenticação necessária.');
     }

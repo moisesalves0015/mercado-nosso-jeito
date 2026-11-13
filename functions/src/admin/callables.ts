@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { publicCallable } from '../invoker';
 import {
   ALL_PERMISSIONS,
   DEFAULT_ROLES,
@@ -424,7 +425,7 @@ const ALLOWED_TICKET_TRANSITIONS: Record<string, readonly string[]> = {
   archived: ['open'],
 };
 
-export const adminCreateSupportTicket = functions.https.onCall(async (data, context) => {
+export const adminCreateSupportTicket = publicCallable.https.onCall(async (data, context) => {
   if (!context.auth) throw new HttpsError('unauthenticated', 'Autenticação necessária.');
   const req = (data ?? {}) as {
     uid?: unknown;
@@ -514,7 +515,7 @@ export const adminCreateSupportTicket = functions.https.onCall(async (data, cont
 // ─────────────────────────────────────────────────────────────────────────────
 // adminUpdateSupportTicket — granular per-field auth, transitions, trusted assignee
 // ─────────────────────────────────────────────────────────────────────────────
-export const adminUpdateSupportTicket = functions.https.onCall(async (data, context) => {
+export const adminUpdateSupportTicket = publicCallable.https.onCall(async (data, context) => {
   const req = (data ?? {}) as {
     ticketId?: unknown;
     status?: unknown;
@@ -735,7 +736,7 @@ export const adminUpdateSupportTicket = functions.https.onCall(async (data, cont
 // ─────────────────────────────────────────────────────────────────────────────
 // adminAdjustStock — transactional stock adjustment with audit & stock_history
 // ─────────────────────────────────────────────────────────────────────────────
-export const adminAdjustStock = functions.https.onCall(async (data, context) => {
+export const adminAdjustStock = publicCallable.https.onCall(async (data, context) => {
   const actor = await requirePermission(context.auth, 'estoque:edit');
   const req = (data ?? {}) as { productId?: unknown; delta?: unknown; reason?: unknown; minStock?: unknown };
 

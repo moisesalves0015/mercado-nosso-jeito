@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { publicCallable } from '../invoker';
 import { permissionsAllow } from './permissions';
 import { requireAnyPermission, requirePermission, requireReason, StaffAccess } from './rbac';
 import { writeAudit } from './audit';
@@ -158,7 +159,7 @@ function sanitizeProductRow(id: string, data: Record<string, unknown>, access: S
 // Read Callables (paginated + RBAC + PII minimized)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const adminListOrders = functions.https.onCall(async (data, context) => {
+export const adminListOrders = publicCallable.https.onCall(async (data, context) => {
   const access = await requireAnyPermission(context.auth, [
     'pedidos:view',
     'financeiro:view',
@@ -186,7 +187,7 @@ export const adminListOrders = functions.https.onCall(async (data, context) => {
   return { orders, nextCursor };
 });
 
-export const adminGetOrder = functions.https.onCall(async (data, context) => {
+export const adminGetOrder = publicCallable.https.onCall(async (data, context) => {
   const access = await requireAnyPermission(context.auth, ['pedidos:view', 'financeiro:view', 'suporte:view']);
   const req = (data ?? {}) as { orderId?: unknown };
   const orderId = str(req.orderId, 'orderId', 1, 128);
@@ -195,7 +196,7 @@ export const adminGetOrder = functions.https.onCall(async (data, context) => {
   return { order: sanitizeOrderForAccess(snap.id, snap.data() as Record<string, unknown>, access) };
 });
 
-export const adminListCustomers = functions.https.onCall(async (data, context) => {
+export const adminListCustomers = publicCallable.https.onCall(async (data, context) => {
   const access = await requireAnyPermission(context.auth, ['clientes:view', 'crm:view', 'suporte:view']);
   const req = (data ?? {}) as { limit?: unknown; startAfterId?: unknown };
   const limit = Math.min(Math.max(Number(req.limit) || 50, 1), 100);
@@ -210,7 +211,7 @@ export const adminListCustomers = functions.https.onCall(async (data, context) =
   return { customers, nextCursor };
 });
 
-export const adminGetCustomer = functions.https.onCall(async (data, context) => {
+export const adminGetCustomer = publicCallable.https.onCall(async (data, context) => {
   const access = await requireAnyPermission(context.auth, ['clientes:view', 'crm:view', 'suporte:view']);
   const req = (data ?? {}) as { customerId?: unknown };
   const customerId = str(req.customerId, 'customerId', 1, 128);
@@ -234,7 +235,7 @@ export const adminGetCustomer = functions.https.onCall(async (data, context) => 
   return { customer: profile, addresses, clube };
 });
 
-export const adminListProducts = functions.https.onCall(async (data, context) => {
+export const adminListProducts = publicCallable.https.onCall(async (data, context) => {
   const access = await requireAnyPermission(context.auth, [
     'produtos:view',
     'estoque:view',
@@ -252,7 +253,7 @@ export const adminListProducts = functions.https.onCall(async (data, context) =>
   return { products, nextCursor };
 });
 
-export const adminListTickets = functions.https.onCall(async (data, context) => {
+export const adminListTickets = publicCallable.https.onCall(async (data, context) => {
   await requirePermission(context.auth, 'suporte:view');
   const req = (data ?? {}) as { limit?: unknown; startAfterMillis?: unknown };
   const limit = Math.min(Math.max(Number(req.limit) || 50, 1), 100);
@@ -276,7 +277,7 @@ export const adminListTickets = functions.https.onCall(async (data, context) => 
   return { tickets, nextCursor };
 });
 
-export const adminGetTicket = functions.https.onCall(async (data, context) => {
+export const adminGetTicket = publicCallable.https.onCall(async (data, context) => {
   await requirePermission(context.auth, 'suporte:view');
   const req = (data ?? {}) as { ticketId?: unknown };
   const ticketId = str(req.ticketId, 'ticketId', 1, 128);
@@ -297,7 +298,7 @@ export const adminGetTicket = functions.https.onCall(async (data, context) => {
 // Audited Write Callables (Products, Settings, Loyalty Config)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const adminUpsertProduct = functions.https.onCall(async (data, context) => {
+export const adminUpsertProduct = publicCallable.https.onCall(async (data, context) => {
   const req = (data ?? {}) as Record<string, unknown>;
   const isCreate = !req.productId || (typeof req.productId === 'string' && !req.productId.trim());
   const actor = await requirePermission(context.auth, isCreate ? 'produtos:create' : 'produtos:edit');
@@ -398,7 +399,7 @@ export const adminUpsertProduct = functions.https.onCall(async (data, context) =
   });
 });
 
-export const adminArchiveProduct = functions.https.onCall(async (data, context) => {
+export const adminArchiveProduct = publicCallable.https.onCall(async (data, context) => {
   const actor = await requireAnyPermission(context.auth, ['produtos:archive', 'produtos:edit']);
   const req = (data ?? {}) as { productId?: unknown; reason?: unknown };
   const productId = str(req.productId, 'productId', 1, 128);
@@ -441,7 +442,7 @@ export const adminArchiveProduct = functions.https.onCall(async (data, context) 
   });
 });
 
-export const adminToggleProductActive = functions.https.onCall(async (data, context) => {
+export const adminToggleProductActive = publicCallable.https.onCall(async (data, context) => {
   const actor = await requirePermission(context.auth, 'produtos:edit');
   const req = (data ?? {}) as { productId?: unknown; active?: unknown };
   const productId = str(req.productId, 'productId', 1, 128);
@@ -484,7 +485,7 @@ export const adminToggleProductActive = functions.https.onCall(async (data, cont
   });
 });
 
-export const adminUpdateSettings = functions.https.onCall(async (data, context) => {
+export const adminUpdateSettings = publicCallable.https.onCall(async (data, context) => {
   const actor = await requirePermission(context.auth, 'configuracoes:edit');
   const req = (data ?? {}) as { settingId?: unknown; payload?: unknown; reason?: unknown };
   const settingId = req.settingId;
@@ -555,7 +556,7 @@ export const adminUpdateSettings = functions.https.onCall(async (data, context) 
   });
 });
 
-export const adminUpdateLoyaltyConfig = functions.https.onCall(async (data, context) => {
+export const adminUpdateLoyaltyConfig = publicCallable.https.onCall(async (data, context) => {
   const actor = await requirePermission(context.auth, 'clube:edit');
   const req = (data ?? {}) as { payload?: unknown; reason?: unknown };
   if (!req.payload || typeof req.payload !== 'object' || Array.isArray(req.payload)) {

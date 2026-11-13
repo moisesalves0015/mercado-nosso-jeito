@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { publicCallable } from '../invoker';
 import { requireAnyPermission } from './rbac';
 
 const db = () => admin.firestore();
@@ -71,7 +72,7 @@ async function scanCollectionInBatches(
   return out;
 }
 
-export const adminGetMetrics = functions.https.onCall(async (data, context) => {
+export const adminGetMetrics = publicCallable.https.onCall(async (data, context) => {
   await requireAnyPermission(context.auth, ['dashboard:view', 'relatorios:view', 'financeiro:view']);
   const req = (data ?? {}) as {
     startDate?: unknown;
