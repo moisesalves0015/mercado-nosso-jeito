@@ -161,7 +161,7 @@ export const AdminReportsPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Monthly Revenue */}
-        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+        <div className="min-w-0 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
           <h2 className="text-base font-bold text-[var(--adm-text)] mb-1 flex items-center gap-2">
             <BarChart3 size={17} className="text-emerald-300" />
             Evolução de Receita (Últimos 6 Meses)
@@ -169,8 +169,8 @@ export const AdminReportsPage: React.FC = () => {
           <p className="text-xs text-[var(--adm-text-muted)] mb-4">
             Receita mensal reconhecida (pedidos pagos e não cancelados)
           </p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 min-w-0">
+            <ResponsiveContainer width="100%" height={256} minWidth={0}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="month" stroke="#9ab0a3" fontSize={12} />
@@ -197,7 +197,7 @@ export const AdminReportsPage: React.FC = () => {
         </div>
 
         {/* Weekly Volume */}
-        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+        <div className="min-w-0 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
           <h2 className="text-base font-bold text-[var(--adm-text)] mb-1 flex items-center gap-2">
             <ShoppingBag size={17} className="text-[var(--adm-gold)]" />
             Volume de Pedidos & Receita (7 Dias)
@@ -205,8 +205,8 @@ export const AdminReportsPage: React.FC = () => {
           <p className="text-xs text-[var(--adm-text-muted)] mb-4">
             Desempenho diário de vendas aprovadas na última semana
           </p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 min-w-0">
+            <ResponsiveContainer width="100%" height={256} minWidth={0}>
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="day" stroke="#9ab0a3" fontSize={12} />

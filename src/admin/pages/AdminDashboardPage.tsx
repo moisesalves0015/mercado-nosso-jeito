@@ -400,7 +400,7 @@ export const AdminDashboardPage: React.FC = () => {
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+        <div className="lg:col-span-2 min-w-0 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-[var(--adm-text)]">
@@ -417,8 +417,8 @@ export const AdminDashboardPage: React.FC = () => {
               Relatório completo
             </Link>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 min-w-0">
+            <ResponsiveContainer width="100%" height={256} minWidth={0}>
               <BarChart data={weeklySalesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="day" stroke="#9ab0a3" fontSize={12} />
@@ -437,7 +437,7 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
+        <div className="min-w-0 bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
           <h2 className="text-base font-bold text-[var(--adm-text)] mb-1">
             Mix de Categorias Ativas
           </h2>
@@ -449,8 +449,8 @@ export const AdminDashboardPage: React.FC = () => {
               Sem produtos ativos cadastrados.
             </div>
           ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-56 min-w-0">
+              <ResponsiveContainer width="100%" height={224} minWidth={0}>
                 <PieChart>
                   <Pie
                     data={categoryData}
