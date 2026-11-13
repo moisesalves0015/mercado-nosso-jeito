@@ -170,7 +170,7 @@ export const AdminReportsPage: React.FC = () => {
             Receita mensal reconhecida (pedidos pagos e não cancelados)
           </p>
           <div className="h-64 min-w-0">
-            <ResponsiveContainer width="100%" height={256} minWidth={0}>
+            <ResponsiveContainer width="100%" height={256} minWidth={0} initialDimension={{ width: 520, height: 256 }}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="month" stroke="#9ab0a3" fontSize={12} />
@@ -206,7 +206,7 @@ export const AdminReportsPage: React.FC = () => {
             Desempenho diário de vendas aprovadas na última semana
           </p>
           <div className="h-64 min-w-0">
-            <ResponsiveContainer width="100%" height={256} minWidth={0}>
+            <ResponsiveContainer width="100%" height={256} minWidth={0} initialDimension={{ width: 520, height: 256 }}>
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="day" stroke="#9ab0a3" fontSize={12} />

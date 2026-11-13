@@ -382,11 +382,10 @@ export const AdminDashboardPage: React.FC = () => {
                       <div className="text-[11px] text-[var(--adm-text-dim)]">{p.category}</div>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded-md text-xs font-bold shrink-0 tabular-nums ${
-                        Number(p.stock ?? 0) === 0
+                      className={`px-2 py-0.5 rounded-md text-xs font-bold shrink-0 tabular-nums ${Number(p.stock ?? 0) === 0
                           ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
                           : 'bg-amber-500/15 text-amber-200 border border-amber-500/30'
-                      }`}
+                        }`}
                     >
                       {Number(p.stock ?? 0)} un.
                     </span>
@@ -418,7 +417,7 @@ export const AdminDashboardPage: React.FC = () => {
             </Link>
           </div>
           <div className="h-64 min-w-0">
-            <ResponsiveContainer width="100%" height={256} minWidth={0}>
+            <ResponsiveContainer width="100%" height={256} minWidth={0} initialDimension={{ width: 520, height: 256 }}>
               <BarChart data={weeklySalesData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,184,161,0.14)" />
                 <XAxis dataKey="day" stroke="#9ab0a3" fontSize={12} />
@@ -450,7 +449,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           ) : (
             <div className="h-56 min-w-0">
-              <ResponsiveContainer width="100%" height={224} minWidth={0}>
+              <ResponsiveContainer width="100%" height={224} minWidth={0} initialDimension={{ width: 320, height: 224 }}>
                 <PieChart>
                   <Pie
                     data={categoryData}
