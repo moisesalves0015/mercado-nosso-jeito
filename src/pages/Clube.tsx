@@ -130,7 +130,7 @@ export const Clube = () => {
   const [showReferralsModal, setShowReferralsModal] = useState<boolean>(false);
 
   // Dynamic points history ledgers
-  const [history, setHistory] = useState<Array<{id: string; desc: string; date: string; value: string; isPlus: boolean}>>([]);
+  const [history, setHistory] = useState<Array<{id?: string; desc: string; date: string; value: string; isPlus: boolean}>>([]);
 
   const [sponsorAds, setSponsorAds] = useState<PublicSponsoredCampaign[]>([]);
   const [adsLoading, setAdsLoading] = useState<boolean>(false);
@@ -285,7 +285,17 @@ export const Clube = () => {
           setFreeSpinUsed(data.freeSpinUsed || false);
         }
         
-        if (data.history) setHistory(data.history);
+        if (Array.isArray(data.history)) {
+          setHistory(
+            data.history.map((item: { id?: string; desc?: string; date?: string; value?: string; isPlus?: boolean }, idx: number) => ({
+              id: item.id || `hist_${item.date || ''}_${item.desc || ''}_${idx}`,
+              desc: item.desc || '',
+              date: item.date || '',
+              value: item.value || '',
+              isPlus: Boolean(item.isPlus),
+            }))
+          );
+        }
         if (data.completedAds) setCompletedAds(data.completedAds);
         if (data.missions) setProfileMissions(data.missions);
         
@@ -1173,8 +1183,8 @@ export const Clube = () => {
 
         <div className="clube-ledger-history">
           <div className="clube-ledger-title">Histórico Recente</div>
-          {history.map((h) => (
-            <div className="clube-ledger-row" key={h.id}>
+          {history.map((h, idx) => (
+            <div className="clube-ledger-row" key={h.id || `hist_${h.date}_${idx}`}>
               <div className="clube-ledger-left">
                 <span>{h.desc}</span>
                 <span>{formatHistoryDate(h.date)}</span>
