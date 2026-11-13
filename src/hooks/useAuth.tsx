@@ -323,14 +323,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // ── Login With Google (PWA standalone redirect + browser popup with fallback) ──
+  // ── Login With Google (PWA popup; browser popup with redirect fallback) ──
   const loginWithGoogle = async (options?: { returnUrl?: string; preferRedirect?: boolean }): Promise<FirebaseUser | null> => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     const safeReturn = sanitizeInternalRedirect(options?.returnUrl, '/');
     const inStandalone = isStandalonePwa();
-    const shouldRedirect = !!(options?.preferRedirect || inStandalone);
+    const shouldRedirect = !!options?.preferRedirect && !inStandalone;
 
     if (shouldRedirect) {
       sessionStorage.setItem('auth_return_url', safeReturn);
@@ -351,8 +351,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return firebaseUser;
     } catch (popupErr: unknown) {
       const e = popupErr as { code?: string };
-      // Fallback to redirect if popup is blocked or unsupported in this browser environment
-      if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
+      // A redirect on the standalone PWA depends on the custom authDomain being
+      // authorized in Firebase/Google Console; do not silently enter that flow.
+      if (!inStandalone && (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment')) {
         console.warn('Popup blocked or not supported. Falling back to signInWithRedirect...');
         sessionStorage.setItem('auth_return_url', safeReturn);
         await signInWithRedirect(auth, provider);

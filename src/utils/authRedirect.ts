@@ -72,7 +72,15 @@ export const getAuthErrorMessage = (err: unknown): AuthErrorInfo => {
   if (code === 'auth/popup-blocked') {
     return {
       title: 'Popup bloqueado pelo navegador',
-      message: 'O navegador bloqueou a janela do Google. Permitindo popups ou aguarde o redirecionamento automático.',
+      message: 'O navegador bloqueou a janela do Google. Permita a abertura de popups para este app e tente novamente.',
+      isCancelled: false,
+    };
+  }
+
+  if (code === 'auth/operation-not-supported-in-this-environment') {
+    return {
+      title: 'Login Google não suportado neste modo',
+      message: 'Este PWA não conseguiu abrir a janela de autenticação. Abra o app pelo navegador do celular e tente novamente.',
       isCancelled: false,
     };
   }
