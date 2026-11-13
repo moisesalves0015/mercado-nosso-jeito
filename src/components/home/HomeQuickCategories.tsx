@@ -17,7 +17,7 @@ const ICONS: Record<string, LucideIcon> = {
 /** Atalhos rápidos de categoria (lista declarativa em src/data/homeCategories.ts). */
 export const HomeQuickCategories = ({ items }: { items: HomeCategoryLink[] }) => (
   <>
-    <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '10px' }}>
+    <div className="section-header" style={{ marginBottom: '2px', marginTop: '10px' }}>
       <h2 style={{ margin: 0, fontSize: '11.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
     </div>
     <nav className="quick-categories-grid-no-scroll" aria-label="Atalhos de categorias" style={{ marginBottom: '10px' }}>

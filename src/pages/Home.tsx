@@ -95,7 +95,7 @@ export const Home = () => {
         <HomePeriodSelector catalog={catalog} periodConfig={homeConfig.periodConfig} />
 
         {/* Mensagens editoriais (sem números fabricados) */}
-        <div style={{ padding: '0 0 0' }}>
+        <div style={{ padding: '0 var(--content-padding-x, 14px)' }}>
           <SocialProofBanner />
         </div>
 

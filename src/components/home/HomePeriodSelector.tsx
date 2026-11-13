@@ -35,7 +35,7 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
 
   return (
     <>
-      <div className="section-header" style={{ padding: '0 8px', marginBottom: '2px', marginTop: '2px' }}>
+      <div className="section-header" style={{ marginBottom: '2px', marginTop: '2px' }}>
         <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Os mais pedidos por horário</h2>
       </div>
 
