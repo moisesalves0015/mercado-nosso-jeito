@@ -167,8 +167,10 @@ describe('Google Auth Button State Machine & Flow', () => {
     assert.equal(state.authenticatedUser, null);
     assert.equal(state.currentRoute, '/login');
     assert.ok(state.displayedToast !== null);
-    assert.match(state.displayedToast.title, /Popup bloqueado/);
-    assert.match(state.displayedToast.message, /Permita popups/);
+    if (state.displayedToast) {
+      assert.match(state.displayedToast.title, /Popup bloqueado/);
+      assert.match(state.displayedToast.message, /Permita popups/);
+    }
   });
 
   it('Scenario 3: Network failure -> restores button, shows network error, allows retry', async () => {
@@ -202,7 +204,7 @@ describe('Google Auth Button State Machine & Flow', () => {
 
     assert.equal(state.loadingGoogle, false);
     assert.equal(state.disabled, false);
-    assert.equal(state.authenticatedUser?.uid, 'user_123');
+    assert.equal((state.authenticatedUser as { uid?: string } | null)?.uid, 'user_123');
     assert.equal(state.currentRoute, '/checkout'); // Successfully navigated
   });
 

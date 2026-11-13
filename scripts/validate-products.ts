@@ -1,5 +1,5 @@
 import { pathToFileURL } from 'node:url';
-import { defaultProducts, Product } from '../src/data/defaultProducts';
+import { defaultProducts, type Product } from '../src/data/defaultProducts';
 
 interface ValidationError {
   id: string;

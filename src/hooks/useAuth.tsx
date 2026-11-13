@@ -462,8 +462,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return firebaseUser;
       } catch (popupErr: unknown) {
         const code = (popupErr as { code?: string })?.code || '';
-        // Se o ambiente bloquear popups nativamente (ex: WebView restrito), faz fallback automático para redirect
-        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        const msg = String((popupErr as { message?: string })?.message || '');
+        // Se o ambiente bloquear popups nativamente (ex: WebView restrito ou restrição de COOP), faz fallback automático para redirect
+        if (
+          code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          msg.includes('Cross-Origin-Opener-Policy')
+        ) {
           sessionStorage.setItem('auth_return_url', safeReturn);
           sessionStorage.setItem('auth_redirect_in_progress', '1');
           await signInWithRedirect(auth, provider);
