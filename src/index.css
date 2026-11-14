@@ -669,7 +669,7 @@ button, input[type="button"], input[type="submit"], .btn-base {
   z-index: 10;
   width: min(414px, 100%);
   margin: auto;
-  padding: 0px 0px calc(84px + env(safe-area-inset-bottom, 0px)) 0px;
+  padding: 0px 0px calc(64px + env(safe-area-inset-bottom, 0px)) 0px;
   /* Balanced bottom padding accounting for OS gesture bars */
 }
 
@@ -677,7 +677,7 @@ button, input[type="button"], input[type="submit"], .btn-base {
   .app {
     width: 100%;
     max-width: 960px;
-    padding: 0px 0px calc(100px + env(safe-area-inset-bottom, 0px)) 0px;
+    padding: 0px 0px calc(70px + env(safe-area-inset-bottom, 0px)) 0px;
   }
 }
 
@@ -704,6 +704,7 @@ button, input[type="button"], input[type="submit"], .btn-base {
   width: 100%;
   margin-bottom: 0px;
   border-bottom: 1px solid var(--border-gold);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .topbar {
@@ -2766,7 +2767,7 @@ body.light-mode .topbar-search-container {
   left: 50%;
   transform: translateX(-50%);
   bottom: 0;
-  height: calc(66px + env(safe-area-inset-bottom, 0px));
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
   background: var(--bg-secondary);
   display: flex;
   justify-content: space-around;
@@ -2775,8 +2776,8 @@ body.light-mode .topbar-search-container {
   border-top: 1.2px solid var(--border-gold);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  padding-top: 4px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  padding-top: 2px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--card-shadow);
   box-sizing: border-box;
 }
@@ -2784,7 +2785,7 @@ body.light-mode .topbar-search-container {
 .floating-mini-cart {
   position: fixed;
   left: 50%;
-  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   /* Rests right above the bottom-nav with OS safe-area support */
   background: var(--bg-secondary);
   backdrop-filter: blur(16px);
@@ -2803,7 +2804,7 @@ body.light-mode .topbar-search-container {
 
 @keyframes slideUpCart {
   0% {
-    transform: translate(-50%, calc(66px + env(safe-area-inset-bottom, 0px)));
+    transform: translate(-50%, calc(56px + env(safe-area-inset-bottom, 0px)));
     opacity: 0.2;
   }
 
@@ -3587,7 +3588,7 @@ body.light-mode .topbar-search-container {
   padding-top: calc(56px + env(safe-area-inset-top, 0px));
   padding-left: var(--content-padding-x, 14px);
   padding-right: var(--content-padding-x, 14px);
-  padding-bottom: 96px;
+  padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px));
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow-y: auto;
@@ -3606,6 +3607,7 @@ body.light-mode .topbar-search-container {
   display: flex;
   flex-direction: column;
   z-index: 200;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .clube-topbar-content {
@@ -7581,7 +7583,7 @@ body.light-mode .topbar-search-container {
   height: 100vh;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 2400;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -7602,11 +7604,11 @@ body.light-mode .topbar-search-container {
   background: var(--bg-primary);
   border-left: 2px solid var(--border-gold);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
-  z-index: 1001;
+  z-index: 2500;
   display: flex;
   flex-direction: column;
   transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
-  padding: 20px 16px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   visibility: hidden;
   pointer-events: none;
@@ -9089,4 +9091,131 @@ body.light-mode .bottom-nav a.active {
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 16px !important;
   }
+}
+
+
+/* =========================================================
+   CLUBE DO NOSSO JEITO - LIGHT MODE HIGH-CONTRAST VIP OVERRIDES
+========================================================= */
+body.light-mode .clube-page {
+  background: #f1f5f9 !important;
+}
+
+body.light-mode .clube-topbar {
+  background: #ffffff !important;
+  border-bottom: 1.5px solid rgba(180, 83, 9, 0.3) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+}
+
+body.light-mode .clube-logo-text {
+  background: linear-gradient(135deg, #b45309, #78350f) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+body.light-mode .clube-coins-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1.5px solid #d97706 !important;
+  color: #78350f !important;
+  font-weight: 850 !important;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2) !important;
+}
+
+/* VIP Apple Wallet Card — Ultra-rich Black & Gold Card */
+body.light-mode .clube-hero-card {
+  background: linear-gradient(135deg, #090e17 0%, #1e293b 55%, #0f172a 100%) !important;
+  border: 1.5px solid #d4af37 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 0 16px rgba(212, 175, 55, 0.12) !important;
+}
+
+body.light-mode .clube-hero-card .clube-vip-tier {
+  background: linear-gradient(135deg, #FFDF73, #D4AF37) !important;
+  color: #000000 !important;
+  font-weight: 900 !important;
+}
+
+body.light-mode .clube-hero-card .clube-hero-body h2 {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.light-mode .clube-hero-card .clube-hero-body p {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.light-mode .clube-hero-card .clube-progress-label-row {
+  color: #fde68a !important;
+  font-weight: 700 !important;
+}
+
+body.light-mode .clube-hero-card .clube-progress-track {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Roulette Banner in Clube */
+body.light-mode .clube-roulette-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%) !important;
+  border: 1.5px solid #d97706 !important;
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.16) !important;
+}
+
+body.light-mode .clube-roulette-banner span {
+  color: #b45309 !important;
+}
+
+body.light-mode .clube-roulette-banner h4 {
+  color: #78350f !important;
+}
+
+body.light-mode .clube-roulette-banner p {
+  color: #92400e !important;
+  font-weight: 600 !important;
+}
+
+/* Missions & Rewards in Light Mode */
+body.light-mode .clube-mission-row {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+}
+
+body.light-mode .clube-mission-row:hover {
+  border-color: #d97706 !important;
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.12) !important;
+}
+
+body.light-mode .clube-mission-card {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.light-mode .clube-mission-card:hover {
+  border-color: #d97706 !important;
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.15) !important;
+}
+
+body.light-mode .clube-reward-card {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.light-mode .clube-reward-card:hover {
+  border-color: #d97706 !important;
+  box-shadow: 0 10px 28px rgba(217, 119, 6, 0.16) !important;
+}
+
+body.light-mode .clube-ad-card,
+body.light-mode .clube-ad-card-vertical {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.light-mode .clube-weekly-calendar {
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
 }

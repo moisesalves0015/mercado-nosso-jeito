@@ -353,7 +353,7 @@ export const Profile: React.FC = () => {
                     }}>
                       {avatarUrl
                         ? <img src={avatarUrl} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: '30px', fontWeight: 800, color: '#fff' }}>{initials}</span>
+                        : <span style={{ fontSize: '30px', fontWeight: 800, color: 'var(--text-primary)' }}>{initials}</span>
                       }
                       {uploadingPhoto && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -382,10 +382,10 @@ export const Profile: React.FC = () => {
                   {/* Name & role — view mode */}
                   {!editMode ? (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '19px', fontWeight: 800, color: '#fff', marginBottom: '5px' }}>
+                      <div style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '5px' }}>
                         {userProfile?.name || user?.displayName || 'Usuário'}
                       </div>
-                      <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
                         {userProfile?.email || user?.email}
                       </div>
                       <span style={{

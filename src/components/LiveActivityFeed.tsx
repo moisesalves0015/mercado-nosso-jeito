@@ -12,9 +12,9 @@ function ActivityRow({ activity, isNew }: { activity: LiveActivity; isNew: boole
         alignItems: 'center',
         gap: 10,
         padding: '7px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid var(--border-subtle)',
         animation: isNew ? 'liveSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
-        opacity: isNew ? undefined : 0.6,
+        opacity: isNew ? undefined : 0.75,
       }}
     >
       <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{activity.emoji}</span>
@@ -22,7 +22,7 @@ function ActivityRow({ activity, isNew }: { activity: LiveActivity; isNew: boole
         style={{
           fontSize: '11.5px',
           fontWeight: isNew ? 700 : 500,
-          color: isNew ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)',
+          color: isNew ? 'var(--text-primary)' : 'var(--text-secondary)',
           lineHeight: 1.3,
         }}
       >
@@ -54,9 +54,10 @@ export function LiveActivityFeed() {
   return (
     <div
       style={{
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))',
-        border: '1px solid rgba(255,255,255,0.09)',
+        background: 'var(--surface-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: '12px',
+        boxShadow: 'var(--card-shadow)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         padding: '12px 14px',
@@ -77,8 +78,8 @@ export function LiveActivityFeed() {
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: '#4ade80',
-            boxShadow: '0 0 7px rgba(74,222,128,0.9)',
+            background: '#10b981',
+            boxShadow: '0 0 7px rgba(16,185,129,0.7)',
             animation: 'spLivePulse 1.8s ease-in-out infinite',
             flexShrink: 0,
           }}
@@ -89,7 +90,7 @@ export function LiveActivityFeed() {
             fontWeight: 900,
             textTransform: 'uppercase',
             letterSpacing: '0.8px',
-            color: 'rgba(255,255,255,0.55)',
+            color: 'var(--text-muted)',
           }}
         >
           Agora mesmo

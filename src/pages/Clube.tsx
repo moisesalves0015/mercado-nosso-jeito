@@ -835,8 +835,8 @@ export const Clube = () => {
         
         <div>
           <span style={{ fontSize: 9.5, fontWeight: 900, color: '#FFDF73', textTransform: 'uppercase', letterSpacing: 1 }}>Novidade Exclusiva</span>
-          <h4 style={{ fontSize: 15, fontWeight: 900, color: '#fff', margin: '4px 0 2px', letterSpacing: -0.2 }}>Roleta da Sorte 🎰</h4>
-          <p style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.6)', margin: 0 }}>Gire grátis diariamente ou use seus diamantes para ganhar!</p>
+          <h4 style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-primary)', margin: '4px 0 2px', letterSpacing: -0.2 }}>Roleta da Sorte 🎰</h4>
+          <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>Gire grátis diariamente ou use seus diamantes para ganhar!</p>
         </div>
 
         <div style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FFDF73 100%)', width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(212,175,55,0.35)', flexShrink: 0 }}>
@@ -934,7 +934,7 @@ export const Clube = () => {
                 {m.type === 'refer' && (
                   <button 
                     onClick={() => setShowReferralsModal(true)}
-                    style={{ marginTop: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 10, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
+                    style={{ marginTop: 8, background: 'transparent', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontSize: 10, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
                   >
                     Acompanhar Indicações
                   </button>
@@ -995,8 +995,8 @@ export const Clube = () => {
           disabled={adsLoading}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.16)',
-            color: 'rgba(255,255,255,0.8)',
+            border: '1px solid var(--border-primary)',
+            color: 'var(--text-secondary)',
             borderRadius: 8,
             padding: '4px 10px',
             fontSize: 11,
@@ -1020,7 +1020,7 @@ export const Clube = () => {
             borderRadius: 10,
             background: 'rgba(239,68,68,0.12)',
             border: '1px solid rgba(239,68,68,0.35)',
-            color: '#fecaca',
+            color: '#ef4444',
             fontSize: 12,
             display: 'flex',
             alignItems: 'center',
@@ -1035,9 +1035,9 @@ export const Clube = () => {
             type="button"
             onClick={() => void loadPublicAds()}
             style={{
-              background: 'rgba(255,255,255,0.12)',
-              border: 'none',
-              color: '#fff',
+              background: 'var(--surface-primary)',
+              border: '1px solid var(--border-primary)',
+              color: 'var(--text-primary)',
               borderRadius: 6,
               padding: '4px 10px',
               fontSize: 11,
@@ -1051,11 +1051,11 @@ export const Clube = () => {
       )}
 
       {adsLoading && sponsorAds.length === 0 ? (
-        <div style={{ padding: '20px 0', textAlign: 'center', color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>
+        <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
           Carregando campanhas patrocinadas...
         </div>
       ) : sponsorAds.length === 0 ? (
-        <div style={{ padding: '18px 14px', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: 12, border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: 16 }}>
+        <div style={{ padding: '18px 14px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 12, border: '1px dashed var(--border-primary)', borderRadius: 10, marginBottom: 16 }}>
           Nenhuma campanha patrocinada disponível para o seu condomínio no momento.
         </div>
       ) : (
@@ -1529,11 +1529,11 @@ export const Clube = () => {
         <div className="clube-modal-overlay" onClick={() => setShowReferralsModal(false)} style={{ backdropFilter: 'blur(8px)', zIndex: 99999 }}>
           <div className="clube-modal-content" onClick={(e) => e.stopPropagation()} style={{ width: '92%', maxWidth: 400, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', padding: 0 }}>
             <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-gold)', background: 'var(--bg-secondary)' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}><UserPlus size={16} /> Acompanhar Indicações</h3>
-              <button onClick={() => setShowReferralsModal(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={18} /></button>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}><UserPlus size={16} /> Acompanhar Indicações</h3>
+              <button onClick={() => setShowReferralsModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ padding: 20 }}>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 16 }}>Acompanhe o status dos amigos que você indicou. Cada amigo que se cadastrar e realizar o primeiro pedido garante +80 diamantes na sua carteira!</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16 }}>Acompanhe o status dos amigos que você indicou. Cada amigo que se cadastrar e realizar o primeiro pedido garante +80 diamantes na sua carteira!</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '300px', overflowY: 'auto' }}>
                 {referredUsers.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)', fontSize: 12 }}>
@@ -1541,20 +1541,20 @@ export const Clube = () => {
                   </div>
                 ) : (
                   referredUsers.map((referred) => (
-                    <div key={referred.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div key={referred.id} style={{ background: 'var(--card-bg)', borderRadius: 12, padding: 12, border: '1px solid var(--border-primary)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <strong style={{ fontSize: 13, color: '#fff' }}>{referred.name}</strong>
+                        <strong style={{ fontSize: 13, color: 'var(--text-primary)' }}>{referred.name}</strong>
                         <span style={{ 
                           fontSize: 10, 
                           background: referred.firstOrderPlaced ? 'rgba(52,199,89,0.2)' : 'rgba(245,158,11,0.2)', 
-                          color: referred.firstOrderPlaced ? '#34C759' : '#F59E0B', 
+                          color: referred.firstOrderPlaced ? '#16a34a' : '#d97706', 
                           padding: '2px 6px', 
                           borderRadius: 8 
                         }}>
                           {referred.firstOrderPlaced ? 'Pedido Realizado (+80 💎)' : 'Cadastro Realizado (Pendente)'}
                         </span>
                       </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <span>Status: {referred.firstOrderPlaced ? 'Pedido Concluído' : 'Aguardando 1º pedido'}</span>
                       </div>
                     </div>

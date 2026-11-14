@@ -1,5 +1,5 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, Outlet } from 'react-router-dom';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { db } from './firebase';
@@ -129,7 +129,6 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
   useEffect(() => {
@@ -178,9 +177,6 @@ function AppContent() {
     });
     return () => unsub();
   }, []);
-
-  // Ocultar gatilho na roleta, admin, login e register
-  const showTrigger = !['/login', '/register', '/roleta', '/onboarding'].includes(location.pathname) && !location.pathname.startsWith('/admin');
 
   // Determinar cor do status bar com base na rota e tema
   const isBlackHeader = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
@@ -476,24 +472,6 @@ function AppContent() {
       </GlobalOnboardingGuard>
 
       {location.pathname !== '/onboarding' && !location.pathname.startsWith('/admin') && <BottomNav />}
-
-      {showTrigger && (
-        <div 
-          className="floating-roulette-trigger"
-          onClick={() => navigate('/roleta')}
-          title="Jogar Roleta da Sorte 🎰"
-        >
-          <div className="floating-roulette-wheel">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="#FFDF73" strokeWidth="2.5" strokeDasharray="3 3" />
-              <circle cx="12" cy="12" r="6" stroke="#D4AF37" strokeWidth="1.5" />
-              <circle cx="12" cy="12" r="2" fill="#FFDF73" />
-              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#FFDF73" strokeWidth="1.5" />
-            </svg>
-          </div>
-          <span className="floating-roulette-text">ROLETA</span>
-        </div>
-      )}
     </>
   );
 }
