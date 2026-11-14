@@ -7,9 +7,17 @@ export interface ImageUploadOptions {
   quality?: number;
 }
 
+export const MAX_DATA_URL_LENGTH = 700_000; // ~500 KB binary, safe within Firestore's 1MB document limit
+
+export function isAcceptableDataUrlSize(dataUrl: string): boolean {
+  if (!dataUrl || !dataUrl.startsWith('data:')) return true;
+  return dataUrl.length <= MAX_DATA_URL_LENGTH;
+}
+
 /**
  * Compresses an image file using an HTML5 canvas while preserving alpha transparency
  * for PNG/WebP/GIF images, returning a clean, single-line Data URL optimized for Firestore.
+ * Automatically steps down dimension and quality if the encoded string exceeds safe limits.
  */
 export function compressImageFile(
   file: File,
@@ -21,58 +29,83 @@ export function compressImageFile(
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxDimension) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          }
-        } else {
-          if (height > maxDimension) {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-
-        canvas.width = Math.max(1, width);
-        canvas.height = Math.max(1, height);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Falha ao inicializar contexto de imagem'));
-          return;
-        }
+        let currentMaxDim = maxDimension;
+        let currentQuality = quality;
 
         const isTransparentCapable =
           file.type === 'image/png' ||
           file.type === 'image/webp' ||
           file.type === 'image/gif';
 
-        if (!isTransparentCapable) {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        const renderCanvas = (targetDim: number, targetQ: number) => {
+          let width = img.width;
+          let height = img.height;
 
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          if (width > height) {
+            if (width > targetDim) {
+              height = Math.round((height * targetDim) / width);
+              width = targetDim;
+            }
+          } else {
+            if (height > targetDim) {
+              width = Math.round((width * targetDim) / height);
+              height = targetDim;
+            }
+          }
 
-        // Prefer image/webp when transparency is needed to keep payload compact for Firestore,
-        // falling back to image/jpeg for regular photos.
-        const targetMime = isTransparentCapable ? 'image/webp' : 'image/jpeg';
-        let dataUrl = canvas.toDataURL(targetMime, quality);
-        if (isTransparentCapable && !dataUrl.startsWith('data:image/webp')) {
-          dataUrl = canvas.toDataURL('image/png');
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Falha ao inicializar contexto de imagem');
+
+          if (!isTransparentCapable) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Prefer webp for compact transparency, falling back to jpeg for non-transparent photos
+          const targetMime = isTransparentCapable ? 'image/webp' : 'image/jpeg';
+          let dataUrl = canvas.toDataURL(targetMime, targetQ);
+          if (isTransparentCapable && !dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/png');
+          }
+          const cleaned = dataUrl.replace(/[\r\n\s]+/g, '');
+          return { cleaned, targetMime };
+        };
+
+        try {
+          let { cleaned, targetMime } = renderCanvas(currentMaxDim, currentQuality);
+
+          // Progressive reduction loop to strictly guarantee Firestore persistence
+          let attempts = 0;
+          while (cleaned.length > MAX_DATA_URL_LENGTH && attempts < 4) {
+            attempts++;
+            currentMaxDim = Math.round(currentMaxDim * 0.82);
+            currentQuality = Math.max(0.55, currentQuality * 0.85);
+            const next = renderCanvas(currentMaxDim, currentQuality);
+            cleaned = next.cleaned;
+            targetMime = next.targetMime;
+          }
+
+          resolve({ dataUrl: cleaned, mimeType: targetMime });
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error(String(err)));
         }
-        const cleanedDataUrl = dataUrl.replace(/[\r\n\s]+/g, '');
-        resolve({ dataUrl: cleanedDataUrl, mimeType: targetMime });
       };
-      img.onerror = () => reject(new Error('Arquivo de imagem inválido ou corrompido'));
+      img.onerror = () =>
+        reject(
+          new Error(
+            'Arquivo de imagem não suportado ou corrompido. Utilize formatos padrão como JPG, PNG ou WebP.'
+          )
+        );
       img.src = event.target?.result as string;
     };
-    reader.onerror = () => reject(new Error('Falha ao ler arquivo de imagem'));
+    reader.onerror = () => reject(new Error('Falha ao ler arquivo de imagem do dispositivo'));
     reader.readAsDataURL(file);
   });
 }
@@ -87,7 +120,7 @@ export async function uploadOrCompressImage(
   options: ImageUploadOptions
 ): Promise<string> {
   const maxDimension = options.maxDimension ?? (options.folder === 'banners' ? 960 : 520);
-  const quality = options.quality ?? (options.folder === 'banners' ? 0.82 : 0.82);
+  const quality = options.quality ?? (options.folder === 'banners' ? 0.80 : 0.82);
 
   const { dataUrl } = await compressImageFile(file, maxDimension, quality);
   return dataUrl;
@@ -166,27 +199,27 @@ export async function persistProductFullData(
 /**
  * Merges a single product document with its `home-config/data/product-media/{id}` record if present.
  */
-export async function enrichProductWithMedia<T extends Record<string, unknown>>(
+export async function enrichProductWithMedia<T extends Record<string, any>>(
   productId: string,
   productData: T
-): Promise<T> {
+): Promise<T & Record<string, any>> {
   try {
     const mediaSnap = await getDoc(doc(db, 'home-config', 'data', 'product-media', productId));
     if (mediaSnap.exists()) {
       const media = mediaSnap.data() as ProductMediaOverride;
-      const merged = { ...productData } as Record<string, unknown>;
+      const merged = { ...productData } as Record<string, any>;
       if (typeof media.image === 'string' && media.image.trim()) {
         merged.image = media.image;
       }
       if (Array.isArray(media.images) && media.images.length > 0) {
         merged.images = media.images;
       }
-      return merged as T;
+      return merged as T & Record<string, any>;
     }
   } catch {
     // Return original product data if media doc is unavailable
   }
-  return productData;
+  return productData as T & Record<string, any>;
 }
 
 /**

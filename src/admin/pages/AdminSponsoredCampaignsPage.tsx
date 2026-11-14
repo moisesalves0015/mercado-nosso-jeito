@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import {
@@ -20,12 +20,15 @@ import {
   ShieldAlert,
   Sparkles,
   Truck,
+  UploadCloud,
+  Loader2,
   X,
 } from 'lucide-react';
 import { functions } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData } from '../AdminDataContext';
 import { EmptyState, MetricCard, PageHeader, ReasonConfirmModal } from '../components/AdminUi';
+import { uploadOrCompressImage } from '../../services/imageUploadService';
 import {
   type AdCampaignStatus,
   type AdCtaActionType,
@@ -156,6 +159,43 @@ export const AdminSponsoredCampaignsPage: React.FC = () => {
     campaign: SponsoredCampaignRecord;
     action: 'publish' | 'pause' | 'end' | 'archive' | 'restore';
   } | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const dataUrl = await uploadOrCompressImage(file, { folder: 'products', maxDimension: 320, quality: 0.85 });
+      setForm(prev => ({ ...prev, logoUrl: dataUrl }));
+      showToast('Logo carregado com sucesso!', 'ok');
+    } catch (err) {
+      showToast('Erro ao carregar logo: ' + (err instanceof Error ? err.message : String(err)), 'err');
+    } finally {
+      setUploadingLogo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleCampaignBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      const dataUrl = await uploadOrCompressImage(file, { folder: 'banners', maxDimension: 960, quality: 0.82 });
+      setForm(prev => ({ ...prev, bannerUrl: dataUrl }));
+      showToast('Banner carregado com sucesso!', 'ok');
+    } catch (err) {
+      showToast('Erro ao carregar banner: ' + (err instanceof Error ? err.message : String(err)), 'err');
+    } finally {
+      setUploadingBanner(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   const loadData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -740,22 +780,72 @@ export const AdminSponsoredCampaignsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-semibold text-[var(--adm-text-muted)] mb-1">Logo URL (HTTPS ou /local)</label>
+                <label className="block font-semibold text-[var(--adm-text-muted)] mb-1">Logo URL ou Enviar Arquivo</label>
                 <input
-                  value={form.logoUrl}
-                  onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                  placeholder="/assets/... ou https://firebasestorage..."
-                  className="adm-input w-full px-3 py-2"
+                  type="file"
+                  ref={logoInputRef}
+                  onChange={handleLogoUpload}
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
                 />
+                <div className="flex gap-2 items-center">
+                  {form.logoUrl && (
+                    <img
+                      src={form.logoUrl}
+                      alt="Logo preview"
+                      className="w-10 h-10 object-contain rounded border border-white/10 bg-black/20 p-1 flex-shrink-0"
+                    />
+                  )}
+                  <input
+                    value={form.logoUrl}
+                    onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                    placeholder="/assets/... ou https://..."
+                    className="adm-input flex-1 px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                    className="adm-btn adm-btn-secondary px-3 py-2 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    {uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <UploadCloud className="w-4 h-4 text-emerald-400" />}
+                    <span>{uploadingLogo ? 'Enviando...' : 'Upload'}</span>
+                  </button>
+                </div>
               </div>
               <div>
-                <label className="block font-semibold text-[var(--adm-text-muted)] mb-1">Banner URL (HTTPS ou /local)</label>
+                <label className="block font-semibold text-[var(--adm-text-muted)] mb-1">Banner URL ou Enviar Arquivo</label>
                 <input
-                  value={form.bannerUrl}
-                  onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
-                  placeholder="/assets/... ou https://firebasestorage..."
-                  className="adm-input w-full px-3 py-2"
+                  type="file"
+                  ref={bannerInputRef}
+                  onChange={handleCampaignBannerUpload}
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
                 />
+                <div className="flex gap-2 items-center">
+                  {form.bannerUrl && (
+                    <img
+                      src={form.bannerUrl}
+                      alt="Banner preview"
+                      className="w-14 h-10 object-cover rounded border border-white/10 bg-black/20 flex-shrink-0"
+                    />
+                  )}
+                  <input
+                    value={form.bannerUrl}
+                    onChange={(e) => setForm({ ...form, bannerUrl: e.target.value })}
+                    placeholder="/assets/... ou https://..."
+                    className="adm-input flex-1 px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="adm-btn adm-btn-secondary px-3 py-2 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    {uploadingBanner ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <UploadCloud className="w-4 h-4 text-emerald-400" />}
+                    <span>{uploadingBanner ? 'Enviando...' : 'Upload'}</span>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block font-semibold text-[var(--adm-text-muted)] mb-1">Status de Licença da Mídia</label>

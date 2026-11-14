@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Layers, Clock, Zap, Target, Plus, Trash2, Edit2, Check, X,
   ArrowUp, ArrowDown, Eye, EyeOff, Image, Link2, Star, Tag,
@@ -363,6 +363,8 @@ export const AdminMarketing: React.FC = () => {
   // Períodos
   const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
   const [periodDraft, setPeriodDraft] = useState<Partial<PeriodConfig>>({});
+  const [uploadingPeriodBg, setUploadingPeriodBg] = useState(false);
+  const periodBgInputRef = useRef<HTMLInputElement>(null);
 
   // Hero Banners
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
@@ -370,6 +372,9 @@ export const AdminMarketing: React.FC = () => {
   const [bannerDraft, setBannerDraft] = useState<Partial<HeroBannerConfig>>({});
   const [uploadingBannerImg, setUploadingBannerImg] = useState(false);
   const [uploadingBannerRowId, setUploadingBannerRowId] = useState<string | null>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const rowFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadingBannerRowTarget = useRef<HeroBannerConfig | null>(null);
 
   // ── Load Firestore ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -765,35 +770,35 @@ export const AdminMarketing: React.FC = () => {
 
   const handleBannerImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
     if (!file) return;
     setUploadingBannerImg(true);
     try {
       const uploadedUrl = await uploadOrCompressImage(file, {
         folder: 'banners',
-        maxDimension: 1280,
-        quality: 0.86,
+        maxDimension: 960,
+        quality: 0.82,
       });
       setBannerDraft(prev => ({ ...prev, image: uploadedUrl }));
-    } catch {
-      alert('Erro ao processar a imagem do banner.');
+    } catch (err) {
+      alert('Erro ao processar a imagem do banner: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploadingBannerImg(false);
+      if (e.target) e.target.value = '';
     }
   }, []);
 
-  const handleQuickBannerRowImageUpload = useCallback(
-    async (banner: HeroBannerConfig, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRowFileSelected = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      e.target.value = '';
-      if (!file) return;
+      const banner = uploadingBannerRowTarget.current;
+      if (!file || !banner) return;
       setUploadingBannerRowId(banner.id);
       try {
         await ensureDefaultBannersSeeded();
         const uploadedUrl = await uploadOrCompressImage(file, {
           folder: 'banners',
-          maxDimension: 1280,
-          quality: 0.86,
+          maxDimension: 960,
+          quality: 0.82,
         });
         await setDoc(
           doc(db, 'home-config', 'data', 'hero-banners', banner.id),
@@ -811,13 +816,39 @@ export const AdminMarketing: React.FC = () => {
           },
           { merge: true }
         );
+        alert('Imagem do banner atualizada com sucesso!');
       } catch (err) {
         alert('Erro ao atualizar imagem do banner: ' + (err instanceof Error ? err.message : String(err)));
       } finally {
         setUploadingBannerRowId(null);
+        uploadingBannerRowTarget.current = null;
+        if (e.target) e.target.value = '';
       }
     },
     [ensureDefaultBannersSeeded]
+  );
+
+  const handlePeriodBgUpload = useCallback(
+    async (_periodId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setUploadingPeriodBg(true);
+      try {
+        const uploadedUrl = await uploadOrCompressImage(file, {
+          folder: 'banners',
+          maxDimension: 960,
+          quality: 0.82,
+        });
+        setPeriodDraft(p => ({ ...p, background: uploadedUrl }));
+        alert('Imagem de atmosfera carregada! Clique em Salvar para aplicar.');
+      } catch (err) {
+        alert('Erro ao carregar imagem: ' + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setUploadingPeriodBg(false);
+        if (e.target) e.target.value = '';
+      }
+    },
+    []
   );
 
   const saveBanner = useCallback(async () => {
@@ -849,6 +880,7 @@ export const AdminMarketing: React.FC = () => {
       setEditingBannerId(null);
       setCreatingBanner(false);
       setBannerDraft({});
+      alert('Banner salvo com sucesso!');
     } catch (e: unknown) {
       alert('Erro ao salvar banner: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -1188,7 +1220,7 @@ export const AdminMarketing: React.FC = () => {
                     </div>
                     <button style={btnIconSm(crmTheme.primary)} onClick={() => {
                       if (isEditing) { setEditingPeriod(null); }
-                      else { setEditingPeriod(periodId); setPeriodDraft({ title: cfg?.title || meta.label }); }
+                      else { setEditingPeriod(periodId); setPeriodDraft({ title: cfg?.title || meta.label, background: cfg?.background || '' }); }
                     }}>
                       {isEditing ? <ChevronUp size={12} /> : <Edit2 size={12} />}
                     </button>
@@ -1202,6 +1234,46 @@ export const AdminMarketing: React.FC = () => {
                     <div>
                       <label style={labelSt}>Título da seção</label>
                       <input style={inputSt} value={periodDraft.title || ''} onChange={e => setPeriodDraft(p => ({ ...p, title: e.target.value }))} placeholder={meta.label} />
+                    </div>
+
+                    <div>
+                      <label style={labelSt}>Imagem de Fundo / Atmosfera (Upload ou URL)</label>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          style={inputSt}
+                          value={periodDraft.background || ''}
+                          onChange={e => setPeriodDraft(p => ({ ...p, background: e.target.value }))}
+                          placeholder="Cole a URL ou envie uma foto do dispositivo"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (periodBgInputRef.current) periodBgInputRef.current.value = '';
+                            periodBgInputRef.current?.click();
+                          }}
+                          disabled={uploadingPeriodBg}
+                          style={{ ...btnGold, height: 36, padding: '0 12px', fontSize: 11, flexShrink: 0 }}
+                        >
+                          <UploadCloud size={13} />
+                          {uploadingPeriodBg ? 'Enviando...' : 'Enviar Foto'}
+                        </button>
+                        {periodDraft.background && (
+                          <button
+                            type="button"
+                            onClick={() => setPeriodDraft(p => ({ ...p, background: '' }))}
+                            style={{ ...btnGhost, height: 36, padding: '0 10px', fontSize: 11, color: crmTheme.danger }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        ref={periodBgInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handlePeriodBgUpload(periodId, e)}
+                        style={{ display: 'none' }}
+                      />
                     </div>
 
                     <div>
@@ -1295,13 +1367,28 @@ export const AdminMarketing: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <label style={{ ...labelSt, marginBottom: 0 }}>Imagem do Banner (Upload ou URL)</label>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <label
+                      <input
+                        ref={bannerFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerImageUpload}
+                        disabled={uploadingBannerImg}
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (bannerFileInputRef.current) bannerFileInputRef.current.value = '';
+                          bannerFileInputRef.current?.click();
+                        }}
+                        disabled={uploadingBannerImg}
                         style={{
                           ...btnGold,
                           height: 34,
                           padding: '0 12px',
                           fontSize: 11,
                           cursor: uploadingBannerImg ? 'wait' : 'pointer',
+                          opacity: uploadingBannerImg ? 0.7 : 1,
                         }}
                       >
                         <UploadCloud size={13} />
@@ -1310,14 +1397,7 @@ export const AdminMarketing: React.FC = () => {
                           : bannerDraft.image
                           ? 'Substituir Imagem (Arquivo)'
                           : 'Enviar Imagem do Dispositivo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleBannerImageUpload}
-                          disabled={uploadingBannerImg}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
+                      </button>
                       {bannerDraft.image && (
                         <button
                           type="button"
@@ -1532,8 +1612,15 @@ export const AdminMarketing: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <label
+                  <button
+                    type="button"
                     title="Substituir imagem deste banner diretamente"
+                    onClick={() => {
+                      uploadingBannerRowTarget.current = banner;
+                      if (rowFileInputRef.current) rowFileInputRef.current.value = '';
+                      rowFileInputRef.current?.click();
+                    }}
+                    disabled={isUploadingThisRow}
                     style={{
                       ...btnGhost,
                       height: 30,
@@ -1543,18 +1630,12 @@ export const AdminMarketing: React.FC = () => {
                       color: crmTheme.primary,
                       borderColor: crmTheme.primary,
                       cursor: isUploadingThisRow ? 'wait' : 'pointer',
+                      opacity: isUploadingThisRow ? 0.7 : 1,
                     }}
                   >
                     <UploadCloud size={12} />
                     {isUploadingThisRow ? 'Enviando...' : 'Trocar Imagem'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => handleQuickBannerRowImageUpload(banner, e)}
-                      disabled={isUploadingThisRow}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
+                  </button>
 
                   <button
                     type="button"
@@ -1610,6 +1691,14 @@ export const AdminMarketing: React.FC = () => {
               </div>
             );
           })}
+
+          <input
+            ref={rowFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleRowFileSelected}
+            style={{ display: 'none' }}
+          />
         </div>
       )}
 

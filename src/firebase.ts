@@ -7,13 +7,15 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
 
+const env = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
+
 const requiredEnvVars = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey:            env.VITE_FIREBASE_API_KEY as string | undefined,
+  authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+  projectId:         env.VITE_FIREBASE_PROJECT_ID as string | undefined,
+  storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
+  appId:             env.VITE_FIREBASE_APP_ID as string | undefined,
 };
 
 // Validate required variables at startup — surfaces misconfiguration early.
@@ -24,7 +26,7 @@ const missing = Object.entries(requiredEnvVars)
 if (missing.length > 0) {
   // In development, throw so the developer notices immediately.
   // In production, we still attempt initialisation (Vercel injects these at build time).
-  if (import.meta.env.DEV) {
+  if (env.DEV) {
     throw new Error(
       `[Firebase] Missing environment variables: ${missing.join(', ')}.\n` +
       `Create a .env file at the project root with the required VITE_FIREBASE_* keys.`
@@ -33,13 +35,13 @@ if (missing.length > 0) {
 }
 
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID, // optional
+  apiKey:            (env.VITE_FIREBASE_API_KEY as string | undefined) || 'mock-api-key',
+  authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+  projectId:         (env.VITE_FIREBASE_PROJECT_ID as string | undefined) || 'mock-project',
+  storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
+  appId:             (env.VITE_FIREBASE_APP_ID as string | undefined) || '1:123456789:web:abcdef',
+  measurementId:     env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined, // optional
 };
 
 // Initialize Firebase

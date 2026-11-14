@@ -21,11 +21,9 @@ interface Props {
 
 /**
  * "Os mais pedidos por horário" — Estilo 02 (Mercado Premium).
- *  - Botões de turno em formato horizontal compacto (pílula/chip baixo e alongado):
- *    pequeno ícone vetorial ao lado do nome do período, tudo na mesma linha.
- *  - Estado inicial = período do horário atual; seleção manual atualiza título e produtos.
- *  - Painel da vitrine em verde-floresta limpo; a imagem de atmosfera do turno (`meta.background`)
- *    fica exclusivamente no background de cada cartão de produto com efeito embaçado (`blur`).
+ *  - Botões de turno em formato horizontal compacto (pílula/chip baixo e alongado).
+ *  - Vitrine com imagem de atmosfera do turno no background contínuo da seção (sem bordas laterais),
+ *    e cartões de produto em glassmorphism limpo sobre o fundo.
  */
 export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
   const [activePeriod, setActivePeriod] = useState<HomePeriod>(() =>
@@ -33,6 +31,7 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
   );
   const meta = PERIOD_META[activePeriod];
   const config = periodConfig[activePeriod];
+  const activeBackground = config?.background || meta.background;
 
   const products = useMemo(() => {
     if (config && config.active === false) return [];
@@ -46,9 +45,11 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
   const containerStyle = useMemo(
     () =>
       ({
-        '--period-card-bg': `url(${meta.background})`,
+        '--period-card-bg': `url(${activeBackground})`,
+        backgroundImage: `linear-gradient(180deg, rgba(8, 20, 14, 0.28) 0%, rgba(5, 14, 10, 0.6) 100%), url(${activeBackground})`,
+        backgroundPosition: 'right center',
       }) as CSSProperties,
-    [meta.background],
+    [activeBackground],
   );
 
   return (
@@ -86,7 +87,7 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
               aria-pressed={isSelected}
             >
               <span className="period-icon-circle period-icon-inline" aria-hidden="true">
-                <Icon size={14} strokeWidth={isSelected ? 2.35 : 2} />
+                <Icon size={13} strokeWidth={isSelected ? 2.3 : 2} />
               </span>
               <span className="period-button-title">{item.label}</span>
             </button>

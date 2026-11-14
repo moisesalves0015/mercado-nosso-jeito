@@ -45,7 +45,7 @@ export const HomeQuickCategories = ({ items }: { items: HomeCategoryLink[] }) =>
             >
               <div className="category-item category-item--circle">
                 <div className="category-icon-wrapper category-icon-circle" aria-hidden="true">
-                  <Icon size={18} strokeWidth={isSelected ? 2.2 : 1.9} />
+                  <Icon size={24} strokeWidth={isSelected ? 2.3 : 2} />
                 </div>
                 <span className="category-text category-circle-label">{item.label}</span>
               </div>

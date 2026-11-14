@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import {
@@ -297,8 +297,12 @@ export const AdminProductDetail: React.FC = () => {
     try {
       const compressed = await compressImage(file);
       setImage(compressed);
-    } catch { alert('Erro ao processar imagem.'); }
-    finally { setUploadingImg(false); }
+    } catch (err) {
+      alert('Erro ao processar imagem: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setUploadingImg(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   // ─── Toggle Flag ───────────────────────────────────────────────────────────

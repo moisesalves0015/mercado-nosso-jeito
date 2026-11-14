@@ -89,7 +89,11 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
           const common = {
             className: `hero-slide${cleanedImage ? '' : ' hero-slide--text'}`,
             style: cleanedImage
-              ? { backgroundImage: `url("${cleanedImage}")`, position: 'relative' as const, overflow: 'hidden' as const }
+              ? {
+                  backgroundImage: cleanedImage.startsWith('data:') ? 'none' : `url("${cleanedImage}")`,
+                  position: 'relative' as const,
+                  overflow: 'hidden' as const,
+                }
               : undefined,
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,

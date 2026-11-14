@@ -184,7 +184,6 @@ export const AdminProductEditPage: React.FC = () => {
   // Image Upload Handler (Main Image)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
     if (!file) return;
     setUploadingImg(true);
     try {
@@ -194,17 +193,17 @@ export const AdminProductEditPage: React.FC = () => {
       });
       setImage(processedUrl);
       showToast('Imagem principal atualizada com sucesso!', 'ok');
-    } catch {
-      showToast('Erro ao processar imagem.', 'err');
+    } catch (err) {
+      showToast('Erro ao processar imagem: ' + (err instanceof Error ? err.message : String(err)), 'err');
     } finally {
       setUploadingImg(false);
+      if (e.target) e.target.value = '';
     }
   };
 
   // Complementary Images Upload Handler
   const handleExtraImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    e.target.value = '';
     if (files.length === 0) return;
     setUploadingExtraImg(true);
     try {
@@ -230,10 +229,11 @@ export const AdminProductEditPage: React.FC = () => {
           : `${uploaded.length} imagens adicionadas à galeria!`,
         'ok'
       );
-    } catch {
-      showToast('Erro ao processar imagem complementar.', 'err');
+    } catch (err) {
+      showToast('Erro ao processar imagem complementar: ' + (err instanceof Error ? err.message : String(err)), 'err');
     } finally {
       setUploadingExtraImg(false);
+      if (e.target) e.target.value = '';
     }
   };
 

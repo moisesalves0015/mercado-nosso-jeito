@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Boxes,
@@ -12,6 +12,7 @@ import {
   Search,
   Tag,
   Trash2,
+  UploadCloud,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,6 +31,7 @@ import {
   toggleAdminCategoryActive,
   type AdminCategory,
 } from '../../services/categoryService';
+import { uploadOrCompressImage } from '../../services/imageUploadService';
 
 export const AdminCategoriesPage: React.FC = () => {
   const { canAny } = useAuth();
@@ -55,6 +57,24 @@ export const AdminCategoriesPage: React.FC = () => {
   const [formActive, setFormActive] = useState(true);
   const [formType, setFormType] = useState<'search' | 'route' | 'category'>('search');
   const [formTarget, setFormTarget] = useState('');
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const categoryFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCategoryIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImg(true);
+    try {
+      const dataUrl = await uploadOrCompressImage(file, { folder: 'products', maxDimension: 512, quality: 0.85 });
+      setFormImage(dataUrl);
+      showToast('Ícone da categoria carregado com sucesso!', 'ok');
+    } catch (err) {
+      showToast('Erro ao processar imagem: ' + (err instanceof Error ? err.message : String(err)), 'err');
+    } finally {
+      setUploadingImg(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   const canEdit = canAny(['produtos:edit', 'produtos:create']);
 
@@ -546,15 +566,53 @@ export const AdminCategoriesPage: React.FC = () => {
 
               <div>
                 <label className="block text-[var(--adm-text-muted)] font-semibold mb-1">
-                  URL do Ícone / Imagem (PNG transparente recomendado)
+                  Ícone / Imagem da Categoria (Upload ou URL)
                 </label>
-                <input
-                  type="text"
-                  value={formImage}
-                  onChange={(e) => setFormImage(e.target.value)}
-                  placeholder="/categories/bebidas.png ou URL externa"
-                  className="adm-input w-full p-2.5 font-mono"
-                />
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={formImage}
+                    onChange={(e) => setFormImage(e.target.value)}
+                    placeholder="/categories/bebidas.png ou envie do dispositivo"
+                    className="adm-input flex-1 p-2.5 font-mono text-xs"
+                  />
+                  <input
+                    ref={categoryFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCategoryIconUpload}
+                    disabled={uploadingImg}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (categoryFileInputRef.current) categoryFileInputRef.current.value = '';
+                      categoryFileInputRef.current?.click();
+                    }}
+                    disabled={uploadingImg}
+                    className="adm-btn-secondary flex items-center gap-1.5 px-3 py-2 text-xs font-semibold whitespace-nowrap"
+                  >
+                    <UploadCloud size={14} />
+                    {uploadingImg ? 'Enviando...' : 'Enviar Foto'}
+                  </button>
+                  {formImage && (
+                    <button
+                      type="button"
+                      onClick={() => setFormImage('')}
+                      className="p-2 text-red-400 hover:text-red-300 rounded"
+                      title="Remover imagem"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+                {formImage && (
+                  <div className="mt-2 flex items-center gap-2 p-2 rounded bg-black/20 border border-white/10">
+                    <img src={formImage} alt="Pré-visualização" className="w-10 h-10 object-contain rounded" />
+                    <span className="text-xs text-[var(--adm-text-dim)]">Pré-visualização do ícone da categoria</span>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

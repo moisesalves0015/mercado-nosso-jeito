@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { HomeCategoryLink } from '../../types/home';
 import { getCategoryHref } from '../../utils/homeProducts';
-import { resolveCategoryIcon } from '../../utils/homeCategoryIcons';
 
 interface Thumb {
   widthPct: number;
@@ -17,41 +16,35 @@ interface HomeCategoryCarouselProps {
   ariaLabel?: string;
 }
 
-/**
- * Carrossel horizontal de categorias no Estilo 02 (Mercado Premium):
- * - Ícone vetorial centralizado dentro de um botão circular verde-floresta com contorno sutil;
- * - Nome da categoria fora do círculo, em linha única (`white-space: nowrap`) abaixo do ícone;
- * - Indicador discreto de rolagem calculado pelo tamanho real do conteúdo.
- */
+/** Carrossel de categorias ilustradas (final da Home), com imagens 3D sem fundo e indicador real de rolagem. */
 export const HomeCategoryCarousel = ({
   items,
   showHeaderLink = true,
-  ariaLabel = 'Categorias',
+  ariaLabel = 'Categorias ilustradas',
 }: HomeCategoryCarouselProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<Thumb | null>(null);
-  const location = useLocation();
-  const currentUrl = `${location.pathname}${location.search}`;
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
 
   const updateThumb = useCallback(() => {
     const row = rowRef.current;
     if (!row) return;
-    const { scrollWidth, clientWidth, scrollLeft } = row;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll <= 1) {
-      setThumb(null); // tudo cabe: sem indicador
+    const maxScroll = row.scrollWidth - row.clientWidth;
+    if (maxScroll <= 0) {
+      setThumb(null);
       return;
     }
-    const widthPct = Math.max(12, (clientWidth / scrollWidth) * 100);
+    const scrollLeft = row.scrollLeft;
+    const widthPct = Math.max(10, Math.min(100, (row.clientWidth / row.scrollWidth) * 100));
     setThumb({ widthPct, leftPct: (scrollLeft / maxScroll) * (100 - widthPct) });
   }, []);
 
+  // Recalcula na montagem e quando o tamanho do contêiner/conteúdo muda.
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
     const frame = requestAnimationFrame(updateThumb);
-    const observer =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateThumb) : null;
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateThumb) : null;
     observer?.observe(row);
     return () => {
       cancelAnimationFrame(frame);
@@ -59,16 +52,18 @@ export const HomeCategoryCarousel = ({
     };
   }, [updateThumb, items.length]);
 
+  const markFailed = (id: string) => setFailedImages((prev) => new Set(prev).add(id));
+
   return (
-    <div className="home-category-section">
+    <>
       <div
         className="section-header"
-        style={{ padding: '0 8px', marginBottom: '6px', marginTop: '12px' }}
+        style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}
       >
         <h2
           style={{
             margin: 0,
-            fontSize: '14px',
+            fontSize: '13.5px',
             fontWeight: 800,
             color: 'var(--text-primary)',
             letterSpacing: '-0.2px',
@@ -78,43 +73,43 @@ export const HomeCategoryCarousel = ({
         </h2>
         {showHeaderLink && (
           <Link to="/categories" className="glass-ver-todas-btn">
-            Ver todas{' '}
-            <span style={{ color: '#E5C158' }} aria-hidden="true">
-              &gt;
-            </span>
+            Ver todas <span style={{ color: '#FFDF73' }} aria-hidden="true">&gt;</span>
           </Link>
         )}
       </div>
 
       <div
-        className="category-row category-row--circle"
+        className="category-row"
         ref={rowRef}
         onScroll={updateThumb}
         role="region"
         aria-label={ariaLabel}
         tabIndex={0}
       >
-        {items.map((item) => {
-          const Icon = resolveCategoryIcon(item);
-          const href = getCategoryHref(item);
-          const isSelected = currentUrl === href || location.pathname === href;
-          return (
-            <Link
-              key={item.id}
-              to={href}
-              aria-label={item.label}
-              aria-current={isSelected ? 'page' : undefined}
-              className={`category-circle-link ${isSelected ? 'active' : ''}`}
-            >
-              <div className="category-item category-item--circle">
-                <div className="category-icon-wrapper category-icon-circle" aria-hidden="true">
-                  <Icon size={18} strokeWidth={isSelected ? 2.2 : 1.9} />
-                </div>
-                <span className="category-text category-circle-label">{item.label}</span>
+        {items.map((item) => (
+          <Link
+            key={item.id}
+            to={getCategoryHref(item)}
+            aria-label={item.label}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div className="category-item">
+              <div className="category-icon-wrapper">
+                {item.image && !failedImages.has(item.id) ? (
+                  <img
+                    src={item.image}
+                    alt=""
+                    className="category-3d-icon"
+                    loading="lazy"
+                    onError={() => markFailed(item.id)}
+                  />
+                ) : (
+                  <span className="category-text">{item.label}</span>
+                )}
               </div>
-            </Link>
-          );
-        })}
+            </div>
+          </Link>
+        ))}
       </div>
 
       {thumb && (
@@ -127,6 +122,6 @@ export const HomeCategoryCarousel = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

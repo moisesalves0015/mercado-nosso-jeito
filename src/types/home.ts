@@ -81,6 +81,7 @@ export interface PeriodConfig {
   active: boolean;
   productIds: string[];
   isAuto: boolean;
+  background?: string;
 }
 
 /** home-config/data/mega-ofertas/{id} */
