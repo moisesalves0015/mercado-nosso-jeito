@@ -9219,3 +9219,37 @@ body.light-mode .clube-weekly-calendar {
   border: 1.5px solid #cbd5e1 !important;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
 }
+
+
+/* =========================================================
+   ROULETTE SUPERMARKET BACKGROUND & NAVIGATION
+========================================================= */
+.roulette-bg-image {
+  position: fixed;
+  inset: 0;
+  background-image: url("/bg-supermercado.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px) brightness(0.38);
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.light-mode .roulette-bg-image {
+  filter: blur(2px) brightness(0.7) !important;
+  opacity: 0.35 !important;
+}
+
+.roulette-bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(9, 7, 5, 0.40) 0%, rgba(9, 7, 5, 0.82) 55%, rgba(9, 7, 5, 0.98) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.light-mode .roulette-bg-overlay {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.45) 0%, rgba(241, 245, 249, 0.85) 55%, rgba(241, 245, 249, 0.98) 100%) !important;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, ArrowLeft, Award, Clock, Zap, TrendingUp, Flame, Gift, Volume2, VolumeX } from 'lucide-react';
+import { Gem, ArrowLeft, Award, Clock, Gift, Volume2, VolumeX } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../hooks/useAuth';
@@ -117,10 +117,6 @@ export const Roleta: React.FC = () => {
 
   // freeSpinUsed: derived from Firestore profile, not localStorage
   const [freeSpinUsedToday, setFreeSpinUsedToday] = useState<boolean>(false);
-
-  const [multiplier, setMultiplier] = useState<number>(1);
-  const [combo, setCombo] = useState<number>(0);
-  const [streak, setStreak] = useState<number>(0);
   const audioContext = useRef<AudioContext | null>(null);
   const particleIdRef = useRef(0);
 
@@ -414,15 +410,8 @@ export const Roleta: React.FC = () => {
         const isWin = !prizeText.toLowerCase().includes('tente de novo');
 
         if (!isWin) {
-          setCombo(0);
-          setStreak(prev => Math.max(0, prev - 1));
           playSound('lose');
         } else {
-          setCombo(prev => prev + 1);
-          setStreak(prev => prev + 1);
-          if (multiplier < 10 && combo >= 2) {
-            setMultiplier(prev => Math.min(10, prev + 0.5));
-          }
           playSound(rarity as 'win' | 'rare' | 'epic' | 'legendary');
           if (rarity === 'legendary') {
             setShowJackpot(true);
@@ -459,11 +448,6 @@ export const Roleta: React.FC = () => {
     }
   };
 
-  const resetMultiplier = () => {
-    setMultiplier(1);
-    setCombo(0);
-  };
-
   const getNextFreeSpinTimeLeft = () => {
     return freeSpinUsedToday ? "Amanhã" : "Disponível";
   };
@@ -481,14 +465,33 @@ export const Roleta: React.FC = () => {
   } as React.CSSProperties;
 
   return (
-    <main className="app roulette-page-container" style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+    <main className="app roulette-page-container" style={{ minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
       
-      {/* Supermarket blurred and darkened background image overlay - exactly matching product details styling */}
+      {/* Supermarket blurred and darkened background image overlay */}
       <div 
         className="roulette-bg-image"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundImage: 'url("/bg-supermercado.jpeg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'blur(2px) brightness(0.35)',
+          opacity: 0.95,
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
       />
       <div 
         className="roulette-bg-overlay"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(9, 7, 5, 0.40) 0%, rgba(9, 7, 5, 0.82) 55%, rgba(9, 7, 5, 0.98) 100%)',
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
       />
 
       {/* Dynamic particles render */}
@@ -532,23 +535,40 @@ export const Roleta: React.FC = () => {
       )}
 
       {/* HEADER */}
-      <header className="clube-topbar" style={{ zIndex: 200 }}>
+      <header className="clube-topbar" style={{ zIndex: 200, paddingBottom: 6 }}>
         <div className="clube-topbar-content">
-          <button onClick={() => navigate('/clube')} className="roulette-back-btn" style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button 
+            onClick={() => navigate('/clube')} 
+            className="roulette-back-btn" 
+            style={{ 
+              background: 'var(--back-btn-bg)', 
+              border: '1px solid var(--border-primary)', 
+              color: 'var(--text-primary)', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: '99px',
+              transition: 'all 0.2s ease'
+            }}
+          >
             <ArrowLeft size={16} />
-            <span style={{ fontSize: 13, fontWeight: 700 }}>Clube</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700 }}>Voltar ao Clube</span>
           </button>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button 
               onClick={() => {
                 const nextVal = !soundEnabled;
                 setSoundEnabled(nextVal);
                 localStorage.setItem('roulette_sound', nextVal.toString());
               }} 
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title={soundEnabled ? 'Silenciar som' : 'Ativar som'}
+              aria-label={soundEnabled ? 'Silenciar som' : 'Ativar som'}
             >
-              {soundEnabled ? <Volume2 size={18} color="#D4AF37" /> : <VolumeX size={18} />}
+              {soundEnabled ? <Volume2 size={16} color="#D4AF37" /> : <VolumeX size={16} />}
             </button>
    
             <div className={`clube-coins-badge ${popBadge ? 'pop' : ''}`}>
@@ -559,36 +579,15 @@ export const Roleta: React.FC = () => {
         </div>
       </header>
 
-      {/* Streak and multiplier counters */}
       {!result && (
         <>
-          {/* Streak and multiplier counters */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--card-bg)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-              <Flame size={13} color="#F59E0B" fill="#F59E0B" />
-              <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 'bold' }}>{streak} Sequência</span>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(212, 175, 55, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.35)' }}>
-              <TrendingUp size={13} color="#D4AF37" />
-              <span style={{ fontSize: 11, color: '#D4AF37', fontWeight: 'bold' }}>{multiplier.toFixed(1)}x Bônus</span>
-            </div>
-
-            {combo >= 2 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(139, 92, 246, 0.15)', padding: '5px 12px', borderRadius: 12, border: '1px solid rgba(139, 92, 246, 0.3)', animation: 'pulse 1.5s infinite' }}>
-                <Zap size={13} color="#8B5CF6" fill="#8B5CF6" />
-                <span style={{ fontSize: 11, color: '#7C3AED', fontWeight: 'bold' }}>COMBO x{combo}!</span>
-              </div>
-            )}
-          </div>
-
           {/* BODY */}
-          <div className="roulette-card-body" style={{ zIndex: 2 }}>
-            <h2 style={{ fontSize: '1.5em', fontWeight: 900, textAlign: 'center', marginBottom: 4, letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Roleta Premium
-            </h2>
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 20 }}>
-              Gire e multiplique seus prêmios do clube! 🎰
+          <div className="roulette-card-body" style={{ zIndex: 2, padding: '8px 12px 20px', width: '100%', maxWidth: 420, margin: '0 auto' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 900, textAlign: 'center', margin: '4px 0 2px', letterSpacing: -0.3, background: 'linear-gradient(90deg, #D4AF37, #FFDF73, #F59E0B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Roleta da Sorte
+            </h1>
+            <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 16px' }}>
+              Gire e ganhe prêmios, cupons e diamantes exclusivos! 🎰
             </p>
 
             {/* HTML/CSS Roulette Wheel Area */}
@@ -717,17 +716,31 @@ export const Roleta: React.FC = () => {
             </div>
 
             {/* Action Controls */}
-            <div className="roulette-controls" style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 300, margin: '24px auto 0' }}>
-              
+            <div className="roulette-controls" style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 340, margin: '22px auto 0' }}>
               {!freeSpinUsedToday ? (
                 <button 
                   className="roulette-spin-btn free-spin animate-pulse"
                   onClick={() => spin(true)}
                   disabled={spinning || items.length === 0}
-                  style={{ flex: 1, background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', padding: '12px 8px', borderRadius: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ 
+                    flex: 1, 
+                    background: 'linear-gradient(135deg, #10B981, #059669)', 
+                    border: 'none', 
+                    color: '#fff', 
+                    padding: '12px 10px', 
+                    borderRadius: 14, 
+                    fontWeight: 900, 
+                    fontSize: 13,
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: 6,
+                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
+                  }}
                 >
-                  <Gift size={14} />
-                  <span>1 Grátis</span>
+                  <Gift size={16} />
+                  <span>Giro Grátis</span>
                 </button>
               ) : (
                 <button 
@@ -741,16 +754,16 @@ export const Roleta: React.FC = () => {
                     WebkitBackdropFilter: 'blur(12px)',
                     boxShadow: 'var(--card-shadow)',
                     color: 'var(--text-muted)',
-                    padding: '12px 8px',
-                    borderRadius: 12,
+                    padding: '12px 10px',
+                    borderRadius: 14,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
+                    gap: 6,
                     justifyContent: 'center'
                   }}
                 >
-                  <Clock size={13} />
-                  <span style={{ fontSize: '10px' }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
+                  <Clock size={14} />
+                  <span style={{ fontSize: '11px', fontWeight: 700 }}>Grátis em {getNextFreeSpinTimeLeft()}</span>
                 </button>
               )}
 
@@ -759,36 +772,26 @@ export const Roleta: React.FC = () => {
                 onClick={() => spin(false)}
                 disabled={spinning || items.length === 0 || diamonds < 30}
                 style={{ 
-                  flex: 1,
-                  background: diamonds < 30 ? 'var(--input-bg)' : 'linear-gradient(135deg, #D4AF37, #B8942E)', 
+                  flex: 1, 
+                  background: diamonds < 30 ? 'var(--input-bg)' : 'linear-gradient(135deg, #FFDF73, #D4AF37)', 
                   color: diamonds < 30 ? 'var(--text-muted)' : '#090705',
                   border: diamonds < 30 ? '1px solid var(--border-primary)' : 'none',
-                  padding: '12px 8px',
-                  borderRadius: 12,
+                  padding: '12px 10px', 
+                  borderRadius: 14, 
                   fontWeight: 900,
+                  fontSize: 13,
                   cursor: diamonds < 30 ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6
+                  gap: 6,
+                  boxShadow: diamonds < 30 ? 'none' : '0 4px 16px rgba(212, 175, 55, 0.35)'
                 }}
               >
-                <Gem size={14} />
-                <span>30 💎</span>
+                <Gem size={15} fill={diamonds < 30 ? 'none' : '#090705'} />
+                <span>Girar por 30 💎</span>
               </button>
             </div>
-
-            {/* Reset Multiplier link button */}
-            {multiplier > 1 && (
-              <div style={{ textAlign: 'center', marginTop: 10 }}>
-                <button 
-                  onClick={resetMultiplier} 
-                  style={{ background: 'none', border: '1px solid var(--border-primary)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 8, fontSize: 10, cursor: 'pointer', transition: 'all 0.2s' }}
-                >
-                  Resetar Bônus
-                </button>
-              </div>
-            )}
           </div>
 
           {/* HISTORY SECTION */}
