@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Layers, Clock, Zap, Target, Plus, Trash2, Edit2, Check, X,
   ArrowUp, ArrowDown, Eye, EyeOff, Image, Link2, Star, Tag,
-  RefreshCw, Search, Megaphone, ChevronUp, Save,
+  RefreshCw, Search, Megaphone, ChevronUp, Save, UploadCloud,
   AlertCircle, Sunrise, Sun, Sunset, Moon, Wind,
 } from 'lucide-react';
 import {
@@ -10,6 +10,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { defaultProducts } from '../data/defaultProducts';
+import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
+import { uploadOrCompressImage } from '../services/imageUploadService';
+import { sanitizeBannerImageUrl } from '../utils/imageUrl';
 import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig } from '../hooks/useHomeConfig';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -365,6 +368,8 @@ export const AdminMarketing: React.FC = () => {
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
   const [creatingBanner, setCreatingBanner] = useState(false);
   const [bannerDraft, setBannerDraft] = useState<Partial<HeroBannerConfig>>({});
+  const [uploadingBannerImg, setUploadingBannerImg] = useState(false);
+  const [uploadingBannerRowId, setUploadingBannerRowId] = useState<string | null>(null);
 
   // ── Load Firestore ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -737,34 +742,170 @@ export const AdminMarketing: React.FC = () => {
   }, [periodConfig]);
 
   // ── Hero Banner Ops ─────────────────────────────────────────────────────────
+  const ensureDefaultBannersSeeded = useCallback(async () => {
+    if (heroBanners.length > 0) return;
+    for (const def of DEFAULT_HERO_BANNERS) {
+      await setDoc(
+        doc(db, 'home-config', 'data', 'hero-banners', def.id),
+        {
+          title: def.title,
+          subtitle: def.subtitle,
+          image: def.image,
+          link: def.link,
+          buttonText: def.buttonText,
+          badgeText: def.badgeText || '',
+          highlightWords: def.highlightWords || [],
+          order: def.order,
+          active: def.active !== false,
+        },
+        { merge: true }
+      );
+    }
+  }, [heroBanners.length]);
+
+  const handleBannerImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingBannerImg(true);
+    try {
+      const uploadedUrl = await uploadOrCompressImage(file, {
+        folder: 'banners',
+        maxDimension: 1280,
+        quality: 0.86,
+      });
+      setBannerDraft(prev => ({ ...prev, image: uploadedUrl }));
+    } catch {
+      alert('Erro ao processar a imagem do banner.');
+    } finally {
+      setUploadingBannerImg(false);
+    }
+  }, []);
+
+  const handleQuickBannerRowImageUpload = useCallback(
+    async (banner: HeroBannerConfig, e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      setUploadingBannerRowId(banner.id);
+      try {
+        await ensureDefaultBannersSeeded();
+        const uploadedUrl = await uploadOrCompressImage(file, {
+          folder: 'banners',
+          maxDimension: 1280,
+          quality: 0.86,
+        });
+        await setDoc(
+          doc(db, 'home-config', 'data', 'hero-banners', banner.id),
+          {
+            title: banner.title || 'Banner',
+            subtitle: banner.subtitle || '',
+            image: uploadedUrl,
+            link: banner.link || '/promotions',
+            buttonText: banner.buttonText || 'Ver Oferta',
+            badgeText: banner.badgeText || '',
+            highlightWords: banner.highlightWords || [],
+            order: banner.order ?? 0,
+            active: banner.active !== false,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        alert('Erro ao atualizar imagem do banner: ' + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setUploadingBannerRowId(null);
+      }
+    },
+    [ensureDefaultBannersSeeded]
+  );
+
   const saveBanner = useCallback(async () => {
-    if (!bannerDraft.title?.trim()) { alert('Informe o título.'); return; }
+    if (!bannerDraft.title?.trim() && !bannerDraft.image?.trim()) {
+      alert('Informe pelo menos o título ou envie uma imagem para o banner.');
+      return;
+    }
     setSaving(true);
     try {
+      await ensureDefaultBannersSeeded();
+      const currentCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
       const data = {
-        title: bannerDraft.title?.trim() || '',
+        title: bannerDraft.title?.trim() || 'Banner Principal',
         subtitle: bannerDraft.subtitle?.trim() || '',
-        image: bannerDraft.image || '',
-        link: bannerDraft.link || '/',
-        buttonText: bannerDraft.buttonText || 'Ver Oferta',
-        badgeText: bannerDraft.badgeText || '',
+        image: (bannerDraft.image || '').trim(),
+        link: (bannerDraft.link || '/promotions').trim(),
+        buttonText: (bannerDraft.buttonText || 'Ver Oferta').trim(),
+        badgeText: (bannerDraft.badgeText || '').trim(),
         highlightWords: bannerDraft.highlightWords || [],
-        order: bannerDraft.order ?? heroBanners.length,
+        order: bannerDraft.order ?? currentCount,
+        active: bannerDraft.active !== false,
+        updatedAt: new Date().toISOString(),
       };
       if (editingBannerId) {
-        await updateDoc(doc(db, 'home-config', 'data', 'hero-banners', editingBannerId), data);
+        await setDoc(doc(db, 'home-config', 'data', 'hero-banners', editingBannerId), data, { merge: true });
       } else {
         await addDoc(collection(db, 'home-config', 'data', 'hero-banners'), data);
       }
-      setEditingBannerId(null); setCreatingBanner(false); setBannerDraft({});
-    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
-    finally { setSaving(false); }
-  }, [bannerDraft, editingBannerId, heroBanners.length]);
+      setEditingBannerId(null);
+      setCreatingBanner(false);
+      setBannerDraft({});
+    } catch (e: unknown) {
+      alert('Erro ao salvar banner: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSaving(false);
+    }
+  }, [bannerDraft, editingBannerId, heroBanners.length, ensureDefaultBannersSeeded]);
 
-  const deleteBanner = useCallback(async (id: string) => {
-    if (!window.confirm('Excluir este banner?')) return;
-    await deleteDoc(doc(db, 'home-config', 'data', 'hero-banners', id));
-  }, []);
+  const toggleBannerActive = useCallback(
+    async (banner: HeroBannerConfig) => {
+      try {
+        await ensureDefaultBannersSeeded();
+        const nextActive = banner.active === false ? true : false;
+        await setDoc(
+          doc(db, 'home-config', 'data', 'hero-banners', banner.id),
+          {
+            title: banner.title || 'Banner',
+            subtitle: banner.subtitle || '',
+            image: banner.image || '',
+            link: banner.link || '/promotions',
+            buttonText: banner.buttonText || 'Ver Oferta',
+            badgeText: banner.badgeText || '',
+            highlightWords: banner.highlightWords || [],
+            order: banner.order ?? 0,
+            active: nextActive,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (e: unknown) {
+        alert('Erro ao alterar status do banner: ' + (e instanceof Error ? e.message : String(e)));
+      }
+    },
+    [ensureDefaultBannersSeeded]
+  );
+
+  const moveBanner = useCallback(
+    async (index: number, dir: 'up' | 'down') => {
+      const list = heroBanners.length > 0 ? heroBanners : DEFAULT_HERO_BANNERS;
+      const next = dir === 'up' ? index - 1 : index + 1;
+      if (next < 0 || next >= list.length) return;
+      await ensureDefaultBannersSeeded();
+      const a = list[index];
+      const b = list[next];
+      await setDoc(doc(db, 'home-config', 'data', 'hero-banners', a.id), { order: next }, { merge: true });
+      await setDoc(doc(db, 'home-config', 'data', 'hero-banners', b.id), { order: index }, { merge: true });
+    },
+    [heroBanners, ensureDefaultBannersSeeded]
+  );
+
+  const deleteBanner = useCallback(
+    async (id: string) => {
+      if (!window.confirm('Excluir este banner do carrossel da Home?')) return;
+      await ensureDefaultBannersSeeded();
+      await deleteDoc(doc(db, 'home-config', 'data', 'hero-banners', id));
+    },
+    [ensureDefaultBannersSeeded]
+  );
 
 
   // SubTabBtn is defined at module level to satisfy react-hooks/static-components.
@@ -1100,13 +1241,22 @@ export const AdminMarketing: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {activeSubTab === 'heroBanners' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>🎯 Hero Banners</h3>
-              <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>Carrossel no topo da Home (máx. 3 recomendado)</p>
+              <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>🎯 Hero Banners & Destaques Promocionais</h3>
+              <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>
+                Gerencie a imagem principal da Home, adicione novos banners, substitua imagens por arquivo ou URL e ative/desative slides em tempo real.
+              </p>
             </div>
             {!creatingBanner && !editingBannerId && (
-              <button onClick={() => { setCreatingBanner(true); setBannerDraft({ order: heroBanners.length }); }} style={btnGold}>
+              <button
+                onClick={() => {
+                  const baseCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
+                  setCreatingBanner(true);
+                  setBannerDraft({ order: baseCount, active: true, link: '/promotions', buttonText: 'Ver Oferta' });
+                }}
+                style={btnGold}
+              >
                 <Plus size={13} /> Novo Banner
               </button>
             )}
@@ -1116,58 +1266,175 @@ export const AdminMarketing: React.FC = () => {
           {(creatingBanner || editingBannerId) && (
             <div style={{ ...card, border: `1px solid ${crmTheme.primary}`, background: crmTheme.primaryLight }}>
               <h4 style={{ margin: '0 0 16px', color: crmTheme.primary, fontSize: 13, fontWeight: 900 }}>
-                {creatingBanner ? '+ Novo Banner' : '✏️ Editar Banner'}
+                {creatingBanner ? '+ Novo Banner da Home' : '✏️ Editar / Substituir Imagem do Banner'}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
                     <label style={labelSt}>Título *</label>
-                    <input style={inputSt} value={bannerDraft.title || ''} onChange={e => setBannerDraft(b => ({ ...b, title: e.target.value }))} placeholder="Ex: Mega Promoção de Verão" />
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.title || ''}
+                      onChange={e => setBannerDraft(b => ({ ...b, title: e.target.value }))}
+                      placeholder="Ex: Mega Promoção de Verão"
+                    />
                   </div>
                   <div>
                     <label style={labelSt}>Subtítulo</label>
-                    <input style={inputSt} value={bannerDraft.subtitle || ''} onChange={e => setBannerDraft(b => ({ ...b, subtitle: e.target.value }))} placeholder="Descrição curta" />
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.subtitle || ''}
+                      onChange={e => setBannerDraft(b => ({ ...b, subtitle: e.target.value }))}
+                      placeholder="Descrição curta"
+                    />
                   </div>
                 </div>
+
+                {/* Image Upload + URL Row */}
+                <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <label style={{ ...labelSt, marginBottom: 0 }}>Imagem do Banner (Upload ou URL)</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <label
+                        style={{
+                          ...btnGold,
+                          height: 34,
+                          padding: '0 12px',
+                          fontSize: 11,
+                          cursor: uploadingBannerImg ? 'wait' : 'pointer',
+                        }}
+                      >
+                        <UploadCloud size={13} />
+                        {uploadingBannerImg
+                          ? 'Processando imagem...'
+                          : bannerDraft.image
+                          ? 'Substituir Imagem (Arquivo)'
+                          : 'Enviar Imagem do Dispositivo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBannerImageUpload}
+                          disabled={uploadingBannerImg}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {bannerDraft.image && (
+                        <button
+                          type="button"
+                          onClick={() => setBannerDraft(b => ({ ...b, image: '' }))}
+                          style={{ ...btnGhost, height: 34, padding: '0 10px', fontSize: 11, color: crmTheme.danger }}
+                        >
+                          <Trash2 size={12} /> Limpar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    style={inputSt}
+                    value={bannerDraft.image || ''}
+                    onChange={e => setBannerDraft(b => ({ ...b, image: e.target.value }))}
+                    placeholder="Ou cole a URL da imagem (/hero_background.png ou https://...)"
+                  />
+
+                  {bannerDraft.image && (
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 4 }}>
+                      <img
+                        src={sanitizeBannerImageUrl(bannerDraft.image)}
+                        alt="Preview"
+                        style={{
+                          width: 140,
+                          height: 68,
+                          objectFit: 'cover',
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          border: `1px solid ${crmTheme.border}`,
+                        }}
+                      />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary }}>
+                          {bannerDraft.title || 'Pré-visualização do Banner'}
+                        </div>
+                        <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>
+                          {bannerDraft.subtitle || 'A imagem será exibida imediatamente no topo da Home ao salvar.'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={labelSt}>URL da Imagem</label>
-                    <input style={inputSt} value={bannerDraft.image || ''} onChange={e => setBannerDraft(b => ({ ...b, image: e.target.value }))} placeholder="/banner.png ou https://..." />
-                  </div>
-                  <div>
                     <label style={labelSt}>Link destino</label>
-                    <input style={inputSt} value={bannerDraft.link || ''} onChange={e => setBannerDraft(b => ({ ...b, link: e.target.value }))} placeholder="/promotions" />
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.link || ''}
+                      onChange={e => setBannerDraft(b => ({ ...b, link: e.target.value }))}
+                      placeholder="/promotions"
+                    />
                   </div>
                   <div>
                     <label style={labelSt}>Texto do botão</label>
-                    <input style={inputSt} value={bannerDraft.buttonText || ''} onChange={e => setBannerDraft(b => ({ ...b, buttonText: e.target.value }))} placeholder="Ver Oferta" />
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.buttonText || ''}
+                      onChange={e => setBannerDraft(b => ({ ...b, buttonText: e.target.value }))}
+                      placeholder="Ver Oferta"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelSt}>Ordem de Exibição</label>
+                    <input
+                      style={inputSt}
+                      type="number"
+                      value={bannerDraft.order ?? 0}
+                      onChange={e => setBannerDraft(b => ({ ...b, order: parseInt(e.target.value) || 0 }))}
+                      min="0"
+                    />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'center' }}>
                   <div>
                     <label style={labelSt}>Badge texto (opcional)</label>
-                    <input style={inputSt} value={bannerDraft.badgeText || ''} onChange={e => setBannerDraft(b => ({ ...b, badgeText: e.target.value }))} placeholder="Ex: 🔥 Esta Semana" />
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.badgeText || ''}
+                      onChange={e => setBannerDraft(b => ({ ...b, badgeText: e.target.value }))}
+                      placeholder="Ex: 🔥 Esta Semana"
+                    />
                   </div>
-                  <div>
-                    <label style={labelSt}>Ordem</label>
-                    <input style={inputSt} type="number" value={bannerDraft.order ?? ''} onChange={e => setBannerDraft(b => ({ ...b, order: parseInt(e.target.value) || 0 }))} min="0" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 16 }}>
+                    <button
+                      type="button"
+                      style={toggle(bannerDraft.active !== false)}
+                      onClick={() => setBannerDraft(b => ({ ...b, active: b.active === false ? true : false }))}
+                    >
+                      <div style={toggleKnob(bannerDraft.active !== false)} />
+                    </button>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: bannerDraft.active !== false ? crmTheme.success : crmTheme.textMuted }}>
+                      {bannerDraft.active !== false ? 'Banner Ativo na Home' : 'Banner Desativado (Oculto)'}
+                    </span>
                   </div>
                 </div>
 
-                {/* Preview thumbnail */}
-                {bannerDraft.image && (
-                  <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 10, padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <img src={bannerDraft.image} alt="Preview" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary }}>{bannerDraft.title || 'Título do Banner'}</div>
-                      <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>{bannerDraft.subtitle}</div>
-                    </div>
-                  </div>
-                )}
-
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
-                  <button onClick={() => { setCreatingBanner(false); setEditingBannerId(null); setBannerDraft({}); }} style={btnGhost}>Cancelar</button>
-                  <button onClick={saveBanner} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingBanner(false);
+                      setEditingBannerId(null);
+                      setBannerDraft({});
+                    }}
+                    style={btnGhost}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveBanner}
+                    disabled={saving || uploadingBannerImg}
+                    style={{ ...btnGold, opacity: saving || uploadingBannerImg ? 0.6 : 1 }}
+                  >
                     {saving ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={13} />}
                     {saving ? 'Salvando...' : 'Salvar Banner'}
                   </button>
@@ -1176,38 +1443,173 @@ export const AdminMarketing: React.FC = () => {
             </div>
           )}
 
-          {/* Banner List */}
-          {heroBanners.length === 0 && !creatingBanner && (
-            <div style={{ ...card, textAlign: 'center', padding: '40px 20px' }}>
-              <Image size={32} color={crmTheme.textMuted} style={{ marginBottom: 12 }} />
-              <p style={{ color: crmTheme.textSecondary, fontSize: 13, margin: 0 }}>Nenhum banner configurado.<br/>A Home usa 3 banners padrão do código.</p>
+          {/* Banner List (shows Firestore banners, or the 3 active default Home banners when not yet customized) */}
+          {heroBanners.length === 0 && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: crmTheme.accentLight, border: `1px solid ${crmTheme.accent}`, borderRadius: 10, padding: '10px 14px' }}>
+              <AlertCircle size={15} color={crmTheme.accent} style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 600 }}>
+                Exibindo os <strong>3 banners principais da Home</strong>. Você pode substituir a imagem de qualquer um deles abaixo ou adicionar novos banners.
+              </span>
             </div>
           )}
 
-          {heroBanners.map((banner) => (
-            <div key={banner.id} style={{ ...card, display: 'flex', gap: 12, alignItems: 'center', padding: '12px 14px' }}>
-              <div style={{ width: 70, height: 44, borderRadius: 8, overflow: 'hidden', background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {banner.image ? (
-                  <img src={banner.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : <Image size={18} color={crmTheme.textMuted} />}
-              </div>
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{banner.title}</div>
-                <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <Link2 size={9} /> {banner.link} · Ordem {banner.order}
-                  {banner.badgeText && <span style={{ background: crmTheme.primaryLight, color: crmTheme.primary, padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>{banner.badgeText}</span>}
+          {(heroBanners.length > 0 ? heroBanners : DEFAULT_HERO_BANNERS).map((banner, index, arr) => {
+            const isActive = banner.active !== false;
+            const isUploadingThisRow = uploadingBannerRowId === banner.id;
+            return (
+              <div
+                key={banner.id}
+                style={{
+                  ...card,
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  opacity: isActive ? 1 : 0.6,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div
+                  style={{
+                    width: 96,
+                    height: 54,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    background: crmTheme.bg,
+                    border: `1px solid ${crmTheme.border}`,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {banner.image ? (
+                    <img
+                      src={sanitizeBannerImageUrl(banner.image)}
+                      alt={banner.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <Image size={18} color={crmTheme.textMuted} />
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 180, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 900,
+                        color: crmTheme.textPrimary,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {banner.title || `Banner #${index + 1}`}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 800,
+                        padding: '2px 7px',
+                        borderRadius: 99,
+                        background: isActive ? crmTheme.successLight : crmTheme.borderLight,
+                        color: isActive ? crmTheme.success : crmTheme.textMuted,
+                      }}
+                    >
+                      {isActive ? 'ATIVO' : 'INATIVO'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Link2 size={9} /> {banner.link || '/'} · Ordem {banner.order ?? index}
+                    {banner.badgeText && (
+                      <span style={{ background: crmTheme.primaryLight, color: crmTheme.primary, padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>
+                        {banner.badgeText}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label
+                    title="Substituir imagem deste banner diretamente"
+                    style={{
+                      ...btnGhost,
+                      height: 30,
+                      padding: '0 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: crmTheme.primary,
+                      borderColor: crmTheme.primary,
+                      cursor: isUploadingThisRow ? 'wait' : 'pointer',
+                    }}
+                  >
+                    <UploadCloud size={12} />
+                    {isUploadingThisRow ? 'Enviando...' : 'Trocar Imagem'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => handleQuickBannerRowImageUpload(banner, e)}
+                      disabled={isUploadingThisRow}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    title={isActive ? 'Desativar banner' : 'Ativar banner'}
+                    style={btnIconSm(isActive ? crmTheme.success : crmTheme.textMuted)}
+                    onClick={() => toggleBannerActive(banner)}
+                  >
+                    {isActive ? <Eye size={12} /> : <EyeOff size={12} />}
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Mover para cima"
+                    disabled={index === 0}
+                    style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === 0 ? 0.35 : 1 }}
+                    onClick={() => moveBanner(index, 'up')}
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Mover para baixo"
+                    disabled={index === arr.length - 1}
+                    style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === arr.length - 1 ? 0.35 : 1 }}
+                    onClick={() => moveBanner(index, 'down')}
+                  >
+                    <ArrowDown size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Editar texto, link e imagem"
+                    style={btnIconSm(crmTheme.primary)}
+                    onClick={() => {
+                      setEditingBannerId(banner.id);
+                      setCreatingBanner(false);
+                      setBannerDraft({ ...banner, active: banner.active !== false });
+                    }}
+                  >
+                    <Edit2 size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Excluir banner"
+                    style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }}
+                    onClick={() => deleteBanner(banner.id)}
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 5 }}>
-                <button style={btnIconSm(crmTheme.primary)} onClick={() => {
-                  setEditingBannerId(banner.id);
-                  setCreatingBanner(false);
-                  setBannerDraft({ ...banner });
-                }}><Edit2 size={12} /></button>
-                <button style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }} onClick={() => deleteBanner(banner.id)}><Trash2 size={12} /></button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

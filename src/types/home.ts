@@ -25,6 +25,7 @@ export interface HomeProduct {
   /** Estoque inteiro >= 0. */
   stock: number;
   active: boolean;
+  images?: string[];
   promoActive?: boolean;
   promoPrice?: number;
   promoExpiry?: PromoExpiry;
@@ -104,6 +105,7 @@ export interface HeroBannerConfig {
   buttonText: string;
   highlightWords: { word: string; color: string }[];
   order: number;
+  active?: boolean;
 }
 
 /** home-config/data/condo-favorites/{id} — curadoria administrativa dos favoritos do condomínio. */

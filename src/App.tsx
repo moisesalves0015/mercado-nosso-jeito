@@ -1,8 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, Outlet } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { db } from './firebase';
+import { subscribeProductsWithMedia } from './services/imageUploadService';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -172,10 +171,9 @@ function AppContent() {
     }
   }, [location.search]);
 
-  // Real-time Firestore sync of products to localStorage
+  // Real-time Firestore sync of products (+ media gallery overrides) to localStorage
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'products'), (snap) => {
-      const list = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    const unsub = subscribeProductsWithMedia((list) => {
       localStorage.setItem('app-products', JSON.stringify(list));
       window.dispatchEvent(new Event('app-products-updated'));
     });

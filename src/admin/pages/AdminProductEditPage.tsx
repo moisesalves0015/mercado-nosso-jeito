@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { doc, getDoc, runTransaction, setDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import {
   ArrowLeft,
@@ -9,9 +9,12 @@ import {
   DollarSign,
   Image as ImageIcon,
   Package,
+  Plus,
   RefreshCw,
   Save,
   Sparkles,
+  Star,
+  Trash2,
   UploadCloud,
 } from 'lucide-react';
 import { db, functions } from '../../firebase';
@@ -23,6 +26,12 @@ import {
   computeProductDiff,
   recordProductAudit,
 } from '../../services/productAuditService';
+import {
+  enrichProductWithMedia,
+  persistProductFullData,
+  uploadOrCompressImage,
+} from '../../services/imageUploadService';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 
 // Commercial Flags
 const ALL_FLAGS = [
@@ -37,32 +46,6 @@ const ALL_FLAGS = [
   { id: 'combo', label: 'Combo', emoji: '🤝', color: '#a78bfa' },
 ];
 
-const compressImage = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 480;
-        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('canvas context error'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
 export const AdminProductEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === 'new';
@@ -73,6 +56,7 @@ export const AdminProductEditPage: React.FC = () => {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingExtraImg, setUploadingExtraImg] = useState(false);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
 
   // Original snapshot for diff calculation
@@ -83,6 +67,8 @@ export const AdminProductEditPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Bebidas');
   const [image, setImage] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [newExtraImageUrl, setNewExtraImageUrl] = useState('');
   const [sku, setSku] = useState('');
   const [ean, setEan] = useState('');
   const [unit, setUnit] = useState('UN');
@@ -128,14 +114,19 @@ export const AdminProductEditPage: React.FC = () => {
     if (!isNew && id) {
       setLoading(true);
       getDoc(doc(db, 'products', id))
-        .then((snap) => {
+        .then(async (snap) => {
           if (snap.exists()) {
-            const p = snap.data();
-            setOriginalProduct({ id: snap.id, ...p });
+            const p = await enrichProductWithMedia(snap.id, { id: snap.id, ...snap.data() });
+            setOriginalProduct(p);
             setTitle(p.title || '');
             setDescription(p.description || '');
             setCategory(p.category || 'Bebidas');
             setImage(p.image || '');
+            setImages(
+              Array.isArray(p.images)
+                ? p.images.filter((x: unknown): x is string => typeof x === 'string' && Boolean(x.trim()))
+                : []
+            );
             setSku(p.sku || '');
             setEan(p.ean || '');
             setUnit(p.unit || 'UN');
@@ -190,20 +181,88 @@ export const AdminProductEditPage: React.FC = () => {
     );
   };
 
-  // Image Upload Handler
+  // Image Upload Handler (Main Image)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     setUploadingImg(true);
     try {
-      const compressed = await compressImage(file);
-      setImage(compressed);
-      showToast('Imagem processada e anexada com sucesso!', 'ok');
+      const processedUrl = await uploadOrCompressImage(file, {
+        folder: 'products',
+        maxDimension: 640,
+      });
+      setImage(processedUrl);
+      showToast('Imagem principal atualizada com sucesso!', 'ok');
     } catch {
       showToast('Erro ao processar imagem.', 'err');
     } finally {
       setUploadingImg(false);
     }
+  };
+
+  // Complementary Images Upload Handler
+  const handleExtraImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    setUploadingExtraImg(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of files.slice(0, 6)) {
+        const url = await uploadOrCompressImage(file, {
+          folder: 'products',
+          maxDimension: 640,
+        });
+        uploaded.push(url);
+      }
+      if (!image.trim() && uploaded.length > 0) {
+        setImage(uploaded[0]);
+        if (uploaded.length > 1) {
+          setImages((prev) => [...prev, ...uploaded.slice(1)].slice(0, 8));
+        }
+      } else {
+        setImages((prev) => [...prev, ...uploaded].slice(0, 8));
+      }
+      showToast(
+        uploaded.length === 1
+          ? 'Imagem complementar adicionada!'
+          : `${uploaded.length} imagens adicionadas à galeria!`,
+        'ok'
+      );
+    } catch {
+      showToast('Erro ao processar imagem complementar.', 'err');
+    } finally {
+      setUploadingExtraImg(false);
+    }
+  };
+
+  const handleAddExtraImageUrl = () => {
+    const trimmed = newExtraImageUrl.trim();
+    if (!trimmed) return;
+    if (!image.trim()) {
+      setImage(trimmed);
+    } else {
+      setImages((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed].slice(0, 8)));
+    }
+    setNewExtraImageUrl('');
+    showToast('Imagem adicionada!', 'ok');
+  };
+
+  const handleRemoveExtraImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handlePromoteExtraImage = (idx: number) => {
+    const chosen = images[idx];
+    if (!chosen) return;
+    const prevMain = image.trim();
+    setImage(chosen);
+    setImages((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return prevMain ? [prevMain, ...next] : next;
+    });
+    showToast('Definida como imagem principal do produto!', 'ok');
   };
 
   // Save Product Handler with Audit Trail
@@ -223,12 +282,15 @@ export const AdminProductEditPage: React.FC = () => {
     try {
       const pStock = parseInt(stock, 10) || 0;
       const pMinStock = parseInt(minStock, 10) || 0;
+      const cleanedMainImage = image.trim();
+      const cleanedExtraImages = images.map((u) => u.trim()).filter(Boolean);
 
       const payload: Record<string, unknown> = {
         title: title.trim(),
         description: description.trim(),
         category: category.trim(),
-        image: image.trim(),
+        image: cleanedMainImage,
+        images: cleanedExtraImages,
         sku: sku.trim() || null,
         ean: ean.trim() || null,
         unit: unit.trim() || 'UN',
@@ -256,8 +318,8 @@ export const AdminProductEditPage: React.FC = () => {
         payload.createdAt = new Date().toISOString();
       }
 
-      // 1. Save or Update via Cloud Function or direct Firestore
-      let targetId = id;
+      // 1. Save or Update via Cloud Function + direct Firestore merge to guarantee full image & gallery persistence
+      let targetId = id || `prod_${Date.now()}`;
       try {
         const fn = httpsCallable(functions, 'adminUpsertProduct');
         if (isNew) {
@@ -265,23 +327,21 @@ export const AdminProductEditPage: React.FC = () => {
             ...payload,
             initialStock: pStock,
           })) as { data?: { productId?: string } };
-          targetId = res.data?.productId || `prod_${Date.now()}`;
+          targetId = res.data?.productId || targetId;
         } else {
           await fn({
             productId: id,
             ...payload,
           });
+          targetId = id!;
         }
       } catch (cloudErr) {
-        console.warn('Fallback para Firestore local:', cloudErr);
-        // Direct Firestore fallback
-        if (isNew) {
-          targetId = `prod_${Date.now()}`;
-          await setDoc(doc(db, 'products', targetId), { ...payload, stock: pStock });
-        } else {
-          await setDoc(doc(db, 'products', id!), payload, { merge: true });
-        }
+        console.warn('Fallback para Firestore direto:', cloudErr);
       }
+
+      // Always persist the complete payload (including un-truncated Data URI image & gallery)
+      // to Firestore (`products` + `home-config/data/product-media`) and sync localStorage immediately.
+      await persistProductFullData(targetId, payload, isNew, pStock);
 
       // If existing product and an explicit stock delta was entered:
       const deltaNum = parseInt(stockAdjustDelta, 10) || 0;
@@ -509,35 +569,52 @@ export const AdminProductEditPage: React.FC = () => {
         </div>
 
         {/* Section 2: Media & Image */}
-        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-[var(--adm-border)] pb-3">
-            <ImageIcon size={16} className="text-[var(--adm-gold)]" />
-            <h2 className="text-sm font-bold text-[var(--adm-text)]">2. Imagem do Produto</h2>
+        <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-5">
+          <div className="flex items-center justify-between border-b border-[var(--adm-border)] pb-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon size={16} className="text-[var(--adm-gold)]" />
+              <h2 className="text-sm font-bold text-[var(--adm-text)]">
+                2. Imagem Principal & Imagens Complementares
+              </h2>
+            </div>
+            {image && (
+              <button
+                type="button"
+                onClick={() => setImage('')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] font-semibold transition-colors"
+              >
+                <Trash2 size={12} /> Remover Principal
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center text-xs">
             <div className="md:col-span-2 space-y-3">
               <div>
                 <label className="block text-[var(--adm-text-muted)] font-semibold mb-1">
-                  URL da Imagem
+                  URL da Imagem Principal
                 </label>
                 <input
                   type="text"
                   value={image}
                   onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://... ou caminho local"
+                  placeholder="https://... ou caminho local (ex: /produtos/item.png)"
                   className="adm-input w-full p-2.5 font-mono text-xs"
                 />
               </div>
 
               <div>
                 <label className="block text-[var(--adm-text-muted)] font-semibold mb-1">
-                  Ou faça upload do arquivo
+                  Substituir ou enviar arquivo da Imagem Principal
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text)] font-semibold text-xs transition-colors">
                     <UploadCloud size={15} />
-                    {uploadingImg ? 'Processando imagem...' : 'Selecionar Imagem'}
+                    {uploadingImg
+                      ? 'Processando imagem...'
+                      : image
+                      ? 'Substituir Imagem Principal'
+                      : 'Selecionar Imagem Principal'}
                     <input
                       type="file"
                       accept="image/*"
@@ -547,26 +624,112 @@ export const AdminProductEditPage: React.FC = () => {
                     />
                   </label>
                   <span className="text-[11px] text-[var(--adm-text-dim)]">
-                    PNG, JPG ou WEBP (otimizado automaticamente)
+                    PNG, JPG ou WEBP (transparência preservada e otimizado automaticamente)
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] min-h-[140px]">
+            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] min-h-[148px] relative">
               {image ? (
-                <img
-                  src={image}
-                  alt="Pré-visualização"
-                  className="w-28 h-28 object-contain rounded-md"
-                />
+                <>
+                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold">
+                    Principal
+                  </span>
+                  <img
+                    src={cleanImageUrl(image)}
+                    alt="Pré-visualização"
+                    onError={handleImageError}
+                    className="w-28 h-28 object-contain rounded-md"
+                  />
+                </>
               ) : (
                 <div className="text-center text-[var(--adm-text-dim)]">
                   <ImageIcon size={32} className="mx-auto mb-1" />
-                  <span className="text-[11px]">Sem imagem</span>
+                  <span className="text-[11px]">Sem imagem principal</span>
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Complementary Images Gallery */}
+          <div className="pt-3 border-t border-[var(--adm-border)] space-y-3 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="font-bold text-[var(--adm-text)] text-xs">
+                  Galeria Complementar ({images.length}/8)
+                </h3>
+                <p className="text-[11px] text-[var(--adm-text-dim)]">
+                  Adicione fotos extras do produto ou clique na estrela para promover uma imagem a Principal.
+                </p>
+              </div>
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text)] font-semibold text-xs transition-colors">
+                <UploadCloud size={14} />
+                {uploadingExtraImg ? 'Enviando...' : 'Upload de Fotos Extras'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleExtraImagesUpload}
+                  disabled={uploadingExtraImg || images.length >= 8}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newExtraImageUrl}
+                onChange={(e) => setNewExtraImageUrl(e.target.value)}
+                placeholder="Adicionar imagem complementar por URL (https://...)"
+                className="adm-input flex-1 p-2 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={handleAddExtraImageUrl}
+                disabled={!newExtraImageUrl.trim() || images.length >= 8}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] border border-[var(--adm-border)] text-[var(--adm-text)] font-semibold text-xs disabled:opacity-40"
+              >
+                <Plus size={14} /> Adicionar URL
+              </button>
+            </div>
+
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-1">
+                {images.map((extraImg, idx) => (
+                  <div
+                    key={`${idx}-${extraImg.slice(0, 24)}`}
+                    className="group relative flex flex-col items-center justify-between p-2 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] hover:border-[var(--adm-gold)] transition-colors"
+                  >
+                    <img
+                      src={cleanImageUrl(extraImg)}
+                      alt={`Complementar ${idx + 1}`}
+                      onError={handleImageError}
+                      className="w-20 h-20 object-contain rounded"
+                    />
+                    <div className="flex items-center justify-center gap-1.5 mt-2 w-full">
+                      <button
+                        type="button"
+                        onClick={() => handlePromoteExtraImage(idx)}
+                        title="Definir como Imagem Principal"
+                        className="flex-1 inline-flex items-center justify-center gap-1 py-1 px-1.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[10px] font-semibold"
+                      >
+                        <Star size={11} /> Principal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExtraImage(idx)}
+                        title="Remover imagem"
+                        className="p-1 rounded bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

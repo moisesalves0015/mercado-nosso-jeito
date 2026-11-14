@@ -1,6 +1,7 @@
 import React from 'react';
 
 export const DEFAULT_PRODUCT_IMAGE = '/categories/geral.png';
+export const DEFAULT_BANNER_IMAGE = '/hero_background.png';
 
 /**
  * Sanitizes and validates an image URL or data URI.
@@ -21,6 +22,24 @@ export function cleanImageUrl(url?: string | null): string {
     if (!cleaned.includes(';base64,')) {
       return DEFAULT_PRODUCT_IMAGE;
     }
+    return cleaned;
+  }
+
+  return trimmed;
+}
+
+/**
+ * Sanitizes a Hero or promotional banner image URL or data URI.
+ */
+export function sanitizeBannerImageUrl(url?: string | null, fallback = DEFAULT_BANNER_IMAGE): string {
+  if (!url || typeof url !== 'string') return fallback;
+  const trimmed = url.trim();
+  if (!trimmed) return fallback;
+
+  if (trimmed.startsWith('data:')) {
+    if (!trimmed.startsWith('data:image/')) return fallback;
+    const cleaned = trimmed.replace(/[\r\n\s]+/g, '');
+    if (!cleaned.includes(';base64,')) return fallback;
     return cleaned;
   }
 

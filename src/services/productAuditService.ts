@@ -122,7 +122,7 @@ export function computeProductDiff(
 }
 
 /**
- * Writes an immutable audit entry to Firestore collection `productHistory`.
+ * Writes an immutable audit entry to Firestore subcollection `home-config/data/product-history`.
  */
 export async function recordProductAudit(
   entry: Omit<ProductAuditRecord, 'id' | 'timestamp' | 'createdAt'> & {
@@ -130,7 +130,7 @@ export async function recordProductAudit(
   },
 ): Promise<string | null> {
   try {
-    const colRef = collection(db, 'productHistory');
+    const colRef = collection(db, 'home-config', 'data', 'product-history');
     const docRef = await addDoc(colRef, {
       ...entry,
       timestamp: serverTimestamp(),
@@ -139,21 +139,19 @@ export async function recordProductAudit(
     return docRef.id;
   } catch (error) {
     console.warn('Falha ao registrar auditoria de produto (verifique as regras de segurança):', error);
-    // Non-blocking: audit failure should not break user operations completely,
-    // but we log and return null.
     return null;
   }
 }
 
 /**
- * Fetches recent audit history for a given product from `productHistory`.
+ * Fetches recent audit history for a given product from `home-config/data/product-history`.
  */
 export async function getProductAuditHistory(
   productId: string,
   maxRecords: number = 50,
 ): Promise<ProductAuditRecord[]> {
   try {
-    const colRef = collection(db, 'productHistory');
+    const colRef = collection(db, 'home-config', 'data', 'product-history');
     // Try query with where and limit
     let q;
     try {

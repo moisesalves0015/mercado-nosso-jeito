@@ -116,7 +116,19 @@ export const ProductDetail = () => {
   // State for subscription selection, quantity, and favoriting
   const [quantity, setQuantity] = useState<number>(1);
   const [isFavorited, setIsFavorited] = useState<boolean>(false);
+  const [selectedImageIdx, setSelectedImageIdx] = useState<number>(0);
   const { addToCart } = useCart();
+
+  const galleryImages = useMemo(() => {
+    const main = typeof product?.image === 'string' && product.image.trim() ? [product.image.trim()] : [];
+    const extras = Array.isArray(product?.images)
+      ? product.images.filter((u: unknown): u is string => typeof u === 'string' && Boolean(u.trim()))
+      : [];
+    const combined = Array.from(new Set([...main, ...extras]));
+    return combined.length > 0 ? combined : [''];
+  }, [product]);
+
+  const activeImageUrl = galleryImages[selectedImageIdx] ?? galleryImages[0] ?? '';
 
   // Calculations
   const finalPrice = product.priceNum;
@@ -167,7 +179,7 @@ export const ProductDetail = () => {
         <div className="product-hero-bg"></div>
         <div className="product-hero-overlay"></div>
         <div className="product-hero-image-wrapper">
-          <img src={cleanImageUrl(product.image)} alt={product.title} onError={handleImageError} className="product-hero-image" />
+          <img src={cleanImageUrl(activeImageUrl)} alt={product.title} onError={handleImageError} className="product-hero-image" />
         </div>
         {product.badge && (
           <div className="product-hero-badge">
@@ -175,6 +187,36 @@ export const ProductDetail = () => {
           </div>
         )}
       </div>
+
+      {galleryImages.length > 1 && (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', padding: '10px 16px 2px', overflowX: 'auto' }}>
+          {galleryImages.map((imgUrl, idx) => (
+            <button
+              key={`${idx}-${imgUrl.slice(0, 16)}`}
+              type="button"
+              onClick={() => setSelectedImageIdx(idx)}
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 10,
+                padding: 4,
+                background: 'rgba(16, 29, 21, 0.92)',
+                border: idx === selectedImageIdx ? '1.5px solid #D4AF37' : '1px solid rgba(212, 175, 55, 0.22)',
+                boxShadow: idx === selectedImageIdx ? '0 0 10px rgba(212, 175, 55, 0.28)' : 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={cleanImageUrl(imgUrl)}
+                alt={`${product.title} - foto ${idx + 1}`}
+                onError={handleImageError}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6 }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="product-detail-content">
         {/* SOCIAL PROOF BLOCK */}

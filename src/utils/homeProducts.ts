@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utilitários puros da Home (sem React/Firebase, para poderem ser testados com `node --test`).
  *
  * Decisões de fonte de dados:
@@ -45,12 +45,16 @@ export function normalizeHomeProduct(raw: unknown): HomeProduct | null {
   const promoPrice = parsePrice(raw.promoPrice as number | string | undefined);
   const diamondReward = Number(raw.diamondReward);
   const badge = asTrimmedString(raw.badge);
+  const extraImages = Array.isArray(raw.images)
+    ? raw.images.map(asTrimmedString).filter(Boolean)
+    : undefined;
 
   return {
     id,
     title,
     price,
     image: asTrimmedString(raw.image),
+    images: extraImages && extraImages.length > 0 ? extraImages : undefined,
     category: asTrimmedString(raw.category),
     stock,
     // Produtos arquivados (archivedAt) nunca aparecem na vitrine pública.
@@ -328,6 +332,7 @@ export function normalizeHeroBanner(id: string, raw: unknown): { value: HeroBann
       buttonText: asTrimmedString(raw.buttonText),
       highlightWords: Array.isArray(raw.highlightWords) ? (raw.highlightWords as HeroBannerConfig['highlightWords']) : [],
       order: toOrder(raw.order),
+      active: raw.active !== false,
     },
     issues,
   };

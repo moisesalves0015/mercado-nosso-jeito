@@ -347,10 +347,38 @@ export const adminUpsertProduct = functions.https.onCall(async (data, context) =
       category,
       active: req.active === undefined ? (prev?.active ?? true) : req.active === true,
       featured: req.featured === undefined ? Boolean(prev?.featured) : req.featured === true,
-      image: optStr(req.image, 1024) ?? (prev?.image as string | undefined) ?? '',
+      image: optStr(req.image, 500_000) ?? (prev?.image as string | undefined) ?? '',
       updatedAt: nowIso,
       updatedBy: actor.uid,
     };
+
+    if (Array.isArray(req.images)) {
+      payload.images = req.images
+        .map((img) => optStr(img, 500_000))
+        .filter((img): img is string => Boolean(img))
+        .slice(0, 8);
+    }
+    if (req.promoActive !== undefined) {
+      payload.promoActive = Boolean(req.promoActive);
+    }
+    if (req.promoDiscount !== undefined && req.promoDiscount !== null) {
+      const pd = Number(req.promoDiscount);
+      if (Number.isFinite(pd) && pd >= 0) payload.promoDiscount = pd;
+    }
+    if (req.promoPrice !== undefined && req.promoPrice !== null) {
+      const pp = Number(req.promoPrice);
+      if (Number.isFinite(pp) && pp >= 0) payload.promoPrice = pp;
+    }
+    if (req.promoExpiry !== undefined) {
+      payload.promoExpiry = req.promoExpiry ? String(req.promoExpiry).slice(0, 64) : null;
+    }
+    if (req.availableInRoulette !== undefined) {
+      payload.availableInRoulette = Boolean(req.availableInRoulette);
+    }
+    if (req.diamondReward !== undefined && req.diamondReward !== null) {
+      const dr = Number(req.diamondReward);
+      if (Number.isFinite(dr) && dr >= 0) payload.diamondReward = Math.floor(dr);
+    }
 
     if (costPrice !== undefined) payload.costPrice = costPrice;
     if (oldPrice !== undefined) payload.oldPrice = oldPrice;

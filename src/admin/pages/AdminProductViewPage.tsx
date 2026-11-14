@@ -23,6 +23,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useAdminData, type AdminProduct } from '../AdminDataContext';
 import { formatCurrency } from '../components/AdminUi';
 import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
+import { enrichProductWithMedia } from '../../services/imageUploadService';
 import {
   getProductAuditHistory,
   type ProductAuditRecord,
@@ -46,7 +47,8 @@ export const AdminProductViewPage: React.FC = () => {
     try {
       const snap = await getDoc(doc(db, 'products', prodId));
       if (snap.exists()) {
-        setProduct({ id: snap.id, ...snap.data() } as AdminProduct);
+        const enriched = await enrichProductWithMedia(snap.id, { id: snap.id, ...snap.data() });
+        setProduct(enriched as unknown as AdminProduct);
       } else {
         showToast('Produto não encontrado.', 'err');
       }

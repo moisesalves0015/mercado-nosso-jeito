@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../hooks/useAuth';
+import { enrichProductListWithMedia } from '../services/imageUploadService';
 
 export interface OrderTimelineEvent {
   status: string;
@@ -85,6 +86,7 @@ export interface AdminProduct {
   supplier?: string;
   location?: string;
   image: string;
+  images?: string[];
   description?: string;
   active?: boolean;
   featured?: boolean;
@@ -276,8 +278,9 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           'adminListProducts',
         );
         tasks.push(
-          fn({ limit: 150 }).then((res) => {
-            setProducts(res.data.products || []);
+          fn({ limit: 150 }).then(async (res) => {
+            const enriched = await enrichProductListWithMedia(res.data.products || []);
+            setProducts(enriched);
           }),
         );
       } else {

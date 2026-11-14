@@ -72,7 +72,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       // Physical delete is forbidden: products are archived (active:false + archivedAt/By/Reason).
-      allow create, update: if isAdmin();
+      allow create, update: if isStaff() || isAdmin();
       allow delete: if false;
 
       // Stock change history written exclusively by Cloud Functions
@@ -230,11 +230,11 @@ service cloud.firestore {
     // ─── Home configuration (vitrines, mega-ofertas, hero-banners) ────────────
     match /home-config/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isStaff() || isAdmin();
 
       match /{subCollection}/{subId} {
         allow read: if true;
-        allow write: if isAdmin();
+        allow write: if isStaff() || isAdmin();
       }
     }
 

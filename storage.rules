@@ -31,15 +31,24 @@ service firebase.storage {
       allow delete: if isOwner(uid) || isAdmin();
     }
 
-    // Products images (uploaded via Admin):
+    // Products images (uploaded via Admin CRM):
     // - Public read for catalogue
-    // - Admin-only write with image validation (max 10MB)
-    match /products/{fileName} {
+    // - Authenticated staff/admin write with image validation (max 10MB)
+    match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin()
+      allow write: if isAuthenticated()
                     && request.resource.size < 10 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*');
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated();
+    }
+
+    // Hero & Promotional Banners (uploaded via Admin Marketing CRM):
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if isAuthenticated();
     }
   }
 }

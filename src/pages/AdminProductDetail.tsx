@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import {
@@ -11,6 +11,11 @@ import {
   Percent, Activity, Layers
 } from 'lucide-react';
 import { useHomeConfig } from '../hooks/useHomeConfig';
+import {
+  enrichProductWithMedia,
+  persistProductFullData,
+  uploadOrCompressImage,
+} from '../services/imageUploadService';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -30,40 +35,20 @@ const calcSuggestedPrice = (costPrice: number, diamonds: number = 0, targetPct: 
 
 // ─── COMMERCIAL FLAGS ─────────────────────────────────────────────────────────
 const ALL_FLAGS = [
-  { id: 'super-oferta',     label: 'Super Oferta',       emoji: '🔥', color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.35)' },
-  { id: 'mais-vendido',     label: 'Mais Vendido',        emoji: '📈', color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.35)' },
-  { id: 'destaque',         label: 'Destaque',            emoji: '⭐', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.35)' },
-  { id: 'promocao',         label: 'Promoção',            emoji: '🏷️', color: '#ec4899', bg: 'rgba(236,72,153,0.12)',  border: 'rgba(236,72,153,0.35)' },
-  { id: 'oferta-relampago', label: 'Oferta Relâmpago',   emoji: '⚡', color: '#FFDF73', bg: 'rgba(212,175,55,0.12)',  border: 'rgba(212,175,55,0.35)' },
-  { id: 'novidade',         label: 'Novidade',            emoji: '🆕', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.35)' },
-  { id: 'recomendado',      label: 'Recomendado',         emoji: '👍', color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.35)' },
-  { id: 'queima-estoque',   label: 'Queima de Estoque',  emoji: '🚨', color: '#f97316', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.35)' },
-  { id: 'combo',            label: 'Combo',               emoji: '🤝', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.35)' },
+  { id: 'super-oferta', label: 'Super Oferta', emoji: '🔥', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)' },
+  { id: 'mais-vendido', label: 'Mais Vendido', emoji: '📈', color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)' },
+  { id: 'destaque', label: 'Destaque', emoji: '⭐', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)' },
+  { id: 'promocao', label: 'Promoção', emoji: '🏷️', color: '#ec4899', bg: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.35)' },
+  { id: 'oferta-relampago', label: 'Oferta Relâmpago', emoji: '⚡', color: '#FFDF73', bg: 'rgba(212,175,55,0.12)', border: 'rgba(212,175,55,0.35)' },
+  { id: 'novidade', label: 'Novidade', emoji: '🆕', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.35)' },
+  { id: 'recomendado', label: 'Recomendado', emoji: '👍', color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.35)' },
+  { id: 'queima-estoque', label: 'Queima de Estoque', emoji: '🚨', color: '#f97316', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.35)' },
+  { id: 'combo', label: 'Combo', emoji: '🤝', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.35)' },
 ];
 
-// ─── IMAGE COMPRESSION ────────────────────────────────────────────────────────
+// ─── IMAGE UPLOAD & COMPRESSION ──────────────────────────────────────────────
 const compressImage = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 420;
-        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('canvas')); return; }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  uploadOrCompressImage(file, { folder: 'products', maxDimension: 640 });
 
 // ─── CRM Light Mode Theme ───────────────────────────────────────────────
 const crmTheme = {
@@ -219,26 +204,26 @@ export const AdminProductDetail: React.FC = () => {
     try {
       const snap = await getDoc(doc(db, 'products', prodId));
       if (snap.exists()) {
-        const p = snap.data();
-        setTitle(p.title || '');
-        setDescription(p.description || '');
-        setCategory(p.category || 'Bebidas');
-        setImage(p.image || '');
-        setTags(p.tags || '');
-        setBadge(p.badge || '');
-        setBadgeStyle(p.badgeStyle || 'orange');
+        const p = await enrichProductWithMedia(snap.id, { id: snap.id, ...snap.data() });
+        setTitle((p.title as string) || '');
+        setDescription((p.description as string) || '');
+        setCategory((p.category as string) || 'Bebidas');
+        setImage((p.image as string) || '');
+        setTags((p.tags as string) || '');
+        setBadge((p.badge as string) || '');
+        setBadgeStyle((p.badgeStyle as 'orange' | 'light') || 'orange');
         setCostPrice(p.costPrice?.toString() || '');
         setPrice(p.price?.toString() || '');
         setDiamondReward(p.diamondReward?.toString() || '');
         setStock(p.stock?.toString() || '');
         setMinStock(p.minStock?.toString() || '');
-        setPromoActive(p.promoActive || false);
+        setPromoActive(Boolean(p.promoActive));
         setPromoDiscount(p.promoDiscount?.toString() || '');
-        setAvailableInRoulette(p.availableInRoulette || false);
-        setActive(p.active ?? true);
-        setFlags(p.flags || []);
-        setPromoExpiry(p.promoExpiry || '');
-        setStockHistory(p.stockHistory || []);
+        setAvailableInRoulette(Boolean(p.availableInRoulette));
+        setActive(p.active !== false);
+        setFlags(Array.isArray(p.flags) ? (p.flags as string[]) : []);
+        setPromoExpiry((p.promoExpiry as string) || '');
+        setStockHistory(Array.isArray(p.stockHistory) ? p.stockHistory : []);
       }
     } catch (e) {
       console.error(e);
@@ -464,19 +449,34 @@ export const AdminProductDetail: React.FC = () => {
 
 
     try {
-      const fn = httpsCallable(functions, 'adminUpsertProduct');
-      if (isNew) {
-        const { stock: initialStock, ...rest } = data;
-        await fn({
-          ...rest,
-          initialStock: typeof initialStock === 'number' ? initialStock : 0,
-        });
-      } else {
-        await fn({
-          productId: id!,
-          ...data,
-        });
+      let targetId = id || `prod_${Date.now()}`;
+      try {
+        const fn = httpsCallable(functions, 'adminUpsertProduct');
+        if (isNew) {
+          const { stock: initialStock, ...rest } = data;
+          const res = (await fn({
+            ...rest,
+            initialStock: typeof initialStock === 'number' ? initialStock : 0,
+          })) as { data?: { productId?: string } };
+          targetId = res.data?.productId || targetId;
+        } else {
+          await fn({
+            productId: id!,
+            ...data,
+          });
+          targetId = id!;
+        }
+      } catch (cloudErr) {
+        console.warn('Fallback para Firestore direto:', cloudErr);
       }
+
+      await persistProductFullData(
+        targetId,
+        data,
+        isNew,
+        typeof data.stock === 'number' ? data.stock : 0
+      );
+
       alert('Produto salvo com sucesso!');
       navigate('/admin/products');
     } catch (e) {
@@ -496,17 +496,17 @@ export const AdminProductDetail: React.FC = () => {
 
   const marginColor = wizMargin === null ? '#818cf8'
     : wizMargin < 0 ? '#ef4444'
-    : wizMargin < 15 ? '#f97316'
-    : wizMargin < 30 ? '#f59e0b'
-    : '#10b981';
+      : wizMargin < 15 ? '#f97316'
+        : wizMargin < 30 ? '#f59e0b'
+          : '#10b981';
 
   const stockNum = parseInt(stock) || 0;
   const minStockNum = parseInt(minStock) || 0;
   const stockPct = minStockNum > 0 ? Math.min(100, Math.round((stockNum / (minStockNum * 3)) * 100)) : 50;
   const stockStatus = stockNum === 0 ? { label: 'Zerado', color: '#ef4444' }
     : minStockNum > 0 && stockNum <= minStockNum ? { label: 'Crítico', color: '#ef4444' }
-    : minStockNum > 0 && stockNum <= minStockNum * 1.5 ? { label: 'Atenção', color: '#f59e0b' }
-    : { label: 'OK', color: '#10b981' };
+      : minStockNum > 0 && stockNum <= minStockNum * 1.5 ? { label: 'Atenção', color: '#f59e0b' }
+        : { label: 'OK', color: '#10b981' };
 
   const promoPrice = wizPrice > 0 && promoDiscount ? wizPrice * (1 - parseFloat(promoDiscount) / 100) : 0;
 
@@ -861,7 +861,7 @@ export const AdminProductDetail: React.FC = () => {
             {/* KPI row */}
             {loadingAnalytics ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-                {[1,2,3,4].map(i => <Skeleton key={i} h={90} radius={16} />)}
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} h={90} radius={16} />)}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
@@ -906,8 +906,8 @@ export const AdminProductDetail: React.FC = () => {
                   const cfg = {
                     success: { color: crmTheme.success, bg: crmTheme.successLight, border: crmTheme.success, icon: CheckCircle },
                     warning: { color: crmTheme.warning, bg: crmTheme.warningLight, border: crmTheme.warning, icon: AlertCircle },
-                    danger:  { color: crmTheme.danger, bg: crmTheme.dangerLight, border: crmTheme.danger, icon: AlertCircle },
-                    info:    { color: crmTheme.primary, bg: crmTheme.primaryLight, border: crmTheme.primary, icon: Info },
+                    danger: { color: crmTheme.danger, bg: crmTheme.dangerLight, border: crmTheme.danger, icon: AlertCircle },
+                    info: { color: crmTheme.primary, bg: crmTheme.primaryLight, border: crmTheme.primary, icon: Info },
                   }[ins.type];
                   const Icon = cfg.icon;
                   return (
@@ -1157,7 +1157,7 @@ export const AdminProductDetail: React.FC = () => {
                 <Layers size={15} color={crmTheme.primary} /> Vitrines & Listas
               </h3>
               <p style={{ fontSize: 11, color: crmTheme.textSecondary, margin: '0 0 14px' }}>Gerencie em quais vitrines da home este produto aparece.</p>
-              
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
                 {homeConfig.loading ? (
                   <span style={{ color: crmTheme.textMuted, fontSize: 12 }}>Carregando vitrines...</span>

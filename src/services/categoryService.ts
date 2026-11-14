@@ -57,7 +57,7 @@ export function slugifyCategory(name: string): string {
  */
 export async function getAdminCategories(): Promise<AdminCategory[]> {
   try {
-    const colRef = collection(db, 'categories');
+    const colRef = collection(db, 'home-config', 'data', 'categories');
     const snap = await getDocs(query(colRef, orderBy('order', 'asc'))).catch(async () => {
       // If order index does not exist, fetch raw collection
       return getDocs(colRef);
@@ -110,7 +110,7 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
  * Saves or updates a category in Firestore collection `categories`.
  */
 export async function saveAdminCategory(category: AdminCategory): Promise<AdminCategory> {
-  const colRef = collection(db, 'categories');
+  const colRef = collection(db, 'home-config', 'data', 'categories');
   const catId = category.id || slugifyCategory(category.name);
   const docRef = doc(colRef, catId);
 
@@ -147,7 +147,7 @@ export async function saveAdminCategory(category: AdminCategory): Promise<AdminC
  */
 export async function toggleAdminCategoryActive(id: string, active: boolean): Promise<boolean> {
   try {
-    const docRef = doc(db, 'categories', id);
+    const docRef = doc(db, 'home-config', 'data', 'categories', id);
     await setDoc(
       docRef,
       {
@@ -168,7 +168,7 @@ export async function toggleAdminCategoryActive(id: string, active: boolean): Pr
  */
 export async function deleteAdminCategory(id: string): Promise<boolean> {
   try {
-    const docRef = doc(db, 'categories', id);
+    const docRef = doc(db, 'home-config', 'data', 'categories', id);
     await deleteDoc(docRef);
     return true;
   } catch (error) {

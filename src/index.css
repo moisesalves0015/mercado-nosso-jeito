@@ -9267,13 +9267,20 @@ body.light-mode .roulette-bg-overlay {
 
 
 /* =========================================================
-   ESTILO 02 — MERCADO PREMIUM: CATEGORIAS, BUSCA & FILTROS POR TURNO
-   (Sistema visual unificado: verde-floresta profundo, bordas esmeralda/ouro e destaque dourado)
+   ESTILO 02 — MERCADO PREMIUM (LINGUAGEM VISUAL DO MINI-CART):
+   CATEGORIAS, BUSCA & FILTROS POR TURNO
+   (Superfície escura sofisticada, bordas discretas em ouro sutil,
+    profundidade equilibrada e zero bordas verdes chamativas)
 ========================================================= */
 
 .home-category-section {
   width: 100%;
   margin-bottom: 2px;
+  overflow: visible;
+}
+
+.home-category-section .section-header {
+  overflow: visible;
 }
 
 .category-row.category-row--circle {
@@ -9282,8 +9289,9 @@ body.light-mode .roulette-bg-overlay {
   gap: 6px;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 4px 8px 6px 8px;
-  margin-top: 0;
+  /* Espaço superior generoso dentro do scroll container para nunca cortar o botão no hover */
+  padding: 10px 8px 8px 8px;
+  margin-top: -4px;
   margin-bottom: 0;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -9293,7 +9301,8 @@ body.light-mode .roulette-bg-overlay {
 .category-row.category-row--circle.category-row--quick {
   justify-content: space-between;
   gap: 3px;
-  padding: 2px 8px 6px 8px;
+  padding: 10px 8px 8px 8px;
+  margin-top: -4px;
 }
 
 .category-row.category-row--circle::before,
@@ -9306,6 +9315,7 @@ body.light-mode .roulette-bg-overlay {
 }
 
 .category-row.category-row--circle > a.category-circle-link {
+  position: relative;
   flex: 0 0 auto;
   width: auto;
   min-width: 50px;
@@ -9316,6 +9326,11 @@ body.light-mode .roulette-bg-overlay {
   border-radius: 10px;
   padding: 2px 2px;
   -webkit-tap-highlight-color: transparent;
+}
+
+.category-row.category-row--circle > a.category-circle-link:hover,
+.category-row.category-row--circle > a.category-circle-link:focus-visible {
+  z-index: 3;
 }
 
 .category-row.category-row--circle.category-row--quick > a.category-circle-link {
@@ -9335,61 +9350,65 @@ body.light-mode .roulette-bg-overlay {
   min-height: 58px;
   background: transparent;
   cursor: pointer;
-  transition: transform 0.18s ease;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .category-icon-wrapper.category-icon-circle {
   width: 40px;
   height: 40px;
   border-radius: 9999px;
-  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
-  border: 1.25px solid rgba(56, 158, 112, 0.55);
+  background: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 3px 8px rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #E5C158;
+  color: #D4AF37;
   flex-shrink: 0;
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .category-circle-link:hover .category-icon-circle {
-  transform: translateY(-1.5px);
-  border-color: rgba(229, 193, 88, 0.82);
-  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%);
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.62);
+  background: linear-gradient(145deg, rgba(22, 38, 28, 0.98) 0%, rgba(12, 25, 18, 0.99) 100%);
   color: #FFDF73;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 5px 12px rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 18px rgba(0, 0, 0, 0.48),
+    0 0 12px rgba(212, 175, 55, 0.16);
 }
 
 .category-circle-link:active .category-icon-circle {
-  transform: scale(0.94);
+  transform: scale(0.95);
 }
 
 /* Estado selecionado/ativo dos botões de categoria */
 .category-circle-link.active .category-icon-circle,
 .category-circle-link[aria-current='page'] .category-icon-circle {
-  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%);
-  border-color: #FFE89E;
-  color: #071910;
+  background: linear-gradient(135deg, #FFDF73 0%, #D4AF37 100%);
+  border-color: #FFDF73;
+  color: #0a1510;
   box-shadow:
-    0 0 0 2.5px rgba(229, 193, 88, 0.22),
-    0 4px 10px rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 2px rgba(212, 175, 55, 0.2),
+    0 6px 16px rgba(212, 175, 55, 0.32);
 }
 
 .category-text.category-circle-label {
   font-size: clamp(9.5px, 2.5vw, 11px);
   font-weight: 700;
   line-height: 1.15;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.9);
   text-align: center;
   white-space: nowrap;
   overflow: visible;
@@ -9430,49 +9449,55 @@ body.light-mode .roulette-bg-overlay {
 }
 
 /* =========================================================
-   CAMPO DE BUSCA NA HOME (MESMO SISTEMA VISUAL DAS CATEGORIAS E PERÍODOS)
+   CAMPO DE BUSCA NA HOME ("O que você procura hoje?")
+   Inspirado diretamente no card flutuante do carrinho (.floating-mini-cart)
 ========================================================= */
 
 .quick-search-wrapper.quick-search-wrapper--premium {
   width: calc(100% - 16px);
-  margin: 4px auto 6px auto;
+  margin: 4px auto 8px auto;
 }
 
 .quick-search-container.quick-search-container--premium {
   display: flex;
   align-items: center;
-  gap: 9px;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
-  border: 1.25px solid rgba(56, 158, 112, 0.55);
+  gap: 10px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 3px 8px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .quick-search-container.quick-search-container--premium:hover {
-  border-color: rgba(229, 193, 88, 0.75);
-  background: linear-gradient(145deg, #143828 0%, #0c251a 100%);
+  border-color: rgba(212, 175, 55, 0.52);
+  background: linear-gradient(145deg, rgba(20, 35, 26, 0.98) 0%, rgba(12, 24, 18, 0.99) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 24px rgba(0, 0, 0, 0.5);
 }
 
 .quick-search-container.quick-search-container--premium:focus-within {
-  border-color: #E5C158;
-  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%);
+  border-color: #D4AF37;
+  background: linear-gradient(145deg, rgba(22, 38, 28, 0.99) 0%, rgba(13, 26, 19, 1) 100%);
   box-shadow:
-    0 0 0 2.5px rgba(229, 193, 88, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 2.5px rgba(212, 175, 55, 0.16),
+    0 10px 26px rgba(0, 0, 0, 0.54);
 }
 
 .quick-search-container.quick-search-container--premium .quick-search-icon {
-  color: #E5C158;
+  color: #D4AF37;
   flex-shrink: 0;
   transition: color 0.18s ease, transform 0.18s ease;
 }
@@ -9490,8 +9515,8 @@ body.light-mode .roulette-bg-overlay {
 }
 
 .quick-search-container.quick-search-container--premium .quick-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12.5px;
   font-weight: 500;
 }
 
@@ -9500,12 +9525,13 @@ body.light-mode .roulette-bg-overlay {
 }
 
 /* =========================================================
-   FILTROS DE HORÁRIO / TURNO (FORMATO HORIZONTAL COMPACTO EM LINHA ÚNICA)
+   FILTROS DE HORÁRIO / TURNO (MESMA FAMÍLIA VISUAL DO MINI-CART)
 ========================================================= */
 
 .home-period-section {
   width: 100%;
   margin-top: 2px;
+  overflow: visible;
 }
 
 .period-buttons-row.period-buttons-row--circle {
@@ -9516,9 +9542,9 @@ body.light-mode .roulette-bg-overlay {
   width: 100%;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 3px 8px 7px 8px;
+  padding: 6px 8px 8px 8px;
   margin-top: 0;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -9532,12 +9558,12 @@ body.light-mode .roulette-bg-overlay {
   flex: 1 1 auto;
   min-width: max-content;
   min-height: 0;
-  height: 30px;
-  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%) !important;
-  background-image: linear-gradient(145deg, #0f2e20 0%, #091d14 100%) !important;
-  border: 1.2px solid rgba(56, 158, 112, 0.55);
-  border-radius: 999px;
-  padding: 0 9px;
+  height: 31px;
+  background: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%) !important;
+  background-image: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-radius: 10px;
+  padding: 0 9.5px;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -9545,8 +9571,10 @@ body.light-mode .roulette-bg-overlay {
   gap: 4.5px;
   cursor: pointer;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 2px 6px rgba(0, 0, 0, 0.24);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 5px 14px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   text-align: center;
   transition:
     transform 0.18s ease,
@@ -9566,17 +9594,18 @@ body.light-mode .roulette-bg-overlay {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #E5C158;
+  color: #D4AF37;
   flex-shrink: 0;
   transition: color 0.18s ease, transform 0.18s ease;
 }
 
 .period-button.period-button--circle:hover {
-  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%) !important;
-  border-color: rgba(229, 193, 88, 0.82);
+  transform: translateY(-1.5px);
+  background: linear-gradient(145deg, rgba(22, 38, 28, 0.98) 0%, rgba(12, 25, 18, 0.99) 100%) !important;
+  border-color: rgba(212, 175, 55, 0.58);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 4px 10px rgba(0, 0, 0, 0.3);
+    0 7px 16px rgba(0, 0, 0, 0.44);
 }
 
 .period-button.period-button--circle:hover .period-icon-circle {
@@ -9596,7 +9625,7 @@ body.light-mode .roulette-bg-overlay {
   font-size: clamp(10px, 2.65vw, 11.5px);
   font-weight: 700;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.9);
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
@@ -9608,28 +9637,28 @@ body.light-mode .roulette-bg-overlay {
 }
 
 /* Estado selecionado imediatamente identificável:
-   preenchimento dourado quente, borda iluminada e ícone + texto em verde-floresta escuro */
+   preenchimento dourado elegante, borda iluminada e ícone + texto em contraste escuro */
 .period-button.period-button--circle.active,
 .period-button.period-button--circle[aria-pressed='true'] {
-  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
-  background-image: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
-  border-color: #FFE89E;
+  background: linear-gradient(135deg, #FFDF73 0%, #D4AF37 100%) !important;
+  background-image: linear-gradient(135deg, #FFDF73 0%, #D4AF37 100%) !important;
+  border-color: #FFDF73;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 3px 10px rgba(212, 175, 55, 0.32);
+    0 5px 14px rgba(212, 175, 55, 0.32);
 }
 
 .period-button.period-button--circle.active .period-icon-circle,
 .period-button.period-button--circle[aria-pressed='true'] .period-icon-circle {
   background: transparent;
   border: 0;
-  color: #071910;
+  color: #0a1510;
   box-shadow: none;
 }
 
 .period-button.period-button--circle.active .period-button-title,
 .period-button.period-button--circle[aria-pressed='true'] .period-button-title {
-  color: #071910;
+  color: #0a1510;
   font-weight: 800;
 }
 
@@ -9650,30 +9679,30 @@ body.light-mode .roulette-bg-overlay {
 }
 
 /* =========================================================
-   VITRINE DO PERÍODO (PAINEL VERDE-FLORESTA LIMPO +
-   IMAGEM DE FUNDO EMBAÇADA APENAS NO CARD DO PRODUTO)
+   VITRINE DO PERÍODO SEM CONTAINER EXTERNO (MESMO PADRÃO DAS DEMAIS VITRINES)
+   O feed horizontal alcança naturalmente as bordas laterais da tela.
 ========================================================= */
 
+.period-products-container,
 .period-products-container.period-products-container--premium {
-  background: linear-gradient(180deg, rgba(11, 35, 24, 0.95) 0%, rgba(7, 22, 15, 0.98) 100%);
-  background-image: none;
-  border: 1px solid rgba(46, 139, 98, 0.34);
-  border-radius: 14px;
-  padding: 8px 0 10px 0;
-  margin: 2px 6px 16px 6px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 8px 22px rgba(0, 0, 0, 0.28);
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  overflow: visible;
 }
 
 .period-products-container.period-products-container--premium .section-header h2 {
-  color: #ffffff;
+  color: var(--section-h2-color);
   font-weight: 800;
 }
 
 .period-products-container.period-products-container--premium .section-header a {
-  color: #E5C158;
-  font-weight: 700;
+  color: #D4AF37;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -9681,19 +9710,19 @@ body.light-mode .roulette-bg-overlay {
   color: #FFDF73;
 }
 
-/* Escopado exclusivamente aos cartões dentro da vitrine por horário:
-   a imagem do período fica apenas no background do produto com o efeito embaçado (blur) */
+/* Escopado exclusivamente aos cartões individuais dentro da vitrine por horário:
+   a imagem do período fica apenas no background de cada card de produto com blur */
 .period-products-container.period-products-container--premium .product-card.glass-card {
   position: relative;
   z-index: 0;
   background: transparent !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border: 1px solid rgba(212, 175, 55, 0.26);
+  border: 1px solid rgba(212, 175, 55, 0.24);
   border-radius: 10px;
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* Enquadramento deslocado para a direita (78% center) para priorizar o elemento visual principal
@@ -9717,7 +9746,7 @@ body.light-mode .roulette-bg-overlay {
   position: absolute;
   inset: 0;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(10, 28, 20, 0.42) 0%, rgba(6, 18, 13, 0.68) 100%);
+  background: linear-gradient(180deg, rgba(10, 21, 16, 0.46) 0%, rgba(6, 15, 11, 0.72) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   clip-path: inset(0 round 10px);
@@ -9736,7 +9765,7 @@ body.light-mode .roulette-bg-overlay {
   outline-offset: 2px;
 }
 
-/* Compatibilidade com modo claro mantendo o sistema visual verde-floresta + dourado */
+/* Compatibilidade com modo claro mantendo o sistema visual inspirado no card do carrinho */
 body.light-mode .category-text.category-circle-label {
   color: #0f291e;
   font-weight: 700;
@@ -9755,24 +9784,24 @@ body.light-mode .period-button.period-button--circle .period-button-title {
 
 body.light-mode .period-button.period-button--circle.active,
 body.light-mode .period-button.period-button--circle[aria-pressed='true'] {
-  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
+  background: linear-gradient(135deg, #FFDF73 0%, #D4AF37 100%) !important;
   border-color: #d97706;
 }
 
 body.light-mode .period-button.period-button--circle.active .period-button-title,
 body.light-mode .period-button.period-button--circle[aria-pressed='true'] .period-button-title {
-  color: #071910;
+  color: #0a1510;
   font-weight: 800;
 }
 
 body.light-mode .quick-search-container.quick-search-container--premium {
-  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
-  border-color: rgba(15, 46, 32, 0.75);
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
+  background: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%);
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
 }
 
 body.light-mode .period-products-container.period-products-container--premium .section-header a {
-  color: #FFDF73 !important;
+  color: #b45309 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

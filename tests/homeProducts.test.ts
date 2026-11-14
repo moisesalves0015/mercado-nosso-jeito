@@ -22,6 +22,7 @@ import type { HomePeriod, HomeProduct } from '../src/types/home';
 import { buildShowcases } from '../src/utils/homeShowcases';
 import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../src/data/homeCategories';
 import { resolveCategoryIcon, resolvePeriodIcon } from '../src/utils/homeCategoryIcons';
+import { cleanImageUrl, sanitizeBannerImageUrl, DEFAULT_PRODUCT_IMAGE, DEFAULT_BANNER_IMAGE } from '../src/utils/imageUrl';
 
 const make = (over: Record<string, unknown> = {}): HomeProduct =>
   normalizeHomeProduct({ id: 'p1', title: 'Café', price: '10,50', image: '/c.png', category: 'cafe', stock: 3, ...over })!;
@@ -153,11 +154,25 @@ describe('mega-ofertas e banners', () => {
     assert.equal(normalizeMegaOferta('m', { productId: 'p' }).value?.productId, 'p');
   });
 
-  it('banner: descarta vazio, avisa link inválido e falta de imagem', () => {
+  it('banner: descarta vazio, avisa link inválido, falta de imagem e preserva flag active', () => {
     assert.equal(normalizeHeroBanner('b', {}).value, null);
     const r = normalizeHeroBanner('b', { title: 'Oi', link: 'javascript:x' });
     assert.equal(r.value?.link, '');
+    assert.equal(r.value?.active, true);
     assert.equal(r.issues.length, 2);
+
+    const inactive = normalizeHeroBanner('b2', { title: 'Banner Inativo', image: '/hero_bebidas.png', active: false });
+    assert.equal(inactive.value?.active, false);
+  });
+
+  it('preserva imagens complementares de produtos e sanitiza URLs de imagem e banners', () => {
+    const prod = make({ images: [' https://cdn.exemplo.com/1.png ', '', 'data:image/webp;base64,AAAA'] });
+    assert.deepEqual(prod.images, ['https://cdn.exemplo.com/1.png', 'data:image/webp;base64,AAAA']);
+
+    assert.equal(cleanImageUrl('data:image/png;base64,iVBOR\n w0KGgo='), 'data:image/png;base64,iVBORw0KGgo=');
+    assert.equal(cleanImageUrl(''), DEFAULT_PRODUCT_IMAGE);
+    assert.equal(sanitizeBannerImageUrl('data:image/jpeg;base64,/9j/4AAQ\r\nSkZJRg=='), 'data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+    assert.equal(sanitizeBannerImageUrl('   '), DEFAULT_BANNER_IMAGE);
   });
 });
 

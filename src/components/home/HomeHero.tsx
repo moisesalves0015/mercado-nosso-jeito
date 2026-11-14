@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, TouchEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { resolveLink } from '../../utils/homeProducts';
+import { sanitizeBannerImageUrl } from '../../utils/imageUrl';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 
 export interface HeroSlide {
@@ -84,15 +85,33 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
         {slides.map((slide, idx) => {
           const active = idx === index;
           const link = resolveLink(slide.link);
+          const cleanedImage = sanitizeBannerImageUrl(slide.image, '');
           const common = {
-            className: `hero-slide${slide.image ? '' : ' hero-slide--text'}`,
-            style: slide.image ? { backgroundImage: `url('${slide.image}')` } : undefined,
+            className: `hero-slide${cleanedImage ? '' : ' hero-slide--text'}`,
+            style: cleanedImage
+              ? { backgroundImage: `url("${cleanedImage}")`, position: 'relative' as const, overflow: 'hidden' as const }
+              : undefined,
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,
           } as const;
           // Slides fora de vista não entram na ordem de tabulação.
           const tabIndex = active ? undefined : -1;
-          const content = slide.image ? null : <span className="hero-slide-title">{slide.title}</span>;
+          const content = cleanedImage ? (
+            <img
+              src={cleanedImage}
+              alt={slide.title || 'Banner'}
+              className="hero-slide-img"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+                pointerEvents: 'none',
+              }}
+            />
+          ) : (
+            <span className="hero-slide-title">{slide.title}</span>
+          );
 
           if (link?.kind === 'internal') {
             return <Link key={slide.id} {...common} tabIndex={tabIndex} to={link.href}>{content}</Link>;

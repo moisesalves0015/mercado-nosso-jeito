@@ -29,17 +29,15 @@ import { useHomeConfig } from '../hooks/useHomeConfig';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../data/homeCategories';
+import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
 import { buildShowcases } from '../utils/homeShowcases';
 
-/**
- * Fallback visual APENAS quando não há banners configurados. Títulos neutros: não prometem
- * campanha ("ofertas do dia" etc.) que possa não existir.
- */
-const DEFAULT_HERO_SLIDES: HeroSlide[] = [
-  { id: 'default-promocoes', image: '/hero_background.png', link: '/promotions', title: 'Promoções' },
-  { id: 'default-bebidas', image: '/hero_bebidas.png', link: '/bebidas', title: 'Bebidas' },
-  { id: 'default-tabacaria', image: '/hero_tabacaria.png', link: '/tabacaria', title: 'Tabacaria' },
-];
+const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map(b => ({
+  id: b.id,
+  image: b.image,
+  link: b.link,
+  title: b.title,
+}));
 
 const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
 
@@ -49,10 +47,11 @@ export const Home = () => {
   const { config: adminConfig } = useAdminConfig();
   const { config: shippingConfig } = useShippingConfig();
 
-  // Cópia ordenada (nunca muta o array recebido do hook).
+  // Cópia ordenada de banners ativos (nunca muta o array recebido do hook).
   const heroSlides = useMemo<HeroSlide[]>(() => {
     if (homeConfig.heroBanners.length === 0) return DEFAULT_HERO_SLIDES;
-    return [...homeConfig.heroBanners].sort(byOrder).map(b => ({
+    const activeBanners = homeConfig.heroBanners.filter(b => b.active !== false);
+    return [...activeBanners].sort(byOrder).map(b => ({
       id: b.id,
       title: b.title || 'Banner',
       image: b.image,
