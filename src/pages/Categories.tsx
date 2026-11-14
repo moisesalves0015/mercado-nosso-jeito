@@ -30,13 +30,16 @@ export const Categories = () => {
   return (
     <div className="categories-page-container">
       {/* HEADER */}
-      <header className="categories-page-header">
-        <button className="categories-back-btn" onClick={() => navigate(-1)} aria-label="Voltar">
-          <ArrowLeft size={20} />
-        </button>
-        <h2>Categorias</h2>
-        <div style={{ width: 32 }}></div> {/* Spacer to balance the header */}
-      </header>
+      <div className="app-header-container">
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
+        <header className="categories-page-header">
+          <button className="categories-back-btn" onClick={() => navigate(-1)} aria-label="Voltar">
+            <ArrowLeft size={18} />
+          </button>
+          <h2>Categorias</h2>
+          <div style={{ width: 36 }}></div> {/* Spacer to balance the header */}
+        </header>
+      </div>
 
       {/* CATEGORIES GRID */}
       <main className="categories-page-main">

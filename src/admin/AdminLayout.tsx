@@ -329,9 +329,11 @@ const AdminShellInner: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar (Selective frosted glass) */}
-        <header className="sticky top-0 z-30 h-16 adm-glass border-b border-[var(--adm-border)] px-4 sm:px-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        {/* Topbar (Selective frosted glass with Safe Area Continuity) */}
+        <header className="sticky top-0 z-30 adm-glass border-b border-[var(--adm-border)] flex flex-col w-full">
+          <div className="safe-area-top-bg" style={{ background: 'var(--adm-surface)' }} />
+          <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
@@ -428,6 +430,7 @@ const AdminShellInner: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </header>
 

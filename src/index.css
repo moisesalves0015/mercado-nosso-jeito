@@ -690,6 +690,7 @@ button, input[type="button"], input[type="submit"], .btn-base {
 .safe-area-top-bg {
   height: env(safe-area-inset-top, 0px);
   width: 100%;
+  flex-shrink: 0;
 }
 
 /* =========================================================
@@ -704,7 +705,6 @@ button, input[type="button"], input[type="submit"], .btn-base {
   width: 100%;
   margin-bottom: 0px;
   border-bottom: 1px solid var(--border-gold);
-  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .topbar {
@@ -7420,13 +7420,23 @@ body.light-mode .topbar-search-container {
   color: var(--quick-search-placeholder);
 }
 
+.app-header-container {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-gold);
+}
+
 /* =========================================================
    CATEGORIES DEDICATED PAGE
    ========================================================= */
 .categories-page-container {
   width: 100%;
   min-height: 100vh;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 80px 16px;
+  padding: 0 0 80px 0;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -7437,9 +7447,10 @@ body.light-mode .topbar-search-container {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--categories-header-border);
-  padding-bottom: 12px;
+  height: 52px;
+  padding: 0 16px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .categories-page-header h2 {

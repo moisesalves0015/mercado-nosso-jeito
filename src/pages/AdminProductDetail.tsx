@@ -584,6 +584,7 @@ export const AdminProductDetail: React.FC = () => {
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header style={{ position: 'sticky', top: 0, zIndex: 50, background: crmTheme.headerBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${crmTheme.border}`, boxShadow: crmTheme.shadowSm }}>
+        <div className="safe-area-top-bg" style={{ background: crmTheme.headerBg }} />
         {/* Main header row */}
         <div style={{ padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

@@ -181,12 +181,24 @@ function AppContent() {
     return () => unsub();
   }, []);
 
-  // Determinar cor do status bar com base na rota e tema
-  const isBlackHeader = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
+  // Determinar cor do status bar com base na rota e tema para continuidade perfeita
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAuthRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname);
   const isLight = theme === 'light';
   const safeAreaBg = isLight 
-    ? (isBlackHeader ? '#ffffff' : '#f8fafc')
-    : (isBlackHeader ? '#000000' : '#090705');
+    ? (isAuthRoute ? '#f8fafc' : '#ffffff')
+    : (isAdminRoute ? '#0f2017' : (isAuthRoute ? '#090705' : 'var(--bg-secondary)'));
+
+  // Sincronizar theme-color nativo do PWA / navegador móvel com o background do TopBar
+  useEffect(() => {
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      const color = isLight 
+        ? (isAuthRoute ? '#f8fafc' : '#ffffff') 
+        : (isAdminRoute ? '#0f2017' : (isAuthRoute ? '#090705' : '#0a1510'));
+      metaTheme.setAttribute('content', color);
+    }
+  }, [isLight, isAdminRoute, isAuthRoute, location.pathname]);
 
   return (
     <>
@@ -201,7 +213,7 @@ function AppContent() {
           left: 0,
           right: 0,
           height: 'env(safe-area-inset-top, 0px)',
-          zIndex: 2000,
+          zIndex: 1500,
           pointerEvents: 'none'
         }} 
       />

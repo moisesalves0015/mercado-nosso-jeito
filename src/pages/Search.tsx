@@ -153,12 +153,13 @@ export const Search = () => {
       <div style={{
         position: 'sticky',
         top: 0,
-        zIndex: 20,
+        zIndex: 1000,
         background: 'var(--bg-secondary)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-primary)',
       }}>
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div style={{
           display: 'flex',
           alignItems: 'center',

@@ -36,11 +36,13 @@ export function BadgesCenter() {
     }}>
       {/* ── HEADER ──────────────────────────────────────── */}
       <div style={{
-        position: 'sticky', top: 0, zIndex: 20,
+        position: 'sticky', top: 0, zIndex: 1000,
         background: 'var(--bg-secondary)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border-primary)',
-        padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        display: 'flex', flexDirection: 'column'
       }}>
+        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
+        <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
@@ -61,6 +63,7 @@ export function BadgesCenter() {
             Construa sua história na comunidade.
           </p>
         </div>
+      </div>
       </div>
 
       <div style={{ padding: '20px 0' }}>

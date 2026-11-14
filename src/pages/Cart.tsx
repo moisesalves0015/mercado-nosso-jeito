@@ -70,12 +70,13 @@ export function Cart() {
         <div style={{
           position: 'sticky',
           top: 0,
-          zIndex: 20,
+          zIndex: 1000,
           background: 'var(--bg-secondary)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--border-gold)',
         }}>
+          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
           <div style={{
             display: 'flex',
             alignItems: 'center',
