@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { HomeCategoryLink } from '../../types/home';
 import { getCategoryHref } from '../../utils/homeProducts';
 import { resolveCategoryIcon } from '../../utils/homeCategoryIcons';
@@ -30,6 +30,8 @@ export const HomeCategoryCarousel = ({
 }: HomeCategoryCarouselProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<Thumb | null>(null);
+  const location = useLocation();
+  const currentUrl = `${location.pathname}${location.search}`;
 
   const updateThumb = useCallback(() => {
     const row = rowRef.current;
@@ -94,16 +96,19 @@ export const HomeCategoryCarousel = ({
       >
         {items.map((item) => {
           const Icon = resolveCategoryIcon(item);
+          const href = getCategoryHref(item);
+          const isSelected = currentUrl === href || location.pathname === href;
           return (
             <Link
               key={item.id}
-              to={getCategoryHref(item)}
+              to={href}
               aria-label={item.label}
-              className="category-circle-link"
+              aria-current={isSelected ? 'page' : undefined}
+              className={`category-circle-link ${isSelected ? 'active' : ''}`}
             >
               <div className="category-item category-item--circle">
                 <div className="category-icon-wrapper category-icon-circle" aria-hidden="true">
-                  <Icon size={22} strokeWidth={1.9} />
+                  <Icon size={18} strokeWidth={isSelected ? 2.2 : 1.9} />
                 </div>
                 <span className="category-text category-circle-label">{item.label}</span>
               </div>

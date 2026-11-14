@@ -17,10 +17,16 @@ export const HomeSearch = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="quick-search-wrapper" role="search">
-      <div className="quick-search-container">
-        <Search size={16} className="quick-search-icon" aria-hidden="true" />
-        <label htmlFor="home-search-input" className="sr-only">O que você procura hoje?</label>
+    <form
+      onSubmit={handleSubmit}
+      className="quick-search-wrapper quick-search-wrapper--premium"
+      role="search"
+    >
+      <div className="quick-search-container quick-search-container--premium">
+        <Search size={16} strokeWidth={2.1} className="quick-search-icon" aria-hidden="true" />
+        <label htmlFor="home-search-input" className="sr-only">
+          O que você procura hoje?
+        </label>
         <input
           id="home-search-input"
           type="search"

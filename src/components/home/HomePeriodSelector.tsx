@@ -21,7 +21,8 @@ interface Props {
 
 /**
  * "Os mais pedidos por horário" — Estilo 02 (Mercado Premium).
- *  - Botões de turno da mesma família visual das categorias (ícone vetorial dentro do círculo + rótulo fora, abaixo).
+ *  - Botões de turno em formato horizontal compacto (pílula/chip baixo e alongado):
+ *    pequeno ícone vetorial ao lado do nome do período, tudo na mesma linha.
  *  - Estado inicial = período do horário atual; seleção manual atualiza título e produtos.
  *  - Painel da vitrine em verde-floresta limpo; a imagem de atmosfera do turno (`meta.background`)
  *    fica exclusivamente no background de cada cartão de produto com efeito embaçado (`blur`).
@@ -52,11 +53,11 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
 
   return (
     <div className="home-period-section">
-      <div className="section-header" style={{ padding: '0 8px', marginBottom: '6px', marginTop: '6px' }}>
+      <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '4px' }}>
         <h2
           style={{
             margin: 0,
-            fontSize: '14px',
+            fontSize: '13.5px',
             fontWeight: 800,
             color: 'var(--text-primary)',
             letterSpacing: '-0.2px',
@@ -67,7 +68,7 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
       </div>
 
       <div
-        className="period-buttons-row period-buttons-row--circle"
+        className="period-buttons-row period-buttons-row--circle period-buttons-row--pill"
         role="group"
         aria-label="Escolher período do dia"
       >
@@ -78,14 +79,14 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
           return (
             <button
               key={id}
-              className={`period-button period-button--circle ${isSelected ? 'active' : ''}`}
+              className={`period-button period-button--circle period-button--pill ${isSelected ? 'active' : ''}`}
               onClick={() => setActivePeriod(id)}
               type="button"
               aria-label={`${item.label}: ${periodConfig[id]?.title || item.defaultTitle}`}
               aria-pressed={isSelected}
             >
-              <span className="period-icon-circle" aria-hidden="true">
-                <Icon size={21} strokeWidth={isSelected ? 2.25 : 1.9} />
+              <span className="period-icon-circle period-icon-inline" aria-hidden="true">
+                <Icon size={14} strokeWidth={isSelected ? 2.35 : 2} />
               </span>
               <span className="period-button-title">{item.label}</span>
             </button>

@@ -9267,26 +9267,33 @@ body.light-mode .roulette-bg-overlay {
 
 
 /* =========================================================
-   ESTILO 02 — MERCADO PREMIUM: CATEGORIAS & FILTROS POR TURNO
-   (Ícone vetorial dentro do círculo + rótulo fora, abaixo dele)
+   ESTILO 02 — MERCADO PREMIUM: CATEGORIAS, BUSCA & FILTROS POR TURNO
+   (Sistema visual unificado: verde-floresta profundo, bordas esmeralda/ouro e destaque dourado)
 ========================================================= */
 
 .home-category-section {
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .category-row.category-row--circle {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 6px;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 6px 8px 10px 8px;
-  margin-top: 2px;
+  padding: 4px 8px 6px 8px;
+  margin-top: 0;
   margin-bottom: 0;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Atalhos rápidos do topo (7 itens): cabem lado a lado sem scroll horizontal desnecessário */
+.category-row.category-row--circle.category-row--quick {
+  justify-content: space-between;
+  gap: 3px;
+  padding: 2px 8px 6px 8px;
 }
 
 .category-row.category-row--circle::before,
@@ -9301,13 +9308,20 @@ body.light-mode .roulette-bg-overlay {
 .category-row.category-row--circle > a.category-circle-link {
   flex: 0 0 auto;
   width: auto;
-  min-width: 66px;
+  min-width: 50px;
   text-decoration: none;
   color: inherit;
   display: inline-flex;
   justify-content: center;
-  border-radius: 12px;
-  padding: 2px 3px;
+  border-radius: 10px;
+  padding: 2px 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-row.category-row--circle.category-row--quick > a.category-circle-link {
+  flex: 1 1 0;
+  min-width: 44px;
+  padding: 2px 1px;
 }
 
 .category-item.category-item--circle {
@@ -9315,24 +9329,24 @@ body.light-mode .roulette-bg-overlay {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 7px;
-  width: auto;
+  gap: 4px;
+  width: 100%;
   height: auto;
-  min-height: 76px;
+  min-height: 58px;
   background: transparent;
   cursor: pointer;
   transition: transform 0.18s ease;
 }
 
 .category-icon-wrapper.category-icon-circle {
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   border-radius: 9999px;
-  background: linear-gradient(145deg, #0f2d20 0%, #091e15 100%);
-  border: 1.25px solid rgba(46, 139, 98, 0.55);
+  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
+  border: 1.25px solid rgba(56, 158, 112, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 4px 10px rgba(0, 0, 0, 0.28);
+    0 3px 8px rgba(0, 0, 0, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9347,31 +9361,42 @@ body.light-mode .roulette-bg-overlay {
 }
 
 .category-circle-link:hover .category-icon-circle {
-  transform: translateY(-2px);
-  border-color: rgba(229, 193, 88, 0.78);
-  background: linear-gradient(145deg, #143828 0%, #0c261b 100%);
+  transform: translateY(-1.5px);
+  border-color: rgba(229, 193, 88, 0.82);
+  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%);
   color: #FFDF73;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 6px 14px rgba(0, 0, 0, 0.35);
+    0 5px 12px rgba(0, 0, 0, 0.34);
 }
 
 .category-circle-link:active .category-icon-circle {
-  transform: scale(0.95);
+  transform: scale(0.94);
+}
+
+/* Estado selecionado/ativo dos botões de categoria */
+.category-circle-link.active .category-icon-circle,
+.category-circle-link[aria-current='page'] .category-icon-circle {
+  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%);
+  border-color: #FFE89E;
+  color: #071910;
+  box-shadow:
+    0 0 0 2.5px rgba(229, 193, 88, 0.22),
+    0 4px 10px rgba(0, 0, 0, 0.34);
 }
 
 .category-text.category-circle-label {
-  font-size: 11.5px;
+  font-size: clamp(9.5px, 2.5vw, 11px);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
   color: rgba(255, 255, 255, 0.92);
   text-align: center;
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
   width: auto;
-  padding: 0 2px;
-  letter-spacing: -0.1px;
+  padding: 0 1px;
+  letter-spacing: -0.2px;
   transition: color 0.18s ease;
 }
 
@@ -9379,26 +9404,121 @@ body.light-mode .roulette-bg-overlay {
   color: #FFDF73;
 }
 
+.category-circle-link.active .category-circle-label,
+.category-circle-link[aria-current='page'] .category-circle-label {
+  color: #FFDF73;
+  font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .category-row.category-row--circle {
+    gap: 10px;
+  }
+
+  .category-row.category-row--circle > a.category-circle-link {
+    min-width: 58px;
+  }
+
+  .category-icon-wrapper.category-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .category-text.category-circle-label {
+    font-size: 11px;
+  }
+}
+
 /* =========================================================
-   FILTROS DE HORÁRIO / TURNO (MESMA FAMÍLIA VISUAL CIRCULAR)
+   CAMPO DE BUSCA NA HOME (MESMO SISTEMA VISUAL DAS CATEGORIAS E PERÍODOS)
+========================================================= */
+
+.quick-search-wrapper.quick-search-wrapper--premium {
+  width: calc(100% - 16px);
+  margin: 4px auto 6px auto;
+}
+
+.quick-search-container.quick-search-container--premium {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
+  border: 1.25px solid rgba(56, 158, 112, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 8px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.quick-search-container.quick-search-container--premium:hover {
+  border-color: rgba(229, 193, 88, 0.75);
+  background: linear-gradient(145deg, #143828 0%, #0c251a 100%);
+}
+
+.quick-search-container.quick-search-container--premium:focus-within {
+  border-color: #E5C158;
+  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%);
+  box-shadow:
+    0 0 0 2.5px rgba(229, 193, 88, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.34);
+}
+
+.quick-search-container.quick-search-container--premium .quick-search-icon {
+  color: #E5C158;
+  flex-shrink: 0;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.quick-search-container.quick-search-container--premium:focus-within .quick-search-icon,
+.quick-search-container.quick-search-container--premium:hover .quick-search-icon {
+  color: #FFDF73;
+}
+
+.quick-search-container.quick-search-container--premium .quick-search-input {
+  color: #ffffff !important;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.quick-search-container.quick-search-container--premium .quick-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.quick-search-container.quick-search-container--premium .quick-search-input:focus-visible {
+  outline: none;
+}
+
+/* =========================================================
+   FILTROS DE HORÁRIO / TURNO (FORMATO HORIZONTAL COMPACTO EM LINHA ÚNICA)
 ========================================================= */
 
 .home-period-section {
   width: 100%;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .period-buttons-row.period-buttons-row--circle {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 5px;
   width: 100%;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 6px 8px 10px 8px;
-  margin-top: 2px;
-  margin-bottom: 6px;
+  padding: 3px 8px 7px 8px;
+  margin-top: 0;
+  margin-bottom: 4px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -9407,104 +9527,126 @@ body.light-mode .roulette-bg-overlay {
   display: none;
 }
 
+/* Botão baixo, estreito verticalmente e alongado horizontalmente com ícone + texto na mesma linha */
 .period-button.period-button--circle {
-  flex: 1 0 auto;
-  min-width: 66px;
-  min-height: 76px;
-  background: transparent !important;
-  background-image: none !important;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 4px 4px 6px 4px;
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: max-content;
+  min-height: 0;
+  height: 30px;
+  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%) !important;
+  background-image: linear-gradient(145deg, #0f2e20 0%, #091d14 100%) !important;
+  border: 1.2px solid rgba(56, 158, 112, 0.55);
+  border-radius: 999px;
+  padding: 0 9px;
+  display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  gap: 7px;
+  justify-content: center;
+  gap: 4.5px;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.24);
   text-align: center;
   transition:
     transform 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease;
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
 }
 
 .period-icon-circle {
-  width: 52px;
-  height: 52px;
-  border-radius: 9999px;
-  background: linear-gradient(145deg, #0f2d20 0%, #091e15 100%);
-  border: 1.25px solid rgba(46, 139, 98, 0.55);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 4px 10px rgba(0, 0, 0, 0.28);
-  display: flex;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #E5C158;
   flex-shrink: 0;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: color 0.18s ease, transform 0.18s ease;
 }
 
 .period-button.period-button--circle:hover {
-  background: rgba(20, 56, 40, 0.28) !important;
-  border-color: rgba(46, 139, 98, 0.35);
-  box-shadow: none;
+  background: linear-gradient(145deg, #153c2b 0%, #0d271b 100%) !important;
+  border-color: rgba(229, 193, 88, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .period-button.period-button--circle:hover .period-icon-circle {
-  transform: translateY(-2px);
-  border-color: rgba(229, 193, 88, 0.78);
+  transform: none;
   color: #FFDF73;
 }
 
-.period-button.period-button--circle:active .period-icon-circle {
-  transform: scale(0.95);
+.period-button.period-button--circle:hover .period-button-title {
+  color: #FFDF73;
+}
+
+.period-button.period-button--circle:active {
+  transform: scale(0.96);
 }
 
 .period-button.period-button--circle .period-button-title {
-  font-size: 11.5px;
+  font-size: clamp(10px, 2.65vw, 11.5px);
   font-weight: 700;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.88);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
   text-shadow: none;
   margin: 0;
-  padding: 0 2px;
-  letter-spacing: -0.1px;
+  padding: 0;
+  letter-spacing: -0.15px;
+  transition: color 0.18s ease;
 }
 
-/* Estado selecionado claro sem depender apenas de cor:
-   preenchimento dourado no círculo, borda reforçada, realce sutil de fundo e contraste tipográfico */
+/* Estado selecionado imediatamente identificável:
+   preenchimento dourado quente, borda iluminada e ícone + texto em verde-floresta escuro */
 .period-button.period-button--circle.active,
 .period-button.period-button--circle[aria-pressed='true'] {
-  background: rgba(212, 175, 55, 0.1) !important;
-  border-color: rgba(229, 193, 88, 0.48);
-  box-shadow: inset 0 1px 0 rgba(255, 223, 115, 0.15);
+  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
+  background-image: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
+  border-color: #FFE89E;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 3px 10px rgba(212, 175, 55, 0.32);
 }
 
 .period-button.period-button--circle.active .period-icon-circle,
 .period-button.period-button--circle[aria-pressed='true'] .period-icon-circle {
-  background: linear-gradient(145deg, #F0D27A 0%, #D4AF37 100%);
-  border: 2px solid #FFE699;
-  color: #071911;
-  box-shadow:
-    0 0 0 3px rgba(212, 175, 55, 0.2),
-    0 6px 14px rgba(0, 0, 0, 0.36);
+  background: transparent;
+  border: 0;
+  color: #071910;
+  box-shadow: none;
 }
 
 .period-button.period-button--circle.active .period-button-title,
 .period-button.period-button--circle[aria-pressed='true'] .period-button-title {
-  color: #FFDF73;
+  color: #071910;
   font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .period-buttons-row.period-buttons-row--circle {
+    gap: 8px;
+  }
+
+  .period-button.period-button--circle {
+    height: 34px;
+    padding: 0 14px;
+    gap: 6px;
+  }
+
+  .period-button.period-button--circle .period-button-title {
+    font-size: 12px;
+  }
 }
 
 /* =========================================================
@@ -9554,6 +9696,8 @@ body.light-mode .roulette-bg-overlay {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Enquadramento deslocado para a direita (78% center) para priorizar o elemento visual principal
+   da imagem do período sem distorcer nem alterar as dimensões do card */
 .period-products-container.period-products-container--premium .product-card.glass-card::before {
   content: '';
   position: absolute;
@@ -9561,7 +9705,7 @@ body.light-mode .roulette-bg-overlay {
   border-radius: 10px;
   background-image: var(--period-card-bg);
   background-size: cover;
-  background-position: center;
+  background-position: 78% center;
   background-repeat: no-repeat;
   clip-path: inset(0 round 10px);
   z-index: -2;
@@ -9592,27 +9736,39 @@ body.light-mode .roulette-bg-overlay {
   outline-offset: 2px;
 }
 
-/* Compatibilidade com modo claro mantendo os círculos em verde-floresta e os rótulos externos legíveis */
-body.light-mode .category-text.category-circle-label,
-body.light-mode .period-button.period-button--circle .period-button-title {
+/* Compatibilidade com modo claro mantendo o sistema visual verde-floresta + dourado */
+body.light-mode .category-text.category-circle-label {
   color: #0f291e;
   font-weight: 700;
 }
 
-body.light-mode .category-circle-link:hover .category-circle-label {
+body.light-mode .category-circle-link:hover .category-circle-label,
+body.light-mode .category-circle-link.active .category-circle-label,
+body.light-mode .category-circle-link[aria-current='page'] .category-circle-label {
   color: #92400e;
+}
+
+body.light-mode .period-button.period-button--circle .period-button-title {
+  color: rgba(255, 255, 255, 0.94);
+  font-weight: 700;
 }
 
 body.light-mode .period-button.period-button--circle.active,
 body.light-mode .period-button.period-button--circle[aria-pressed='true'] {
-  background: rgba(15, 45, 32, 0.08) !important;
-  border-color: rgba(15, 45, 32, 0.28);
+  background: linear-gradient(135deg, #F3D77D 0%, #E5C158 55%, #CFA532 100%) !important;
+  border-color: #d97706;
 }
 
 body.light-mode .period-button.period-button--circle.active .period-button-title,
 body.light-mode .period-button.period-button--circle[aria-pressed='true'] .period-button-title {
-  color: #0b2218;
+  color: #071910;
   font-weight: 800;
+}
+
+body.light-mode .quick-search-container.quick-search-container--premium {
+  background: linear-gradient(145deg, #0f2e20 0%, #091d14 100%);
+  border-color: rgba(15, 46, 32, 0.75);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
 }
 
 body.light-mode .period-products-container.period-products-container--premium .section-header a {
@@ -9623,7 +9779,8 @@ body.light-mode .period-products-container.period-products-container--premium .s
   .category-item.category-item--circle,
   .category-icon-wrapper.category-icon-circle,
   .period-button.period-button--circle,
-  .period-icon-circle {
+  .period-icon-circle,
+  .quick-search-container.quick-search-container--premium {
     transition: none !important;
   }
 }
