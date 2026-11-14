@@ -14,8 +14,8 @@ import {
 } from '../src/admin/routes.ts';
 
 describe('Admin Routes & Navigation Tree', () => {
-  it('defines all 15 core administrative modules with valid permissions', () => {
-    assert.equal(ADMIN_NAV_ITEMS.length, 15);
+  it('defines all 16 core administrative modules with valid permissions', () => {
+    assert.equal(ADMIN_NAV_ITEMS.length, 16);
     const paths = ADMIN_NAV_ITEMS.map((i) => i.path);
     assert.deepEqual(paths, [
       '/admin/dashboard',
@@ -25,6 +25,7 @@ describe('Admin Routes & Navigation Tree', () => {
       '/admin/products',
       '/admin/categories',
       '/admin/inventory',
+      '/admin/purchasing',
       '/admin/finance',
       '/admin/marketing',
       '/admin/loyalty',
@@ -98,6 +99,7 @@ describe('Admin Routes & Navigation Tree', () => {
     assert.equal(map.get('/admin/suporte'), '/admin/support');
     assert.equal(map.get('/admin/categorias'), '/admin/categories');
     assert.equal(map.get('/admin/estoque'), '/admin/inventory');
+    assert.equal(map.get('/admin/compras'), '/admin/purchasing');
     assert.equal(map.get('/admin/financeiro'), '/admin/finance');
     assert.equal(map.get('/admin/usuarios'), '/admin/users');
     assert.equal(map.get('/admin/papeis'), '/admin/roles');

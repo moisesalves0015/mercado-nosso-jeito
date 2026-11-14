@@ -51,6 +51,7 @@ const AdminProductViewPage    = lazy(() => import('./admin/pages/AdminProductVie
 const AdminProductEditPage    = lazy(() => import('./admin/pages/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
 const AdminProductMetricsPage = lazy(() => import('./admin/pages/AdminProductMetricsPage').then(m => ({ default: m.AdminProductMetricsPage })));
 const AdminInventoryPage      = lazy(() => import('./admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })));
+const AdminPurchasingPage     = lazy(() => import('./admin/pages/AdminPurchasingPage').then(m => ({ default: m.AdminPurchasingPage })));
 const AdminFinancePage        = lazy(() => import('./admin/pages/AdminFinancePage').then(m => ({ default: m.AdminFinancePage })));
 const AdminMarketingPage      = lazy(() => import('./admin/pages/AdminMarketingPage').then(m => ({ default: m.AdminMarketingPage })));
 const AdminSponsoredCampaignsPage = lazy(() => import('./admin/pages/AdminSponsoredCampaignsPage').then(m => ({ default: m.AdminSponsoredCampaignsPage })));
@@ -408,6 +409,14 @@ function AppContent() {
               element={
                 <ProtectedRoute requiredPermissions={['estoque:view', 'estoque:edit', 'produtos:view']}>
                   <AdminInventoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="purchasing"
+              element={
+                <ProtectedRoute requiredPermissions={['estoque:view', 'produtos:view', 'financeiro:view']}>
+                  <AdminPurchasingPage />
                 </ProtectedRoute>
               }
             />

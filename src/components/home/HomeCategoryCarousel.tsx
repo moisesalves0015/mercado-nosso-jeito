@@ -2,14 +2,34 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { HomeCategoryLink } from '../../types/home';
 import { getCategoryHref } from '../../utils/homeProducts';
+import { resolveCategoryIcon } from '../../utils/homeCategoryIcons';
 
-interface Thumb { widthPct: number; leftPct: number }
+interface Thumb {
+  widthPct: number;
+  leftPct: number;
+}
 
-/** Carrossel de categorias ilustradas, com indicador calculado pelo tamanho real do conteúdo. */
-export const HomeCategoryCarousel = ({ items }: { items: HomeCategoryLink[] }) => {
+interface HomeCategoryCarouselProps {
+  items: HomeCategoryLink[];
+  /** Exibe o atalho "Ver todas >" no cabeçalho da seção (padrão: true). */
+  showHeaderLink?: boolean;
+  /** Rótulo acessível da região de navegação/carrossel. */
+  ariaLabel?: string;
+}
+
+/**
+ * Carrossel horizontal de categorias no Estilo 02 (Mercado Premium):
+ * - Ícone vetorial centralizado dentro de um botão circular verde-floresta com contorno sutil;
+ * - Nome da categoria fora do círculo, em linha única (`white-space: nowrap`) abaixo do ícone;
+ * - Indicador discreto de rolagem calculado pelo tamanho real do conteúdo.
+ */
+export const HomeCategoryCarousel = ({
+  items,
+  showHeaderLink = true,
+  ariaLabel = 'Categorias',
+}: HomeCategoryCarouselProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<Thumb | null>(null);
-  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
 
   const updateThumb = useCallback(() => {
     const row = rowRef.current;
@@ -24,12 +44,12 @@ export const HomeCategoryCarousel = ({ items }: { items: HomeCategoryLink[] }) =
     setThumb({ widthPct, leftPct: (scrollLeft / maxScroll) * (100 - widthPct) });
   }, []);
 
-  // Recalcula na montagem e quando o tamanho do contêiner/conteúdo muda.
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
     const frame = requestAnimationFrame(updateThumb);
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateThumb) : null;
+    const observer =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateThumb) : null;
     observer?.observe(row);
     return () => {
       cancelAnimationFrame(frame);
@@ -37,58 +57,71 @@ export const HomeCategoryCarousel = ({ items }: { items: HomeCategoryLink[] }) =
     };
   }, [updateThumb, items.length]);
 
-  const markFailed = (id: string) => setFailedImages(prev => new Set(prev).add(id));
-
   return (
-    <>
-      <div className="section-header" style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}>
-        <h2 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>Categorias</h2>
-        <Link to="/categories" className="glass-ver-todas-btn">
-          Ver todas <span style={{ color: '#FFDF73' }} aria-hidden="true">&gt;</span>
-        </Link>
-      </div>
+    <div className="home-category-section">
       <div
-        className="category-row"
+        className="section-header"
+        style={{ padding: '0 8px', marginBottom: '6px', marginTop: '12px' }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: '14px',
+            fontWeight: 800,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.2px',
+          }}
+        >
+          Categorias
+        </h2>
+        {showHeaderLink && (
+          <Link to="/categories" className="glass-ver-todas-btn">
+            Ver todas{' '}
+            <span style={{ color: '#E5C158' }} aria-hidden="true">
+              &gt;
+            </span>
+          </Link>
+        )}
+      </div>
+
+      <div
+        className="category-row category-row--circle"
         ref={rowRef}
         onScroll={updateThumb}
         role="region"
-        aria-label="Categorias ilustradas"
+        aria-label={ariaLabel}
         tabIndex={0}
       >
-        {items.map(item => (
-          <Link
-            key={item.id}
-            to={getCategoryHref(item)}
-            aria-label={item.label}
-            style={{ textDecoration: 'none', color: 'inherit' }}
-          >
-            <div className="category-item">
-              <div className="category-icon-wrapper">
-                {item.image && !failedImages.has(item.id) ? (
-                  <img
-                    src={item.image}
-                    alt=""
-                    className="category-3d-icon"
-                    loading="lazy"
-                    onError={() => markFailed(item.id)}
-                  />
-                ) : (
-                  // Fallback sem quebrar o layout quando a imagem não carrega.
-                  <span className="category-text">{item.label}</span>
-                )}
+        {items.map((item) => {
+          const Icon = resolveCategoryIcon(item);
+          return (
+            <Link
+              key={item.id}
+              to={getCategoryHref(item)}
+              aria-label={item.label}
+              className="category-circle-link"
+            >
+              <div className="category-item category-item--circle">
+                <div className="category-icon-wrapper category-icon-circle" aria-hidden="true">
+                  <Icon size={22} strokeWidth={1.9} />
+                </div>
+                <span className="category-text category-circle-label">{item.label}</span>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
       {thumb && (
         <div className="category-scroll-indicators" aria-hidden="true">
           <div className="category-scroll-track">
-            <div className="category-scroll-thumb" style={{ width: `${thumb.widthPct}%`, left: `${thumb.leftPct}%` }} />
+            <div
+              className="category-scroll-thumb"
+              style={{ width: `${thumb.widthPct}%`, left: `${thumb.leftPct}%` }}
+            />
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };

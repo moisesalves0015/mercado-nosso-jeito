@@ -98,6 +98,54 @@ service cloud.firestore {
       allow update, delete: if false; // Immutable audit log
     }
 
+    // ─── Purchasing Assistant (Suppliers, Quotes, Metadata & Purchase Lists) ──
+    // Private commercial & cost data restricted to active staff/admins.
+    // Physical deletion is forbidden to preserve historical pricing and audit trail.
+    match /suppliers/{supplierId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /supplier_quotes/{quoteId} {
+      allow read, create: if isStaff() || isAdmin();
+      allow update, delete: if false; // Append-only price quote history
+    }
+
+    match /purchasing_product_meta/{productId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /purchase_lists/{listId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /partners/{partnerId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /product_offers/{offerId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /custody_movements/{movementId} {
+      allow read, create: if isStaff() || isAdmin();
+      allow update, delete: if false; // Append-only custody ledger
+    }
+
+    match /partner_settlements/{settlementId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /order_fulfillment_tasks/{taskId} {
+      allow read, create, update: if isStaff() || isAdmin();
+      allow delete: if false;
+    }
+
     // ─── Users ────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();

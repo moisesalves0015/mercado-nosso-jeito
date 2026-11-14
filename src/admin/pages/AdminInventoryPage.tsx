@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -20,10 +20,41 @@ import {
   MetricCard,
   PageHeader,
 } from '../components/AdminUi';
+import { listProductOffers } from '../../services/purchasingService';
+import type { ProductOfferRecord } from '../../utils/purchasingEngine';
 
 export const AdminInventoryPage: React.FC = () => {
   const { canAny } = useAuth();
   const { products, actionLoading, handleAdjustStock } = useAdminData();
+
+  const [offers, setOffers] = useState<ProductOfferRecord[]>([]);
+  useEffect(() => {
+    listProductOffers()
+      .then((res) => setOffers(res))
+      .catch(() => { });
+  }, []);
+
+  const custodySummary = useMemo(() => {
+    let consignedUnits = 0;
+    let consignedSkus = 0;
+    let externalPickupUnits = 0;
+    let externalPickupSkus = 0;
+    for (const off of offers) {
+      if (off.originChannel === 'parceiro_consignado_mercado') {
+        consignedSkus += 1;
+        consignedUnits += Math.max(0, Number(off.consignedPhysicalQty || 0));
+      } else if (off.originChannel === 'parceiro_retirada_estabelecimento') {
+        externalPickupSkus += 1;
+        externalPickupUnits += Math.max(0, Number(off.partnerReportedAvailableQty || 0));
+      }
+    }
+    return {
+      consignedUnits,
+      consignedSkus,
+      externalPickupUnits,
+      externalPickupSkus,
+    };
+  }, [offers]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const levelFilter = searchParams.get('level') || 'all';
@@ -141,12 +172,20 @@ export const AdminInventoryPage: React.FC = () => {
         subtitle="Controle transacional de saldo físico, alertas de ruptura e histórico auditado de movimentações."
         badge={`${activeProducts.length} SKUs ativos`}
         actions={
-          <Link
-            to="/admin/products"
-            className="px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
-          >
-            Ver Catálogo de Produtos
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/admin/purchasing"
+              className="px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
+            >
+              Assistente de Compras
+            </Link>
+            <Link
+              to="/admin/products"
+              className="px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
+            >
+              Ver Catálogo de Produtos
+            </Link>
+          </div>
         }
       />
 
@@ -174,12 +213,48 @@ export const AdminInventoryPage: React.FC = () => {
           tone={stats.lowCount > 0 ? 'amber' : 'emerald'}
         />
         <MetricCard
-          label="Valor de Venda em Estoque"
+          label="Valor de Venda em Estoque (Próprio)"
           value={formatCurrency(stats.totalRetailValue)}
-          subtitle="Potencial bruto do inventário"
+          subtitle="Patrimônio próprio do Mercado"
           icon={<ArrowUpRight size={18} />}
           tone="emerald"
         />
+      </div>
+
+      {/* Separação de Propriedade: Estoque Próprio vs. Custódia Consignada vs. Retirada no Parceiro */}
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-emerald-500/30">
+          <div className="font-extrabold text-emerald-300">
+            A. Estoque Próprio do Mercado (Propriedade: MERCADO)
+          </div>
+          <div className="mt-1 text-[var(--adm-text-muted)]">
+            <strong>{stats.totalUnits} un.</strong> físicas adquiridas pelo Mercado ({formatCurrency(stats.totalRetailValue)} a preço de venda).
+          </div>
+        </div>
+        <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-amber-500/30">
+          <div className="font-extrabold text-amber-300">
+            B. Custódia Consignada no Mercado (Propriedade: PARCEIRO)
+          </div>
+          <div className="mt-1 text-[var(--adm-text-muted)]">
+            <strong>{custodySummary.consignedUnits} un.</strong> em {custodySummary.consignedSkus} ofertas sob custódia física no Mercado. Não soma ao patrimônio próprio.
+          </div>
+        </div>
+        <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-sky-500/30 flex items-center justify-between gap-2">
+          <div>
+            <div className="font-extrabold text-sky-300">
+              C. Disponibilidade Externa (Local: PARCEIRO)
+            </div>
+            <div className="mt-1 text-[var(--adm-text-muted)]">
+              <strong>{custodySummary.externalPickupUnits} un.</strong> informadas em {custodySummary.externalPickupSkus} ofertas de retirada pelo entregador.
+            </div>
+          </div>
+          <Link
+            to="/admin/purchasing?tab=partners"
+            className="px-2.5 py-1.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/30 font-bold shrink-0"
+          >
+            Gerir Custódia →
+          </Link>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -210,11 +285,10 @@ export const AdminInventoryPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => updateParam('level', tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                levelFilter === tab.id
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${levelFilter === tab.id
                   ? 'bg-[var(--adm-brand)] text-emerald-950 font-bold'
                   : 'bg-[var(--adm-bg-subtle)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] border border-[var(--adm-border)]'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -271,13 +345,12 @@ export const AdminInventoryPage: React.FC = () => {
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                     <div className="text-right">
                       <span
-                        className={`px-2.5 py-1 rounded-md text-xs font-bold border tabular-nums ${
-                          s === 0
+                        className={`px-2.5 py-1 rounded-md text-xs font-bold border tabular-nums ${s === 0
                             ? 'bg-rose-500/20 text-rose-200 border-rose-500/40'
                             : s <= min
-                            ? 'bg-amber-500/15 text-amber-200 border-amber-500/30'
-                            : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
-                        }`}
+                              ? 'bg-amber-500/15 text-amber-200 border-amber-500/30'
+                              : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
+                          }`}
                       >
                         {s} {p.unit || 'un.'}
                       </span>
@@ -334,9 +407,8 @@ export const AdminInventoryPage: React.FC = () => {
                       {m.productTitle}
                     </Link>
                     <span
-                      className={`font-bold inline-flex items-center gap-0.5 shrink-0 tabular-nums ${
-                        m.delta >= 0 ? 'text-emerald-300' : 'text-rose-300'
-                      }`}
+                      className={`font-bold inline-flex items-center gap-0.5 shrink-0 tabular-nums ${m.delta >= 0 ? 'text-emerald-300' : 'text-rose-300'
+                        }`}
                     >
                       {m.delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                       {m.delta >= 0 ? `+${m.delta}` : m.delta} un.
@@ -436,11 +508,10 @@ export const AdminInventoryPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={actionLoading === `stock-${adjustTarget.id}`}
-                  className={`px-4 py-2 rounded-lg font-bold ${
-                    deltaMode === 'add'
+                  className={`px-4 py-2 rounded-lg font-bold ${deltaMode === 'add'
                       ? 'bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950'
                       : 'bg-rose-600 hover:bg-rose-500 text-white'
-                  }`}
+                    }`}
                 >
                   Confirmar ({deltaMode === 'add' ? `+${quantity}` : `-${quantity}`} un.)
                 </button>

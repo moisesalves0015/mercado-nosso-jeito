@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import {
+  AlertTriangle,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -24,13 +25,27 @@ import {
   PaymentStatusBadge,
   ReasonConfirmModal,
 } from '../components/AdminUi';
+import {
+  COURIER_PICKUP_STATUS_LABELS,
+  resolveOrderFulfillmentPlan,
+  SUPPLY_ORIGIN_SHORT_LABELS,
+  type CourierPickupStatus,
+  type OrderPickupTaskRecord,
+  type ProductOfferRecord,
+} from '../../utils/purchasingEngine';
+import {
+  listOrderPickupTasks,
+  listProductOffers,
+  upsertOrderPickupTask,
+} from '../../services/purchasingService';
 
 export const AdminOrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const { canAny } = useAuth();
+  const { user, userProfile, canAny } = useAuth();
   const {
     orders,
     actionLoading,
+    showToast,
     handleConfirmPayment,
     handleUpdateOrderStatus,
     handleCancelOrder,
@@ -42,8 +57,26 @@ export const AdminOrderDetailPage: React.FC = () => {
   const [statusNote, setStatusNote] = useState('');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
+  const [offers, setOffers] = useState<ProductOfferRecord[]>([]);
+  const [pickupTasks, setPickupTasks] = useState<OrderPickupTaskRecord[]>([]);
+  const [courierInputByProd, setCourierInputByProd] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    Promise.all([listProductOffers(), listOrderPickupTasks()])
+      .then(([offList, taskList]) => {
+        setOffers(offList);
+        setPickupTasks(taskList);
+      })
+      .catch(() => {});
+  }, []);
+
   const liveOrder = orders.find((o) => o.id === orderId);
   const order = liveOrder || fetchedOrder;
+
+  const fulfillmentPlan = useMemo(
+    () => (order ? resolveOrderFulfillmentPlan(order, offers) : null),
+    [order, offers],
+  );
 
   useEffect(() => {
     if (liveOrder || !orderId) return;
@@ -123,54 +156,196 @@ export const AdminOrderDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Columns: Items + Financial Breakdown + Timeline */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Order Items */}
-          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5">
-            <h2 className="text-base font-bold text-[var(--adm-text)] mb-4 flex items-center gap-2">
-              <Package size={17} className="text-[var(--adm-gold)]" />
-              Itens para Separação ({order.items?.length || 0})
-            </h2>
+          {/* Order Items & Multi-Origin Fulfillment Plan */}
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-bold text-[var(--adm-text)] flex items-center gap-2">
+                <Package size={17} className="text-[var(--adm-gold)]" />
+                Itens para Separação & Origem de Atendimento ({order.items?.length || 0})
+              </h2>
+              {fulfillmentPlan?.hasExternalPickupItems && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-200 border border-sky-500/30">
+                  Contém Coleta Externa em Parceiro
+                </span>
+              )}
+            </div>
+
+            {fulfillmentPlan?.hasMultiPartnerPickupWarning && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2">
+                <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                <div>
+                  <strong>Alerta Operacional de Múltiplas Coletas:</strong> Este pedido contém itens com retirada externa em {fulfillmentPlan.externalPartnersCount} parceiros diferentes. Verifique se o entregador fará roteiro múltiplo ou separe a operação por coleta.
+                </div>
+              </div>
+            )}
 
             <div className="divide-y divide-[var(--adm-border)]">
-              {(order.items || []).map((item, idx) => (
-                <div
-                  key={`${item.id || idx}-${idx}`}
-                  className="py-3 flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-11 h-11 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
-                      />
-                    ) : (
-                      <div className="w-11 h-11 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] flex items-center justify-center text-[var(--adm-text-dim)] shrink-0">
-                        <Package size={16} />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      {item.id ? (
-                        <Link
-                          to={`/admin/products/${item.id}`}
-                          className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate block"
-                        >
-                          {item.title}
-                        </Link>
-                      ) : (
-                        <div className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] truncate">
-                          {item.title}
+              {(order.items || []).map((item, idx) => {
+                const resolved = fulfillmentPlan?.items[idx];
+                const pid = item.id || `idx_${idx}`;
+                const task = pickupTasks.find(
+                  (t) => t.orderId === order.id && t.productId === pid,
+                );
+                const isExternalPickup =
+                  resolved?.originChannel === 'parceiro_retirada_estabelecimento';
+                const isConsigned =
+                  resolved?.originChannel === 'parceiro_consignado_mercado';
+
+                return (
+                  <div key={`${item.id || idx}-${idx}`} className="py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-11 h-11 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] flex items-center justify-center text-[var(--adm-text-dim)] shrink-0">
+                            <Package size={16} />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {item.id ? (
+                              <Link
+                                to={`/admin/products/${item.id}`}
+                                className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] hover:text-[var(--adm-gold)] truncate block"
+                              >
+                                {item.title}
+                              </Link>
+                            ) : (
+                              <div className="text-xs sm:text-sm font-semibold text-[var(--adm-text)] truncate">
+                                {item.title}
+                              </div>
+                            )}
+                            {resolved && (
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                  isExternalPickup
+                                    ? 'bg-sky-500/15 text-sky-200 border-sky-500/30'
+                                    : isConsigned
+                                    ? 'bg-amber-500/15 text-amber-200 border-amber-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-200 border-emerald-500/30'
+                                }`}
+                              >
+                                {SUPPLY_ORIGIN_SHORT_LABELS[resolved.originChannel]}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-[var(--adm-text-muted)] tabular-nums">
+                            {item.quantity}x {formatCurrency(item.price)}
+                            {isConsigned &&
+                              ` • Separar da Custódia Consignada (${resolved?.partnerName || 'Parceiro'})`}
+                            {isExternalPickup &&
+                              ` • Retirar no Parceiro (${resolved?.partnerName || 'Parceiro'})`}
+                          </div>
                         </div>
-                      )}
-                      <div className="text-xs text-[var(--adm-text-muted)] tabular-nums">
-                        {item.quantity}x {formatCurrency(item.price)}
+                      </div>
+                      <div className="text-sm font-bold text-[var(--adm-text)] shrink-0 tabular-nums">
+                        {formatCurrency(
+                          Number(item.price || 0) * Number(item.quantity || 1),
+                        )}
                       </div>
                     </div>
+
+                    {isExternalPickup && resolved && (
+                      <div className="ml-14 p-3 rounded-lg bg-[var(--adm-bg)] border border-sky-500/30 space-y-2 text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-sky-200 font-semibold">
+                            Coleta no Parceiro: <strong>{resolved.partnerName}</strong> —{' '}
+                            {resolved.pickupAddress} ({resolved.pickupInstructions})
+                          </div>
+                          <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-200 font-bold text-[10px]">
+                            {COURIER_PICKUP_STATUS_LABELS[
+                              task?.pickupStatus || 'aguardando_coleta'
+                            ]}
+                          </span>
+                        </div>
+                        {canEditOrder && (
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <input
+                              type="text"
+                              value={
+                                courierInputByProd[pid] ??
+                                task?.assignedCourierName ??
+                                ''
+                              }
+                              onChange={(e) =>
+                                setCourierInputByProd((prev) => ({
+                                  ...prev,
+                                  [pid]: e.target.value,
+                                }))
+                              }
+                              placeholder="Nome do entregador p/ coleta..."
+                              className="px-2.5 py-1 rounded bg-[var(--adm-surface)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)]"
+                            />
+                            {(
+                              [
+                                {
+                                  status: 'aguardando_coleta' as CourierPickupStatus,
+                                  label: 'Atribuir / Aguardar Coleta',
+                                },
+                                {
+                                  status: 'coletado_no_parceiro' as CourierPickupStatus,
+                                  label: 'Marcar Coletado no Parceiro',
+                                },
+                                {
+                                  status: 'entregue_ao_cliente' as CourierPickupStatus,
+                                  label: 'Marcar Entregue',
+                                },
+                              ] as const
+                            ).map((act) => (
+                              <button
+                                key={act.status}
+                                type="button"
+                                onClick={async () => {
+                                  const saved = await upsertOrderPickupTask(
+                                    {
+                                      orderId: order.id,
+                                      orderNumber: order.orderNumber,
+                                      productId: pid,
+                                      productTitle: item.title,
+                                      quantity: item.quantity,
+                                      originChannel: resolved.originChannel,
+                                      partnerId: resolved.partnerId,
+                                      partnerName: resolved.partnerName,
+                                      pickupAddress: resolved.pickupAddress,
+                                      pickupInstructions: resolved.pickupInstructions,
+                                      assignedCourierName:
+                                        courierInputByProd[pid] ??
+                                        task?.assignedCourierName ??
+                                        null,
+                                      pickupStatus: act.status,
+                                    },
+                                    {
+                                      uid: user?.uid || 'staff',
+                                      name:
+                                        userProfile?.name || user?.email || 'Operador',
+                                    },
+                                  );
+                                  setPickupTasks((prev) => [
+                                    saved,
+                                    ...prev.filter((t) => t.id !== saved.id),
+                                  ]);
+                                  showToast(
+                                    `Status de coleta atualizado: ${COURIER_PICKUP_STATUS_LABELS[act.status]}`,
+                                    'ok',
+                                  );
+                                }}
+                                className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 border border-sky-500/30 font-bold text-[11px]"
+                              >
+                                {act.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-sm font-bold text-[var(--adm-text)] shrink-0 tabular-nums">
-                    {formatCurrency(Number(item.price || 0) * Number(item.quantity || 1))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Totals Breakdown */}
@@ -426,3 +601,5 @@ export const AdminOrderDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default AdminOrderDetailPage;

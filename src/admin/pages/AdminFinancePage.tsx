@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -18,10 +18,42 @@ import {
   PageHeader,
   PaymentStatusBadge,
 } from '../components/AdminUi';
+import {
+  computeFinancialSeparationReport,
+  type PartnerSettlementRecord,
+  type ProductOfferRecord,
+} from '../../utils/purchasingEngine';
+import {
+  listPartnerSettlements,
+  listProductOffers,
+} from '../../services/purchasingService';
 
 export const AdminFinancePage: React.FC = () => {
   const { canAny } = useAuth();
   const { orders, products, actionLoading, handleConfirmPayment } = useAdminData();
+
+  const [offers, setOffers] = useState<ProductOfferRecord[]>([]);
+  const [settlements, setSettlements] = useState<PartnerSettlementRecord[]>([]);
+
+  useEffect(() => {
+    Promise.all([listProductOffers(), listPartnerSettlements()])
+      .then(([offList, settlList]) => {
+        setOffers(offList);
+        setSettlements(settlList);
+      })
+      .catch(() => {});
+  }, []);
+
+  const separationReport = useMemo(
+    () =>
+      computeFinancialSeparationReport({
+        orders,
+        products,
+        offers,
+        settlements,
+      }),
+    [orders, products, offers, settlements],
+  );
 
   const [simSalePrice, setSimSalePrice] = useState(24.9);
   const [simCostPrice, setSimCostPrice] = useState(14.5);
@@ -123,6 +155,74 @@ export const AdminFinancePage: React.FC = () => {
           icon={<Calculator size={18} />}
           tone={financeStats.riskProducts.length > 0 ? 'rose' : 'emerald'}
         />
+      </div>
+
+      {/* Separação Financeira: Receita Própria do Mercado vs. Repasse de Parceiros */}
+      <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-extrabold text-[var(--adm-text)]">
+              Separação de Receita Própria vs. Operações de Parceiros (Modelos A, B e C)
+            </h2>
+            <p className="text-xs text-[var(--adm-text-muted)]">
+              O valor devido aos parceiros (consignação ou retirada externa) é segregado e não compõe a receita própria do Mercado.
+            </p>
+          </div>
+          <Link
+            to="/admin/purchasing?tab=partners"
+            className="text-xs font-bold text-amber-300 hover:underline shrink-0"
+          >
+            Gerir Parceiros & Repasses →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)]">
+            <div className="text-[var(--adm-text-muted)]">Receita Produtos Próprios (A)</div>
+            <div className="text-sm font-extrabold text-emerald-300 mt-0.5">
+              {formatCurrency(separationReport.ownProductsGrossRevenue)}
+            </div>
+            <div className="text-[11px] text-[var(--adm-text-dim)]">
+              Lucro bruto próprio: {formatCurrency(separationReport.ownProductsGrossProfit)}
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)]">
+            <div className="text-[var(--adm-text-muted)]">GMV Vendas de Parceiros (B+C)</div>
+            <div className="text-sm font-extrabold text-[var(--adm-text)] mt-0.5">
+              {formatCurrency(separationReport.partnerSalesCustomerTotal)}
+            </div>
+            <div className="text-[11px] text-[var(--adm-text-dim)]">
+              Pago pelos clientes
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-amber-500/30">
+            <div className="text-amber-200 font-semibold">Repasse Devido aos Parceiros</div>
+            <div className="text-sm font-extrabold text-amber-300 mt-0.5">
+              {formatCurrency(separationReport.partnerRepasseTotalDue)}
+            </div>
+            <div className="text-[11px] text-[var(--adm-text-dim)]">
+              Pertence aos parceiros
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-emerald-500/30">
+            <div className="text-emerald-200 font-semibold">Comissão Bruta do Mercado</div>
+            <div className="text-sm font-extrabold text-emerald-300 mt-0.5">
+              {formatCurrency(separationReport.mercadoPartnerGrossCommission)}
+            </div>
+            <div className="text-[11px] text-[var(--adm-text-dim)]">
+              Contrib. após custos: {formatCurrency(separationReport.mercadoPartnerNetContribution)}
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--adm-bg)] border border-sky-500/30">
+            <div className="text-sky-200 font-semibold">Receita Líquida Pertencente ao Mercado</div>
+            <div className="text-sm font-extrabold text-sky-300 mt-0.5">
+              {formatCurrency(separationReport.mercadoTrueRecognizedRevenue)}
+            </div>
+            <div className="text-[11px] text-[var(--adm-text-dim)]">
+              Própria + Comissão de Parceiros
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Pix Reconciliation Queue */}

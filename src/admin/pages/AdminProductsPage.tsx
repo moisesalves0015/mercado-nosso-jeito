@@ -99,17 +99,38 @@ export const AdminProductsPage: React.FC = () => {
               Controle de Estoque
             </Link>
             {canEdit && (
-              <Link
-                to="/admin/products/new"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
-              >
-                <Plus size={15} />
-                Novo Produto
-              </Link>
+              <>
+                <Link
+                  to="/admin/purchasing?tab=onboarding"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs transition-colors"
+                >
+                  <Plus size={15} />
+                  Novo Produto via Assistente (A/B/C)
+                </Link>
+                <Link
+                  to="/admin/products/new"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] font-semibold text-xs border border-[var(--adm-border)] transition-colors"
+                >
+                  Edição Direta
+                </Link>
+              </>
             )}
           </div>
         }
       />
+
+      {/* Porta de Entrada Oficial Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-[10px] p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+        <div className="text-emerald-100">
+          <strong className="text-emerald-300">Regra de Governança do Catálogo:</strong> Todo produto novo (Próprio do Mercado, Consignado de Parceiro ou Retirada no Parceiro) inicia no <strong>Assistente de Compras</strong> com verificação anti-duplicidade, simulação 10/50/100 e aprovação de produto separada da compra.
+        </div>
+        <Link
+          to="/admin/purchasing?tab=onboarding"
+          className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 font-bold shrink-0 self-start sm:self-auto"
+        >
+          Abrir Porta de Entrada →
+        </Link>
+      </div>
 
       {/* Filter Bar */}
       <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3">

@@ -18,8 +18,10 @@ import {
   resolveLink,
   resolveVitrineDestination,
 } from '../src/utils/homeProducts';
-import type { HomeProduct } from '../src/types/home';
+import type { HomePeriod, HomeProduct } from '../src/types/home';
 import { buildShowcases } from '../src/utils/homeShowcases';
+import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../src/data/homeCategories';
+import { resolveCategoryIcon, resolvePeriodIcon } from '../src/utils/homeCategoryIcons';
 
 const make = (over: Record<string, unknown> = {}): HomeProduct =>
   normalizeHomeProduct({ id: 'p1', title: 'Café', price: '10,50', image: '/c.png', category: 'cafe', stock: 3, ...over })!;
@@ -205,5 +207,27 @@ describe('buildShowcases', () => {
     assert.deepEqual(result.map(s => s.key), ['fallback-bebidas', 'fallback-alimentos', 'fallback-limpeza']);
     assert.equal(result[0].products.length, 3);
     assert.deepEqual(result[2].products.map(p => p.id), ['e']);
+  });
+});
+
+describe('homeCategoryIcons (Estilo 02 — Mercado Premium)', () => {
+  it('resolve ícone semântico para todas as QUICK_CATEGORIES e VISUAL_CATEGORIES', () => {
+    for (const item of [...QUICK_CATEGORIES, ...VISUAL_CATEGORIES]) {
+      const icon = resolveCategoryIcon(item);
+      assert.ok(icon, `Ícone ausente para categoria ${item.id} (${item.label})`);
+    }
+  });
+
+  it('usa fallback seguro para categoria desconhecida', () => {
+    const fallback = resolveCategoryIcon({ id: 'desconhecida-xyz' });
+    assert.ok(fallback);
+  });
+
+  it('resolve ícone vetorial para todos os 5 períodos do dia', () => {
+    const periods: HomePeriod[] = ['morning', 'lunch', 'afternoon', 'night', 'dawn'];
+    for (const periodId of periods) {
+      const icon = resolvePeriodIcon(periodId);
+      assert.ok(icon, `Ícone ausente para período ${periodId}`);
+    }
   });
 });
