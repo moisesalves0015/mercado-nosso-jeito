@@ -82,6 +82,22 @@ service cloud.firestore {
       }
     }
 
+    // ─── Categories ───────────────────────────────────────────────────────────
+    // Public category listing for navigation and showcases.
+    // Staff/admins can manage categories via the CRM.
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isStaff() || isAdmin();
+    }
+
+    // ─── Product History (Audit) ──────────────────────────────────────────────
+    // Compulsory audit trail for product creations, edits, and stock adjustments.
+    match /productHistory/{historyId} {
+      allow read: if isStaff() || isAdmin();
+      allow create: if isStaff() || isAdmin();
+      allow update, delete: if false; // Immutable audit log
+    }
+
     // ─── Users ────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();

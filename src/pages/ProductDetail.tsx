@@ -4,6 +4,7 @@ import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, Shopp
 import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
 import { getEffectiveProductPrice } from '../utils/productPricing';
+import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
 import type { Product } from '../data/defaultProducts';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,7 +166,7 @@ export const ProductDetail = () => {
         <div className="product-hero-bg"></div>
         <div className="product-hero-overlay"></div>
         <div className="product-hero-image-wrapper">
-          <img src={product.image} alt={product.title} className="product-hero-image" />
+          <img src={cleanImageUrl(product.image)} alt={product.title} onError={handleImageError} className="product-hero-image" />
         </div>
         {product.badge && (
           <div className="product-hero-badge">

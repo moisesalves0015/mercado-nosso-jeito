@@ -138,7 +138,7 @@ export async function recordProductAudit(
     });
     return docRef.id;
   } catch (error) {
-    console.error('Falha ao registrar auditoria de produto:', error);
+    console.warn('Falha ao registrar auditoria de produto (verifique as regras de segurança):', error);
     // Non-blocking: audit failure should not break user operations completely,
     // but we log and return null.
     return null;
@@ -208,7 +208,8 @@ export async function getProductAuditHistory(
       });
     }
   } catch (error) {
-    console.error('Erro ao buscar histórico de auditoria:', error);
+    console.warn('Histórico de auditoria não disponível (verifique as regras de segurança):', error);
     return [];
   }
 }
+

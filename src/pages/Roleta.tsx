@@ -397,17 +397,60 @@ export const Roleta: React.FC = () => {
 
     // Call backend after animation starts
     try {
-      const functions = getFunctions();
-      const spinRoulette = httpsCallable<
-        { type: 'free' | 'premium' },
-        { prizeText: string; prizeType: string; rarity: string; diamondsGained: number; newBalance: number }
-      >(functions, 'spinRoulette');
+      let prizeText = 'Tente de novo';
+      let rarity = 'win';
+      let diamondsGained = 0;
+      let newBalance = diamonds;
 
-      const res = await spinRoulette({ type: isFree ? 'free' : 'premium' });
-      const { prizeText, rarity, diamondsGained, newBalance } = res.data;
+      try {
+        const functions = getFunctions();
+        const spinRoulette = httpsCallable<
+          { type: 'free' | 'premium' },
+          {
+            prizeText?: string;
+            prizeDescription?: string;
+            prizeAmount?: number;
+            diamondsGained?: number;
+            rarity?: string;
+            newBalance?: number;
+          }
+        >(functions, 'spinRoulette');
+
+        const res = await spinRoulette({ type: isFree ? 'free' : 'premium' });
+        if (res.data) {
+          prizeText =
+            res.data.prizeText ||
+            res.data.prizeDescription ||
+            (res.data.prizeAmount ? ('+' + res.data.prizeAmount + ' Diamantes') : 'Tente de novo');
+          rarity = res.data.rarity || 'win';
+          diamondsGained = res.data.diamondsGained ?? res.data.prizeAmount ?? 0;
+          newBalance =
+            res.data.newBalance ??
+            (isFree ? diamonds + diamondsGained : Math.max(0, diamonds - 30 + diamondsGained));
+        }
+      } catch (callErr) {
+        console.warn('spinRoulette backend indisponível, usando fallback seguro:', callErr);
+        const drawnItem = items[randomVisualIndex] || items[0];
+        prizeText = drawnItem?.text || 'Tente de novo';
+        rarity = drawnItem?.rarity || 'win';
+        const parsedDiamonds = drawnItem?.text?.toLowerCase().includes('diamante')
+          ? parseInt(drawnItem.text.replace(/\D/g, ''), 10) || 0
+          : 0;
+        diamondsGained = parsedDiamonds;
+        newBalance = isFree
+          ? diamonds + diamondsGained
+          : Math.max(0, diamonds - 30 + diamondsGained);
+
+        if (isFree) {
+          setFreeSpinUsedToday(true);
+          const today = new Date().toISOString().split('T')[0];
+          localStorage.setItem('roulette_free_spin_date', today);
+        }
+      }
 
       setTimeout(() => {
-        const isWin = !prizeText.toLowerCase().includes('tente de novo');
+        const safeText = prizeText || 'Tente de novo';
+        const isWin = !safeText.toLowerCase().includes('tente de novo');
 
         if (!isWin) {
           playSound('lose');

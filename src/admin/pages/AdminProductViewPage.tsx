@@ -22,6 +22,7 @@ import { db } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData, type AdminProduct } from '../AdminDataContext';
 import { formatCurrency } from '../components/AdminUi';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 import {
   getProductAuditHistory,
   type ProductAuditRecord,
@@ -201,7 +202,7 @@ export const AdminProductViewPage: React.FC = () => {
           <div className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 text-center">
             {product.image ? (
               <img
-                src={product.image}
+                src={cleanImageUrl(product.image)} onError={handleImageError}
                 alt={product.title}
                 className="w-full h-64 object-contain rounded-lg bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] p-2"
               />

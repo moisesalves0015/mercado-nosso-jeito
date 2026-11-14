@@ -373,11 +373,10 @@ export const spinRoulette = functions.https.onCall(async (data, context) => {
   // Free spin: pre-check idempotency before opening transaction
   if (type === 'free') {
     const existingSnap = await db
-      .collection('diamond_transactions')
-      .where('idempotencyKey', '==', idempotencyKey)
-      .limit(1)
+      .collection('diamond_operations')
+      .doc(idempotencyKey)
       .get();
-    if (!existingSnap.empty) {
+    if (existingSnap.exists) {
       throw new functions.https.HttpsError('already-exists', 'Giro diário gratuito já utilizado hoje.');
     }
   }
@@ -393,13 +392,9 @@ export const spinRoulette = functions.https.onCall(async (data, context) => {
 
   return await db.runTransaction(async (transaction) => {
     const docSnap = await transaction.get(profileRef);
-    if (!docSnap.exists) {
-      throw new functions.https.HttpsError(
-        'not-found',
-        'Perfil do clube não encontrado. Inicialize o clube primeiro.',
-      );
-    }
-    const profile = docSnap.data()!;
+    const profile = docSnap.exists
+      ? docSnap.data()!
+      : { diamonds: 0, streak: 0, current_day: 0, history: [], freeSpinUsed: false, freeSpinDate: '' };
     const currentDiamonds: number = (profile.diamonds as number) ?? 0;
 
     if (type === 'premium') {
@@ -409,53 +404,34 @@ export const spinRoulette = functions.https.onCall(async (data, context) => {
           `Diamantes insuficientes. Necessário: ${premiumCost}, disponível: ${currentDiamonds}.`,
         );
       }
-
-      // Debit premium cost atomically in the same transaction
-      await grantReward(transaction, {
-        uid,
-        type: 'PREMIUM_SPIN_DEBIT',
-        amount: -premiumCost,
-        sourceId: `premium-spin-cost:${uid}:${Date.now()}`,
-        idempotencyKey: `${idempotencyKey}:debit`,
-        metadata: { campaignId: campaign.id, campaignVersion: campaign.version },
-      });
     }
 
-    let newBalance: number = currentDiamonds - (type === 'premium' ? premiumCost : 0);
+    // Atomic net amount calculation: avoids multiple grantReward calls (which cause read-after-write errors)
+    const netAmount = (type === 'premium' ? -premiumCost : 0) + (prize.amount || 0);
 
-    if (prize.amount > 0) {
-      const creditResult = await grantReward(transaction, {
-        uid,
-        type: type === 'free' ? 'FREE_SPIN' : 'PREMIUM_SPIN_CREDIT',
-        amount: prize.amount,
-        sourceId: `spin-prize:${uid}:${Date.now()}`,
-        idempotencyKey,
-        metadata: {
-          prizeId: prize.id,
-          prizeDescription: prize.description,
-          campaignId: campaign.id,
-          campaignVersion: campaign.version,
-          spinType: type,
-        },
-        historyEntry: {
-          desc: `Roleta (${type === 'free' ? 'Grátis' : 'Premium'}): ${prize.description}`,
-          date: `Hoje, ${formatTime(now)}`,
-          value: `+${prize.amount}`,
-          isPlus: true,
-        },
-      });
-      newBalance = creditResult.newBalance;
-    } else if (type === 'free') {
-      // Record that free spin was used even without prize (idempotency)
-      await grantReward(transaction, {
-        uid,
-        type: 'FREE_SPIN',
-        amount: 0,
-        sourceId: `spin-no-prize:${uid}:${todayBRT}`,
-        idempotencyKey,
-        metadata: { prizeId: prize.id, spinType: 'free', result: 'no_prize' },
-      });
-    }
+    const creditResult = await grantReward(transaction, {
+      uid,
+      type: type === 'free' ? 'FREE_SPIN' : 'PREMIUM_SPIN_CREDIT',
+      amount: netAmount,
+      sourceId: `spin-prize:${uid}:${Date.now()}`,
+      idempotencyKey,
+      metadata: {
+        prizeId: prize.id,
+        prizeDescription: prize.description,
+        campaignId: campaign.id,
+        campaignVersion: campaign.version,
+        spinType: type,
+        prizeAmount: prize.amount,
+        cost: type === 'premium' ? premiumCost : 0,
+      },
+      historyEntry: {
+        desc: `Roleta (${type === 'free' ? 'Grátis' : 'Premium'}): ${prize.description}`,
+        date: `Hoje, ${formatTime(now)}`,
+        value: netAmount >= 0 ? `+${netAmount}` : `${netAmount}`,
+        isPlus: netAmount >= 0,
+      },
+    });
+    const newBalance = creditResult.newBalance;
 
     // Mark free spin status on profile for display
     if (type === 'free') {
@@ -481,10 +457,23 @@ export const spinRoulette = functions.https.onCall(async (data, context) => {
       },
     });
 
+    const rarity =
+      (prize as { rarity?: string }).rarity ||
+      (prize.amount >= 100
+        ? 'legendary'
+        : prize.amount >= 50
+        ? 'epic'
+        : prize.amount >= 20
+        ? 'rare'
+        : 'win');
+
     return {
       success: true,
       prizeAmount: prize.amount,
       prizeDescription: prize.description,
+      prizeText: prize.description,
+      diamondsGained: prize.amount,
+      rarity,
       prizeId: prize.id,
       newBalance,
     };

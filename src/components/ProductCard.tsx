@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { getEffectiveProductPrice } from '../utils/productPricing';
+import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
 
 const DiamondIcon = ({ size = 10 }: { size?: number }) => (
   <svg 
@@ -251,7 +252,7 @@ export const ProductCard = ({
     <div className={`product-card ${glassEffect ? 'glass-card' : ''}`} ref={cardRef}>
       <Link to={`/product/${encodeURIComponent(productId)}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
-          <img src={image} alt={title} />
+          <img src={cleanImageUrl(image)} alt={title} onError={handleImageError} loading="lazy" />
           
           {/* Render diamond and/or promotional badges at the bottom-center of the image wrapper */}
           {(diamondReward || badge) && (

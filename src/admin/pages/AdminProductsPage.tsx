@@ -14,6 +14,7 @@ import {
   Star,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 import { useAdminData, type AdminProduct } from '../AdminDataContext';
 import {
   EmptyState,
@@ -207,7 +208,7 @@ export const AdminProductsPage: React.FC = () => {
                   <div className="flex items-start gap-3">
                     {p.image ? (
                       <img
-                        src={p.image}
+                        src={cleanImageUrl(p.image)} onError={handleImageError}
                         alt={p.title}
                         className="w-16 h-16 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                       />
