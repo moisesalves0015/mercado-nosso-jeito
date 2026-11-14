@@ -14,8 +14,8 @@ import {
 } from '../src/admin/routes.ts';
 
 describe('Admin Routes & Navigation Tree', () => {
-  it('defines all 14 core administrative modules with valid permissions', () => {
-    assert.equal(ADMIN_NAV_ITEMS.length, 14);
+  it('defines all 15 core administrative modules with valid permissions', () => {
+    assert.equal(ADMIN_NAV_ITEMS.length, 15);
     const paths = ADMIN_NAV_ITEMS.map((i) => i.path);
     assert.deepEqual(paths, [
       '/admin/dashboard',
@@ -23,6 +23,7 @@ describe('Admin Routes & Navigation Tree', () => {
       '/admin/support',
       '/admin/customers',
       '/admin/products',
+      '/admin/categories',
       '/admin/inventory',
       '/admin/finance',
       '/admin/marketing',
@@ -70,6 +71,18 @@ describe('Admin Routes & Navigation Tree', () => {
     assert.equal(prodDetail[1].to, '/admin/products');
     assert.match(prodDetail[2].label, /Produto #prod_10/);
 
+    const prodView = resolveAdminBreadcrumbs('/admin/products/prod_10/view');
+    assert.equal(prodView[1].to, '/admin/products');
+    assert.match(prodView[2].label, /Ficha #prod_10/);
+
+    const prodEdit = resolveAdminBreadcrumbs('/admin/products/prod_10/edit');
+    assert.equal(prodEdit[1].to, '/admin/products');
+    assert.match(prodEdit[2].label, /Editar #prod_10/);
+
+    const prodMetrics = resolveAdminBreadcrumbs('/admin/products/prod_10/metrics');
+    assert.equal(prodMetrics[1].to, '/admin/products');
+    assert.match(prodMetrics[2].label, /Métricas #prod_10/);
+
     const userDetail = resolveAdminBreadcrumbs('/admin/users/staff_99');
     assert.equal(userDetail[1].to, '/admin/users');
     assert.match(userDetail[2].label, /Membro/);
@@ -83,6 +96,7 @@ describe('Admin Routes & Navigation Tree', () => {
     assert.equal(map.get('/admin/pedidos'), '/admin/orders');
     assert.equal(map.get('/admin/clientes'), '/admin/customers');
     assert.equal(map.get('/admin/suporte'), '/admin/support');
+    assert.equal(map.get('/admin/categorias'), '/admin/categories');
     assert.equal(map.get('/admin/estoque'), '/admin/inventory');
     assert.equal(map.get('/admin/financeiro'), '/admin/finance');
     assert.equal(map.get('/admin/usuarios'), '/admin/users');

@@ -28,7 +28,8 @@ export interface AdminNavItem {
     | 'ShieldCheck'
     | 'KeyRound'
     | 'ScrollText'
-    | 'Settings';
+    | 'Settings'
+    | 'FolderTree';
 }
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
@@ -87,6 +88,15 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
     description: 'Catálogo da loja, preços, margens, categorias, imagens e visibilidade.',
     requiredPermissions: ['produtos:view', 'produtos:edit'],
     iconName: 'Package',
+  },
+  {
+    id: 'categories',
+    label: 'Categorias',
+    path: '/admin/categories',
+    group: 'catalogo',
+    description: 'Gestão de categorias, ordem de exibição, imagens e atalhos da vitrine.',
+    requiredPermissions: ['produtos:view', 'produtos:edit'],
+    iconName: 'FolderTree',
   },
   {
     id: 'inventory',
@@ -190,6 +200,7 @@ export const LEGACY_ADMIN_REDIRECTS: ReadonlyArray<{ from: string; to: string }>
   { from: '/admin/suporte', to: '/admin/support' },
   { from: '/admin/chamados', to: '/admin/support' },
   { from: '/admin/produtos', to: '/admin/products' },
+  { from: '/admin/categorias', to: '/admin/categories' },
   { from: '/admin/estoque', to: '/admin/inventory' },
   { from: '/admin/financeiro', to: '/admin/finance' },
   { from: '/admin/clube', to: '/admin/loyalty' },
@@ -225,6 +236,27 @@ export function resolveAdminBreadcrumbs(pathname: string): BreadcrumbSegment[] {
   if (clean === '/admin/products/new') {
     crumbs.push({ label: 'Produtos', to: '/admin/products' });
     crumbs.push({ label: 'Novo Produto' });
+    return crumbs;
+  }
+
+  const prodViewMatch = clean.match(/^\/admin\/products\/([^/]+)\/view$/);
+  if (prodViewMatch) {
+    crumbs.push({ label: 'Produtos', to: '/admin/products' });
+    crumbs.push({ label: `Ficha #${decodeURIComponent(prodViewMatch[1]).slice(0, 12)}` });
+    return crumbs;
+  }
+
+  const prodEditMatch = clean.match(/^\/admin\/products\/([^/]+)\/edit$/);
+  if (prodEditMatch) {
+    crumbs.push({ label: 'Produtos', to: '/admin/products' });
+    crumbs.push({ label: `Editar #${decodeURIComponent(prodEditMatch[1]).slice(0, 12)}` });
+    return crumbs;
+  }
+
+  const prodMetricsMatch = clean.match(/^\/admin\/products\/([^/]+)\/metrics$/);
+  if (prodMetricsMatch) {
+    crumbs.push({ label: 'Produtos', to: '/admin/products' });
+    crumbs.push({ label: `Métricas #${decodeURIComponent(prodMetricsMatch[1]).slice(0, 12)}` });
     return crumbs;
   }
 

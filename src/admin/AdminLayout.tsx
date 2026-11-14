@@ -8,6 +8,7 @@ import {
   ChevronRight,
   DollarSign,
   ExternalLink,
+  FolderTree,
   Headphones,
   KeyRound,
   LayoutDashboard,
@@ -52,6 +53,7 @@ const ICON_MAP: Record<AdminNavItem['iconName'], React.ReactNode> = {
   KeyRound: <KeyRound size={18} />,
   ScrollText: <ScrollText size={18} />,
   Settings: <Settings size={18} />,
+  FolderTree: <FolderTree size={18} />,
 };
 
 const AdminShellInner: React.FC = () => {

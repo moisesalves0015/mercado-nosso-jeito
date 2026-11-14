@@ -2,10 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Archive,
+  BarChart3,
   Boxes,
   Edit3,
   Eye,
   EyeOff,
+  FolderTree,
   Package,
   Plus,
   Search,
@@ -81,6 +83,13 @@ export const AdminProductsPage: React.FC = () => {
         badge={`${filteredProducts.length} itens`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/admin/categories"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)] transition-colors"
+            >
+              <FolderTree size={15} />
+              Categorias
+            </Link>
             <Link
               to="/admin/inventory"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs border border-[var(--adm-border)]"
@@ -220,7 +229,7 @@ export const AdminProductsPage: React.FC = () => {
                         )}
                       </div>
                       <Link
-                        to={`/admin/products/${p.id}`}
+                        to={`/admin/products/${p.id}/view`}
                         className="text-sm font-bold text-[var(--adm-text)] hover:text-[var(--adm-gold)] line-clamp-2 leading-snug"
                       >
                         {p.title}
@@ -265,38 +274,71 @@ export const AdminProductsPage: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="pt-3 border-t border-[var(--adm-border)] flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    {canEdit && (
-                      <button
-                        type="button"
-                        disabled={actionLoading === `toggle-${p.id}`}
-                        onClick={() => handleToggleProductActive(p)}
-                        className="p-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] border border-[var(--adm-border)]"
-                        title={isActive ? 'Pausar na vitrine' : 'Reativar na vitrine'}
-                      >
-                        {isActive ? <Eye size={14} /> : <EyeOff size={14} />}
-                      </button>
-                    )}
-                    {canArchive && isActive && (
-                      <button
-                        type="button"
-                        onClick={() => setArchiveTarget(p)}
-                        className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30"
-                        title="Arquivar produto com justificativa"
-                      >
-                        <Archive size={14} />
-                      </button>
-                    )}
+                <div className="pt-3 border-t border-[var(--adm-border)] flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      {canEdit && (
+                        <button
+                          type="button"
+                          disabled={actionLoading === `toggle-${p.id}`}
+                          onClick={() => handleToggleProductActive(p)}
+                          className="p-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text-muted)] border border-[var(--adm-border)] transition-colors"
+                          title={isActive ? 'Pausar na vitrine' : 'Reativar na vitrine'}
+                        >
+                          {isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                      )}
+                      {canArchive && isActive && (
+                        <button
+                          type="button"
+                          onClick={() => setArchiveTarget(p)}
+                          className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 transition-colors"
+                          title="Arquivar produto com justificativa"
+                        >
+                          <Archive size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <Link
+                      to={`/admin/products/${p.id}/metrics`}
+                      className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-emerald-400 font-semibold text-xs inline-flex items-center gap-1 border border-[var(--adm-border)] transition-colors"
+                      title="Métricas e vendas reais deste produto"
+                    >
+                      <BarChart3 size={13} />
+                      Métricas
+                    </Link>
                   </div>
 
-                  <Link
-                    to={`/admin/products/${p.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center gap-1.5"
-                  >
-                    <Edit3 size={13} />
-                    Editar Ficha
-                  </Link>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      to={`/admin/products/${p.id}/view`}
+                      className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-[var(--adm-text)] font-semibold text-xs inline-flex items-center justify-center gap-1 border border-[var(--adm-border)] transition-colors"
+                      title="Visualização estruturada do produto"
+                    >
+                      <Eye size={13} />
+                      Visualizar
+                    </Link>
+
+                    {canEdit ? (
+                      <Link
+                        to={`/admin/products/${p.id}/edit`}
+                        className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-brand)] hover:bg-[var(--adm-brand-hover)] text-emerald-950 font-bold text-xs inline-flex items-center justify-center gap-1 transition-colors"
+                        title="Editar cadastro do produto"
+                      >
+                        <Edit3 size={13} />
+                        Editar
+                      </Link>
+                    ) : (
+                      <Link
+                        to={`/admin/products/${p.id}/view`}
+                        className="px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface-elevated)] text-[var(--adm-text-dim)] font-semibold text-xs inline-flex items-center justify-center gap-1 border border-[var(--adm-border)]"
+                      >
+                        <Eye size={13} />
+                        Detalhes
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             );

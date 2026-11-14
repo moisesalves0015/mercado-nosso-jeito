@@ -29,7 +29,6 @@ import { Padaria } from './pages/Padaria';
 const Orders          = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
 const Profile         = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const Checkout        = lazy(() => import('./pages/Checkout').then(m => ({ default: m.Checkout })));
-const AdminProductDetail = lazy(() => import('./pages/AdminProductDetail').then(m => ({ default: m.AdminProductDetail })));
 const Clube           = lazy(() => import('./pages/Clube').then(m => ({ default: m.Clube })));
 const Roleta          = lazy(() => import('./pages/Roleta').then(m => ({ default: m.Roleta })));
 const Addresses       = lazy(() => import('./pages/Addresses').then(m => ({ default: m.Addresses })));
@@ -47,6 +46,10 @@ const AdminCustomerDetailPage = lazy(() => import('./admin/pages/AdminCustomerDe
 const AdminSupportPage        = lazy(() => import('./admin/pages/AdminSupportPage').then(m => ({ default: m.AdminSupportPage })));
 const AdminSupportDetailPage  = lazy(() => import('./admin/pages/AdminSupportDetailPage').then(m => ({ default: m.AdminSupportDetailPage })));
 const AdminProductsPage       = lazy(() => import('./admin/pages/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })));
+const AdminCategoriesPage     = lazy(() => import('./admin/pages/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })));
+const AdminProductViewPage    = lazy(() => import('./admin/pages/AdminProductViewPage').then(m => ({ default: m.AdminProductViewPage })));
+const AdminProductEditPage    = lazy(() => import('./admin/pages/AdminProductEditPage').then(m => ({ default: m.AdminProductEditPage })));
+const AdminProductMetricsPage = lazy(() => import('./admin/pages/AdminProductMetricsPage').then(m => ({ default: m.AdminProductMetricsPage })));
 const AdminInventoryPage      = lazy(() => import('./admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })));
 const AdminFinancePage        = lazy(() => import('./admin/pages/AdminFinancePage').then(m => ({ default: m.AdminFinancePage })));
 const AdminMarketingPage      = lazy(() => import('./admin/pages/AdminMarketingPage').then(m => ({ default: m.AdminMarketingPage })));
@@ -341,10 +344,42 @@ function AppContent() {
               }
             />
             <Route
+              path="categories"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:view', 'produtos:edit']}>
+                  <AdminCategoriesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="products/new"
               element={
                 <ProtectedRoute requiredPermissions={['produtos:create', 'produtos:edit']}>
-                  <AdminProductDetail />
+                  <AdminProductEditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products/:id/edit"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:edit']}>
+                  <AdminProductEditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products/:id/view"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:view']}>
+                  <AdminProductViewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="products/:id/metrics"
+              element={
+                <ProtectedRoute requiredPermissions={['produtos:view', 'relatorios:view']}>
+                  <AdminProductMetricsPage />
                 </ProtectedRoute>
               }
             />
@@ -352,7 +387,7 @@ function AppContent() {
               path="products/:id"
               element={
                 <ProtectedRoute requiredPermissions={['produtos:view', 'produtos:edit']}>
-                  <AdminProductDetail />
+                  <AdminProductViewPage />
                 </ProtectedRoute>
               }
             />
