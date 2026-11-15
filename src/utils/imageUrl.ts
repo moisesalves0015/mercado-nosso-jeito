@@ -23,6 +23,15 @@ export function isValidImageDataUrl(url?: string | null): boolean {
   if (payload.length % 4 !== 0) return false;
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(payload)) return false;
 
+  try {
+    if (typeof atob === 'function') {
+      atob(payload.slice(0, Math.min(payload.length, 32)));
+      atob(payload.slice(-Math.min(payload.length, 32)));
+    }
+  } catch {
+    return false;
+  }
+
   return true;
 }
 

@@ -59,6 +59,7 @@ import {
   listProductOffers,
   upsertOrderPickupTask,
 } from '../../services/purchasingService';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 
 // ──────────────────────────────────────────────────────────────
 // Robust Date & Time Helpers (with seconds and relative time)
@@ -793,7 +794,8 @@ export const AdminOrderDetailPage: React.FC = () => {
                       <div className="flex items-center gap-3.5 min-w-0">
                         {item.image ? (
                           <img
-                            src={item.image}
+                            src={cleanImageUrl(item.image)}
+                            onError={handleImageError}
                             alt={item.title}
                             className="w-12 h-12 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                           />

@@ -13,7 +13,7 @@ import { db } from '../firebase';
 import { defaultProducts } from '../data/defaultProducts';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
 import { uploadOrCompressImage } from '../services/imageUploadService';
-import { sanitizeBannerImageUrl } from '../utils/imageUrl';
+import { sanitizeBannerImageUrl, cleanImageUrl, handleImageError } from '../utils/imageUrl';
 import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig, CondoFavoriteConfig } from '../hooks/useHomeConfig';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -375,7 +375,8 @@ const ProductPicker: React.FC<{
 
                   {p && (
                     <img
-                      src={p.image}
+                      src={cleanImageUrl(p.image)}
+                      onError={handleImageError}
                       alt=""
                       style={{
                         width: 28,
@@ -592,7 +593,8 @@ const ProductPicker: React.FC<{
                   }}
                 >
                   <img
-                    src={p.image}
+                    src={cleanImageUrl(p.image)}
+                    onError={handleImageError}
                     alt=""
                     style={{
                       width: 28,
@@ -1878,7 +1880,8 @@ export const AdminMarketing: React.FC = () => {
                               </span>
                               {prod ? (
                                 <img
-                                  src={prod.image}
+                                  src={cleanImageUrl(prod.image)}
+                                  onError={handleImageError}
                                   alt=""
                                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 />
@@ -2032,7 +2035,12 @@ export const AdminMarketing: React.FC = () => {
                   {moSearchFiltered.map(p => (
                     <button key={p.id} onClick={() => { setMoSelectedId(p.id); setMoSearch(''); }}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, background: moSelectedId === p.id ? crmTheme.primaryLight : crmTheme.cardBg, border: `1px solid ${moSelectedId === p.id ? crmTheme.primary : crmTheme.border}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
-                      <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: '#fff', border: `1px solid ${crmTheme.border}` }} />
+                      <img
+                        src={cleanImageUrl(p.image)}
+                        onError={handleImageError}
+                        alt=""
+                        style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: '#fff', border: `1px solid ${crmTheme.border}` }}
+                      />
                       <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: crmTheme.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
                         <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>R$ {Number(p.price).toFixed(2)} · {p.category}</div>
@@ -2090,7 +2098,12 @@ export const AdminMarketing: React.FC = () => {
                 return (
                   <div key={mo.id} style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
                     {p ? (
-                      <img src={p.image} alt="" style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />
+                      <img
+                        src={cleanImageUrl(p.image)}
+                        onError={handleImageError}
+                        alt=""
+                        style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 8, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }}
+                      />
                     ) : (
                       <div style={{ width: 44, height: 44, borderRadius: 8, background: crmTheme.dangerLight, border: `1px solid ${crmTheme.danger}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: crmTheme.danger, fontSize: 11, fontWeight: 900, flexShrink: 0 }}>!</div>
                     )}

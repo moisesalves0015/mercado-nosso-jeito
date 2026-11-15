@@ -32,6 +32,7 @@ import {
   type AdminCategory,
 } from '../../services/categoryService';
 import { uploadOrCompressImage } from '../../services/imageUploadService';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 
 export const AdminCategoriesPage: React.FC = () => {
   const { canAny } = useAuth();
@@ -397,7 +398,8 @@ export const AdminCategoriesPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         {cat.image ? (
                           <img
-                            src={cat.image}
+                            src={cleanImageUrl(cat.image)}
+                            onError={handleImageError}
                             alt={cat.name}
                             className="w-10 h-10 rounded-lg object-contain bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0 p-1"
                           />

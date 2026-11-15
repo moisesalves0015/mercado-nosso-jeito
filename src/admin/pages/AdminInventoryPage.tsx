@@ -22,6 +22,7 @@ import {
 } from '../components/AdminUi';
 import { listProductOffers } from '../../services/purchasingService';
 import type { ProductOfferRecord } from '../../utils/purchasingEngine';
+import { cleanImageUrl, handleImageError } from '../../utils/imageUrl';
 
 export const AdminInventoryPage: React.FC = () => {
   const { canAny } = useAuth();
@@ -317,7 +318,8 @@ export const AdminInventoryPage: React.FC = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     {p.image ? (
                       <img
-                        src={p.image}
+                        src={cleanImageUrl(p.image)}
+                        onError={handleImageError}
                         alt={p.title}
                         className="w-12 h-12 rounded-lg object-cover bg-[var(--adm-bg-subtle)] border border-[var(--adm-border)] shrink-0"
                       />

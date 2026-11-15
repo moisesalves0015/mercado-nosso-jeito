@@ -21,6 +21,7 @@ import type {
   VitrineConfig,
 } from '../types/home';
 import { getEffectiveProductPrice, parsePrice } from './productPricing';
+import { cleanImageUrl } from './imageUrl';
 
 // ─── Produto ────────────────────────────────────────────────────────────────
 
@@ -45,15 +46,19 @@ export function normalizeHomeProduct(raw: unknown): HomeProduct | null {
   const promoPrice = parsePrice(raw.promoPrice as number | string | undefined);
   const diamondReward = Number(raw.diamondReward);
   const badge = asTrimmedString(raw.badge);
+  const rawImage = asTrimmedString(raw.image);
   const extraImages = Array.isArray(raw.images)
-    ? raw.images.map(asTrimmedString).filter(Boolean)
+    ? raw.images
+        .map(asTrimmedString)
+        .filter(Boolean)
+        .map(u => cleanImageUrl(u))
     : undefined;
 
   return {
     id,
     title,
     price,
-    image: asTrimmedString(raw.image),
+    image: cleanImageUrl(rawImage),
     images: extraImages && extraImages.length > 0 ? extraImages : undefined,
     category: asTrimmedString(raw.category),
     stock,

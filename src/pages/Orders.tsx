@@ -17,6 +17,7 @@ import {
   type OrderStatus,
   type Order,
 } from '../hooks/useOrders';
+import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
 
 // ──────────────────────────────────────────────────────────────
 // Design tokens — same as Profile.tsx
@@ -211,7 +212,12 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
                 position: 'relative',
               }}>
                 {item.image ? (
-                  <img src={item.image} alt={item.title} style={{ width: '82%', height: '82%', objectFit: 'contain' }} />
+                  <img
+                    src={cleanImageUrl(item.image)}
+                    onError={handleImageError}
+                    alt={item.title}
+                    style={{ width: '82%', height: '82%', objectFit: 'contain' }}
+                  />
                 ) : <Package size={14} color="#090705" />}
               </div>
             ))}
@@ -268,7 +274,14 @@ const OrderCard: React.FC<{ order: Order; highlight: boolean }> = ({ order, high
               {order.items.map((item) => (
                 <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                    {item.image ? <img src={item.image} alt={item.title} style={{ width: '82%', height: '82%', objectFit: 'contain' }} /> : <Package size={13} color="#090705" />}
+                    {item.image ? (
+                      <img
+                        src={cleanImageUrl(item.image)}
+                        onError={handleImageError}
+                        alt={item.title}
+                        style={{ width: '82%', height: '82%', objectFit: 'contain' }}
+                      />
+                    ) : <Package size={13} color="#090705" />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
