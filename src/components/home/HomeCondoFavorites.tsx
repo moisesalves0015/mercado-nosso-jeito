@@ -8,6 +8,19 @@ import { emptyMessage } from './homeMessages';
 
 const FAVORITES_LIMIT = 10;
 
+const DEFAULT_FALLBACK_FAVORITE_IDS = [
+  'coca-cola-350ml',
+  'monster-energy',
+  'heineken-330ml',
+  'paodequeijo-novo',
+  'cafe-novo',
+  'suco-dobem',
+  'pao-de-forma',
+  'queijo-minas',
+  'manteiga-itambe',
+  'peito-de-peru',
+];
+
 /**
  * Favoritos do Condomínio.
  *
@@ -15,14 +28,15 @@ const FAVORITES_LIMIT = 10;
  * `home-config/data/condo-favorites` ({ productId, order }). O ranking exibido (1, 2, 3…) é a
  * posição após ordenar e descartar produtos inexistentes/inativos/sem estoque — nenhum nome,
  * posição ou produto é gerado localmente.
- * Evolução prevista: agregação real de pedidos por condomínio (Cloud Function) escrevendo nesta
- * mesma coleção, sem mudar este componente.
+ * Se nenhuma lista customizada foi configurada no admin, usa os favoritos padrão da loja.
  */
 export const HomeCondoFavorites = ({ catalog, favorites }: { catalog: Catalog; favorites: CondoFavoriteConfig[] }) => {
-  const products = useMemo(
-    () => resolveHomeProducts(favorites.map(f => f.productId), catalog.byId, FAVORITES_LIMIT),
-    [favorites, catalog.byId],
-  );
+  const products = useMemo(() => {
+    const ids = favorites && favorites.length > 0
+      ? favorites.map(f => f.productId)
+      : DEFAULT_FALLBACK_FAVORITE_IDS;
+    return resolveHomeProducts(ids, catalog.byId, FAVORITES_LIMIT);
+  }, [favorites, catalog.byId]);
 
   return (
     <section style={{ margin: '24px 0 8px' }} aria-labelledby="home-favorites-title">

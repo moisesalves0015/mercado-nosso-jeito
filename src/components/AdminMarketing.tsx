@@ -3,7 +3,7 @@ import {
   Layers, Clock, Zap, Target, Plus, Trash2, Edit2, Check, X,
   ArrowUp, ArrowDown, Eye, EyeOff, Image, Link2, Star, Tag,
   RefreshCw, Search, Megaphone, ChevronUp, Save, UploadCloud,
-  AlertCircle, Sunrise, Sun, Sunset, Moon, Wind,
+  AlertCircle, Sunrise, Sun, Sunset, Moon, Wind, Heart,
 } from 'lucide-react';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc, getDocs,
@@ -13,7 +13,7 @@ import { defaultProducts } from '../data/defaultProducts';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
 import { uploadOrCompressImage } from '../services/imageUploadService';
 import { sanitizeBannerImageUrl } from '../utils/imageUrl';
-import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig } from '../hooks/useHomeConfig';
+import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig, CondoFavoriteConfig } from '../hooks/useHomeConfig';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -25,7 +25,7 @@ interface Product {
   active?: boolean;
 }
 
-type SubTab = 'vitrines' | 'megaOfertas' | 'periodos' | 'heroBanners' | 'campanhas';
+type SubTab = 'vitrines' | 'favoritos' | 'megaOfertas' | 'periodos' | 'heroBanners' | 'campanhas';
 
 const PERIOD_LABELS: Record<string, { label: string; sub: string; icon: React.ElementType }> = {
   morning:   { label: 'Manhã',      sub: 'Café da manhã', icon: Sunrise },
@@ -168,7 +168,8 @@ const ProductPicker: React.FC<{
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
   defaultCategory?: string;
-}> = ({ products, selectedIds, onChangeIds, onAdd, onRemove, defaultCategory }) => {
+  emptyHint?: string;
+}> = ({ products, selectedIds, onChangeIds, onAdd, onRemove, defaultCategory, emptyHint }) => {
   const [q, setQ] = useState('');
   const [catFilter, setCatFilter] = useState(defaultCategory || 'all');
 
@@ -288,11 +289,15 @@ const ProductPicker: React.FC<{
               fontSize: 12,
             }}
           >
-            Nenhum produto fixado manualmente nesta vitrine.
-            <br />
-            <span style={{ fontSize: 11 }}>
-              Adicione produtos abaixo para definir a ordem exata ou selecione uma categoria para modo automático.
-            </span>
+            {emptyHint || (
+              <>
+                Nenhum produto fixado manualmente nesta vitrine.
+                <br />
+                <span style={{ fontSize: 11 }}>
+                  Adicione produtos abaixo para definir a ordem exata ou selecione uma categoria para modo automático.
+                </span>
+              </>
+            )}
           </div>
         ) : (
           <div
@@ -903,6 +908,7 @@ export const AdminMarketing: React.FC = () => {
   const [megaOfertas, setMegaOfertas] = useState<MegaOfertaConfig[]>([]);
   const [periodConfig, setPeriodConfig] = useState<Record<string, PeriodConfig>>({});
   const [heroBanners, setHeroBanners] = useState<HeroBannerConfig[]>([]);
+  const [condoFavorites, setCondoFavorites] = useState<CondoFavoriteConfig[]>([]);
 
   // ── UI State ──
   const [saving, setSaving] = useState(false);
@@ -954,6 +960,9 @@ export const AdminMarketing: React.FC = () => {
       }),
       onSnapshot(collection(db, 'home-config', 'data', 'hero-banners'), snap => {
         setHeroBanners(snap.docs.map(d => ({ id: d.id, ...d.data() } as HeroBannerConfig)).sort((a, b) => a.order - b.order));
+      }),
+      onSnapshot(collection(db, 'home-config', 'data', 'condo-favorites'), snap => {
+        setCondoFavorites(snap.docs.map(d => ({ id: d.id, ...d.data() } as CondoFavoriteConfig)).sort((a, b) => a.order - b.order));
       }),
     ];
     return () => unsubs.forEach(u => u());
@@ -1236,6 +1245,54 @@ export const AdminMarketing: React.FC = () => {
       setSaving(false);
     }
   };
+
+  // ── Condo Favorites Ops ─────────────────────────────────────────────────────
+  const handleUpdateCondoFavorites = useCallback(async (newIds: string[]) => {
+    setSaving(true);
+    try {
+      const currentIds = condoFavorites.map(f => f.productId);
+      const toRemove = currentIds.filter(id => !newIds.includes(id));
+      for (const pid of toRemove) {
+        await deleteDoc(doc(db, 'home-config', 'data', 'condo-favorites', pid));
+      }
+      for (let i = 0; i < newIds.length; i++) {
+        const pid = newIds[i];
+        await setDoc(doc(db, 'home-config', 'data', 'condo-favorites', pid), {
+          id: pid,
+          productId: pid,
+          order: i,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+      // Sincroniza também a vitrine regular 'favoritos-do-condominio' se ela existir
+      const vitrineRef = doc(db, 'home-config', 'data', 'vitrines', 'favoritos-do-condominio');
+      const vSnap = await getDoc(vitrineRef);
+      if (vSnap.exists()) {
+        await updateDoc(vitrineRef, { productIds: newIds });
+      }
+    } catch (e: unknown) {
+      alert('Erro ao atualizar favoritos do condomínio: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSaving(false);
+    }
+  }, [condoFavorites]);
+
+  const seedDefaultCondoFavorites = useCallback(async () => {
+    const defaultIds = [
+      'coca-cola-350ml',
+      'monster-energy',
+      'heineken-330ml',
+      'paodequeijo-novo',
+      'cafe-novo',
+      'suco-dobem',
+      'pao-de-forma',
+      'queijo-minas',
+      'manteiga-itambe',
+      'peito-de-peru',
+    ];
+    await handleUpdateCondoFavorites(defaultIds);
+    alert('10 produtos favoritos sugeridos foram carregados com sucesso!');
+  }, [handleUpdateCondoFavorites]);
 
   // ── Mega Oferta Ops ─────────────────────────────────────────────────────────
   const addMegaOferta = useCallback(async () => {
@@ -1525,6 +1582,7 @@ export const AdminMarketing: React.FC = () => {
       {/* ── Sub Tab Nav ── */}
       <div style={{ display: 'flex', gap: 4, background: crmTheme.cardBg, padding: '8px 12px', borderRadius: 14, border: `1px solid ${crmTheme.border}`, overflowX: 'auto', scrollbarWidth: 'none', boxShadow: crmTheme.shadowSm }}>
         <SubTabBtn id="vitrines"    label="Vitrines"     icon={Layers}     badge={vitrines.length}    activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="favoritos"   label="Favoritos"    icon={Heart}      badge={condoFavorites.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}                                  activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="heroBanners" label="Hero Banners" icon={Image}       badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
@@ -1620,75 +1678,104 @@ export const AdminMarketing: React.FC = () => {
 
                 {/* Prévia visual dos produtos da vitrine na ordem exata */}
                 {!isEditing && (
-                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
-                    {v.productIds.length === 0 ? (
-                      <span style={{ fontSize: 11, color: crmTheme.textMuted, fontStyle: 'italic' }}>
-                        {v.category
-                          ? `Modo automático ativo: exibe produtos da categoria "${v.category}".`
-                          : 'Vazia (clique em Editar para escolher os produtos e a ordem).'}
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: crmTheme.textSecondary }}>
+                        Produtos da Vitrine ({v.productIds.length}):
                       </span>
-                    ) : (
-                      v.productIds.slice(0, 10).map((pid, pidx) => {
-                        const prod = products.find((p) => p.id === pid);
-                        return (
-                          <div
-                            key={pid}
-                            title={`${pidx + 1}º: ${prod ? prod.title : pid}`}
-                            style={{
-                              position: 'relative',
-                              width: 32,
-                              height: 32,
-                              borderRadius: 6,
-                              background: '#fff',
-                              border: `1px solid ${crmTheme.border}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              overflow: 'hidden',
-                            }}
-                          >
-                            <span
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                fontSize: 8,
-                                fontWeight: 900,
-                                background: 'rgba(0,0,0,0.65)',
-                                color: '#fff',
-                                padding: '1px 3px',
-                                borderBottomRightRadius: 4,
-                                lineHeight: 1,
-                              }}
-                            >
-                              {pidx + 1}
-                            </span>
-                            {prod ? (
-                              <img
-                                src={prod.image}
-                                alt=""
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                              />
-                            ) : (
-                              <span style={{ fontSize: 9, color: crmTheme.danger }}>?</span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                    {v.productIds.length > 10 && (
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => { setEditingVitrineId(v.id); setCreatingVitrine(false); }}
                         style={{
                           fontSize: 10,
-                          color: crmTheme.textMuted,
                           fontWeight: 700,
-                          paddingLeft: 4,
+                          color: crmTheme.primary,
+                          background: crmTheme.primaryLight,
+                          border: `1px solid ${crmTheme.primary}`,
+                          borderRadius: 6,
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
                         }}
                       >
-                        +{v.productIds.length - 10}
-                      </span>
-                    )}
+                        <Edit2 size={10} /> Gerenciar Produtos & Ordem
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+                      {v.productIds.length === 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                          <span style={{ fontSize: 11, color: crmTheme.textMuted, fontStyle: 'italic' }}>
+                            {v.category
+                              ? `Modo automático: exibe os produtos da categoria "${v.category}".`
+                              : 'Vazia no momento.'}
+                          </span>
+                        </div>
+                      ) : (
+                        v.productIds.slice(0, 12).map((pid, pidx) => {
+                          const prod = products.find((p) => p.id === pid);
+                          return (
+                            <div
+                              key={pid}
+                              title={`${pidx + 1}º: ${prod ? prod.title : pid}`}
+                              style={{
+                                position: 'relative',
+                                width: 34,
+                                height: 34,
+                                borderRadius: 6,
+                                background: '#fff',
+                                border: `1px solid ${crmTheme.border}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  fontSize: 8,
+                                  fontWeight: 900,
+                                  background: 'rgba(0,0,0,0.65)',
+                                  color: '#fff',
+                                  padding: '1px 3px',
+                                  borderBottomRightRadius: 4,
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {pidx + 1}
+                              </span>
+                              {prod ? (
+                                <img
+                                  src={prod.image}
+                                  alt=""
+                                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                />
+                              ) : (
+                                <span style={{ fontSize: 9, color: crmTheme.danger }}>?</span>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                      {v.productIds.length > 12 && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: crmTheme.textMuted,
+                            fontWeight: 700,
+                            paddingLeft: 4,
+                          }}
+                        >
+                          +{v.productIds.length - 12}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1705,6 +1792,88 @@ export const AdminMarketing: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* SUB-ABA: FAVORITOS DO CONDOMÍNIO                                      */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'favoritos' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Heart size={20} color="#f87171" fill="#f87171" />
+                <h3 style={{ margin: 0, color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>Favoritos do Condomínio</h3>
+              </div>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: crmTheme.textSecondary }}>
+                Controle total da vitrine de favoritos: adicione, remova e defina a ordem exata do ranking exibido no carrossel da Home.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={seedDefaultCondoFavorites}
+                disabled={saving}
+                style={{
+                  ...btnGhost,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  color: crmTheme.accent,
+                  border: `1px solid ${crmTheme.accent}`,
+                  fontSize: 11,
+                  padding: '6px 12px',
+                }}
+              >
+                <RefreshCw size={12} /> Carregar Favoritos Sugeridos
+              </button>
+            </div>
+          </div>
+
+          {/* Dica explicativa */}
+          <div
+            style={{
+              background: crmTheme.cardBg,
+              border: `1px solid ${crmTheme.border}`,
+              borderRadius: 10,
+              padding: '10px 14px',
+              fontSize: 11,
+              color: crmTheme.textSecondary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>
+              ⭐ <strong>Como funciona o ranking:</strong> O 1º produto da lista receberá o selo <strong>#1</strong> na Home, o 2º o selo <strong>#2</strong>, e assim por diante. Use os botões ▲ e ▼ para subir ou descer a posição de qualquer item.
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: crmTheme.primary,
+                background: crmTheme.primaryLight,
+                padding: '3px 8px',
+                borderRadius: 99,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {condoFavorites.length} produto{condoFavorites.length === 1 ? '' : 's'} no ranking
+            </span>
+          </div>
+
+          {/* Seletor e Ordenador Completo de Produtos */}
+          <div style={{ ...card, padding: 14 }}>
+            <ProductPicker
+              products={products}
+              selectedIds={condoFavorites.map(f => f.productId)}
+              onChangeIds={handleUpdateCondoFavorites}
+              emptyHint="A vitrine de favoritos do condomínio está vazia. Adicione produtos abaixo ou clique em 'Carregar Favoritos Sugeridos'."
+            />
+          </div>
         </div>
       )}
 

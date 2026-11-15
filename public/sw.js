@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v8 (Force Long Polling & Clean Data URLs)
-const CACHE_NAME = 'mercado-v8-force-longpolling';
+// PWA Service Worker — Mercado Cache v9 (Condo Favorites Full Control)
+const CACHE_NAME = 'mercado-v9-condo-favorites-control';
 const ASSETS = [
   '/',
   '/index.html',
