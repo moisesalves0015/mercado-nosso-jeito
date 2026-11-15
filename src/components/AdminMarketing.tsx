@@ -963,10 +963,17 @@ export const AdminMarketing: React.FC = () => {
   const saveVitrine = useCallback(async (data: Partial<VitrineConfig>, id?: string) => {
     setSaving(true);
     try {
+      // Remove any undefined properties before sending to Firestore
+      const cleanedData: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) {
+          cleanedData[k] = v;
+        }
+      }
       if (id) {
-        await updateDoc(doc(db, 'home-config', 'data', 'vitrines', id), data as Record<string, unknown>);
+        await updateDoc(doc(db, 'home-config', 'data', 'vitrines', id), cleanedData);
       } else {
-        await addDoc(collection(db, 'home-config', 'data', 'vitrines'), data);
+        await addDoc(collection(db, 'home-config', 'data', 'vitrines'), cleanedData);
       }
       setEditingVitrineId(null);
       setCreatingVitrine(false);
@@ -1235,13 +1242,16 @@ export const AdminMarketing: React.FC = () => {
     if (!moSelectedId) { alert('Selecione um produto.'); return; }
     setSaving(true);
     try {
-      await addDoc(collection(db, 'home-config', 'data', 'mega-ofertas'), {
+      const docData: Record<string, unknown> = {
         productId: moSelectedId,
-        badge: moBadge || undefined,
         badgeStyle: moBadgeStyle,
         order: megaOfertas.length,
         validUntil: moValidUntil || null,
-      });
+      };
+      if (moBadge && moBadge.trim()) {
+        docData.badge = moBadge.trim();
+      }
+      await addDoc(collection(db, 'home-config', 'data', 'mega-ofertas'), docData);
       setMoSelectedId(''); setMoBadge(''); setMoValidUntil('');
     } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : String(e))); }
     finally { setSaving(false); }

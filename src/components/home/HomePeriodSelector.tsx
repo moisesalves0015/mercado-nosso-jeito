@@ -42,15 +42,24 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
     return resolveHomeProducts(ids, catalog.byId, PERIOD_LIMIT);
   }, [config, activePeriod, catalog.byId]);
 
-  const containerStyle = useMemo(
-    () =>
-      ({
-        '--period-card-bg': `url(${activeBackground})`,
-        backgroundImage: `linear-gradient(180deg, rgba(8, 20, 14, 0.28) 0%, rgba(5, 14, 10, 0.6) 100%), url(${activeBackground})`,
-        backgroundPosition: 'right center',
-      }) as CSSProperties,
-    [activeBackground],
-  );
+  const isDataUri = activeBackground ? activeBackground.startsWith('data:') : false;
+
+  const containerStyle = useMemo(() => {
+    if (isDataUri) {
+      return {
+        position: 'relative',
+        overflow: 'hidden',
+      } as CSSProperties;
+    }
+    return {
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundImage: `linear-gradient(180deg, rgba(8, 20, 14, 0.28) 0%, rgba(5, 14, 10, 0.6) 100%), url("${activeBackground}")`,
+      backgroundPosition: 'right center',
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat',
+    } as CSSProperties;
+  }, [activeBackground, isDataUri]);
 
   return (
     <div className="home-period-section">
@@ -96,22 +105,56 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
       </div>
 
       <div className="period-products-container period-products-container--premium" style={containerStyle}>
-        <Section
-          title={config?.title || meta.defaultTitle}
-          theme="hero"
-          linkText="Ver tudo >"
-          to={resolveVitrineDestination({}, products)}
-          loading={catalog.loading}
-          isEmpty={products.length === 0}
-          emptyMessage={emptyMessage(
-            catalog.error,
-            'Ainda não há produtos selecionados para este horário.',
-          )}
-        >
-          {products.map((product) => (
-            <ProductCard key={product.id} {...product} glassEffect />
-          ))}
-        </Section>
+        {/* Renderiza imagem diretamente via <img> quando for Data URI para decodificação nativa segura sem ERR_INVALID_URL */}
+        {isDataUri && (
+          <>
+            <img
+              src={activeBackground}
+              alt=""
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'right center',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(180deg, rgba(8, 20, 14, 0.28) 0%, rgba(5, 14, 10, 0.6) 100%)',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
+          </>
+        )}
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Section
+            title={config?.title || meta.defaultTitle}
+            theme="hero"
+            linkText="Ver tudo >"
+            to={resolveVitrineDestination({}, products)}
+            loading={catalog.loading}
+            isEmpty={products.length === 0}
+            emptyMessage={emptyMessage(
+              catalog.error,
+              'Ainda não há produtos selecionados para este horário.',
+            )}
+          >
+            {products.map((product) => (
+              <ProductCard key={product.id} {...product} glassEffect />
+            ))}
+          </Section>
+        </div>
       </div>
     </div>
   );

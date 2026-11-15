@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v6 (Flash Offer Timer & Red Digits)
-const CACHE_NAME = 'mercado-v6-flash-offer-timer';
+// PWA Service Worker — Mercado Cache v7 (Fix errors & Mega Ofertas addDoc)
+const CACHE_NAME = 'mercado-v7-fix-errors';
 const ASSETS = [
   '/',
   '/index.html',
