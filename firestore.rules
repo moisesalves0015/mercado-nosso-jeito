@@ -47,7 +47,8 @@ service cloud.firestore {
         hasAssignment()
           ? (assignment().status == 'active' && assignment().roleId in ['admin', 'superadmin'])
           : (request.auth.token.get('admin', false) == true ||
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') in ['admin', 'superadmin']))
       );
     }
 
@@ -61,7 +62,9 @@ service cloud.firestore {
       return isAuthenticated() && !isBanned() && (
         hasAssignment()
           ? assignment().status == 'active'
-          : isAdmin()
+          : (isAdmin() ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') in ['admin', 'superadmin', 'staff', 'operacoes', 'financeiro', 'suporte', 'catalogo', 'analista']))
       );
     }
 

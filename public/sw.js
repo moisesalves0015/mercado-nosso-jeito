@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v9 (Condo Favorites Full Control)
-const CACHE_NAME = 'mercado-v9-condo-favorites-control';
+// PWA Service Worker — Mercado Cache v10 (Clean Purchasing Fallback & Robust Rules)
+const CACHE_NAME = 'mercado-v10-clean-purchasing-fallback';
 const ASSETS = [
   '/',
   '/index.html',

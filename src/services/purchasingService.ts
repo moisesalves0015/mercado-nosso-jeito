@@ -76,6 +76,21 @@ function writeLocalCache<T>(key: string, value: T): void {
   }
 }
 
+function logLocalCacheFallback(context: string, err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  // Se for falta de permissão ou offline, o fallback para o cache local é o comportamento
+  // previsto da governança e não deve despejar logs de erro nem stack traces no console.
+  if (
+    msg.includes('insufficient permissions') ||
+    msg.includes('permission-denied') ||
+    msg.includes('Missing or insufficient') ||
+    msg.includes('offline')
+  ) {
+    return;
+  }
+  console.warn(`${context}:`, msg);
+}
+
 export interface PurchasingActor {
   uid: string;
   name: string;
@@ -125,7 +140,7 @@ export async function listSuppliers(): Promise<SupplierRecord[]> {
     writeLocalCache(LS_SUPPLIERS_KEY, sorted);
     return sorted;
   } catch (err) {
-    console.warn('Utilizando cache local de fornecedores:', err);
+    logLocalCacheFallback('Utilizando cache local de fornecedores', err);
     return readLocalCache<SupplierRecord[]>(LS_SUPPLIERS_KEY, []);
   }
 }
@@ -168,7 +183,7 @@ export async function saveSupplier(
   try {
     await setDoc(doc(db, SUPPLIERS_COL, id), record, { merge: true });
   } catch (err) {
-    console.warn('Fornecedor salvo localmente (sincronização Firestore pendente):', err);
+    logLocalCacheFallback('Fornecedor salvo localmente (sincronização Firestore pendente)', err);
   }
   return record;
 }
@@ -205,7 +220,7 @@ export async function listSupplierQuotes(): Promise<SupplierQuoteRecord[]> {
     writeLocalCache(LS_QUOTES_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de cotações:', err);
+    logLocalCacheFallback('Utilizando cache local de cotações', err);
     return readLocalCache<SupplierQuoteRecord[]>(LS_QUOTES_KEY, []);
   }
 }
@@ -241,7 +256,7 @@ export async function addSupplierQuote(
   try {
     await setDoc(doc(db, QUOTES_COL, id), record);
   } catch (err) {
-    console.warn('Cotação salva localmente (sincronização Firestore pendente):', err);
+    logLocalCacheFallback('Cotação salva localmente (sincronização Firestore pendente)', err);
   }
   return record;
 }
@@ -261,7 +276,7 @@ export async function listPurchasingProductMeta(): Promise<
     writeLocalCache(LS_META_KEY, map);
     return map;
   } catch (err) {
-    console.warn('Utilizando cache local de metadados de compras:', err);
+    logLocalCacheFallback('Utilizando cache local de metadados de compras', err);
     return readLocalCache<Record<string, PurchasingProductMetadata>>(LS_META_KEY, {});
   }
 }
@@ -284,7 +299,7 @@ export async function savePurchasingProductMeta(
   try {
     await setDoc(doc(db, PRODUCT_META_COL, meta.productId), record, { merge: true });
   } catch (err) {
-    console.warn('Metadados de produto salvos localmente:', err);
+    logLocalCacheFallback('Metadados de produto salvos localmente', err);
   }
   return record;
 }
@@ -311,7 +326,7 @@ export async function listPurchaseLists(): Promise<PurchaseListRecord[]> {
     writeLocalCache(LS_LISTS_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de listas de compra:', err);
+    logLocalCacheFallback('Utilizando cache local de listas de compra', err);
     return readLocalCache<PurchaseListRecord[]>(LS_LISTS_KEY, []);
   }
 }
@@ -326,7 +341,7 @@ export async function savePurchaseList(
   try {
     await setDoc(doc(db, PURCHASE_LISTS_COL, record.id), record, { merge: true });
   } catch (err) {
-    console.warn('Lista de compra salva localmente (sincronização Firestore pendente):', err);
+    logLocalCacheFallback('Lista de compra salva localmente (sincronização Firestore pendente)', err);
   }
   return record;
 }
@@ -876,7 +891,7 @@ export async function listPartnerVendors(): Promise<PartnerVendorRecord[]> {
     writeLocalCache(LS_PARTNERS_KEY, sorted);
     return sorted;
   } catch (err) {
-    console.warn('Utilizando cache local de parceiros vendedores:', err);
+    logLocalCacheFallback('Utilizando cache local de parceiros vendedores', err);
     return readLocalCache<PartnerVendorRecord[]>(LS_PARTNERS_KEY, []);
   }
 }
@@ -973,7 +988,7 @@ export async function savePartnerVendor(
   try {
     await setDoc(doc(db, PARTNERS_COL, id), record, { merge: true });
   } catch (err) {
-    console.warn('Parceiro salvo localmente (sincronização Firestore pendente):', err);
+    logLocalCacheFallback('Parceiro salvo localmente (sincronização Firestore pendente)', err);
   }
   return record;
 }
@@ -998,7 +1013,7 @@ export async function listProductOffers(): Promise<ProductOfferRecord[]> {
     writeLocalCache(LS_OFFERS_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de ofertas/origens de produtos:', err);
+    logLocalCacheFallback('Utilizando cache local de ofertas/origens de produtos', err);
     return readLocalCache<ProductOfferRecord[]>(LS_OFFERS_KEY, []);
   }
 }
@@ -1013,7 +1028,7 @@ export async function saveProductOffer(
   try {
     await setDoc(doc(db, OFFERS_COL, offer.id), offer, { merge: true });
   } catch (err) {
-    console.warn('Oferta/origem salva localmente:', err);
+    logLocalCacheFallback('Oferta/origem salva localmente', err);
   }
   return offer;
 }
@@ -1118,7 +1133,7 @@ export async function onboardProductAndOfferViaAssistant(
         note: `Entrada via Assistente de Compras: ${input.inclusionJustification}`,
       });
     } catch (err) {
-      console.warn('Rascunho de produto salvo localmente:', err);
+      logLocalCacheFallback('Rascunho de produto salvo localmente', err);
     }
   }
 
@@ -1350,7 +1365,7 @@ export async function confirmPartnerOfferAvailability(
       { merge: true },
     );
   } catch (err) {
-    console.warn('Sincronização de disponibilidade no catálogo local:', err);
+    logLocalCacheFallback('Sincronização de disponibilidade no catálogo local', err);
   }
 
   return saveProductOffer(updated);
@@ -1372,7 +1387,7 @@ export async function listCustodyMovements(): Promise<CustodyMovementRecord[]> {
     writeLocalCache(LS_CUSTODY_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de custódia consignada:', err);
+    logLocalCacheFallback('Utilizando cache local de custódia consignada', err);
     return readLocalCache<CustodyMovementRecord[]>(LS_CUSTODY_KEY, []);
   }
 }
@@ -1432,7 +1447,7 @@ export async function recordPartnerCustodyMovement(
   try {
     await setDoc(doc(db, CUSTODY_MOVEMENTS_COL, movementId), movement);
   } catch (err) {
-    console.warn('Movimento de custódia salvo localmente:', err);
+    logLocalCacheFallback('Movimento de custódia salvo localmente', err);
   }
 
   const nextPartnerStatus: PartnerOfferLifecycleStatus =
@@ -1540,7 +1555,7 @@ export async function listPartnerSettlements(): Promise<PartnerSettlementRecord[
     writeLocalCache(LS_SETTLEMENTS_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de repasses de parceiros:', err);
+    logLocalCacheFallback('Utilizando cache local de repasses de parceiros', err);
     return readLocalCache<PartnerSettlementRecord[]>(LS_SETTLEMENTS_KEY, []);
   }
 }
@@ -1568,7 +1583,7 @@ export async function upsertPartnerSettlement(
   try {
     await setDoc(doc(db, PARTNER_SETTLEMENTS_COL, next.id), next, { merge: true });
   } catch (err) {
-    console.warn('Liquidação de parceiro salva localmente:', err);
+    logLocalCacheFallback('Liquidação de parceiro salva localmente', err);
   }
   return next;
 }
@@ -1612,7 +1627,7 @@ export async function listOrderPickupTasks(): Promise<OrderPickupTaskRecord[]> {
     writeLocalCache(LS_PICKUP_TASKS_KEY, list);
     return list;
   } catch (err) {
-    console.warn('Utilizando cache local de tarefas de coleta:', err);
+    logLocalCacheFallback('Utilizando cache local de tarefas de coleta', err);
     return readLocalCache<OrderPickupTaskRecord[]>(LS_PICKUP_TASKS_KEY, []);
   }
 }
@@ -1682,7 +1697,7 @@ export async function upsertOrderPickupTask(
   try {
     await setDoc(doc(db, ORDER_PICKUP_TASKS_COL, id), record, { merge: true });
   } catch (err) {
-    console.warn('Tarefa de coleta salva localmente:', err);
+    logLocalCacheFallback('Tarefa de coleta salva localmente', err);
   }
   return record;
 }
