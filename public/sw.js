@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v5 (Force Update Vitrines & Home)
-const CACHE_NAME = 'mercado-v5-showcase-control';
+// PWA Service Worker — Mercado Cache v6 (Flash Offer Timer & Red Digits)
+const CACHE_NAME = 'mercado-v6-flash-offer-timer';
 const ASSETS = [
   '/',
   '/index.html',

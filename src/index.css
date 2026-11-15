@@ -9423,24 +9423,59 @@ body.light-mode .roulette-bg-overlay {
   color: #FFDF73;
 }
 
-/* Badge de Oferta Relâmpago com Contagem Regressiva alinhado ao título Categorias */
+/* Oferta Relâmpago com Contagem Regressiva alinhada ao título Categorias */
+.flash-offer-countdown-badge {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
 .flash-offer-countdown-badge:hover {
+  opacity: 0.92;
   transform: translateY(-1px);
-  border-color: rgba(255, 223, 115, 0.7) !important;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.24) 0%, rgba(255, 223, 115, 0.1) 100%) !important;
 }
 
 .flash-offer-countdown-badge:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
-body.light-mode .flash-offer-countdown-badge {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%) !important;
-  border-color: rgba(180, 83, 9, 0.3) !important;
+.flash-offer-digit-box {
+  background: #E53935;
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 900;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  min-width: 17px;
+  text-align: center;
+  display: inline-block;
+  line-height: 1.25;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-body.light-mode .flash-offer-countdown-badge span {
-  color: #78350f !important;
+.flash-offer-colon {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 10px;
+  line-height: 1;
+}
+
+body.light-mode .flash-offer-countdown-badge .flash-offer-label {
+  color: #b45309 !important;
+}
+
+body.light-mode .flash-offer-countdown-badge .flash-offer-termina {
+  color: #1e293b !important;
+}
+
+body.light-mode .flash-offer-colon {
+  color: #1e293b !important;
 }
 
 .category-circle-link.active .category-circle-label,
