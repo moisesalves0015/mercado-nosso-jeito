@@ -61,6 +61,63 @@ function reportIssues(issues: ConfigIssue[]) {
   });
 }
 
+const STORAGE_KEY = 'app-home-config';
+
+function loadCachedHomeConfig(): HomeConfig {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        const vitrines = Array.isArray(parsed.vitrines) ? parsed.vitrines : [];
+        const heroBanners = Array.isArray(parsed.heroBanners) ? parsed.heroBanners : [];
+        if (vitrines.length > 0 || heroBanners.length > 0) {
+          return {
+            vitrines,
+            periodConfig: parsed.periodConfig || {},
+            megaOfertas: Array.isArray(parsed.megaOfertas) ? parsed.megaOfertas : [],
+            heroBanners,
+            condoFavorites: Array.isArray(parsed.condoFavorites) ? parsed.condoFavorites : [],
+            issues: [],
+            loading: false,
+            error: false,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[home-config] Falha ao ler cache local de home-config', err);
+  }
+  return {
+    vitrines: [],
+    periodConfig: {},
+    megaOfertas: [],
+    heroBanners: [],
+    condoFavorites: [],
+    issues: [],
+    loading: true,
+    error: false,
+  };
+}
+
+function persistHomeConfigCache(cfg: HomeConfig) {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        vitrines: cfg.vitrines,
+        periodConfig: cfg.periodConfig,
+        megaOfertas: cfg.megaOfertas,
+        heroBanners: cfg.heroBanners,
+        condoFavorites: cfg.condoFavorites,
+      })
+    );
+  } catch {
+    // safe fallback if storage quota exceeded
+  }
+}
+
 type Normalizer<T> = (id: string, raw: unknown) => { value: T | null; issues: ConfigIssue[] };
 
 function readCollection<T>(docs: QueryDocumentSnapshot<DocumentData>[], normalize: Normalizer<T>) {
@@ -76,16 +133,7 @@ function readCollection<T>(docs: QueryDocumentSnapshot<DocumentData>[], normaliz
 }
 
 export const useHomeConfig = () => {
-  const [config, setConfig] = useState<HomeConfig>({
-    vitrines: [],
-    periodConfig: {},
-    megaOfertas: [],
-    heroBanners: [],
-    condoFavorites: [],
-    issues: [],
-    loading: true,
-    error: false,
-  });
+  const [config, setConfig] = useState<HomeConfig>(loadCachedHomeConfig);
 
   useEffect(() => {
     const fail = (name: string) => (err: unknown) => {
@@ -96,34 +144,54 @@ export const useHomeConfig = () => {
     const unsubs = [
       onSnapshot(collection(db, 'home-config', 'data', 'vitrines'), snap => {
         const { values, issues } = readCollection(snap.docs, normalizeVitrine);
-        setConfig(prev => ({
-          ...prev,
-          vitrines: values.sort(byOrderThenId),
-          issues: [...prev.issues.filter(i => i.scope !== 'vitrines'), ...issues],
-          loading: false,
-        }));
+        setConfig(prev => {
+          const next = {
+            ...prev,
+            vitrines: values.sort(byOrderThenId),
+            issues: [...prev.issues.filter(i => i.scope !== 'vitrines'), ...issues],
+            loading: false,
+          };
+          persistHomeConfigCache(next);
+          return next;
+        });
       }, fail('vitrines')),
 
       onSnapshot(collection(db, 'home-config', 'data', 'period-config'), snap => {
         const { values } = readCollection(snap.docs, normalizePeriodConfig);
         const periods: Record<string, PeriodConfig> = {};
         values.forEach(p => { periods[p.id] = p; });
-        setConfig(prev => ({ ...prev, periodConfig: periods }));
+        setConfig(prev => {
+          const next = { ...prev, periodConfig: periods };
+          persistHomeConfigCache(next);
+          return next;
+        });
       }, fail('period-config')),
 
       onSnapshot(collection(db, 'home-config', 'data', 'mega-ofertas'), snap => {
         const { values } = readCollection(snap.docs, normalizeMegaOferta);
-        setConfig(prev => ({ ...prev, megaOfertas: values.sort(byOrderThenId) }));
+        setConfig(prev => {
+          const next = { ...prev, megaOfertas: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
       }, fail('mega-ofertas')),
 
       onSnapshot(collection(db, 'home-config', 'data', 'hero-banners'), snap => {
         const { values } = readCollection(snap.docs, normalizeHeroBanner);
-        setConfig(prev => ({ ...prev, heroBanners: values.sort(byOrderThenId) }));
+        setConfig(prev => {
+          const next = { ...prev, heroBanners: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
       }, fail('hero-banners')),
 
       onSnapshot(collection(db, 'home-config', 'data', 'condo-favorites'), snap => {
         const { values } = readCollection(snap.docs, normalizeCondoFavorite);
-        setConfig(prev => ({ ...prev, condoFavorites: values.sort(byOrderThenId) }));
+        setConfig(prev => {
+          const next = { ...prev, condoFavorites: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
       }, fail('condo-favorites')),
     ];
 

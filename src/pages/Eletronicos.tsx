@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { defaultProducts } from '../data/defaultProducts';
+import { PageHeroBanner } from '../components/common/PageHeroBanner';
+
+const DEFAULT_ELETRONICOS_SLIDES = [
+  {
+    id: 'default-eletronicos',
+    title: 'Eletrônicos & Acessórios • Cabos, Fones e Carregadores',
+    image: '/hero_background.png',
+    link: '/eletronicos',
+  },
+];
 
 interface Product {
   id: string;
@@ -79,30 +89,8 @@ export const Eletronicos = () => {
         <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>EMERGÊNCIA & CONVENIÊNCIA</p>
       </div>
 
-      {/* TECH NEON EXPRESS BANNER */}
-      <div className="promo-banner" style={{ 
-        margin: '16px 0', 
-        background: 'linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%)', 
-        border: '1px solid rgba(168, 85, 247, 0.3)',
-        boxShadow: '0 8px 30px rgba(168, 85, 247, 0.15)',
-        borderRadius: '12px',
-        padding: '16px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div className="promo-text" style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-            <Zap size={12} color="#DDD6FE" />
-            <span style={{ color: '#DDD6FE', fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Entrega Turbo</span>
-          </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', margin: '0 0 4px 0' }}>Bateria no fim ou fone quebrado?</h3>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '11px', margin: 0, lineHeight: 1.3 }}>
-            Não entre em pânico! Nós entregamos cabos, fones de ouvido e carregadores pré-testados na sua porta em minutos.
-          </p>
-        </div>
-        <span style={{ fontSize: '32px', marginLeft: '12px' }}>⚡</span>
-      </div>
+      {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}
+      <PageHeroBanner placement="eletronicos" defaultSlides={DEFAULT_ELETRONICOS_SLIDES} />
 
       {/* PRE-TESTED & WARRANTY NOTICE */}
       <div className="glass-panel" style={{ 

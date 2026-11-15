@@ -94,6 +94,16 @@ export interface MegaOfertaConfig {
   validUntil?: string | null;
 }
 
+export type BannerPlacement =
+  | 'home'
+  | 'promotions'
+  | 'bebidas'
+  | 'padaria'
+  | 'tabacaria'
+  | 'eletronicos'
+  | 'all'
+  | string;
+
 /** home-config/data/hero-banners/{id} */
 export interface HeroBannerConfig {
   id: string;
@@ -107,6 +117,10 @@ export interface HeroBannerConfig {
   highlightWords: { word: string; color: string }[];
   order: number;
   active?: boolean;
+  placement?: BannerPlacement;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
+  posterImage?: string;
 }
 
 /** home-config/data/condo-favorites/{id} — curadoria administrativa dos favoritos do condomínio. */

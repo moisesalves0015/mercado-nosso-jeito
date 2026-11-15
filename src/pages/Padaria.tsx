@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Cookie, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Info } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { defaultProducts } from '../data/defaultProducts';
+import { PageHeroBanner } from '../components/common/PageHeroBanner';
+
+const DEFAULT_PADARIA_SLIDES = [
+  {
+    id: 'default-padaria',
+    title: 'Pães & Croissants Frescos • Fornos Ligados o Dia Todo',
+    image: '/pao_de_queijo.png',
+    link: '/padaria',
+  },
+];
 
 interface Product {
   id: string;
@@ -80,23 +90,8 @@ export const Padaria = () => {
         <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>PÃES E DOCES ASSADOS NA HORA</p>
       </div>
 
-      {/* BAKERY BANNER */}
-      <div className="promo-banner" style={{ 
-        margin: '16px 4px', 
-        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
-        border: '1px solid rgba(251, 191, 36, 0.3)',
-        boxShadow: '0 8px 30px rgba(251, 191, 36, 0.15)'
-      }}>
-        <div className="promo-text">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Cookie size={11} color="#fff" />
-            <span style={{ color: '#fff', opacity: 0.9, fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Fresco todo dia</span>
-          </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Pães & Croissants</h3>
-          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '11px' }}>Fornos ligados o dia todo para você!</p>
-        </div>
-        <Cookie size={40} color="#fff" />
-      </div>
+      {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}
+      <PageHeroBanner placement="padaria" defaultSlides={DEFAULT_PADARIA_SLIDES} />
 
       {/* WARNING BANNER */}
       <div className="glass-panel" style={{ 

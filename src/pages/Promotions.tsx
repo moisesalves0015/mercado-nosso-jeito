@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
-import { PartyPopper, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { isProductPromotionCurrent } from '../utils/productPricing';
+import { PageHeroBanner } from '../components/common/PageHeroBanner';
+
+const DEFAULT_PROMO_SLIDES = [
+  {
+    id: 'default-promo',
+    title: 'Super Descontos • Leve Mais por Menos',
+    image: '/hero_background.png',
+    link: '/promotions',
+  },
+];
 
 interface Product {
   id: string;
@@ -46,23 +55,8 @@ export const Promotions = () => {
         <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>OFERTAS EXCLUSIVAS DO DIA</p>
       </div>
 
-      {/* PROMO BANNER */}
-      <div className="promo-banner" style={{ 
-        margin: '16px 4px', 
-        background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', 
-        border: '1px solid rgba(239, 68, 68, 0.3)',
-        boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)'
-      }}>
-        <div className="promo-text">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Flame size={11} color="#fff" />
-            <span style={{ color: '#fff', opacity: 0.9, fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Super Descontos</span>
-          </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>Leve Mais por Menos</h3>
-          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '11px' }}>Aproveite as ofertas por tempo limitado!</p>
-        </div>
-        <PartyPopper size={40} color="#fff" />
-      </div>
+      {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}
+      <PageHeroBanner placement="promotions" defaultSlides={DEFAULT_PROMO_SLIDES} />
 
       {/* PRODUCTS GRID */}
       <h3 style={{ margin: '0 0 12px 6px', color: 'var(--text-primary)', fontSize: '15px', fontWeight: 800 }}>Destaques em Oferta</h3>

@@ -163,6 +163,25 @@ describe('mega-ofertas e banners', () => {
 
     const inactive = normalizeHeroBanner('b2', { title: 'Banner Inativo', image: '/hero_bebidas.png', active: false });
     assert.equal(inactive.value?.active, false);
+
+    // Suporte a vídeos em loop nos banners e anúncios
+    const videoBanner = normalizeHeroBanner('v1', {
+      title: 'Anúncio em Vídeo',
+      videoUrl: 'https://cdn.exemplo.com/loop.mp4',
+      image: '/poster.jpg',
+      mediaType: 'video',
+    });
+    assert.equal(videoBanner.value?.mediaType, 'video');
+    assert.equal(videoBanner.value?.videoUrl, 'https://cdn.exemplo.com/loop.mp4');
+    assert.equal(videoBanner.value?.posterImage, '/poster.jpg');
+
+    // Auto-detect de vídeo se extensão for .mp4/.webm no campo image
+    const autoVideo = normalizeHeroBanner('v2', {
+      title: 'Anúncio Auto MP4',
+      image: '/videos/promo_cerveja.webm',
+    });
+    assert.equal(autoVideo.value?.mediaType, 'video');
+    assert.equal(autoVideo.value?.videoUrl, '/videos/promo_cerveja.webm');
   });
 
   it('preserva imagens complementares de produtos e sanitiza URLs de imagem e banners', () => {

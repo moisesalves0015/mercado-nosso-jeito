@@ -148,18 +148,31 @@ function AppContent() {
   }, [theme]);
 
   useEffect(() => {
-    const splash = document.getElementById('pwa-splash-screen');
-    if (splash) {
-      // Small delay to ensure the DOM has fully rendered
-      const timeout = setTimeout(() => {
+    let dismissed = false;
+    const dismissSplash = () => {
+      if (dismissed) return;
+      dismissed = true;
+      const splash = document.getElementById('pwa-splash-screen');
+      if (splash) {
         splash.classList.add('fade-out');
-        const removeTimeout = setTimeout(() => {
+        setTimeout(() => {
           splash.remove();
-        }, 400); // matches the CSS transition duration
-        return () => clearTimeout(removeTimeout);
-      }, 300);
-      return () => clearTimeout(timeout);
-    }
+        }, 450);
+      }
+    };
+
+    // Global coordinator for components when initial critical content is hydrated
+    (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash = () => {
+      setTimeout(dismissSplash, 100);
+    };
+
+    // Safe fallback timeout (1300ms) to ensure splash screen never hangs on slow network
+    const fallbackTimeout = setTimeout(dismissSplash, 1300);
+
+    return () => {
+      clearTimeout(fallbackTimeout);
+      delete (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
+    };
   }, []);
 
   // Capture referral code from URL query params

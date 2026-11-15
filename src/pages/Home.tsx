@@ -10,7 +10,7 @@
  *  - categorias:      src/data/homeCategories.ts (declarativo).
  * Nenhum produto, preço ou métrica fictícia é gerado no front-end.
  */
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
 import { HomeHero } from '../components/home/HomeHero';
@@ -24,6 +24,7 @@ import { HomeBenefitCards, HomePromoBanners } from '../components/home/HomeBenef
 import { HomeCategoryCarousel } from '../components/home/HomeCategoryCarousel';
 import { HomeCondoFavorites } from '../components/home/HomeCondoFavorites';
 import { HomeFooter } from '../components/home/HomeFooter';
+import { HomeFullPageSkeleton } from '../components/home/HomeFullPageSkeleton';
 import { useCatalog } from '../hooks/useCatalog';
 import { useHomeConfig } from '../hooks/useHomeConfig';
 import { useAdminConfig } from '../hooks/useAdminConfig';
@@ -50,12 +51,18 @@ export const Home = () => {
   // Cópia ordenada de banners ativos (nunca muta o array recebido do hook).
   const heroSlides = useMemo<HeroSlide[]>(() => {
     if (homeConfig.heroBanners.length === 0) return DEFAULT_HERO_SLIDES;
-    const activeBanners = homeConfig.heroBanners.filter(b => b.active !== false);
+    const activeBanners = homeConfig.heroBanners.filter(
+      b => b.active !== false && (!b.placement || b.placement === 'home' || b.placement === 'all')
+    );
+    if (activeBanners.length === 0) return DEFAULT_HERO_SLIDES;
     return [...activeBanners].sort(byOrder).map(b => ({
       id: b.id,
       title: b.title || 'Banner',
       image: b.image,
       link: b.link,
+      videoUrl: b.videoUrl,
+      mediaType: b.mediaType,
+      posterImage: b.posterImage,
     }));
   }, [homeConfig.heroBanners]);
 
@@ -67,8 +74,25 @@ export const Home = () => {
   const quickCategories = useMemo(() => QUICK_CATEGORIES.filter(c => c.active).sort(byOrder), []);
   const visualCategories = useMemo(() => VISUAL_CATEGORIES.filter(c => c.active).sort(byOrder), []);
 
+  const isPageReady =
+    (!catalog.loading || catalog.products.length > 0) &&
+    (!homeConfig.loading || homeConfig.vitrines.length > 0);
+
+  useEffect(() => {
+    if (isPageReady) {
+      const dismiss = (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
+      if (typeof dismiss === 'function') {
+        dismiss();
+      }
+    }
+  }, [isPageReady]);
+
+  if (!isPageReady) {
+    return <HomeFullPageSkeleton />;
+  }
+
   return (
-    <div style={{ width: '100%', overflowX: 'hidden' }}>
+    <div className="page-fade-in" style={{ width: '100%', overflowX: 'hidden' }}>
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
         <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
           {/* Convite de instalação do PWA */}

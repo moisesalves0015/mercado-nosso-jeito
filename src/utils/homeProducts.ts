@@ -313,13 +313,20 @@ export function normalizeHeroBanner(id: string, raw: unknown): { value: HeroBann
   }
   const title = asTrimmedString(raw.title);
   const image = asTrimmedString(raw.image);
-  if (!title && !image) {
-    return { value: null, issues: [{ scope: 'hero-banners', id, message: 'Banner sem título e sem imagem; ignorado.' }] };
+  const rawVideoUrl = asTrimmedString(raw.videoUrl);
+  const isVideoExt = (url: string) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/');
+  const videoUrl = rawVideoUrl || (isVideoExt(image) ? image : undefined);
+  const mediaType: 'image' | 'video' =
+    raw.mediaType === 'video' || Boolean(videoUrl) ? 'video' : 'image';
+  const posterImage = asTrimmedString(raw.posterImage) || (videoUrl && !isVideoExt(image) ? image : undefined);
+
+  if (!title && !image && !videoUrl) {
+    return { value: null, issues: [{ scope: 'hero-banners', id, message: 'Banner sem título, sem imagem e sem vídeo; ignorado.' }] };
   }
   const issues: ConfigIssue[] = [];
   const link = resolveLink(raw.link);
   if (raw.link && !link) issues.push({ scope: 'hero-banners', id, message: 'Link inválido; banner ficará sem destino.' });
-  if (!image) issues.push({ scope: 'hero-banners', id, message: 'Banner sem imagem; será exibido o título em texto.' });
+  if (!image && !videoUrl) issues.push({ scope: 'hero-banners', id, message: 'Banner sem imagem ou vídeo; será exibido o título em texto.' });
   return {
     value: {
       id,
@@ -333,6 +340,10 @@ export function normalizeHeroBanner(id: string, raw: unknown): { value: HeroBann
       highlightWords: Array.isArray(raw.highlightWords) ? (raw.highlightWords as HeroBannerConfig['highlightWords']) : [],
       order: toOrder(raw.order),
       active: raw.active !== false,
+      placement: asTrimmedString((raw as Record<string, unknown>).placement) || 'home',
+      videoUrl: videoUrl || undefined,
+      mediaType,
+      posterImage: posterImage || undefined,
     },
     issues,
   };

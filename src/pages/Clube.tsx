@@ -1071,7 +1071,20 @@ export const Clube = () => {
                 {/* TOP BANNER VISUAL */}
                 <div className="clube-ad-banner-wrapper">
                   {ad.bannerUrl ? (
-                    <img src={ad.bannerUrl} alt={ad.brand} className="clube-ad-banner" />
+                    /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(ad.bannerUrl) || ad.bannerUrl.startsWith('data:video/') ? (
+                      <video
+                        src={ad.bannerUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        webkit-playsinline="true"
+                        className="clube-ad-banner"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <img src={ad.bannerUrl} alt={ad.brand} className="clube-ad-banner" />
+                    )
                   ) : (
                     <div className="clube-ad-banner" style={{ background: 'linear-gradient(135deg, #0d261a, #163b28)' }} />
                   )}
@@ -1238,7 +1251,20 @@ export const Clube = () => {
           <div className={`clube-ad-theater-overlay ${activeAdBrandClass}`} role="dialog" aria-modal="true" aria-label={`Campanha ${activeAd.title}`}>
             <div className="clube-ad-theater-screen">
               {activeAd.bannerUrl ? (
-                <img src={activeAd.bannerUrl} alt={activeAd.brand} className="clube-ad-theater-billboard" />
+                /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(activeAd.bannerUrl) || activeAd.bannerUrl.startsWith('data:video/') ? (
+                  <video
+                    src={activeAd.bannerUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    webkit-playsinline="true"
+                    className="clube-ad-theater-billboard"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <img src={activeAd.bannerUrl} alt={activeAd.brand} className="clube-ad-theater-billboard" />
+                )
               ) : (
                 <div className="clube-ad-theater-billboard" style={{ background: 'linear-gradient(160deg, #0b1f14, #143624)' }} />
               )}

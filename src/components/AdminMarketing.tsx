@@ -3,7 +3,8 @@ import {
   Layers, Clock, Zap, Target, Plus, Trash2, Edit2, Check, X,
   ArrowUp, ArrowDown, Eye, EyeOff, Image, Link2, Star, Tag,
   RefreshCw, Search, Megaphone, ChevronUp, Save, UploadCloud,
-  AlertCircle, Sunrise, Sun, Sunset, Moon, Wind, Heart,
+  AlertCircle, Sunrise, Sun, Sunset, Moon, Wind, Heart, Sparkles,
+  Video, Film,
 } from 'lucide-react';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc, getDocs,
@@ -116,6 +117,37 @@ const btnIconSm = (color = crmTheme.textSecondary): React.CSSProperties => ({
   color, cursor: 'pointer',
   boxShadow: crmTheme.shadowSm,
 });
+
+export const BANNER_PAGES = [
+  { id: 'all', label: 'Todas as Páginas', icon: '🌐' },
+  { id: 'home', label: 'Home (Principal)', icon: '🏠' },
+  { id: 'promotions', label: 'Promoções', icon: '🔥' },
+  { id: 'bebidas', label: 'Bebidas', icon: '🍻' },
+  { id: 'padaria', label: 'Padaria', icon: '🥐' },
+  { id: 'tabacaria', label: 'Tabacaria', icon: '🚬' },
+  { id: 'eletronicos', label: 'Eletrônicos', icon: '⚡' },
+] as const;
+
+export function getPlacementMeta(placement?: string) {
+  const p = (placement || 'home').toLowerCase().trim();
+  switch (p) {
+    case 'promotions':
+      return { label: 'Promoções', icon: '🔥', bg: 'rgba(239, 68, 68, 0.15)', text: '#fca5a5', border: 'rgba(239, 68, 68, 0.3)' };
+    case 'bebidas':
+      return { label: 'Bebidas', icon: '🍻', bg: 'rgba(14, 165, 233, 0.15)', text: '#7dd3fc', border: 'rgba(14, 165, 233, 0.3)' };
+    case 'padaria':
+      return { label: 'Padaria', icon: '🥐', bg: 'rgba(245, 158, 11, 0.15)', text: '#fcd34d', border: 'rgba(245, 158, 11, 0.3)' };
+    case 'tabacaria':
+      return { label: 'Tabacaria', icon: '🚬', bg: 'rgba(168, 85, 247, 0.15)', text: '#d8b4fe', border: 'rgba(168, 85, 247, 0.3)' };
+    case 'eletronicos':
+      return { label: 'Eletrônicos', icon: '⚡', bg: 'rgba(234, 179, 8, 0.15)', text: '#fde047', border: 'rgba(234, 179, 8, 0.3)' };
+    case 'all':
+      return { label: 'Todas as Páginas', icon: '🌐', bg: 'rgba(99, 102, 241, 0.15)', text: '#a5b4fc', border: 'rgba(99, 102, 241, 0.3)' };
+    case 'home':
+    default:
+      return { label: 'Home', icon: '🏠', bg: 'rgba(16, 185, 129, 0.15)', text: '#6ee7b7', border: 'rgba(16, 185, 129, 0.3)' };
+  }
+}
 
 // ─── SubTabBtn — module-level to prevent recreation on every render ────────────
 interface SubTabBtnProps {
@@ -934,6 +966,7 @@ export const AdminMarketing: React.FC = () => {
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
   const [creatingBanner, setCreatingBanner] = useState(false);
   const [bannerDraft, setBannerDraft] = useState<Partial<HeroBannerConfig>>({});
+  const [bannerPageFilter, setBannerPageFilter] = useState<string>('all');
   const [uploadingBannerImg, setUploadingBannerImg] = useState(false);
   const [uploadingBannerRowId, setUploadingBannerRowId] = useState<string | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
@@ -1392,25 +1425,77 @@ export const AdminMarketing: React.FC = () => {
           highlightWords: def.highlightWords || [],
           order: def.order,
           active: def.active !== false,
+          placement: def.placement || 'home',
         },
         { merge: true }
       );
     }
   }, [heroBanners.length]);
 
+  const seedAllPageBanners = useCallback(async () => {
+    if (!confirm('Deseja carregar os banners sugeridos para todas as páginas (Home, Promoções, Bebidas, Padaria, Tabacaria e Eletrônicos)? Banners existentes serão preservados.')) return;
+    setSaving(true);
+    try {
+      for (const def of DEFAULT_HERO_BANNERS) {
+        await setDoc(
+          doc(db, 'home-config', 'data', 'hero-banners', def.id),
+          {
+            title: def.title,
+            subtitle: def.subtitle,
+            image: def.image,
+            link: def.link,
+            buttonText: def.buttonText,
+            badgeText: def.badgeText || '',
+            highlightWords: def.highlightWords || [],
+            order: def.order,
+            active: def.active !== false,
+            placement: def.placement || 'home',
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+      alert('Banners padrão carregados com sucesso para todas as páginas!');
+    } catch (err) {
+      alert('Erro ao carregar banners das páginas: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   const handleBannerImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingBannerImg(true);
     try {
+      if (file.type.startsWith('video/')) {
+        if (file.size > 25 * 1024 * 1024) {
+          alert('O vídeo selecionado possui mais de 25MB. Para anúncios e banners com reprodução em loop rápida no app, recomendamos vídeos curtos de até 20MB (MP4 ou WebM).');
+          return;
+        }
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        setBannerDraft(prev => ({
+          ...prev,
+          videoUrl: dataUrl,
+          mediaType: 'video',
+          image: prev.image || prev.posterImage || '',
+        }));
+        return;
+      }
+
       const uploadedUrl = await uploadOrCompressImage(file, {
         folder: 'banners',
         maxDimension: 960,
         quality: 0.82,
       });
-      setBannerDraft(prev => ({ ...prev, image: uploadedUrl }));
+      setBannerDraft(prev => ({ ...prev, image: uploadedUrl, mediaType: prev.mediaType === 'video' ? 'video' : 'image' }));
     } catch (err) {
-      alert('Erro ao processar a imagem do banner: ' + (err instanceof Error ? err.message : String(err)));
+      alert('Erro ao processar o arquivo do banner: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploadingBannerImg(false);
       if (e.target) e.target.value = '';
@@ -1425,6 +1510,30 @@ export const AdminMarketing: React.FC = () => {
       setUploadingBannerRowId(banner.id);
       try {
         await ensureDefaultBannersSeeded();
+        if (file.type.startsWith('video/')) {
+          if (file.size > 25 * 1024 * 1024) {
+            alert('O vídeo possui mais de 25MB. Recomendamos vídeos em loop curtos de até 20MB.');
+            return;
+          }
+          const reader = new FileReader();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          await setDoc(
+            doc(db, 'home-config', 'data', 'hero-banners', banner.id),
+            {
+              videoUrl: dataUrl,
+              mediaType: 'video',
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+          alert('Vídeo em loop do banner atualizado com sucesso!');
+          return;
+        }
+
         const uploadedUrl = await uploadOrCompressImage(file, {
           folder: 'banners',
           maxDimension: 960,
@@ -1448,7 +1557,7 @@ export const AdminMarketing: React.FC = () => {
         );
         alert('Imagem do banner atualizada com sucesso!');
       } catch (err) {
-        alert('Erro ao atualizar imagem do banner: ' + (err instanceof Error ? err.message : String(err)));
+        alert('Erro ao atualizar mídia do banner: ' + (err instanceof Error ? err.message : String(err)));
       } finally {
         setUploadingBannerRowId(null);
         uploadingBannerRowTarget.current = null;
@@ -1482,26 +1591,43 @@ export const AdminMarketing: React.FC = () => {
   );
 
   const saveBanner = useCallback(async () => {
-    if (!bannerDraft.title?.trim() && !bannerDraft.image?.trim()) {
-      alert('Informe pelo menos o título ou envie uma imagem para o banner.');
+    const isVideoExt = (url?: string) => Boolean(url && (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/')));
+    const rawVideoUrl = (bannerDraft.videoUrl || '').trim();
+    const rawImage = (bannerDraft.image || '').trim();
+    const isVideo = bannerDraft.mediaType === 'video' || Boolean(rawVideoUrl) || isVideoExt(rawImage);
+    const resolvedVideoUrl = rawVideoUrl || (isVideoExt(rawImage) ? rawImage : '');
+    const resolvedImage = isVideoExt(rawImage) ? (bannerDraft.posterImage || '') : rawImage;
+
+    if (!bannerDraft.title?.trim() && !resolvedImage && !resolvedVideoUrl) {
+      alert('Informe pelo menos o título, uma imagem ou o vídeo para o banner.');
       return;
     }
     setSaving(true);
     try {
       await ensureDefaultBannersSeeded();
       const currentCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
-      const data = {
+      const data: Record<string, unknown> = {
         title: bannerDraft.title?.trim() || 'Banner Principal',
         subtitle: bannerDraft.subtitle?.trim() || '',
-        image: (bannerDraft.image || '').trim(),
+        image: resolvedImage,
         link: (bannerDraft.link || '/promotions').trim(),
         buttonText: (bannerDraft.buttonText || 'Ver Oferta').trim(),
         badgeText: (bannerDraft.badgeText || '').trim(),
         highlightWords: bannerDraft.highlightWords || [],
         order: bannerDraft.order ?? currentCount,
         active: bannerDraft.active !== false,
+        placement: (bannerDraft.placement || (bannerPageFilter !== 'all' ? bannerPageFilter : 'home')).trim(),
+        mediaType: isVideo ? 'video' : 'image',
         updatedAt: new Date().toISOString(),
       };
+
+      if (resolvedVideoUrl) {
+        data.videoUrl = resolvedVideoUrl;
+      }
+      if (bannerDraft.posterImage?.trim()) {
+        data.posterImage = bannerDraft.posterImage.trim();
+      }
+
       if (editingBannerId) {
         await setDoc(doc(db, 'home-config', 'data', 'hero-banners', editingBannerId), data, { merge: true });
       } else {
@@ -1516,7 +1642,7 @@ export const AdminMarketing: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [bannerDraft, editingBannerId, heroBanners.length, ensureDefaultBannersSeeded]);
+  }, [bannerDraft, editingBannerId, heroBanners.length, ensureDefaultBannersSeeded, bannerPageFilter]);
 
   const toggleBannerActive = useCallback(
     async (banner: HeroBannerConfig) => {
@@ -1585,7 +1711,7 @@ export const AdminMarketing: React.FC = () => {
         <SubTabBtn id="favoritos"   label="Favoritos"    icon={Heart}      badge={condoFavorites.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}                                  activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="heroBanners" label="Hero Banners" icon={Image}       badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="heroBanners" label="Banners por Página" icon={Image} badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
         <SubTabBtn id="campanhas"   label="Campanhas"    icon={Megaphone}                              activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
       </div>
 
@@ -2126,68 +2252,236 @@ export const AdminMarketing: React.FC = () => {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* SUB-ABA: HERO BANNERS                                                */}
+      {/* SUB-ABA: HERO BANNERS POR PÁGINA                                      */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {activeSubTab === 'heroBanners' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>🎯 Hero Banners & Destaques Promocionais</h3>
+              <h3 style={{ margin: '0 0 2px', color: crmTheme.textPrimary, fontSize: 16, fontWeight: 900 }}>
+                🎯 Banners & Hero por Página (Home, Promoções, Bebidas, Padaria, Tabacaria, Eletrônicos)
+              </h3>
               <p style={{ margin: 0, fontSize: 11, color: crmTheme.textSecondary }}>
-                Gerencie a imagem principal da Home, adicione novos banners, substitua imagens por arquivo ou URL e ative/desative slides em tempo real.
+                Crie e personalize banners no estilo Hero para qualquer página. Faça upload de novas fotos, troque imagens em tempo real e escolha onde o banner deve aparecer.
               </p>
             </div>
             {!creatingBanner && !editingBannerId && (
-              <button
-                onClick={() => {
-                  const baseCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
-                  setCreatingBanner(true);
-                  setBannerDraft({ order: baseCount, active: true, link: '/promotions', buttonText: 'Ver Oferta' });
-                }}
-                style={btnGold}
-              >
-                <Plus size={13} /> Novo Banner
-              </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={seedAllPageBanners}
+                  disabled={saving}
+                  style={{ ...btnGhost, color: crmTheme.primary, borderColor: crmTheme.primary }}
+                  title="Carregar banners pré-configurados para todas as páginas"
+                >
+                  <Sparkles size={13} /> Carregar Banners das Páginas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const baseCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
+                    const defaultPlacement = bannerPageFilter !== 'all' ? bannerPageFilter : 'home';
+                    const defaultLink =
+                      defaultPlacement === 'home'
+                        ? '/promotions'
+                        : `/${defaultPlacement}`;
+                    setCreatingBanner(true);
+                    setBannerDraft({
+                      order: baseCount,
+                      active: true,
+                      placement: defaultPlacement,
+                      link: defaultLink,
+                      buttonText: 'Ver Ofertas',
+                    });
+                  }}
+                  style={btnGold}
+                >
+                  <Plus size={13} /> Novo Banner
+                </button>
+              </div>
             )}
+          </div>
+
+          {/* Page Filter Tabs */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: '8px 12px' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: crmTheme.textSecondary, marginRight: 4 }}>
+              Filtrar por Página:
+            </span>
+            {BANNER_PAGES.map((page) => {
+              const isSelected = bannerPageFilter === page.id;
+              const countForPage = (heroBanners.length > 0 ? heroBanners : DEFAULT_HERO_BANNERS).filter(
+                (b) => page.id === 'all' || (b.placement || 'home').toLowerCase() === page.id
+              ).length;
+              return (
+                <button
+                  key={page.id}
+                  type="button"
+                  onClick={() => setBannerPageFilter(page.id)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 8,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    border: `1px solid ${isSelected ? crmTheme.primary : crmTheme.border}`,
+                    background: isSelected ? crmTheme.primaryLight : 'transparent',
+                    color: isSelected ? crmTheme.primary : crmTheme.textSecondary,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{page.icon}</span>
+                  <span>{page.label}</span>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 900,
+                      background: isSelected ? crmTheme.primary : crmTheme.border,
+                      color: isSelected ? '#fff' : crmTheme.textMuted,
+                      padding: '1px 6px',
+                      borderRadius: 99,
+                    }}
+                  >
+                    {countForPage}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Create / Edit Form */}
           {(creatingBanner || editingBannerId) && (
             <div style={{ ...card, border: `1px solid ${crmTheme.primary}`, background: crmTheme.primaryLight }}>
-              <h4 style={{ margin: '0 0 16px', color: crmTheme.primary, fontSize: 13, fontWeight: 900 }}>
-                {creatingBanner ? '+ Novo Banner da Home' : '✏️ Editar / Substituir Imagem do Banner'}
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h4 style={{ margin: 0, color: crmTheme.primary, fontSize: 13, fontWeight: 900 }}>
+                  {creatingBanner ? '+ Novo Banner Hero' : '✏️ Editar / Substituir Imagem do Banner'}
+                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: crmTheme.textSecondary }}>Destino:</span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 900,
+                      padding: '2px 8px',
+                      borderRadius: 99,
+                      background: getPlacementMeta(bannerDraft.placement).bg,
+                      color: getPlacementMeta(bannerDraft.placement).text,
+                      border: `1px solid ${getPlacementMeta(bannerDraft.placement).border}`,
+                    }}
+                  >
+                    {getPlacementMeta(bannerDraft.placement).icon} {getPlacementMeta(bannerDraft.placement).label}
+                  </span>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={labelSt}>Título *</label>
+                    <label style={labelSt}>Página de Exibição do Banner *</label>
+                    <select
+                      style={inputSt}
+                      value={bannerDraft.placement || 'home'}
+                      onChange={(e) => {
+                        const target = e.target.value;
+                        setBannerDraft((b) => ({
+                          ...b,
+                          placement: target,
+                          link: b.link || (target === 'home' ? '/promotions' : `/${target}`),
+                        }));
+                      }}
+                    >
+                      <option value="home">🏠 Home (Página Principal)</option>
+                      <option value="promotions">🔥 Promoções (/promotions)</option>
+                      <option value="bebidas">🍻 Bebidas (/bebidas)</option>
+                      <option value="padaria">🥐 Padaria (/padaria)</option>
+                      <option value="tabacaria">🚬 Tabacaria (/tabacaria)</option>
+                      <option value="eletronicos">⚡ Eletrônicos (/eletronicos)</option>
+                      <option value="all">🌐 Todas as Páginas (Global)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelSt}>Título do Banner *</label>
                     <input
                       style={inputSt}
                       value={bannerDraft.title || ''}
-                      onChange={e => setBannerDraft(b => ({ ...b, title: e.target.value }))}
-                      placeholder="Ex: Mega Promoção de Verão"
-                    />
-                  </div>
-                  <div>
-                    <label style={labelSt}>Subtítulo</label>
-                    <input
-                      style={inputSt}
-                      value={bannerDraft.subtitle || ''}
-                      onChange={e => setBannerDraft(b => ({ ...b, subtitle: e.target.value }))}
-                      placeholder="Descrição curta"
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, title: e.target.value }))}
+                      placeholder="Ex: Cervejas Trincando no Gelo"
                     />
                   </div>
                 </div>
 
-                {/* Image Upload + URL Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={labelSt}>Subtítulo / Descrição Curta</label>
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.subtitle || ''}
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, subtitle: e.target.value }))}
+                      placeholder="Ex: Entregas expressas em menos de 15 minutos"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelSt}>Link de Destino ao Clicar</label>
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.link || ''}
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, link: e.target.value }))}
+                      placeholder="Ex: /bebidas ou /promotions"
+                    />
+                  </div>
+                </div>
+
+                {/* Media Type Toggle + Media Upload / URL */}
                 <div style={{ background: crmTheme.cardBg, border: `1px solid ${crmTheme.border}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                    <label style={{ ...labelSt, marginBottom: 0 }}>Imagem do Banner (Upload ou URL)</label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => setBannerDraft((b) => ({ ...b, mediaType: 'image' }))}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          border: `1px solid ${bannerDraft.mediaType !== 'video' ? crmTheme.primary : crmTheme.border}`,
+                          background: bannerDraft.mediaType !== 'video' ? crmTheme.primaryLight : 'transparent',
+                          color: bannerDraft.mediaType !== 'video' ? crmTheme.primary : crmTheme.textSecondary,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <Image size={13} /> 🖼️ Foto / Imagem
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBannerDraft((b) => ({ ...b, mediaType: 'video' }))}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          border: `1px solid ${bannerDraft.mediaType === 'video' ? '#8b5cf6' : crmTheme.border}`,
+                          background: bannerDraft.mediaType === 'video' ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                          color: bannerDraft.mediaType === 'video' ? '#7c3aed' : crmTheme.textSecondary,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <Video size={13} /> 🎥 Vídeo Curto em Loop
+                      </button>
+                    </div>
+
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <input
                         ref={bannerFileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime"
                         onChange={handleBannerImageUpload}
                         disabled={uploadingBannerImg}
                         style={{ display: 'none' }}
@@ -2210,15 +2504,15 @@ export const AdminMarketing: React.FC = () => {
                       >
                         <UploadCloud size={13} />
                         {uploadingBannerImg
-                          ? 'Processando imagem...'
-                          : bannerDraft.image
-                          ? 'Substituir Imagem (Arquivo)'
-                          : 'Enviar Imagem do Dispositivo'}
+                          ? 'Processando arquivo...'
+                          : bannerDraft.mediaType === 'video'
+                          ? (bannerDraft.videoUrl ? 'Trocar Vídeo (Upload)' : 'Enviar Vídeo (MP4/WebM)')
+                          : (bannerDraft.image ? 'Substituir Imagem' : 'Enviar Imagem')}
                       </button>
-                      {bannerDraft.image && (
+                      {(bannerDraft.image || bannerDraft.videoUrl) && (
                         <button
                           type="button"
-                          onClick={() => setBannerDraft(b => ({ ...b, image: '' }))}
+                          onClick={() => setBannerDraft((b) => ({ ...b, image: '', videoUrl: '', posterImage: '' }))}
                           style={{ ...btnGhost, height: 34, padding: '0 10px', fontSize: 11, color: crmTheme.danger }}
                         >
                           <Trash2 size={12} /> Limpar
@@ -2226,56 +2520,115 @@ export const AdminMarketing: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <input
-                    style={inputSt}
-                    value={bannerDraft.image || ''}
-                    onChange={e => setBannerDraft(b => ({ ...b, image: e.target.value }))}
-                    placeholder="Ou cole a URL da imagem (/hero_background.png ou https://...)"
-                  />
 
-                  {bannerDraft.image && (
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 4 }}>
-                      <img
-                        src={sanitizeBannerImageUrl(bannerDraft.image)}
-                        alt="Preview"
-                        style={{
-                          width: 140,
-                          height: 68,
-                          objectFit: 'cover',
-                          borderRadius: 8,
-                          flexShrink: 0,
-                          border: `1px solid ${crmTheme.border}`,
-                        }}
-                      />
+                  {bannerDraft.mediaType === 'video' ? (
+                    <>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary }}>
-                          {bannerDraft.title || 'Pré-visualização do Banner'}
-                        </div>
-                        <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>
-                          {bannerDraft.subtitle || 'A imagem será exibida imediatamente no topo da Home ao salvar.'}
-                        </div>
+                        <label style={labelSt}>URL do Vídeo Curto (MP4 ou WebM para rodar em Loop) *</label>
+                        <input
+                          style={inputSt}
+                          value={bannerDraft.videoUrl || ''}
+                          onChange={(e) => setBannerDraft((b) => ({ ...b, videoUrl: e.target.value, mediaType: 'video' }))}
+                          placeholder="Cole a URL do vídeo (ex: /videos/promo.mp4, https://... ou faça upload acima)"
+                        />
                       </div>
-                    </div>
+                      <div>
+                        <label style={labelSt}>Imagem de Capa / Poster do Vídeo (Opcional, exibida enquanto carrega)</label>
+                        <input
+                          style={inputSt}
+                          value={bannerDraft.posterImage || bannerDraft.image || ''}
+                          onChange={(e) => setBannerDraft((b) => ({ ...b, posterImage: e.target.value, image: e.target.value }))}
+                          placeholder="URL da capa opcional (ex: /pao_de_queijo.png ou https://...)"
+                        />
+                      </div>
+
+                      {(bannerDraft.videoUrl || bannerDraft.image) && (
+                        <div style={{ display: 'flex', gap: 14, alignItems: 'center', paddingTop: 6, background: '#000', padding: 10, borderRadius: 10 }}>
+                          <video
+                            src={bannerDraft.videoUrl || bannerDraft.image}
+                            poster={bannerDraft.posterImage ? sanitizeBannerImageUrl(bannerDraft.posterImage) : undefined}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            style={{
+                              width: 160,
+                              height: 90,
+                              objectFit: 'cover',
+                              borderRadius: 6,
+                              flexShrink: 0,
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              background: '#000',
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Film size={14} color="#a78bfa" /> Vídeo em Loop Ativo
+                            </div>
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                              Este vídeo será reproduzido de forma contínua, silenciosa (muted) e otimizada na página {getPlacementMeta(bannerDraft.placement).label}.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label style={labelSt}>URL da Imagem do Banner</label>
+                        <input
+                          style={inputSt}
+                          value={bannerDraft.image || ''}
+                          onChange={(e) => setBannerDraft((b) => ({ ...b, image: e.target.value }))}
+                          placeholder="Cole a URL da imagem (/banner_estupidamente_geladas.png ou https://...)"
+                        />
+                      </div>
+
+                      {bannerDraft.image && (
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingTop: 4 }}>
+                          <img
+                            src={sanitizeBannerImageUrl(bannerDraft.image)}
+                            alt="Preview"
+                            style={{
+                              width: 140,
+                              height: 68,
+                              objectFit: 'cover',
+                              borderRadius: 8,
+                              flexShrink: 0,
+                              border: `1px solid ${crmTheme.border}`,
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: crmTheme.textPrimary }}>
+                              {bannerDraft.title || 'Pré-visualização do Banner'}
+                            </div>
+                            <div style={{ fontSize: 11, color: crmTheme.textSecondary }}>
+                              {bannerDraft.subtitle || 'A imagem será exibida com o estilo Hero na página selecionada.'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={labelSt}>Link destino</label>
-                    <input
-                      style={inputSt}
-                      value={bannerDraft.link || ''}
-                      onChange={e => setBannerDraft(b => ({ ...b, link: e.target.value }))}
-                      placeholder="/promotions"
-                    />
-                  </div>
-                  <div>
                     <label style={labelSt}>Texto do botão</label>
                     <input
                       style={inputSt}
                       value={bannerDraft.buttonText || ''}
-                      onChange={e => setBannerDraft(b => ({ ...b, buttonText: e.target.value }))}
-                      placeholder="Ver Oferta"
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, buttonText: e.target.value }))}
+                      placeholder="Ex: Ver Ofertas"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelSt}>Badge texto (opcional)</label>
+                    <input
+                      style={inputSt}
+                      value={bannerDraft.badgeText || ''}
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, badgeText: e.target.value }))}
+                      placeholder="Ex: 🔥 Trincando"
                     />
                   </div>
                   <div>
@@ -2284,34 +2637,23 @@ export const AdminMarketing: React.FC = () => {
                       style={inputSt}
                       type="number"
                       value={bannerDraft.order ?? 0}
-                      onChange={e => setBannerDraft(b => ({ ...b, order: parseInt(e.target.value) || 0 }))}
+                      onChange={(e) => setBannerDraft((b) => ({ ...b, order: parseInt(e.target.value) || 0 }))}
                       min="0"
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, alignItems: 'center' }}>
-                  <div>
-                    <label style={labelSt}>Badge texto (opcional)</label>
-                    <input
-                      style={inputSt}
-                      value={bannerDraft.badgeText || ''}
-                      onChange={e => setBannerDraft(b => ({ ...b, badgeText: e.target.value }))}
-                      placeholder="Ex: 🔥 Esta Semana"
-                    />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 16 }}>
-                    <button
-                      type="button"
-                      style={toggle(bannerDraft.active !== false)}
-                      onClick={() => setBannerDraft(b => ({ ...b, active: b.active === false ? true : false }))}
-                    >
-                      <div style={toggleKnob(bannerDraft.active !== false)} />
-                    </button>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: bannerDraft.active !== false ? crmTheme.success : crmTheme.textMuted }}>
-                      {bannerDraft.active !== false ? 'Banner Ativo na Home' : 'Banner Desativado (Oculto)'}
-                    </span>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }}>
+                  <button
+                    type="button"
+                    style={toggle(bannerDraft.active !== false)}
+                    onClick={() => setBannerDraft((b) => ({ ...b, active: b.active === false ? true : false }))}
+                  >
+                    <div style={toggleKnob(bannerDraft.active !== false)} />
+                  </button>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: bannerDraft.active !== false ? crmTheme.success : crmTheme.textMuted }}>
+                    {bannerDraft.active !== false ? 'Banner Ativo na Página' : 'Banner Desativado (Oculto)'}
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
@@ -2340,179 +2682,270 @@ export const AdminMarketing: React.FC = () => {
             </div>
           )}
 
-          {/* Banner List (shows Firestore banners, or the 3 active default Home banners when not yet customized) */}
+          {/* Banner List filtered by selected page */}
           {heroBanners.length === 0 && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: crmTheme.accentLight, border: `1px solid ${crmTheme.accent}`, borderRadius: 10, padding: '10px 14px' }}>
               <AlertCircle size={15} color={crmTheme.accent} style={{ flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: crmTheme.textSecondary, fontWeight: 600 }}>
-                Exibindo os <strong>3 banners principais da Home</strong>. Você pode substituir a imagem de qualquer um deles abaixo ou adicionar novos banners.
+                Exibindo banners padrão do sistema. Você pode substituir a imagem de qualquer um deles via upload ou clicar em <strong>Carregar Banners das Páginas</strong> para personalizar livremente.
               </span>
             </div>
           )}
 
-          {(heroBanners.length > 0 ? heroBanners : DEFAULT_HERO_BANNERS).map((banner, index, arr) => {
-            const isActive = banner.active !== false;
-            const isUploadingThisRow = uploadingBannerRowId === banner.id;
-            return (
-              <div
-                key={banner.id}
-                style={{
-                  ...card,
-                  display: 'flex',
-                  gap: 12,
-                  alignItems: 'center',
-                  padding: '12px 14px',
-                  opacity: isActive ? 1 : 0.6,
-                  flexWrap: 'wrap',
-                }}
-              >
+          {(() => {
+            const allBanners = heroBanners.length > 0 ? heroBanners : DEFAULT_HERO_BANNERS;
+            const displayed = allBanners.filter((b) => {
+              if (bannerPageFilter === 'all') return true;
+              return (b.placement || 'home').toLowerCase() === bannerPageFilter.toLowerCase();
+            });
+
+            if (displayed.length === 0) {
+              return (
+                <div style={{ ...card, textAlign: 'center', padding: '24px 16px', color: crmTheme.textMuted, fontSize: 12 }}>
+                  Nenhum banner cadastrado para a página selecionada (<strong>{BANNER_PAGES.find(p => p.id === bannerPageFilter)?.label}</strong>).
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const baseCount = allBanners.length;
+                        setCreatingBanner(true);
+                        setBannerDraft({
+                          order: baseCount,
+                          active: true,
+                          placement: bannerPageFilter,
+                          link: bannerPageFilter === 'home' ? '/promotions' : `/${bannerPageFilter}`,
+                          buttonText: 'Ver Ofertas',
+                        });
+                      }}
+                      style={{ ...btnGhost, display: 'inline-flex', margin: '0 auto' }}
+                    >
+                      <Plus size={12} /> Criar Primeiro Banner desta Página
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return displayed.map((banner, index, arr) => {
+              const isActive = banner.active !== false;
+              const isUploadingThisRow = uploadingBannerRowId === banner.id;
+              const meta = getPlacementMeta(banner.placement);
+              const isVideoExt = (url?: string) => Boolean(url && (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/')));
+              const isVideo = banner.mediaType === 'video' || Boolean(banner.videoUrl) || isVideoExt(banner.image);
+              const videoSrc = banner.videoUrl || (isVideoExt(banner.image) ? banner.image : '');
+
+              return (
                 <div
+                  key={banner.id}
                   style={{
-                    width: 96,
-                    height: 54,
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    background: crmTheme.bg,
-                    border: `1px solid ${crmTheme.border}`,
-                    flexShrink: 0,
+                    ...card,
                     display: 'flex',
+                    gap: 12,
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    padding: '12px 14px',
+                    opacity: isActive ? 1 : 0.6,
+                    flexWrap: 'wrap',
                   }}
                 >
-                  {banner.image ? (
-                    <img
-                      src={sanitizeBannerImageUrl(banner.image)}
-                      alt={banner.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Image size={18} color={crmTheme.textMuted} />
-                  )}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 180, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 900,
-                        color: crmTheme.textPrimary,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {banner.title || `Banner #${index + 1}`}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 800,
-                        padding: '2px 7px',
-                        borderRadius: 99,
-                        background: isActive ? crmTheme.successLight : crmTheme.borderLight,
-                        color: isActive ? crmTheme.success : crmTheme.textMuted,
-                      }}
-                    >
-                      {isActive ? 'ATIVO' : 'INATIVO'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Link2 size={9} /> {banner.link || '/'} · Ordem {banner.order ?? index}
-                    {banner.badgeText && (
-                      <span style={{ background: crmTheme.primaryLight, color: crmTheme.primary, padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>
-                        {banner.badgeText}
-                      </span>
+                  <div
+                    style={{
+                      width: 96,
+                      height: 54,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      background: '#000',
+                      border: `1px solid ${crmTheme.border}`,
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {isVideo && videoSrc ? (
+                      <video
+                        src={videoSrc}
+                        poster={banner.posterImage ? sanitizeBannerImageUrl(banner.posterImage) : undefined}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : banner.image ? (
+                      <img
+                        src={sanitizeBannerImageUrl(banner.image)}
+                        alt={banner.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <Image size={18} color={crmTheme.textMuted} />
                     )}
                   </div>
+
+                  <div style={{ flex: 1, minWidth: 180, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 900,
+                          color: crmTheme.textPrimary,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {banner.title || `Banner #${index + 1}`}
+                      </span>
+
+                      {/* Video Loop Indicator Badge */}
+                      {isVideo && (
+                        <span
+                          style={{
+                            fontSize: 9,
+                            fontWeight: 900,
+                            padding: '2px 7px',
+                            borderRadius: 99,
+                            background: 'rgba(139, 92, 246, 0.15)',
+                            color: '#7c3aed',
+                            border: '1px solid rgba(139, 92, 246, 0.3)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                          }}
+                        >
+                          <Film size={10} /> VÍDEO LOOP
+                        </span>
+                      )}
+
+                      {/* Page Placement Badge */}
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 900,
+                          padding: '2px 8px',
+                          borderRadius: 99,
+                          background: meta.bg,
+                          color: meta.text,
+                          border: `1px solid ${meta.border}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                        }}
+                      >
+                        <span>{meta.icon}</span>
+                        <span>{meta.label}</span>
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 800,
+                          padding: '2px 7px',
+                          borderRadius: 99,
+                          background: isActive ? crmTheme.successLight : crmTheme.borderLight,
+                          color: isActive ? crmTheme.success : crmTheme.textMuted,
+                        }}
+                      >
+                        {isActive ? 'ATIVO' : 'INATIVO'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Link2 size={9} /> {banner.link || '/'} · Ordem {banner.order ?? index}
+                      {banner.badgeText && (
+                        <span style={{ background: crmTheme.primaryLight, color: crmTheme.primary, padding: '1px 6px', borderRadius: 99, fontSize: 8, fontWeight: 900 }}>
+                          {banner.badgeText}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      title="Substituir imagem deste banner diretamente via upload"
+                      onClick={() => {
+                        uploadingBannerRowTarget.current = banner;
+                        if (rowFileInputRef.current) rowFileInputRef.current.value = '';
+                        rowFileInputRef.current?.click();
+                      }}
+                      disabled={isUploadingThisRow}
+                      style={{
+                        ...btnGhost,
+                        height: 30,
+                        padding: '0 10px',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: crmTheme.primary,
+                        borderColor: crmTheme.primary,
+                        cursor: isUploadingThisRow ? 'wait' : 'pointer',
+                        opacity: isUploadingThisRow ? 0.7 : 1,
+                      }}
+                    >
+                      <UploadCloud size={12} />
+                      {isUploadingThisRow ? 'Enviando...' : 'Trocar Imagem'}
+                    </button>
+
+                    <button
+                      type="button"
+                      title={isActive ? 'Desativar banner' : 'Ativar banner'}
+                      style={btnIconSm(isActive ? crmTheme.success : crmTheme.textMuted)}
+                      onClick={() => toggleBannerActive(banner)}
+                    >
+                      {isActive ? <Eye size={12} /> : <EyeOff size={12} />}
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Mover para cima"
+                      disabled={index === 0}
+                      style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === 0 ? 0.35 : 1 }}
+                      onClick={() => moveBanner(index, 'up')}
+                    >
+                      <ArrowUp size={12} />
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Mover para baixo"
+                      disabled={index === arr.length - 1}
+                      style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === arr.length - 1 ? 0.35 : 1 }}
+                      onClick={() => moveBanner(index, 'down')}
+                    >
+                      <ArrowDown size={12} />
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Editar texto, página, link e imagem"
+                      style={btnIconSm(crmTheme.primary)}
+                      onClick={() => {
+                        setEditingBannerId(banner.id);
+                        setCreatingBanner(false);
+                        setBannerDraft({ ...banner, active: banner.active !== false, placement: banner.placement || 'home' });
+                      }}
+                    >
+                      <Edit2 size={12} />
+                    </button>
+
+                    <button
+                      type="button"
+                      title="Excluir banner"
+                      style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }}
+                      onClick={() => deleteBanner(banner.id)}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    title="Substituir imagem deste banner diretamente"
-                    onClick={() => {
-                      uploadingBannerRowTarget.current = banner;
-                      if (rowFileInputRef.current) rowFileInputRef.current.value = '';
-                      rowFileInputRef.current?.click();
-                    }}
-                    disabled={isUploadingThisRow}
-                    style={{
-                      ...btnGhost,
-                      height: 30,
-                      padding: '0 10px',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: crmTheme.primary,
-                      borderColor: crmTheme.primary,
-                      cursor: isUploadingThisRow ? 'wait' : 'pointer',
-                      opacity: isUploadingThisRow ? 0.7 : 1,
-                    }}
-                  >
-                    <UploadCloud size={12} />
-                    {isUploadingThisRow ? 'Enviando...' : 'Trocar Imagem'}
-                  </button>
-
-                  <button
-                    type="button"
-                    title={isActive ? 'Desativar banner' : 'Ativar banner'}
-                    style={btnIconSm(isActive ? crmTheme.success : crmTheme.textMuted)}
-                    onClick={() => toggleBannerActive(banner)}
-                  >
-                    {isActive ? <Eye size={12} /> : <EyeOff size={12} />}
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Mover para cima"
-                    disabled={index === 0}
-                    style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === 0 ? 0.35 : 1 }}
-                    onClick={() => moveBanner(index, 'up')}
-                  >
-                    <ArrowUp size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Mover para baixo"
-                    disabled={index === arr.length - 1}
-                    style={{ ...btnIconSm(crmTheme.textSecondary), opacity: index === arr.length - 1 ? 0.35 : 1 }}
-                    onClick={() => moveBanner(index, 'down')}
-                  >
-                    <ArrowDown size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Editar texto, link e imagem"
-                    style={btnIconSm(crmTheme.primary)}
-                    onClick={() => {
-                      setEditingBannerId(banner.id);
-                      setCreatingBanner(false);
-                      setBannerDraft({ ...banner, active: banner.active !== false });
-                    }}
-                  >
-                    <Edit2 size={12} />
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Excluir banner"
-                    style={{ ...btnIconSm(crmTheme.danger), border: `1px solid ${crmTheme.dangerLight}` }}
-                    onClick={() => deleteBanner(banner.id)}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
 
           <input
             ref={rowFileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime"
             onChange={handleRowFileSelected}
             style={{ display: 'none' }}
           />

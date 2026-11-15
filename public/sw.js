@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v11 (Complete Order Management & Resilient Loading)
-const CACHE_NAME = 'mercado-v11-complete-order-management';
+// PWA Service Worker — Mercado Cache v13 (Looping Video Ads & Coordinated Smooth Loading)
+const CACHE_NAME = 'mercado-v13-video-loop-smooth-loading';
 const ASSETS = [
   '/',
   '/index.html',

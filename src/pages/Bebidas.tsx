@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Snowflake, AlertOctagon } from 'lucide-react';
+import { AlertOctagon, Snowflake } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { defaultProducts } from '../data/defaultProducts';
+import { PageHeroBanner } from '../components/common/PageHeroBanner';
+
+const DEFAULT_BEBIDAS_SLIDES = [
+  {
+    id: 'default-bebidas',
+    title: 'Estupidamente Geladas • Trincando no Gelo',
+    image: '/banner_estupidamente_geladas.png',
+    link: '/bebidas',
+  },
+];
 
 interface Product {
   id: string;
@@ -16,7 +26,6 @@ interface Product {
 }
 
 export const Bebidas = () => {
-  const [currentIceIndex, setCurrentIceIndex] = useState(0);
   const [bebidas, setBebidas] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -88,40 +97,6 @@ export const Bebidas = () => {
     return () => window.removeEventListener('app-products-updated', loadProducts);
   }, []);
 
-  const iceProducts = bebidas.slice(0, 4);
-
-  useEffect(() => {
-    if (iceProducts.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentIceIndex((prev) => (prev + 1) % iceProducts.length);
-    }, 4500); // Slowed down significantly for a calm and premium feel
-    return () => clearInterval(timer);
-  }, [iceProducts.length]);
-
-  // Generate 12 snow particles with randomized physics
-  const [snowParticles] = useState(() => Array.from({ length: 12 }).map((_, i) => {
-    const left = Math.random() * 100;
-    const delay = Math.random() * 5;
-    const duration = 4 + Math.random() * 4;
-    const size = 8 + Math.random() * 8;
-    const opacity = 0.2 + Math.random() * 0.45;
-    return (
-      <span
-        key={i}
-        className="snowflake-particle"
-        style={{
-          left: `${left}%`,
-          animationDelay: `${delay}s`,
-          animationDuration: `${duration}s`,
-          fontSize: `${size}px`,
-          opacity: opacity
-        }}
-      >
-        ❄
-      </span>
-    );
-  }));
-
   return (
     <main className="app bebidas-page" style={{ paddingTop: 0 }}>
       {/* ── Page title ──────────────────────────── */}
@@ -130,75 +105,8 @@ export const Bebidas = () => {
         <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>TRINCANDO NO GELO</p>
       </div>
 
-      {/* FROSTY AD BANNER */}
-      <div className="promo-banner" style={{ 
-        margin: '16px 0', 
-        backgroundImage: 'linear-gradient(135deg, rgba(2, 132, 199, 0.2) 0%, rgba(3, 105, 161, 0.4) 100%), url(\'/banner_estupidamente_geladas.png\')', 
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        border: '1px solid rgba(14, 165, 233, 0.3)',
-        boxShadow: '0 8px 30px rgba(14, 165, 233, 0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        padding: '16px 14px',
-        minHeight: '200px', /* Comfortable height to fit standard card beautifully */
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
-        {/* Confined falling snowflakes container in the background */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1 }}>
-          {snowParticles}
-        </div>
-
-        <div className="promo-text" style={{ 
-          width: '50%', 
-          flexShrink: 0, 
-          display: 'flex',
-          flexDirection: 'column',
-          alignSelf: 'flex-start',
-          marginTop: '12px', /* Perfectly pushes to the top with a premium margins margin */
-          position: 'relative', 
-          zIndex: 2 
-        }}>
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 4, 
-            marginBottom: 8,
-            background: 'rgba(224, 242, 254, 0.15)',
-            padding: '3px 8px',
-            borderRadius: '999px',
-            border: '1px solid rgba(224, 242, 254, 0.25)',
-            backdropFilter: 'blur(4px)',
-            alignSelf: 'flex-start'
-          }}>
-            <Snowflake size={10} color="#E0F2FE" />
-            <span style={{ color: '#E0F2FE', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ice Express</span>
-          </div>
-          <h3 style={{ fontSize: '17px', fontWeight: 900, color: '#fff', margin: '0 0 6px 0', lineHeight: '1.25', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>Estupidamente Geladas</h3>
-          <p style={{ color: '#E0F2FE', fontSize: '10.5px', fontWeight: 500, margin: 0, lineHeight: '1.4', opacity: 0.9 }}>Bebidas trincando no gelo entregues na sua porta em minutos!</p>
-        </div>
-        
-        {/* Horizontal Icy Product Carousel showcasing EXACTLY one standard home card at a time with identical 104px width */}
-        <div style={{ 
-          width: '45%', 
-          display: 'flex', 
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'relative',
-          zIndex: 2,
-          overflow: 'visible'
-        }}>
-          {/* Exact same ProductCard component from home page, scaled to identical 104px width */}
-          {iceProducts.length > 0 && (
-            <div style={{ width: '104px', transition: 'all 0.5s ease', animation: 'fadeInScale 0.6s ease' }} key={currentIceIndex}>
-              <ProductCard {...iceProducts[currentIceIndex]} />
-            </div>
-          )}
-        </div>
-      </div>
+      {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}
+      <PageHeroBanner placement="bebidas" defaultSlides={DEFAULT_BEBIDAS_SLIDES} />
 
       {/* DRIVING WARNING (RESPONSIBLE CONSUMPTION) */}
       <div className="glass-panel" style={{ 

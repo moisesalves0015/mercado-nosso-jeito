@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { defaultProducts } from '../data/defaultProducts';
+import { PageHeroBanner } from '../components/common/PageHeroBanner';
+
+const DEFAULT_TABACARIA_SLIDES = [
+  {
+    id: 'default-tabacaria',
+    title: 'Tabacaria & Sedas • Lounge Exclusivo',
+    image: '/hero_tabacaria.png',
+    link: '/tabacaria',
+  },
+];
 
 interface Product {
   id: string;
@@ -79,23 +89,8 @@ export const Tabacaria = () => {
         <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>CONVENIÊNCIA 24 HORAS</p>
       </div>
 
-      {/* SMOKY GOLD BANNER */}
-      <div className="promo-banner" style={{ 
-        margin: '16px 4px', 
-        background: 'var(--card-gradient)', 
-        border: '1px solid var(--border-gold)',
-        boxShadow: 'var(--card-shadow)'
-      }}>
-        <div className="promo-text">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-            <Sparkles size={11} color="#D4AF37" />
-            <span style={{ color: '#D4AF37', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase' }}>Lounge Exclusivo</span>
-          </div>
-          <h3 style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text-primary)' }}>Sessão de Fumos & Sedas</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Entregamos de forma rápida e com total discrição.</p>
-        </div>
-        <span style={{ fontSize: '32px' }}>🚬</span>
-      </div>
+      {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}
+      <PageHeroBanner placement="tabacaria" defaultSlides={DEFAULT_TABACARIA_SLIDES} />
 
       {/* COMPLIANCE AGE WARNING BANNER (18+) */}
       <div className="glass-panel" style={{ 

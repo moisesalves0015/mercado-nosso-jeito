@@ -12,6 +12,10 @@ export interface HeroSlide {
   image: string;
   /** Rota interna, URL http(s) ou vazio (slide sem destino). */
   link: string;
+  /** URL de vídeo curto em loop (MP4, WebM) */
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
+  posterImage?: string;
 }
 
 const ROTATE_MS = 4500;
@@ -85,10 +89,17 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
         {slides.map((slide, idx) => {
           const active = idx === index;
           const link = resolveLink(slide.link);
+          const isVideoExt = (url?: string) => Boolean(url && (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/')));
+          const isVideo = slide.mediaType === 'video' || Boolean(slide.videoUrl) || isVideoExt(slide.image);
+          const videoSrc = slide.videoUrl || (isVideoExt(slide.image) ? slide.image : undefined);
           const cleanedImage = sanitizeBannerImageUrl(slide.image, '');
+          const poster = slide.posterImage || (slide.videoUrl && !isVideoExt(slide.image) ? cleanedImage : undefined);
+
           const common = {
-            className: `hero-slide${cleanedImage ? '' : ' hero-slide--text'}`,
-            style: cleanedImage
+            className: `hero-slide${isVideo || cleanedImage ? '' : ' hero-slide--text'}`,
+            style: isVideo
+              ? { position: 'relative' as const, overflow: 'hidden' as const, background: '#000' }
+              : cleanedImage
               ? {
                   backgroundImage: cleanedImage.startsWith('data:') ? 'none' : `url("${cleanedImage}")`,
                   position: 'relative' as const,
@@ -98,9 +109,53 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,
           } as const;
+
           // Slides fora de vista não entram na ordem de tabulação.
           const tabIndex = active ? undefined : -1;
-          const content = cleanedImage ? (
+          const content = isVideo && videoSrc ? (
+            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+              <video
+                src={videoSrc}
+                poster={poster ? sanitizeBannerImageUrl(poster, '') : undefined}
+                autoPlay
+                loop
+                muted
+                playsInline
+                webkit-playsinline="true"
+                preload="auto"
+                className="hero-slide-video"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  pointerEvents: 'none',
+                }}
+                ref={(el) => {
+                  if (el && active) {
+                    el.play().catch(() => {});
+                  }
+                }}
+              />
+              {slide.title && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)',
+                    padding: '16px 14px 10px',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
+                    {slide.title}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : cleanedImage ? (
             <img
               src={cleanedImage}
               alt={slide.title || 'Banner'}
