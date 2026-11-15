@@ -12,7 +12,7 @@ import {
 import { db } from '../firebase';
 import { defaultProducts } from '../data/defaultProducts';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
-import { uploadOrCompressImage } from '../services/imageUploadService';
+import { uploadOrCompressImage, uploadBannerMediaFile } from '../services/imageUploadService';
 import { sanitizeBannerImageUrl, cleanImageUrl, handleImageError } from '../utils/imageUrl';
 import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig, CondoFavoriteConfig } from '../hooks/useHomeConfig';
 
@@ -1413,26 +1413,35 @@ export const AdminMarketing: React.FC = () => {
 
   // ── Hero Banner Ops ─────────────────────────────────────────────────────────
   const ensureDefaultBannersSeeded = useCallback(async () => {
-    if (heroBanners.length > 0) return;
-    for (const def of DEFAULT_HERO_BANNERS) {
-      await setDoc(
-        doc(db, 'home-config', 'data', 'hero-banners', def.id),
-        {
-          title: def.title,
-          subtitle: def.subtitle,
-          image: def.image,
-          link: def.link,
-          buttonText: def.buttonText,
-          badgeText: def.badgeText || '',
-          highlightWords: def.highlightWords || [],
-          order: def.order,
-          active: def.active !== false,
-          placement: def.placement || 'home',
-        },
-        { merge: true }
-      );
+    try {
+      const snap = await getDocs(collection(db, 'home-config', 'data', 'hero-banners'));
+      if (!snap.empty) return;
+      for (const def of DEFAULT_HERO_BANNERS) {
+        await setDoc(
+          doc(db, 'home-config', 'data', 'hero-banners', def.id),
+          {
+            title: def.title,
+            subtitle: def.subtitle,
+            image: def.image,
+            link: def.link,
+            buttonText: def.buttonText,
+            badgeText: def.badgeText || '',
+            highlightWords: def.highlightWords || [],
+            order: def.order,
+            active: def.active !== false,
+            placement: def.placement || 'home',
+            mediaType: def.mediaType || 'image',
+            videoUrl: def.videoUrl || '',
+            posterImage: def.posterImage || '',
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+    } catch (err) {
+      console.warn('[ensureDefaultBannersSeeded] Falha ao verificar ou semear banners padrão:', err);
     }
-  }, [heroBanners.length]);
+  }, []);
 
   const seedAllPageBanners = useCallback(async () => {
     if (!confirm('Deseja carregar os banners sugeridos para todas as páginas (Home, Promoções, Bebidas, Padaria, Tabacaria e Eletrônicos)? Banners existentes serão preservados.')) return;
@@ -1452,6 +1461,9 @@ export const AdminMarketing: React.FC = () => {
             order: def.order,
             active: def.active !== false,
             placement: def.placement || 'home',
+            mediaType: def.mediaType || 'image',
+            videoUrl: def.videoUrl || '',
+            posterImage: def.posterImage || '',
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
@@ -1470,34 +1482,25 @@ export const AdminMarketing: React.FC = () => {
     if (!file) return;
     setUploadingBannerImg(true);
     try {
-      if (file.type.startsWith('video/')) {
-        if (file.size > 25 * 1024 * 1024) {
-          alert('O vídeo selecionado possui mais de 25MB. Para anúncios e banners com reprodução em loop rápida no app, recomendamos vídeos curtos de até 20MB (MP4 ou WebM).');
-          return;
-        }
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+      const result = await uploadBannerMediaFile(file);
+      if (result.mediaType === 'video') {
         setBannerDraft(prev => ({
           ...prev,
-          videoUrl: dataUrl,
+          videoUrl: result.url,
           mediaType: 'video',
-          image: prev.image || prev.posterImage || '',
+          posterImage: result.posterImage || prev.posterImage || '',
+          image: prev.image || result.posterImage || '',
         }));
-        return;
+        alert('Vídeo carregado com sucesso! Clique em "Salvar Banner" para aplicar permanentemente.');
+      } else {
+        setBannerDraft(prev => ({
+          ...prev,
+          image: result.url,
+          mediaType: prev.mediaType === 'video' ? 'video' : 'image',
+        }));
       }
-
-      const uploadedUrl = await uploadOrCompressImage(file, {
-        folder: 'banners',
-        maxDimension: 960,
-        quality: 0.82,
-      });
-      setBannerDraft(prev => ({ ...prev, image: uploadedUrl, mediaType: prev.mediaType === 'video' ? 'video' : 'image' }));
     } catch (err) {
-      alert('Erro ao processar o arquivo do banner: ' + (err instanceof Error ? err.message : String(err)));
+      alert('Erro ao processar arquivo do banner: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploadingBannerImg(false);
       if (e.target) e.target.value = '';
@@ -1512,52 +1515,49 @@ export const AdminMarketing: React.FC = () => {
       setUploadingBannerRowId(banner.id);
       try {
         await ensureDefaultBannersSeeded();
-        if (file.type.startsWith('video/')) {
-          if (file.size > 25 * 1024 * 1024) {
-            alert('O vídeo possui mais de 25MB. Recomendamos vídeos em loop curtos de até 20MB.');
-            return;
-          }
-          const reader = new FileReader();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
+        const result = await uploadBannerMediaFile(file);
+        if (result.mediaType === 'video') {
           await setDoc(
             doc(db, 'home-config', 'data', 'hero-banners', banner.id),
             {
-              videoUrl: dataUrl,
+              title: banner.title || 'Banner',
+              subtitle: banner.subtitle || '',
+              image: banner.image || result.posterImage || '',
+              link: banner.link || '/promotions',
+              buttonText: banner.buttonText || 'Ver Oferta',
+              badgeText: banner.badgeText || '',
+              highlightWords: banner.highlightWords || [],
+              order: banner.order ?? 0,
+              active: banner.active !== false,
+              placement: banner.placement || 'home',
+              videoUrl: result.url,
               mediaType: 'video',
+              posterImage: result.posterImage || banner.posterImage || '',
               updatedAt: new Date().toISOString(),
             },
             { merge: true }
           );
-          alert('Vídeo em loop do banner atualizado com sucesso!');
-          return;
+          alert('Vídeo em loop do banner atualizado e salvo com sucesso!');
+        } else {
+          await setDoc(
+            doc(db, 'home-config', 'data', 'hero-banners', banner.id),
+            {
+              title: banner.title || 'Banner',
+              subtitle: banner.subtitle || '',
+              image: result.url,
+              link: banner.link || '/promotions',
+              buttonText: banner.buttonText || 'Ver Oferta',
+              badgeText: banner.badgeText || '',
+              highlightWords: banner.highlightWords || [],
+              order: banner.order ?? 0,
+              active: banner.active !== false,
+              placement: banner.placement || 'home',
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+          alert('Imagem do banner atualizada com sucesso!');
         }
-
-        const uploadedUrl = await uploadOrCompressImage(file, {
-          folder: 'banners',
-          maxDimension: 960,
-          quality: 0.82,
-        });
-        await setDoc(
-          doc(db, 'home-config', 'data', 'hero-banners', banner.id),
-          {
-            title: banner.title || 'Banner',
-            subtitle: banner.subtitle || '',
-            image: uploadedUrl,
-            link: banner.link || '/promotions',
-            buttonText: banner.buttonText || 'Ver Oferta',
-            badgeText: banner.badgeText || '',
-            highlightWords: banner.highlightWords || [],
-            order: banner.order ?? 0,
-            active: banner.active !== false,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
-        );
-        alert('Imagem do banner atualizada com sucesso!');
       } catch (err) {
         alert('Erro ao atualizar mídia do banner: ' + (err instanceof Error ? err.message : String(err)));
       } finally {
@@ -1604,47 +1604,60 @@ export const AdminMarketing: React.FC = () => {
       alert('Informe pelo menos o título, uma imagem ou o vídeo para o banner.');
       return;
     }
+
+    if (resolvedVideoUrl.startsWith('data:') && resolvedVideoUrl.length > 700_000) {
+      alert(
+        'O vídeo atual está codificado como Data URI muito longo (>700KB) e excederá o limite de 1MB por documento do Firestore. ' +
+        'Por favor, clique no botão "Enviar Vídeo" para carregá-lo pelo Firebase Storage ou cole a URL direta (MP4/WebM).'
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       await ensureDefaultBannersSeeded();
       const currentCount = heroBanners.length > 0 ? heroBanners.length : DEFAULT_HERO_BANNERS.length;
+      const targetPlacement = (bannerDraft.placement || (bannerPageFilter !== 'all' ? bannerPageFilter : 'home')).trim();
+
       const data: Record<string, unknown> = {
         title: bannerDraft.title?.trim() || 'Banner Principal',
         subtitle: bannerDraft.subtitle?.trim() || '',
-        image: resolvedImage,
-        link: (bannerDraft.link || '/promotions').trim(),
+        image: resolvedImage || (bannerDraft.posterImage?.trim() || ''),
+        link: (bannerDraft.link || (targetPlacement === 'home' ? '/promotions' : `/${targetPlacement}`)).trim(),
         buttonText: (bannerDraft.buttonText || 'Ver Oferta').trim(),
         badgeText: (bannerDraft.badgeText || '').trim(),
         highlightWords: bannerDraft.highlightWords || [],
         order: bannerDraft.order ?? currentCount,
         active: bannerDraft.active !== false,
-        placement: (bannerDraft.placement || (bannerPageFilter !== 'all' ? bannerPageFilter : 'home')).trim(),
+        placement: targetPlacement,
         mediaType: isVideo ? 'video' : 'image',
+        videoUrl: resolvedVideoUrl || '',
+        posterImage: bannerDraft.posterImage?.trim() || '',
         updatedAt: new Date().toISOString(),
       };
-
-      if (resolvedVideoUrl) {
-        data.videoUrl = resolvedVideoUrl;
-      }
-      if (bannerDraft.posterImage?.trim()) {
-        data.posterImage = bannerDraft.posterImage.trim();
-      }
 
       if (editingBannerId) {
         await setDoc(doc(db, 'home-config', 'data', 'hero-banners', editingBannerId), data, { merge: true });
       } else {
-        await addDoc(collection(db, 'home-config', 'data', 'hero-banners'), data);
+        const defMatch = DEFAULT_HERO_BANNERS.find(d => (d.placement || 'home').toLowerCase() === targetPlacement.toLowerCase());
+        const alreadyHasInList = heroBanners.some(b => b.id === defMatch?.id);
+        if (defMatch && !alreadyHasInList) {
+          await setDoc(doc(db, 'home-config', 'data', 'hero-banners', defMatch.id), data, { merge: true });
+        } else {
+          await addDoc(collection(db, 'home-config', 'data', 'hero-banners'), data);
+        }
       }
       setEditingBannerId(null);
       setCreatingBanner(false);
       setBannerDraft({});
-      alert('Banner salvo com sucesso!');
+      alert('Banner salvo com sucesso e gravado permanentemente no sistema!');
     } catch (e: unknown) {
+      console.error('[saveBanner] Erro ao salvar banner no Firestore:', e);
       alert('Erro ao salvar banner: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(false);
     }
-  }, [bannerDraft, editingBannerId, heroBanners.length, ensureDefaultBannersSeeded, bannerPageFilter]);
+  }, [bannerDraft, editingBannerId, heroBanners, ensureDefaultBannersSeeded, bannerPageFilter]);
 
   const toggleBannerActive = useCallback(
     async (banner: HeroBannerConfig) => {
@@ -1663,6 +1676,10 @@ export const AdminMarketing: React.FC = () => {
             highlightWords: banner.highlightWords || [],
             order: banner.order ?? 0,
             active: nextActive,
+            placement: banner.placement || 'home',
+            mediaType: banner.mediaType || (banner.videoUrl ? 'video' : 'image'),
+            videoUrl: banner.videoUrl || '',
+            posterImage: banner.posterImage || '',
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
@@ -1690,11 +1707,14 @@ export const AdminMarketing: React.FC = () => {
 
   const deleteBanner = useCallback(
     async (id: string) => {
-      if (!window.confirm('Excluir este banner do carrossel da Home?')) return;
-      await ensureDefaultBannersSeeded();
-      await deleteDoc(doc(db, 'home-config', 'data', 'hero-banners', id));
+      if (!window.confirm('Excluir este banner?')) return;
+      try {
+        await deleteDoc(doc(db, 'home-config', 'data', 'hero-banners', id));
+      } catch (e) {
+        alert('Erro ao excluir banner: ' + (e instanceof Error ? e.message : String(e)));
+      }
     },
-    [ensureDefaultBannersSeeded]
+    []
   );
 
 

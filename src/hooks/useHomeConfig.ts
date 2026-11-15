@@ -103,13 +103,19 @@ function loadCachedHomeConfig(): HomeConfig {
 function persistHomeConfigCache(cfg: HomeConfig) {
   try {
     if (typeof window === 'undefined') return;
+    const safeHeroBanners = (cfg.heroBanners || []).map(b => {
+      if (b.videoUrl && b.videoUrl.startsWith('data:') && b.videoUrl.length > 500_000) {
+        return { ...b, videoUrl: '' };
+      }
+      return b;
+    });
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         vitrines: cfg.vitrines,
         periodConfig: cfg.periodConfig,
         megaOfertas: cfg.megaOfertas,
-        heroBanners: cfg.heroBanners,
+        heroBanners: safeHeroBanners,
         condoFavorites: cfg.condoFavorites,
       })
     );

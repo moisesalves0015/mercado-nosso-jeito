@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 
 export interface ImageUploadOptions {
   folder: 'products' | 'banners';
@@ -124,6 +125,141 @@ export async function uploadOrCompressImage(
 
   const { dataUrl } = await compressImageFile(file, maxDimension, quality);
   return dataUrl;
+}
+
+/**
+ * Captures a representative poster thumbnail from a video file using HTML5 canvas.
+ */
+export function captureVideoPoster(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return resolve('');
+    }
+    const video = document.createElement('video');
+    const blobUrl = URL.createObjectURL(file);
+    video.src = blobUrl;
+    video.muted = true;
+    video.playsInline = true;
+
+    const cleanup = () => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // ignore
+      }
+    };
+
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve('');
+    }, 4000);
+
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+      } catch {
+        // ignore
+      }
+    };
+
+    video.onseeked = () => {
+      clearTimeout(timer);
+      try {
+        const targetWidth = Math.min(video.videoWidth || 640, 640);
+        const targetHeight = Math.round(
+          (targetWidth * (video.videoHeight || 360)) / (video.videoWidth || 640)
+        );
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, targetWidth);
+        canvas.height = Math.max(1, targetHeight);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const poster = canvas.toDataURL('image/jpeg', 0.82);
+          cleanup();
+          resolve(poster);
+          return;
+        }
+      } catch {
+        // ignore canvas extraction errors
+      }
+      cleanup();
+      resolve('');
+    };
+
+    video.onerror = () => {
+      clearTimeout(timer);
+      cleanup();
+      resolve('');
+    };
+  });
+}
+
+/**
+ * Uploads a banner video or image file to Firebase Storage (or compresses to Data URL if image)
+ * so that videos are permanently persisted as HTTPS URLs and never exceed Firestore's 1MB limit.
+ */
+export async function uploadBannerMediaFile(
+  file: File
+): Promise<{ url: string; mediaType: 'image' | 'video'; posterImage?: string }> {
+  const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name);
+
+  if (!isVideo) {
+    const dataUrl = await uploadOrCompressImage(file, {
+      folder: 'banners',
+      maxDimension: 960,
+      quality: 0.82,
+    });
+    return { url: dataUrl, mediaType: 'image' };
+  }
+
+  if (file.size > 30 * 1024 * 1024) {
+    throw new Error(
+      'O vídeo selecionado tem mais de 30MB. Para vídeos em loop no app, utilize vídeos curtos de até 25MB (formato MP4 ou WebM).'
+    );
+  }
+
+  let posterImage = '';
+  try {
+    posterImage = await captureVideoPoster(file);
+  } catch {
+    // poster extraction is optional
+  }
+
+  // 1. Try Firebase Storage upload first
+  try {
+    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `banners/videos/${Date.now()}_${cleanName}`;
+    const fileRef = storageRef(storage, storagePath);
+    const snap = await uploadBytes(fileRef, file, {
+      contentType: file.type || 'video/mp4',
+    });
+    const downloadUrl = await getDownloadURL(snap.ref);
+    return { url: downloadUrl, mediaType: 'video', posterImage };
+  } catch (storageErr) {
+    console.warn(
+      '[uploadBannerMediaFile] Falha ao enviar para o Firebase Storage, verificando fallback:',
+      storageErr
+    );
+
+    // If file is very small (< 500KB binary, < 680KB base64), it can safely fit in Firestore document (< 1MB)
+    if (file.size <= 500 * 1024) {
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      return { url: dataUrl, mediaType: 'video', posterImage };
+    }
+
+    const errMsg = storageErr instanceof Error ? storageErr.message : String(storageErr);
+    throw new Error(
+      `Não foi possível salvar o vídeo no Firebase Storage (${errMsg}). ` +
+        `Como o arquivo tem ${(file.size / (1024 * 1024)).toFixed(1)}MB, ele excede o limite de 1MB por documento do Firestore. ` +
+        `Por favor, utilize um vídeo de até 500KB ou cole a URL direta (ex: Cloudinary, YouTube direto, Vercel Blob ou CDN) no campo de URL do Vídeo.`
+    );
+  }
 }
 
 /**
