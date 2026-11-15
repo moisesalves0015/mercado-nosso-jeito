@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v10 (Clean Purchasing Fallback & Robust Rules)
-const CACHE_NAME = 'mercado-v10-clean-purchasing-fallback';
+// PWA Service Worker — Mercado Cache v11 (Complete Order Management & Resilient Loading)
+const CACHE_NAME = 'mercado-v11-complete-order-management';
 const ASSETS = [
   '/',
   '/index.html',

@@ -194,13 +194,13 @@ service cloud.firestore {
     // This prevents price/discount/fee manipulation.
     match /orders/{orderId} {
       allow read: if (isAuthenticated() && !isBanned() && resource.data.uid == request.auth.uid)
-                  || isAdmin();
+                  || isAdmin()
+                  || isStaff();
       // No client create: createOrder Cloud Function handles this via Admin SDK.
       allow create: if false;
-      // No client update/delete — not even admins. Every mutation (payment, status,
-      // cancellation + stock refund) must go through the transactional callables
-      // (confirmPayment, updateOrderStatus, cancelOrder), which use the Admin SDK.
-      allow update, delete: if false;
+      // Admins have full operational control over order manipulation, status & auditing
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ─── Coupons ──────────────────────────────────────────────────────────────

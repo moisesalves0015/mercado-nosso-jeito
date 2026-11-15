@@ -61,6 +61,8 @@ export interface AdminOrder {
     referencia?: string;
     apelido?: string;
   };
+  adminNotes?: string;
+  assignedCourier?: string;
 }
 
 export interface StockHistoryItem {
