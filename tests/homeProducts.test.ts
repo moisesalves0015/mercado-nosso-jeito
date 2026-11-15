@@ -171,7 +171,10 @@ describe('mega-ofertas e banners', () => {
 
     assert.equal(cleanImageUrl('data:image/png;base64,iVBOR\n w0KGgo='), 'data:image/png;base64,iVBORw0KGgo=');
     assert.equal(cleanImageUrl(''), DEFAULT_PRODUCT_IMAGE);
+    // Truncated base64 payload (length % 4 !== 0 or corrupted structure) must fall back to default
+    assert.equal(cleanImageUrl('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA' + 'A'.repeat(1001)), DEFAULT_PRODUCT_IMAGE);
     assert.equal(sanitizeBannerImageUrl('data:image/jpeg;base64,/9j/4AAQ\r\nSkZJRg=='), 'data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+    assert.equal(sanitizeBannerImageUrl('data:image/jpeg;base64,broken_unpadded_data'), DEFAULT_BANNER_IMAGE);
     assert.equal(sanitizeBannerImageUrl('   '), DEFAULT_BANNER_IMAGE);
   });
 });

@@ -10,6 +10,7 @@ import {
   resolveVitrineDestination,
 } from '../../utils/homeProducts';
 import { resolvePeriodIcon } from '../../utils/homeCategoryIcons';
+import { isValidImageDataUrl } from '../../utils/imageUrl';
 import { emptyMessage } from './homeMessages';
 
 const PERIOD_LIMIT = 12;
@@ -31,7 +32,12 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
   );
   const meta = PERIOD_META[activePeriod];
   const config = periodConfig[activePeriod];
-  const activeBackground = config?.background || meta.background;
+  const candidateBg = config?.background || meta.background;
+  const isCandidateDataUri = candidateBg ? candidateBg.startsWith('data:') : false;
+  const activeBackground = isCandidateDataUri
+    ? (isValidImageDataUrl(candidateBg) ? candidateBg : meta.background)
+    : candidateBg;
+  const isDataUri = activeBackground ? activeBackground.startsWith('data:') : false;
 
   const products = useMemo(() => {
     if (config && config.active === false) return [];
@@ -41,8 +47,6 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
         : FALLBACK_PERIOD_PRODUCT_IDS[activePeriod];
     return resolveHomeProducts(ids, catalog.byId, PERIOD_LIMIT);
   }, [config, activePeriod, catalog.byId]);
-
-  const isDataUri = activeBackground ? activeBackground.startsWith('data:') : false;
 
   const containerStyle = useMemo(() => {
     if (isDataUri) {

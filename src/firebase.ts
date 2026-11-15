@@ -3,7 +3,7 @@
 // production bundle and exposed to anyone inspecting the source.
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
 
@@ -47,8 +47,17 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Initialize Firestore with experimentalForceLongPolling to eliminate ERR_QUIC_PROTOCOL_ERROR
+// and WebChannel stream transport crashes on Chrome and corporate/mobile networks.
+let firestoreDb: Firestore;
+try {
+  firestoreDb = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+} catch {
+  firestoreDb = getFirestore(app);
+}
+export const db = firestoreDb;
 
 // Initialize Firebase Storage (for profile photos)
 export const storage = getStorage(app);

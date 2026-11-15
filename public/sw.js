@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v7 (Fix errors & Mega Ofertas addDoc)
-const CACHE_NAME = 'mercado-v7-fix-errors';
+// PWA Service Worker — Mercado Cache v8 (Force Long Polling & Clean Data URLs)
+const CACHE_NAME = 'mercado-v8-force-longpolling';
 const ASSETS = [
   '/',
   '/index.html',
