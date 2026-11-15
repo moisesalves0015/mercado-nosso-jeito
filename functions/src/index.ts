@@ -1604,13 +1604,15 @@ export const confirmPayment = functions.https.onCall(async (data, context) => {
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
     const existingTimeline = (orderData.timeline ?? []) as unknown[];
 
-    const timelineEvent = {
+    const timelineEvent: Record<string, unknown> = {
       status: 'confirmed',
       label: `Pagamento confirmado (${paymentMethod || orderData.paymentMethod || 'Pix'})`,
       timestamp: admin.firestore.Timestamp.now(),
       actor: 'Administrador',
-      details: paymentReference ? `Ref: ${paymentReference}` : undefined,
     };
+    if (paymentReference) {
+      timelineEvent.details = `Ref: ${paymentReference}`;
+    }
 
     const updatePayload: Record<string, unknown> = {
       paymentStatus: 'approved',
