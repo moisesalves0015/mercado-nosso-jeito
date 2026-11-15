@@ -41,7 +41,7 @@ export const PageHeroBanner: React.FC<PageHeroBannerProps> = ({
   if (slides.length === 0) return null;
 
   return (
-    <div className="page-hero-banner-wrapper" style={{ margin: '14px 4px 18px 4px' }}>
+    <div className="page-hero-banner-wrapper" style={{ width: '100%', margin: '0 0 16px 0', padding: 0 }}>
       <HomeHero slides={slides} />
     </div>
   );

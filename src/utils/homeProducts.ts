@@ -319,7 +319,7 @@ export function normalizeHeroBanner(id: string, raw: unknown): { value: HeroBann
   const title = asTrimmedString(raw.title);
   const image = asTrimmedString(raw.image);
   const rawVideoUrl = asTrimmedString(raw.videoUrl);
-  const isVideoExt = (url: string) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/');
+  const isVideoExt = (url: string) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/') || url.startsWith('firestore-media://');
   const videoUrl = rawVideoUrl || (isVideoExt(image) ? image : undefined);
   const mediaType: 'image' | 'video' =
     raw.mediaType === 'video' || Boolean(videoUrl) ? 'video' : 'image';

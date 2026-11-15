@@ -796,11 +796,58 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
+const FALLBACK_ADMIN_DATA: AdminDataContextValue = {
+  orders: [],
+  products: [],
+  clients: [],
+  tickets: [],
+  storeSettings: {
+    pixKey: '',
+    pixName: '',
+    pixBank: '',
+    storePhone: '',
+    storeName: 'Mercado Nosso Jeito',
+    supportHours: 'Seg a Sáb • 08h às 22h',
+  },
+  shippingSettings: {
+    freeShippingThreshold: 100,
+    baseShippingFee: 10,
+    condos: {},
+  },
+  loading: true,
+  dataError: null,
+  ordersHasMore: false,
+  customersHasMore: false,
+  ticketsHasMore: false,
+  refreshData: async () => {},
+  loadMoreOrders: async () => {},
+  loadMoreCustomers: async () => {},
+  loadMoreTickets: async () => {},
+  actionLoading: null,
+  feedback: null,
+  showToast: () => {},
+  handleConfirmPayment: async () => false,
+  handleUpdateOrderStatus: async () => false,
+  handleCancelOrder: async () => false,
+  handleGrantDiamonds: async () => false,
+  handleBanUser: async () => false,
+  handleAdjustStock: async () => false,
+  handleArchiveProduct: async () => false,
+  handleToggleProductActive: async () => false,
+  handleCreateTicket: async () => null,
+  handleUpdateTicket: async () => false,
+  saveStoreSettings: async () => false,
+  saveShippingSettings: async () => false,
+};
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAdminData = (): AdminDataContextValue => {
   const ctx = useContext(AdminDataContext);
   if (!ctx) {
-    throw new Error('useAdminData must be used inside AdminDataProvider');
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
+      console.warn('[useAdminData] Contexto não encontrado ou recarregando via HMR. Retornando estado seguro de fallback.');
+    }
+    return FALLBACK_ADMIN_DATA;
   }
   return ctx;
 };

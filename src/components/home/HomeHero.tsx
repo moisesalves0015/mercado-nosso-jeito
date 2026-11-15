@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { resolveLink } from '../../utils/homeProducts';
 import { sanitizeBannerImageUrl } from '../../utils/imageUrl';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { useResolvedMediaUrl } from '../../services/mediaStorageService';
 
 export interface HeroSlide {
   id: string;
@@ -20,6 +21,40 @@ export interface HeroSlide {
 
 const ROTATE_MS = 4500;
 const MIN_SWIPE_PX = 50;
+
+const HeroSlideVideoItem: React.FC<{
+  videoSrc: string;
+  poster?: string;
+  active: boolean;
+}> = ({ videoSrc, poster, active }) => {
+  const resolved = useResolvedMediaUrl(videoSrc);
+
+  return (
+    <video
+      src={resolved || undefined}
+      poster={poster ? sanitizeBannerImageUrl(poster, '') : undefined}
+      autoPlay
+      loop
+      muted
+      playsInline
+      webkit-playsinline="true"
+      preload="auto"
+      className="hero-slide-video"
+      style={{
+        width: '100%',
+        height: 'auto',
+        display: 'block',
+        pointerEvents: 'none',
+        background: 'transparent',
+      }}
+      ref={(el) => {
+        if (el && active) {
+          el.play().catch(() => {});
+        }
+      }}
+    />
+  );
+};
 
 /**
  * Carrossel de banners da Home.
@@ -97,15 +132,14 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
 
           const common = {
             className: `hero-slide${isVideo || cleanedImage ? '' : ' hero-slide--text'}`,
-            style: isVideo
-              ? { position: 'relative' as const, overflow: 'hidden' as const, background: '#000' }
-              : cleanedImage
-              ? {
-                  backgroundImage: cleanedImage.startsWith('data:') ? 'none' : `url("${cleanedImage}")`,
-                  position: 'relative' as const,
-                  overflow: 'hidden' as const,
-                }
-              : undefined,
+            style: {
+              position: 'relative' as const,
+              overflow: 'hidden' as const,
+              background: 'transparent',
+              width: '100%',
+              height: 'auto',
+              display: 'block',
+            },
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,
           } as const;
@@ -113,30 +147,8 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
           // Slides fora de vista não entram na ordem de tabulação.
           const tabIndex = active ? undefined : -1;
           const content = isVideo && videoSrc ? (
-            <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-              <video
-                src={videoSrc}
-                poster={poster ? sanitizeBannerImageUrl(poster, '') : undefined}
-                autoPlay
-                loop
-                muted
-                playsInline
-                webkit-playsinline="true"
-                preload="auto"
-                className="hero-slide-video"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  pointerEvents: 'none',
-                }}
-                ref={(el) => {
-                  if (el && active) {
-                    el.play().catch(() => {});
-                  }
-                }}
-              />
+            <div style={{ position: 'relative', width: '100%', height: 'auto', overflow: 'hidden', display: 'block', background: 'transparent' }}>
+              <HeroSlideVideoItem videoSrc={videoSrc} poster={poster} active={active} />
               {slide.title && (
                 <div
                   style={{
@@ -162,10 +174,10 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
               className="hero-slide-img"
               style={{
                 width: '100%',
-                height: '100%',
-                objectFit: 'cover',
+                height: 'auto',
                 display: 'block',
                 pointerEvents: 'none',
+                background: 'transparent',
               }}
             />
           ) : (

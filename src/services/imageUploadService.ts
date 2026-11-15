@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
+import { saveVideoFileToChunkedStore } from './mediaStorageService';
 
 export interface ImageUploadOptions {
   folder: 'products' | 'banners';
@@ -226,38 +226,16 @@ export async function uploadBannerMediaFile(
     // poster extraction is optional
   }
 
-  // 1. Try Firebase Storage upload first
+  // Save directly to resilient chunked Firestore store + IndexedDB
+  // Completely eliminates Firebase Storage CORS errors and Firestore 1MB limits
   try {
-    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `banners/videos/${Date.now()}_${cleanName}`;
-    const fileRef = storageRef(storage, storagePath);
-    const snap = await uploadBytes(fileRef, file, {
-      contentType: file.type || 'video/mp4',
-    });
-    const downloadUrl = await getDownloadURL(snap.ref);
-    return { url: downloadUrl, mediaType: 'video', posterImage };
-  } catch (storageErr) {
-    console.warn(
-      '[uploadBannerMediaFile] Falha ao enviar para o Firebase Storage, verificando fallback:',
-      storageErr
-    );
-
-    // If file is very small (< 500KB binary, < 680KB base64), it can safely fit in Firestore document (< 1MB)
-    if (file.size <= 500 * 1024) {
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      return { url: dataUrl, mediaType: 'video', posterImage };
-    }
-
-    const errMsg = storageErr instanceof Error ? storageErr.message : String(storageErr);
+    const mediaUri = await saveVideoFileToChunkedStore(file);
+    return { url: mediaUri, mediaType: 'video', posterImage };
+  } catch (chunkErr) {
+    console.error('[uploadBannerMediaFile] Falha ao processar e salvar vídeo fragmentado:', chunkErr);
     throw new Error(
-      `Não foi possível salvar o vídeo no Firebase Storage (${errMsg}). ` +
-        `Como o arquivo tem ${(file.size / (1024 * 1024)).toFixed(1)}MB, ele excede o limite de 1MB por documento do Firestore. ` +
-        `Por favor, utilize um vídeo de até 500KB ou cole a URL direta (ex: Cloudinary, YouTube direto, Vercel Blob ou CDN) no campo de URL do Vídeo.`
+      'Falha ao processar o arquivo de vídeo: ' +
+        (chunkErr instanceof Error ? chunkErr.message : String(chunkErr))
     );
   }
 }

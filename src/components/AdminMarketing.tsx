@@ -13,6 +13,7 @@ import { db } from '../firebase';
 import { defaultProducts } from '../data/defaultProducts';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
 import { uploadOrCompressImage, uploadBannerMediaFile } from '../services/imageUploadService';
+import { useResolvedMediaUrl } from '../services/mediaStorageService';
 import { sanitizeBannerImageUrl, cleanImageUrl, handleImageError } from '../utils/imageUrl';
 import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig, CondoFavoriteConfig } from '../hooks/useHomeConfig';
 
@@ -148,6 +149,29 @@ export function getPlacementMeta(placement?: string) {
       return { label: 'Home', icon: '🏠', bg: 'rgba(16, 185, 129, 0.15)', text: '#6ee7b7', border: 'rgba(16, 185, 129, 0.3)' };
   }
 }
+
+const AdminVideoPreview: React.FC<{
+  videoSrc: string;
+  poster?: string;
+  style?: React.CSSProperties;
+}> = ({ videoSrc, poster, style }) => {
+  const resolved = useResolvedMediaUrl(videoSrc);
+  return (
+    <video
+      src={resolved || undefined}
+      poster={poster ? sanitizeBannerImageUrl(poster) : undefined}
+      autoPlay
+      loop
+      muted
+      playsInline
+      style={{
+        objectFit: 'contain',
+        background: '#000',
+        ...style,
+      }}
+    />
+  );
+};
 
 // ─── SubTabBtn — module-level to prevent recreation on every render ────────────
 interface SubTabBtnProps {
@@ -2577,13 +2601,9 @@ export const AdminMarketing: React.FC = () => {
 
                       {(bannerDraft.videoUrl || bannerDraft.image) && (
                         <div style={{ display: 'flex', gap: 14, alignItems: 'center', paddingTop: 6, background: '#000', padding: 10, borderRadius: 10 }}>
-                          <video
-                            src={bannerDraft.videoUrl || bannerDraft.image}
+                          <AdminVideoPreview
+                            videoSrc={bannerDraft.videoUrl || bannerDraft.image || ''}
                             poster={bannerDraft.posterImage ? sanitizeBannerImageUrl(bannerDraft.posterImage) : undefined}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
                             style={{
                               width: 160,
                               height: 90,
@@ -2795,13 +2815,9 @@ export const AdminMarketing: React.FC = () => {
                     }}
                   >
                     {isVideo && videoSrc ? (
-                      <video
-                        src={videoSrc}
+                      <AdminVideoPreview
+                        videoSrc={videoSrc}
                         poster={banner.posterImage ? sanitizeBannerImageUrl(banner.posterImage) : undefined}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     ) : banner.image ? (
