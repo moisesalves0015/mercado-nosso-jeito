@@ -88,7 +88,19 @@ export function buildShowcases(
 
   if (current.length > 0) {
     return current.map(v => {
-      const resolved = resolveHomeProducts(v.productIds, byId, v.maxProducts);
+      let resolved = resolveHomeProducts(v.productIds, byId, v.maxProducts);
+      // Se a vitrine não tem produtos manuais definidos (productIds vazio) mas possui categoria configurada:
+      // popula automaticamente com produtos compráveis dessa categoria para controle automático inteligente.
+      if (resolved.length === 0 && (v.category || v.title)) {
+        const catTarget = normalizeCategory(v.category || v.title);
+        const autoProducts = products
+          .filter(p => isHomeProductPurchasable(p) && normalizeCategory(p.category) === catTarget)
+          .slice(0, v.maxProducts || 10);
+        if (autoProducts.length > 0) {
+          resolved = autoProducts;
+        }
+      }
+
       return {
         key: v.id,
         title: v.title,

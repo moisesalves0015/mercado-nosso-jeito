@@ -1,5 +1,5 @@
-// PWA Service Worker — Mercado Cache v4 (Force Update)
-const CACHE_NAME = 'mercado-v4-update';
+// PWA Service Worker — Mercado Cache v5 (Force Update Vitrines & Home)
+const CACHE_NAME = 'mercado-v5-showcase-control';
 const ASSETS = [
   '/',
   '/index.html',

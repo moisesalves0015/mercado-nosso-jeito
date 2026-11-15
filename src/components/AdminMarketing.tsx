@@ -160,69 +160,471 @@ const toggleKnob = (active: boolean): React.CSSProperties => ({
   boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
 });
 
-// ─── PRODUCT SEARCH PICKER ────────────────────────────────────────────────────
+// ─── PRODUCT SEARCH & REORDER PICKER ──────────────────────────────────────────
 const ProductPicker: React.FC<{
   products: Product[];
   selectedIds: string[];
-  onAdd: (id: string) => void;
-  onRemove: (id: string) => void;
-}> = ({ products, selectedIds, onAdd, onRemove }) => {
+  onChangeIds?: (ids: string[]) => void;
+  onAdd?: (id: string) => void;
+  onRemove?: (id: string) => void;
+  defaultCategory?: string;
+}> = ({ products, selectedIds, onChangeIds, onAdd, onRemove, defaultCategory }) => {
   const [q, setQ] = useState('');
-  const filtered = products.filter(p =>
-    (p.title.toLowerCase().includes(q.toLowerCase()) || p.id.toLowerCase().includes(q.toLowerCase())) &&
-    !selectedIds.includes(p.id)
-  ).slice(0, 8);
+  const [catFilter, setCatFilter] = useState(defaultCategory || 'all');
+
+  // Categorias únicas derivadas do catálogo
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return Array.from(set).sort();
+  }, [products]);
+
+  // Reordenação manual para cima/baixo na vitrine
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= selectedIds.length) return;
+    const next = [...selectedIds];
+    const temp = next[index];
+    next[index] = next[target];
+    next[target] = temp;
+    if (onChangeIds) onChangeIds(next);
+  };
+
+  const removeItem = (id: string) => {
+    if (onRemove) onRemove(id);
+    if (onChangeIds) onChangeIds(selectedIds.filter((x) => x !== id));
+  };
+
+  const addItem = (id: string) => {
+    if (!selectedIds.includes(id)) {
+      if (onAdd) onAdd(id);
+      if (onChangeIds) onChangeIds([...selectedIds, id]);
+    }
+  };
+
+  const addAllFromCategory = () => {
+    const candidates = products
+      .filter((p) => catFilter === 'all' || p.category.toLowerCase() === catFilter.toLowerCase())
+      .map((p) => p.id);
+    const combined = Array.from(new Set([...selectedIds, ...candidates]));
+    if (onChangeIds) onChangeIds(combined);
+    else if (onAdd) {
+      candidates.forEach((id) => {
+        if (!selectedIds.includes(id)) onAdd(id);
+      });
+    }
+  };
+
+  const clearAll = () => {
+    if (window.confirm('Remover todos os produtos selecionados desta lista?')) {
+      if (onChangeIds) onChangeIds([]);
+      else if (onRemove) {
+        selectedIds.forEach((id) => onRemove(id));
+      }
+    }
+  };
+
+  // Produtos disponíveis filtrados por categoria e texto
+  const availableProducts = React.useMemo(() => {
+    return products.filter((p) => {
+      const matchCat =
+        catFilter === 'all' || p.category.toLowerCase() === catFilter.toLowerCase();
+      const matchQ =
+        !q ||
+        p.title.toLowerCase().includes(q.toLowerCase()) ||
+        p.id.toLowerCase().includes(q.toLowerCase());
+      return matchCat && matchQ;
+    });
+  }, [products, catFilter, q]);
 
   return (
-    <div>
-      {/* Selected */}
-      {selectedIds.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-          {selectedIds.map(id => {
-            const p = products.find(x => x.id === id);
-            return (
-              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: crmTheme.primaryLight, border: `1px solid ${crmTheme.border}`, borderRadius: 99, padding: '3px 8px 3px 5px' }}>
-                {p && <img src={p.image} alt="" style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4 }} />}
-                <span style={{ fontSize: 11, fontWeight: 700, color: crmTheme.primary, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {p ? p.title.split(' ').slice(0, 3).join(' ') : id}
-                </span>
-                <button onClick={() => onRemove(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: crmTheme.danger, display: 'flex', padding: 0 }}>
-                  <X size={11} />
-                </button>
-              </div>
-            );
-          })}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* SEÇÃO 1: PRODUTOS VINCULADOS & ORDEM EXATA */}
+      <div
+        style={{
+          background: crmTheme.bg,
+          padding: 12,
+          borderRadius: 10,
+          border: `1px solid ${crmTheme.border}`,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ fontSize: 12, fontWeight: 800, color: crmTheme.textPrimary }}>
+            Ordem dos Produtos na Vitrine ({selectedIds.length})
+          </span>
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              style={{
+                fontSize: 11,
+                color: crmTheme.danger,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Limpar todos
+            </button>
+          )}
         </div>
-      )}
 
-      {/* Search */}
-      <div style={{ position: 'relative', marginBottom: 6 }}>
-        <Search size={12} color={crmTheme.textMuted} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-        <input
-          type="text"
-          placeholder="Buscar produto por nome..."
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          style={{ ...inputSt, paddingLeft: 30, height: 34 }}
-        />
+        {selectedIds.length === 0 ? (
+          <div
+            style={{
+              padding: '16px 8px',
+              textAlign: 'center',
+              color: crmTheme.textMuted,
+              fontSize: 12,
+            }}
+          >
+            Nenhum produto fixado manualmente nesta vitrine.
+            <br />
+            <span style={{ fontSize: 11 }}>
+              Adicione produtos abaixo para definir a ordem exata ou selecione uma categoria para modo automático.
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              maxHeight: 250,
+              overflowY: 'auto',
+              paddingRight: 4,
+            }}
+          >
+            {selectedIds.map((id, index) => {
+              const p = products.find((x) => x.id === id);
+              return (
+                <div
+                  key={id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: crmTheme.cardBg,
+                    border: `1px solid ${crmTheme.border}`,
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    boxShadow: crmTheme.shadowSm,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 900,
+                      color: crmTheme.primary,
+                      background: crmTheme.primaryLight,
+                      padding: '2px 6px',
+                      borderRadius: 99,
+                      minWidth: 26,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {index + 1}º
+                  </span>
+
+                  {p && (
+                    <img
+                      src={p.image}
+                      alt=""
+                      style={{
+                        width: 28,
+                        height: 28,
+                        objectFit: 'contain',
+                        borderRadius: 4,
+                        background: '#fff',
+                        border: `1px solid ${crmTheme.border}`,
+                      }}
+                    />
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: crmTheme.textPrimary,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {p ? p.title : id}
+                    </div>
+                    {p && (
+                      <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>
+                        {p.category} · R$ {Number(p.price).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Controles de Ordem e Remoção */}
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => moveItem(index, 'up')}
+                      title="Mover para cima / antes"
+                      style={{
+                        padding: '4px 7px',
+                        borderRadius: 4,
+                        border: `1px solid ${crmTheme.border}`,
+                        background: index === 0 ? 'transparent' : crmTheme.bg,
+                        color: index === 0 ? crmTheme.textMuted : crmTheme.textPrimary,
+                        cursor: index === 0 ? 'not-allowed' : 'pointer',
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === selectedIds.length - 1}
+                      onClick={() => moveItem(index, 'down')}
+                      title="Mover para baixo / depois"
+                      style={{
+                        padding: '4px 7px',
+                        borderRadius: 4,
+                        border: `1px solid ${crmTheme.border}`,
+                        background:
+                          index === selectedIds.length - 1 ? 'transparent' : crmTheme.bg,
+                        color:
+                          index === selectedIds.length - 1
+                            ? crmTheme.textMuted
+                            : crmTheme.textPrimary,
+                        cursor: index === selectedIds.length - 1 ? 'not-allowed' : 'pointer',
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ▼
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(id)}
+                      title="Remover produto da vitrine"
+                      style={{
+                        padding: '4px 7px',
+                        borderRadius: 4,
+                        border: `1px solid ${crmTheme.dangerLight}`,
+                        background: crmTheme.dangerLight,
+                        color: crmTheme.danger,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {q && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
-          {filtered.length === 0 && <span style={{ fontSize: 11, color: crmTheme.textMuted, padding: '6px 4px' }}>Nenhum produto encontrado.</span>}
-          {filtered.map(p => (
-            <button key={p.id} onClick={() => { onAdd(p.id); setQ(''); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, background: crmTheme.bg, border: `1px solid ${crmTheme.border}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', textAlign: 'left' }}>
-              <img src={p.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: '#fff', border: `1px solid ${crmTheme.border}`, flexShrink: 0 }} />
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: crmTheme.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                <div style={{ fontSize: 10, color: crmTheme.textSecondary, fontWeight: 600 }}>{p.category} · R$ {Number(p.price).toFixed(2)}</div>
-              </div>
-              <Plus size={13} color={crmTheme.primary} />
-            </button>
-          ))}
+      {/* SEÇÃO 2: CATÁLOGO DE PRODUTOS PARA ADICIONAR LIVREMENTE */}
+      <div
+        style={{
+          background: crmTheme.cardBg,
+          border: `1px solid ${crmTheme.border}`,
+          borderRadius: 10,
+          padding: 12,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            color: crmTheme.textPrimary,
+            marginBottom: 8,
+          }}
+        >
+          Adicionar Produtos do Catálogo
         </div>
-      )}
+
+        {/* Filtros: Categoria e Busca */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+          <select
+            value={catFilter}
+            onChange={(e) => setCatFilter(e.target.value)}
+            style={{ ...inputSt, height: 34, appearance: 'auto' }}
+          >
+            <option value="all">Todas as Categorias</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          <div style={{ position: 'relative' }}>
+            <Search
+              size={12}
+              color={crmTheme.textMuted}
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Buscar por nome..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ ...inputSt, paddingLeft: 30, height: 34 }}
+            />
+          </div>
+        </div>
+
+        {/* Botão de lote para categoria */}
+        {catFilter !== 'all' && (
+          <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={addAllFromCategory}
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: crmTheme.primary,
+                background: crmTheme.primaryLight,
+                border: `1px solid ${crmTheme.primary}`,
+                borderRadius: 6,
+                padding: '4px 10px',
+                cursor: 'pointer',
+              }}
+            >
+              + Adicionar todos de "{catFilter}"
+            </button>
+          </div>
+        )}
+
+        {/* Lista de produtos para adicionar */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            maxHeight: 200,
+            overflowY: 'auto',
+          }}
+        >
+          {availableProducts.length === 0 ? (
+            <span
+              style={{
+                fontSize: 11,
+                color: crmTheme.textMuted,
+                padding: '10px 4px',
+                textAlign: 'center',
+              }}
+            >
+              Nenhum produto encontrado com os filtros atuais.
+            </span>
+          ) : (
+            availableProducts.map((p) => {
+              const isSelected = selectedIds.includes(p.id);
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: isSelected ? crmTheme.bg : crmTheme.cardBg,
+                    border: `1px solid ${isSelected ? crmTheme.primaryLight : crmTheme.border}`,
+                    borderRadius: 8,
+                    padding: '5px 10px',
+                  }}
+                >
+                  <img
+                    src={p.image}
+                    alt=""
+                    style={{
+                      width: 28,
+                      height: 28,
+                      objectFit: 'contain',
+                      borderRadius: 4,
+                      background: '#fff',
+                      border: `1px solid ${crmTheme.border}`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: crmTheme.textPrimary,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {p.title}
+                    </div>
+                    <div style={{ fontSize: 10, color: crmTheme.textSecondary }}>
+                      {p.category} · R$ {Number(p.price).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {isSelected ? (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: crmTheme.success,
+                        background: crmTheme.successLight,
+                        padding: '2px 8px',
+                        borderRadius: 99,
+                      }}
+                    >
+                      ✓ Na vitrine
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => addItem(p.id)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: crmTheme.primaryLight,
+                        border: `1px solid ${crmTheme.primary}`,
+                        borderRadius: 6,
+                        padding: '3px 8px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: crmTheme.primary,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Plus size={11} /> Adicionar
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -237,29 +639,68 @@ const VitrineForm: React.FC<{
 }> = ({ products, initial = {}, onSave, onCancel, saving }) => {
   const [title, setTitle] = useState(initial.title || '');
   const [subtitle, setSubtitle] = useState(
-    Array.isArray(initial.subtitle) ? initial.subtitle.join(' | ') : (initial.subtitle || '')
+    Array.isArray(initial.subtitle) ? initial.subtitle.join(' | ') : initial.subtitle || ''
   );
   const [theme, setTheme] = useState<VitrineConfig['theme']>(initial.theme || 'purple');
   const [order, setOrder] = useState(String(initial.order ?? 0));
-  const [maxProducts, setMaxProducts] = useState(String(initial.maxProducts ?? 6));
+  const [maxProducts, setMaxProducts] = useState(String(initial.maxProducts ?? 8));
   const [validFrom, setValidFrom] = useState(initial.validFrom || '');
   const [validUntil, setValidUntil] = useState(initial.validUntil || '');
   const [productIds, setProductIds] = useState<string[]>(initial.productIds || []);
   const [active, setActive] = useState(initial.active !== false);
+  const [category, setCategory] = useState(initial.category || '');
+  const [layout, setLayout] = useState<VitrineConfig['layout']>(initial.layout || 'horizontal');
+
+  // Categorias disponíveis no catálogo
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return Array.from(set).sort();
+  }, [products]);
+
+  // Preenchimento automático inteligente por categoria
+  const handleFillFromCategory = () => {
+    const targetCat = category.trim() || title.trim();
+    if (!targetCat) {
+      alert('Selecione uma categoria abaixo ou defina o título da vitrine.');
+      return;
+    }
+    const catProds = products
+      .filter((p) => p.category.toLowerCase() === targetCat.toLowerCase())
+      .map((p) => p.id);
+    if (catProds.length === 0) {
+      alert(`Nenhum produto encontrado para a categoria "${targetCat}".`);
+      return;
+    }
+    setProductIds(catProds);
+    alert(`${catProds.length} produtos carregados! Agora você pode reorganizar a ordem como preferir.`);
+  };
 
   const handleSubmit = () => {
-    if (!title.trim()) { alert('Informe o título da vitrine.'); return; }
-    const subs = subtitle.trim() ? subtitle.split('|').map(s => s.trim()).filter(Boolean) : undefined;
+    if (!title.trim()) {
+      alert('Informe o título da vitrine.');
+      return;
+    }
+    const subs = subtitle.trim()
+      ? subtitle
+          .split('|')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : undefined;
     onSave({
       title: title.trim(),
-      subtitle: subs && subs.length === 1 ? subs[0] : (subs || undefined),
-      theme, active,
+      subtitle: subs && subs.length === 1 ? subs[0] : subs || undefined,
+      theme,
+      active,
       order: parseInt(order) || 0,
-      maxProducts: parseInt(maxProducts) || 6,
+      maxProducts: parseInt(maxProducts) || 8,
       productIds,
+      category: category.trim() || undefined,
+      layout,
       validFrom: validFrom || null,
       validUntil: validUntil || null,
-      layout: 'horizontal',
     });
   };
 
@@ -267,67 +708,184 @@ const VitrineForm: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label style={labelSt}>Título *</label>
-          <input style={inputSt} value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Bebidas Geladas" />
+          <label style={labelSt}>Título da Vitrine *</label>
+          <input
+            style={inputSt}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex: Bebidas Geladas"
+          />
         </div>
         <div>
-          <label style={labelSt}>Subtítulo (separe com |)</label>
-          <input style={inputSt} value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Slogan 1 | Slogan 2" />
+          <label style={labelSt}>Subtítulo (separe slogans com |)</label>
+          <input
+            style={inputSt}
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            placeholder="Gelada é aqui! 🧊 | As melhores marcas"
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+        <div>
+          <label style={labelSt}>Categoria Vinculada</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}
+          >
+            <option value="">Sem categoria fixa (Livre)</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={labelSt}>Tema Visual</label>
+          <select
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as VitrineConfig['theme'])}
+            style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}
+          >
+            {THEME_OPTIONS.map((t) => (
+              <option
+                key={t.value}
+                value={t.value}
+                style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}
+              >
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={labelSt}>Layout</label>
+          <select
+            value={layout}
+            onChange={(e) => setLayout(e.target.value as VitrineConfig['layout'])}
+            style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}
+          >
+            <option value="horizontal">Carrossel Horizontal</option>
+            <option value="grid">Grade (Grid)</option>
+          </select>
+        </div>
+        <div>
+          <label style={labelSt}>Máx. Produtos</label>
+          <input
+            style={inputSt}
+            type="number"
+            value={maxProducts}
+            onChange={(e) => setMaxProducts(e.target.value)}
+            min="1"
+            max="30"
+          />
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         <div>
-          <label style={labelSt}>Tema / Cor</label>
-          <select value={theme} onChange={e => setTheme(e.target.value as VitrineConfig['theme'])}
-            style={{ ...inputSt, background: crmTheme.cardBg, appearance: 'auto' }}>
-            {THEME_OPTIONS.map(t => <option key={t.value} value={t.value} style={{ background: crmTheme.cardBg, color: crmTheme.textPrimary }}>{t.label}</option>)}
-          </select>
+          <label style={labelSt}>Ordem de Exibição na Home</label>
+          <input
+            style={inputSt}
+            type="number"
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+            min="0"
+          />
         </div>
-        <div>
-          <label style={labelSt}>Ordem</label>
-          <input style={inputSt} type="number" value={order} onChange={e => setOrder(e.target.value)} min="0" />
-        </div>
-        <div>
-          <label style={labelSt}>Máx. Produtos</label>
-          <input style={inputSt} type="number" value={maxProducts} onChange={e => setMaxProducts(e.target.value)} min="1" max="20" />
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={labelSt}>Válido a partir de</label>
-          <input style={inputSt} type="datetime-local" value={validFrom} onChange={e => setValidFrom(e.target.value)} />
+          <input
+            style={inputSt}
+            type="datetime-local"
+            value={validFrom}
+            onChange={(e) => setValidFrom(e.target.value)}
+          />
         </div>
         <div>
           <label style={labelSt}>Válido até</label>
-          <input style={inputSt} type="datetime-local" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
+          <input
+            style={inputSt}
+            type="datetime-local"
+            value={validUntil}
+            onChange={(e) => setValidUntil(e.target.value)}
+          />
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button style={toggle(active)} onClick={() => setActive(!active)}>
-          <div style={toggleKnob(active)} />
-        </button>
-        <span style={{ fontSize: 12, fontWeight: 700, color: active ? crmTheme.success : crmTheme.textMuted }}>
-          {active ? 'Vitrine ativa' : 'Vitrine inativa'}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button style={toggle(active)} onClick={() => setActive(!active)}>
+            <div style={toggleKnob(active)} />
+          </button>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: active ? crmTheme.success : crmTheme.textMuted,
+            }}
+          >
+            {active ? 'Vitrine ativa na Home' : 'Vitrine pausada/inativa'}
+          </span>
+        </div>
+
+        {category && (
+          <button
+            type="button"
+            onClick={handleFillFromCategory}
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: crmTheme.accent,
+              background: crmTheme.accentLight,
+              border: `1px solid ${crmTheme.accent}`,
+              borderRadius: 6,
+              padding: '5px 12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <RefreshCw size={12} /> Preencher com produtos de "{category}"
+          </button>
+        )}
       </div>
 
       <div>
-        <label style={{ ...labelSt, marginBottom: 8 }}>Produtos vinculados ({productIds.length})</label>
         <ProductPicker
           products={products}
           selectedIds={productIds}
-          onAdd={id => setProductIds(prev => [...prev, id])}
-          onRemove={id => setProductIds(prev => prev.filter(x => x !== id))}
+          onChangeIds={setProductIds}
+          defaultCategory={category}
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: `1px solid ${crmTheme.border}` }}>
-        <button onClick={onCancel} style={btnGhost}>Cancelar</button>
-        <button onClick={handleSubmit} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
-          {saving ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={13} />}
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          justifyContent: 'flex-end',
+          paddingTop: 8,
+          borderTop: `1px solid ${crmTheme.border}`,
+        }}
+      >
+        <button onClick={onCancel} style={btnGhost}>
+          Cancelar
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}
+        >
+          {saving ? (
+            <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <Save size={13} />
+          )}
           {saving ? 'Salvando...' : 'Salvar Vitrine'}
         </button>
       </div>
@@ -732,6 +1290,11 @@ export const AdminMarketing: React.FC = () => {
     await updateDoc(doc(db, 'home-config', 'data', 'period-config', periodId), { productIds: ids });
   }, [periodConfig]);
 
+  const updatePeriodProductIds = useCallback(async (periodId: string, ids: string[]) => {
+    const current = periodConfig[periodId] || { id: periodId, title: PERIOD_LABELS[periodId]?.label, active: true, productIds: [], isAuto: false };
+    await setDoc(doc(db, 'home-config', 'data', 'period-config', periodId), { ...current, productIds: ids }, { merge: true });
+  }, [periodConfig]);
+
   const togglePeriodActive = useCallback(async (periodId: string) => {
     const current = periodConfig[periodId];
     const val = current ? !current.active : false;
@@ -1045,6 +1608,80 @@ export const AdminMarketing: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Prévia visual dos produtos da vitrine na ordem exata */}
+                {!isEditing && (
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+                    {v.productIds.length === 0 ? (
+                      <span style={{ fontSize: 11, color: crmTheme.textMuted, fontStyle: 'italic' }}>
+                        {v.category
+                          ? `Modo automático ativo: exibe produtos da categoria "${v.category}".`
+                          : 'Vazia (clique em Editar para escolher os produtos e a ordem).'}
+                      </span>
+                    ) : (
+                      v.productIds.slice(0, 10).map((pid, pidx) => {
+                        const prod = products.find((p) => p.id === pid);
+                        return (
+                          <div
+                            key={pid}
+                            title={`${pidx + 1}º: ${prod ? prod.title : pid}`}
+                            style={{
+                              position: 'relative',
+                              width: 32,
+                              height: 32,
+                              borderRadius: 6,
+                              background: '#fff',
+                              border: `1px solid ${crmTheme.border}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                fontSize: 8,
+                                fontWeight: 900,
+                                background: 'rgba(0,0,0,0.65)',
+                                color: '#fff',
+                                padding: '1px 3px',
+                                borderBottomRightRadius: 4,
+                                lineHeight: 1,
+                              }}
+                            >
+                              {pidx + 1}
+                            </span>
+                            {prod ? (
+                              <img
+                                src={prod.image}
+                                alt=""
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                              />
+                            ) : (
+                              <span style={{ fontSize: 9, color: crmTheme.danger }}>?</span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    {v.productIds.length > 10 && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: crmTheme.textMuted,
+                          fontWeight: 700,
+                          paddingLeft: 4,
+                        }}
+                      >
+                        +{v.productIds.length - 10}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Edit Form Inline */}
                 {isEditing && (
                   <VitrineForm
@@ -1281,8 +1918,9 @@ export const AdminMarketing: React.FC = () => {
                       <ProductPicker
                         products={products}
                         selectedIds={cfg?.productIds || []}
-                        onAdd={id => addProductToPeriod(periodId, id)}
-                        onRemove={id => removeProductFromPeriod(periodId, id)}
+                        onChangeIds={ids => updatePeriodProductIds(periodId, ids)}
+                        onAdd={(id: string) => addProductToPeriod(periodId, id)}
+                        onRemove={(id: string) => removeProductFromPeriod(periodId, id)}
                       />
                     </div>
 

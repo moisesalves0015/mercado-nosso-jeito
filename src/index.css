@@ -9423,6 +9423,26 @@ body.light-mode .roulette-bg-overlay {
   color: #FFDF73;
 }
 
+/* Badge de Oferta Relâmpago com Contagem Regressiva alinhado ao título Categorias */
+.flash-offer-countdown-badge:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 223, 115, 0.7) !important;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.24) 0%, rgba(255, 223, 115, 0.1) 100%) !important;
+}
+
+.flash-offer-countdown-badge:active {
+  transform: scale(0.97);
+}
+
+body.light-mode .flash-offer-countdown-badge {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%) !important;
+  border-color: rgba(180, 83, 9, 0.3) !important;
+}
+
+body.light-mode .flash-offer-countdown-badge span {
+  color: #78350f !important;
+}
+
 .category-circle-link.active .category-circle-label,
 .category-circle-link[aria-current='page'] .category-circle-label {
   color: #FFDF73;
