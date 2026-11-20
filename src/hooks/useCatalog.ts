@@ -11,12 +11,14 @@
  *  - `error`: cache ilegível, ou sem resposta após `LOAD_TIMEOUT_MS`.
  *  - `ready`: catálogo carregado (pode estar vazio — isso é "sem conteúdo", não "carregando").
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { HomeProduct } from '../types/home';
 import { normalizeHomeProduct } from '../utils/homeProducts';
 
 const STORAGE_KEY = 'app-products';
 const UPDATE_EVENT = 'app-products-updated';
+const ERROR_EVENT = 'app-products-error';
+const RETRY_EVENT = 'app-products-retry';
 const LOAD_TIMEOUT_MS = 8000;
 
 export type CatalogStatus = 'loading' | 'ready' | 'error';
@@ -36,33 +38,54 @@ function readCatalog(): CatalogState {
       .map(normalizeHomeProduct)
       .filter((p): p is HomeProduct => p !== null);
     return { products, status: 'ready' };
-  } catch (error) {
-    console.error('Não foi possível ler o catálogo armazenado.', error);
+  } catch {
+    console.warn('[catalog] Cache local de produtos inválido.');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
     return { products: [], status: 'error' };
   }
 }
 
 export function useCatalog() {
   const [state, setState] = useState<CatalogState>(readCatalog);
+  const [retryNonce, setRetryNonce] = useState(0);
+
+  const retry = useCallback(() => {
+    setState({ products: [], status: 'loading' });
+    setRetryNonce((n) => n + 1);
+    window.dispatchEvent(new Event(RETRY_EVENT));
+  }, []);
 
   useEffect(() => {
     const refresh = () => setState(readCatalog());
+    const onError = () => {
+      setState((prev) => (prev.products.length > 0 ? prev : { products: [], status: 'error' }));
+    };
+
     window.addEventListener(UPDATE_EVENT, refresh);
+    window.addEventListener(ERROR_EVENT, onError);
     window.addEventListener('storage', refresh);
 
     // Sem resposta do Firestore: não deixar a Home em "carregando" para sempre.
     const timeout = window.setTimeout(() => {
-      setState(prev => (prev.status === 'loading' ? { products: [], status: 'error' } : prev));
+      setState((prev) => (prev.status === 'loading' ? { products: [], status: 'error' } : prev));
     }, LOAD_TIMEOUT_MS);
 
     return () => {
       window.removeEventListener(UPDATE_EVENT, refresh);
+      window.removeEventListener(ERROR_EVENT, onError);
       window.removeEventListener('storage', refresh);
       window.clearTimeout(timeout);
     };
-  }, []);
+  }, [retryNonce]);
 
-  const byId = useMemo(() => new Map(state.products.map(p => [p.id, p] as const)), [state.products]);
+  const byId = useMemo(
+    () => new Map(state.products.map((p) => [p.id, p] as const)),
+    [state.products],
+  );
 
   return {
     products: state.products,
@@ -70,6 +93,7 @@ export function useCatalog() {
     status: state.status,
     loading: state.status === 'loading',
     error: state.status === 'error',
+    retry,
   };
 }
 

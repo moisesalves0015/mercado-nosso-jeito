@@ -138,6 +138,9 @@
         100% { transform: scale(0.82); opacity: 0.75; }
       }
       @media (prefers-reduced-motion: reduce) {
+        .pwa-splash-container {
+          transition: none !important;
+        }
         .pwa-logo-wrapper {
           animation: pwaFadeIn 1.5s ease-out forwards;
         }
@@ -162,7 +165,7 @@
   </head>
   <body>
     <!-- PWA Splash Screen -->
-    <div id="pwa-splash-screen" class="pwa-splash-container">
+    <div id="pwa-splash-screen" class="pwa-splash-container" role="status" aria-busy="true" aria-label="Carregando Mercado do Nosso Jeito">
       <div class="pwa-splash-content">
         <div class="pwa-logo-wrapper">
           <h1 class="pwa-logo-main">mercado do</h1>

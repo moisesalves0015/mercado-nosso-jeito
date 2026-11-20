@@ -1,11 +1,13 @@
 /**
- * Home — vitrine principal composicional (No-Code Page Builder).
+ * Home — vitrine principal composicional com carregamento atômico coordenado.
  *
- * A ordem e visibilidade de todos os blocos da Home são controladas em tempo real
- * pelo CRM Admin (`home-config/data/home-layout`), permitindo posicionar banners
- * entre vitrines, reordenar seções e gerenciar Marcas e Parceiros Locais.
+ * A primeira revelação da Home só ocorre quando todas as fontes críticas estão
+ * coerentes (Política A: snapshot v2 validado + sync silencioso, ou Política B:
+ * primeira resposta de todas as coleções + decode dos assets críticos do Hero).
+ * Enquanto prepara, o splash permanece ativo e Topbar/BottomNav/mini-carrinho
+ * ficam contidos pelo HomeReadinessContext — eliminando telas parciais.
  */
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
 import { HomeHero } from '../components/home/HomeHero';
@@ -21,10 +23,12 @@ import { HomeCondoFavorites } from '../components/home/HomeCondoFavorites';
 import { HomeRoundCardList } from '../components/home/HomeRoundCardList';
 import { HomeFooter } from '../components/home/HomeFooter';
 import { HomeFullPageSkeleton } from '../components/home/HomeFullPageSkeleton';
+import { HomeErrorState } from '../components/home/HomeErrorState';
 import { useCatalog } from '../hooks/useCatalog';
 import { useHomeConfig } from '../hooks/useHomeConfig';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { useShippingConfig } from '../hooks/useShippingConfig';
+import { useHomeReadiness } from '../contexts/HomeReadinessContext';
 import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../data/homeCategories';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
 import {
@@ -33,6 +37,11 @@ import {
   buildDefaultHomeLayout,
 } from '../data/defaultHomeExtras';
 import { buildShowcases } from '../utils/homeShowcases';
+import {
+  evaluateHomeReadiness,
+  getCriticalHeroImageUrls,
+  preloadCriticalImages,
+} from '../utils/homeBootstrap';
 import type { HeroBannerConfig, HomeLayoutBlock } from '../types/home';
 
 const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map((b) => ({
@@ -58,8 +67,9 @@ const toHeroSlide = (b: HeroBannerConfig): HeroSlide => ({
 export const Home = () => {
   const catalog = useCatalog();
   const homeConfig = useHomeConfig();
-  const { config: adminConfig } = useAdminConfig();
-  const { config: shippingConfig } = useShippingConfig();
+  const { config: adminConfig, loading: adminLoading } = useAdminConfig();
+  const { config: shippingConfig, loading: shippingLoading } = useShippingConfig();
+  const { hasEverRevealed, reportHomeState, dismissAppSplash } = useHomeReadiness();
 
   // Banners principais do topo (Hero)
   const heroSlides = useMemo<HeroSlide[]>(() => {
@@ -70,6 +80,28 @@ export const Home = () => {
     if (activeBanners.length === 0) return DEFAULT_HERO_SLIDES;
     return [...activeBanners].sort(byOrder).map(toHeroSlide);
   }, [homeConfig.heroBanners]);
+
+  // Pré-carrega e decodifica apenas o asset crítico do primeiro slide do Hero antes da primeira revelação
+  const [criticalAssetsReady, setCriticalAssetsReady] = useState(hasEverRevealed);
+  const criticalHeroUrlsKey = useMemo(
+    () => getCriticalHeroImageUrls(heroSlides).join('|'),
+    [heroSlides],
+  );
+
+  useEffect(() => {
+    if (criticalAssetsReady) return;
+    if (homeConfig.status === 'loading') return;
+
+    let cancelled = false;
+    const urls = criticalHeroUrlsKey ? criticalHeroUrlsKey.split('|') : [];
+    preloadCriticalImages(urls, 2200).then(() => {
+      if (!cancelled) setCriticalAssetsReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [criticalAssetsReady, homeConfig.status, criticalHeroUrlsKey]);
 
   // Banners intermediários cadastrados com placement='home-inline'
   const inlineBanners = useMemo<HeroBannerConfig[]>(
@@ -121,21 +153,63 @@ export const Home = () => {
     );
   }, [homeConfig.homeLayout, showcases, inlineBanners]);
 
-  const isPageReady =
-    (!catalog.loading || catalog.products.length > 0) &&
-    (!homeConfig.loading || homeConfig.vitrines.length > 0);
+  const bootstrapState = useMemo(
+    () =>
+      evaluateHomeReadiness({
+        catalogStatus: catalog.status,
+        catalogCount: catalog.products.length,
+        homeConfigStatus: homeConfig.status,
+        adminConfigLoading: adminLoading,
+        shippingConfigLoading: shippingLoading,
+        criticalAssetsReady: hasEverRevealed || criticalAssetsReady,
+        hasCoherentCache: homeConfig.hasCoherentCache,
+      }),
+    [
+      catalog.status,
+      catalog.products.length,
+      homeConfig.status,
+      homeConfig.hasCoherentCache,
+      adminLoading,
+      shippingLoading,
+      hasEverRevealed,
+      criticalAssetsReady,
+    ],
+  );
 
+  // Reporta estado ao coordenador global e só libera o splash após o primeiro paint completo
   useEffect(() => {
-    if (isPageReady) {
-      const dismiss = (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
-      if (typeof dismiss === 'function') {
-        dismiss();
-      }
-    }
-  }, [isPageReady]);
+    reportHomeState(bootstrapState);
 
-  if (!isPageReady) {
-    return <HomeFullPageSkeleton />;
+    if (bootstrapState === 'ready' || bootstrapState === 'stale' || bootstrapState === 'error') {
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          dismissAppSplash();
+        });
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        if (raf2) cancelAnimationFrame(raf2);
+      };
+    }
+  }, [bootstrapState, reportHomeState, dismissAppSplash]);
+
+  const handleRetry = useCallback(() => {
+    setCriticalAssetsReady(false);
+    catalog.retry();
+    homeConfig.retry();
+  }, [catalog, homeConfig]);
+
+  if (bootstrapState === 'error' && !hasEverRevealed) {
+    return <HomeErrorState onRetry={handleRetry} />;
+  }
+
+  if (bootstrapState === 'loading' && !hasEverRevealed) {
+    return (
+      <div aria-busy="true" aria-label="Carregando página inicial">
+        <HomeFullPageSkeleton />
+      </div>
+    );
   }
 
   const renderBlock = (block: HomeLayoutBlock) => {
@@ -185,7 +259,6 @@ export const Home = () => {
             </div>
           );
         }
-        // Fallback: refId pode ser um placement (ex.: 'home-inline')
         const group = homeConfig.heroBanners
           .filter((b) => b.active !== false && b.placement === block.refId)
           .sort(byOrder);

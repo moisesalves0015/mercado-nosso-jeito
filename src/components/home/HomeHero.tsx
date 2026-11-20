@@ -226,6 +226,8 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
               src={cleanedImage}
               alt={slide.title || 'Banner'}
               className="hero-slide-img"
+              fetchPriority={idx === 0 ? 'high' : 'auto'}
+              decoding="async"
               onLoad={(e) => {
                 const img = e.currentTarget;
                 if (img.naturalWidth && img.naturalHeight) {

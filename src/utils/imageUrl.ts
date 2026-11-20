@@ -35,9 +35,16 @@ export function isValidImageDataUrl(url?: string | null): boolean {
   return true;
 }
 
+const isSafeImageScheme = (url: string): boolean => {
+  if (url.startsWith('/') && !url.startsWith('//')) return true;
+  if (/^https?:\/\//i.test(url)) return true;
+  if (/^blob:/i.test(url)) return true;
+  return false;
+};
+
 /**
  * Sanitizes and validates an image URL or data URI.
- * Removes newlines, whitespace, and handles malformed or truncated data URIs gracefully.
+ * Removes newlines, whitespace, blocks dangerous schemes, and handles malformed data URIs gracefully.
  */
 export function cleanImageUrl(url?: string | null): string {
   if (!url || typeof url !== 'string') return DEFAULT_PRODUCT_IMAGE;
@@ -45,11 +52,15 @@ export function cleanImageUrl(url?: string | null): string {
   if (!trimmed) return DEFAULT_PRODUCT_IMAGE;
 
   // Handle data URIs
-  if (trimmed.startsWith('data:')) {
+  if (/^data:/i.test(trimmed)) {
     if (!isValidImageDataUrl(trimmed)) {
       return DEFAULT_PRODUCT_IMAGE;
     }
     return trimmed.replace(/[\r\n\s]+/g, '');
+  }
+
+  if (!isSafeImageScheme(trimmed)) {
+    return DEFAULT_PRODUCT_IMAGE;
   }
 
   return trimmed;
@@ -63,11 +74,15 @@ export function sanitizeBannerImageUrl(url?: string | null, fallback = DEFAULT_B
   const trimmed = url.trim();
   if (!trimmed) return fallback;
 
-  if (trimmed.startsWith('data:')) {
+  if (/^data:/i.test(trimmed)) {
     if (!isValidImageDataUrl(trimmed)) {
       return fallback;
     }
     return trimmed.replace(/[\r\n\s]+/g, '');
+  }
+
+  if (!isSafeImageScheme(trimmed)) {
+    return fallback;
   }
 
   return trimmed;

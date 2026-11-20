@@ -2,15 +2,20 @@ import { Home, Search, Star, Gem, ShoppingBag, User, Truck } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useShippingConfig } from '../hooks/useShippingConfig';
+import { useHomeReadiness } from '../contexts/HomeReadinessContext';
 
 export const BottomNav = () => {
   const { totalItems, totalPrice } = useCart();
   const { config: shippingConfig } = useShippingConfig();
+  const { isHomeShellReady } = useHomeReadiness();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide completely on login, register, forgot-password and admin pages
-  const isHiddenRoute = ['/login', '/register', '/forgot-password'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  // Hide completely on login, register, forgot-password, admin pages, or during initial Home bootstrap
+  const isHiddenRoute =
+    ['/login', '/register', '/forgot-password'].includes(location.pathname) ||
+    location.pathname.startsWith('/admin') ||
+    (location.pathname === '/' && !isHomeShellReady);
   if (isHiddenRoute) return null;
 
   // Showcase routes where product catalogs/cards are rendered

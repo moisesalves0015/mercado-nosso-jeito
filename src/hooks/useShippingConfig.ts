@@ -40,27 +40,36 @@ export const normalizeCondosMap = (rawCondos: unknown): Record<string, number> =
 };
 
 export const useShippingConfig = () => {
-  const [config, setConfig] = useState<ShippingConfig>(() => {
+  const [initialState] = useState<{ config: ShippingConfig; hasCache: boolean }>(() => {
     try {
       const cached = localStorage.getItem('app-shipping-config');
       if (cached) {
         const parsed = JSON.parse(cached);
-        return {
-          freeShippingThreshold: Number(parsed.freeShippingThreshold ?? DEFAULT_SHIPPING.freeShippingThreshold),
-          baseShippingFee: Number(parsed.baseShippingFee ?? DEFAULT_SHIPPING.baseShippingFee),
-          condos: normalizeCondosMap(parsed.condos),
-        };
+        if (parsed && typeof parsed === 'object') {
+          return {
+            config: {
+              freeShippingThreshold: Number(parsed.freeShippingThreshold ?? DEFAULT_SHIPPING.freeShippingThreshold),
+              baseShippingFee: Number(parsed.baseShippingFee ?? DEFAULT_SHIPPING.baseShippingFee),
+              condos: normalizeCondosMap(parsed.condos),
+            },
+            hasCache: true,
+          };
+        }
       }
-    } catch (e) {
-      console.error('Error parsing cached shipping config', e);
+    } catch {
+      // ignore corrupted shipping cache
     }
-    return DEFAULT_SHIPPING;
+    return { config: DEFAULT_SHIPPING, hasCache: false };
   });
-  const [loading, setLoading] = useState(true);
+
+  const [config, setConfig] = useState<ShippingConfig>(initialState.config);
+  const [loading, setLoading] = useState(!initialState.hasCache);
 
   useEffect(() => {
+    const safetyTimer = window.setTimeout(() => setLoading(false), 5000);
     const docRef = doc(db, 'settings', 'shipping');
     const unsub = onSnapshot(docRef, async (docSnap) => {
+      window.clearTimeout(safetyTimer);
       if (docSnap.exists()) {
         const data = docSnap.data();
         const normalized: ShippingConfig = {
@@ -69,7 +78,11 @@ export const useShippingConfig = () => {
           condos: normalizeCondosMap(data.condos || data.condosList),
         };
         setConfig(normalized);
-        localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+        try {
+          localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+        } catch {
+          // ignore quota error
+        }
         setLoading(false);
       } else {
         // Try fallback to configs/shipping
@@ -83,7 +96,11 @@ export const useShippingConfig = () => {
               condos: normalizeCondosMap(data.condos || data.condosList),
             };
             setConfig(normalized);
-            localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+            try {
+              localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+            } catch {
+              // ignore quota error
+            }
           } else {
             setConfig(DEFAULT_SHIPPING);
           }
@@ -92,8 +109,8 @@ export const useShippingConfig = () => {
         }
         setLoading(false);
       }
-    }, (error) => {
-      console.warn("Could not subscribe to settings/shipping, trying configs/shipping fallback:", error);
+    }, () => {
+      window.clearTimeout(safetyTimer);
       getDoc(doc(db, 'configs', 'shipping')).then(fallbackSnap => {
         if (fallbackSnap.exists()) {
           const data = fallbackSnap.data();
@@ -103,16 +120,23 @@ export const useShippingConfig = () => {
             condos: normalizeCondosMap(data.condos || data.condosList),
           };
           setConfig(normalized);
-          localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+          try {
+            localStorage.setItem('app-shipping-config', JSON.stringify(normalized));
+          } catch {
+            // ignore quota error
+          }
         }
-      }).catch(e => {
-        console.error("Fallback error:", e);
+      }).catch(() => {
+        // fallback silently to DEFAULT_SHIPPING
       }).finally(() => {
         setLoading(false);
       });
     });
 
-    return () => unsub();
+    return () => {
+      window.clearTimeout(safetyTimer);
+      unsub();
+    };
   }, []);
 
   return { config, loading };

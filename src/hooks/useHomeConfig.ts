@@ -1,14 +1,16 @@
 /**
  * useHomeConfig — configuração editorial da Home (Firestore: home-config/data/*).
  *
- * Cada coleção passa por uma função de normalização (src/utils/homeProducts.ts) que garante
- * tipos/valores seguros. Documentos inválidos são descartados e registrados via console.warn
- * (uma única vez por problema) — nunca derrubam a navegação.
- *
- * Os tipos de configuração vivem em src/types/home.ts e são reexportados aqui para manter
- * compatibilidade com quem já importava deste módulo (AdminMarketing, AdminProductDetail).
+ * Coordenação atômica de bootstrap:
+ *  - Política A (cache coerente v2): se existir snapshot completo, normalizado e dentro do TTL,
+ *    inicia em `status: 'stale'` (revelação imediata e coerente) e sincroniza silenciosamente.
+ *  - Política B (sem cache coerente): inicia em `status: 'loading'`, acumula em memória a primeira
+ *    resposta de TODAS as 8 coleções em paralelo (inclusive coleções vazias válidas) e só promove
+ *    para `status: 'ready'` em um único commit atômico — eliminando montagem por etapas.
+ *  - Após a primeira sincronização, atualizações em tempo real do CRM continuam aplicando em
+ *    segundo plano sem desmontar ou piscar a Home.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -32,6 +34,13 @@ import {
   normalizeVitrine,
 } from '../utils/homeProducts';
 import type { ConfigIssue } from '../utils/homeProducts';
+import {
+  HOME_CONFIG_SOURCES,
+  HOME_SNAPSHOT_STORAGE_KEY,
+  buildHomeSnapshotForCache,
+  validateHomeSnapshotCache,
+} from '../utils/homeBootstrap';
+import type { HomeConfigSourceKey } from '../utils/homeBootstrap';
 
 export type {
   VitrineConfig,
@@ -42,6 +51,8 @@ export type {
   HomeLayoutBlock,
   RoundCardItem,
 } from '../types/home';
+
+export type HomeConfigStatus = 'loading' | 'stale' | 'ready' | 'error';
 
 export interface HomeConfig {
   vitrines: VitrineConfig[];
@@ -54,15 +65,24 @@ export interface HomeConfig {
   localPartners: RoundCardItem[];
   /** Problemas de configuração encontrados na última leitura (para diagnóstico/painel). */
   issues: ConfigIssue[];
-  /** true até a primeira resposta das vitrines (ou erro). */
+  /** Estado explícito de prontidão do conjunto de coleções editoriais. */
+  status: HomeConfigStatus;
+  /** true enquanto o snapshot inicial coerente não está disponível. */
   loading: boolean;
-  /** true se alguma coleção falhou na leitura (erro temporário/permissão). */
+  /** true se houve falha em alguma coleção. */
   error: boolean;
+  /** true quando o estado inicial partiu de um snapshot v2 validado em cache. */
+  hasCoherentCache: boolean;
+  /** Reexecuta a sincronização inicial em caso de falha. */
+  retry: () => void;
 }
+
+const INITIAL_SYNC_TIMEOUT_MS = 10_000;
+const CRITICAL_CONFIG_SOURCES: readonly HomeConfigSourceKey[] = ['vitrines', 'heroBanners', 'homeLayout'];
 
 const reportedIssues = new Set<string>();
 function reportIssues(issues: ConfigIssue[]) {
-  issues.forEach(issue => {
+  issues.forEach((issue) => {
     const key = `${issue.scope}/${issue.id}/${issue.message}`;
     if (reportedIssues.has(key)) return;
     reportedIssues.add(key);
@@ -70,36 +90,44 @@ function reportIssues(issues: ConfigIssue[]) {
   });
 }
 
-const STORAGE_KEY = 'app-home-config';
+type InternalHomeConfigState = Omit<HomeConfig, 'retry'>;
 
-function loadCachedHomeConfig(): HomeConfig {
+function loadCoherentCachedConfig(): InternalHomeConfigState {
   try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        const vitrines = Array.isArray(parsed.vitrines) ? parsed.vitrines : [];
-        const heroBanners = Array.isArray(parsed.heroBanners) ? parsed.heroBanners : [];
-        if (vitrines.length > 0 || heroBanners.length > 0) {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem(HOME_SNAPSHOT_STORAGE_KEY);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        const validated = validateHomeSnapshotCache(parsed);
+        if (validated) {
           return {
-            vitrines,
-            periodConfig: parsed.periodConfig || {},
-            megaOfertas: Array.isArray(parsed.megaOfertas) ? parsed.megaOfertas : [],
-            heroBanners,
-            condoFavorites: Array.isArray(parsed.condoFavorites) ? parsed.condoFavorites : [],
-            homeLayout: Array.isArray(parsed.homeLayout) ? parsed.homeLayout : [],
-            brands: Array.isArray(parsed.brands) ? parsed.brands : [],
-            localPartners: Array.isArray(parsed.localPartners) ? parsed.localPartners : [],
+            vitrines: validated.vitrines,
+            periodConfig: validated.periodConfig,
+            megaOfertas: validated.megaOfertas,
+            heroBanners: validated.heroBanners,
+            condoFavorites: validated.condoFavorites,
+            homeLayout: validated.homeLayout,
+            brands: validated.brands,
+            localPartners: validated.localPartners,
             issues: [],
+            status: 'stale',
             loading: false,
             error: false,
+            hasCoherentCache: true,
           };
         }
+        // Snapshot antigo/corrompido/expirado: limpa para evitar reprocessamento
+        localStorage.removeItem(HOME_SNAPSHOT_STORAGE_KEY);
       }
     }
-  } catch (err) {
-    console.warn('[home-config] Falha ao ler cache local de home-config', err);
+  } catch {
+    try {
+      localStorage.removeItem(HOME_SNAPSHOT_STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
   }
+
   return {
     vitrines: [],
     periodConfig: {},
@@ -110,33 +138,27 @@ function loadCachedHomeConfig(): HomeConfig {
     brands: [],
     localPartners: [],
     issues: [],
+    status: 'loading',
     loading: true,
     error: false,
+    hasCoherentCache: false,
   };
 }
 
-function persistHomeConfigCache(cfg: HomeConfig) {
+function persistCoherentHomeSnapshot(state: InternalHomeConfigState) {
   try {
     if (typeof window === 'undefined') return;
-    const safeHeroBanners = (cfg.heroBanners || []).map(b => {
-      if (b.videoUrl && b.videoUrl.startsWith('data:') && b.videoUrl.length > 500_000) {
-        return { ...b, videoUrl: '' };
-      }
-      return b;
+    const snapshot = buildHomeSnapshotForCache({
+      vitrines: state.vitrines,
+      periodConfig: state.periodConfig,
+      megaOfertas: state.megaOfertas,
+      heroBanners: state.heroBanners,
+      condoFavorites: state.condoFavorites,
+      homeLayout: state.homeLayout,
+      brands: state.brands,
+      localPartners: state.localPartners,
     });
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        vitrines: cfg.vitrines,
-        periodConfig: cfg.periodConfig,
-        megaOfertas: cfg.megaOfertas,
-        heroBanners: safeHeroBanners,
-        condoFavorites: cfg.condoFavorites,
-        homeLayout: cfg.homeLayout,
-        brands: cfg.brands,
-        localPartners: cfg.localPartners,
-      })
-    );
+    localStorage.setItem(HOME_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
   } catch {
     // safe fallback if storage quota exceeded
   }
@@ -147,7 +169,7 @@ type Normalizer<T> = (id: string, raw: unknown) => { value: T | null; issues: Co
 function readCollection<T>(docs: QueryDocumentSnapshot<DocumentData>[], normalize: Normalizer<T>) {
   const values: T[] = [];
   const issues: ConfigIssue[] = [];
-  docs.forEach(d => {
+  docs.forEach((d) => {
     const result = normalize(d.id, d.data());
     if (result.value) values.push(result.value);
     issues.push(...result.issues);
@@ -156,98 +178,223 @@ function readCollection<T>(docs: QueryDocumentSnapshot<DocumentData>[], normaliz
   return { values, issues };
 }
 
-export const useHomeConfig = () => {
-  const [config, setConfig] = useState<HomeConfig>(loadCachedHomeConfig);
+export const useHomeConfig = (): HomeConfig => {
+  const [config, setConfig] = useState<InternalHomeConfigState>(loadCoherentCachedConfig);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const hasCoherentCacheRef = useRef(config.hasCoherentCache);
 
-  useEffect(() => {
-    const fail = (name: string) => (err: unknown) => {
-      console.error(`[home-config] Falha ao ler ${name}.`, err);
-      setConfig(prev => ({ ...prev, loading: false, error: true }));
-    };
-
-    const unsubs = [
-      onSnapshot(collection(db, 'home-config', 'data', 'vitrines'), snap => {
-        const { values, issues } = readCollection(snap.docs, normalizeVitrine);
-        setConfig(prev => {
-          const next = {
-            ...prev,
-            vitrines: values.sort(byOrderThenId),
-            issues: [...prev.issues.filter(i => i.scope !== 'vitrines'), ...issues],
-            loading: false,
-          };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('vitrines')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'period-config'), snap => {
-        const { values } = readCollection(snap.docs, normalizePeriodConfig);
-        const periods: Record<string, PeriodConfig> = {};
-        values.forEach(p => { periods[p.id] = p; });
-        setConfig(prev => {
-          const next = { ...prev, periodConfig: periods };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('period-config')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'mega-ofertas'), snap => {
-        const { values } = readCollection(snap.docs, normalizeMegaOferta);
-        setConfig(prev => {
-          const next = { ...prev, megaOfertas: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('mega-ofertas')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'hero-banners'), snap => {
-        const { values } = readCollection(snap.docs, normalizeHeroBanner);
-        setConfig(prev => {
-          const next = { ...prev, heroBanners: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('hero-banners')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'condo-favorites'), snap => {
-        const { values } = readCollection(snap.docs, normalizeCondoFavorite);
-        setConfig(prev => {
-          const next = { ...prev, condoFavorites: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('condo-favorites')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'home-layout'), snap => {
-        const { values } = readCollection(snap.docs, normalizeHomeLayoutBlock);
-        setConfig(prev => {
-          const next = { ...prev, homeLayout: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('home-layout')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'home-brands'), snap => {
-        const { values } = readCollection(snap.docs, (id, raw) => normalizeRoundCardItem('home-brands', id, raw));
-        setConfig(prev => {
-          const next = { ...prev, brands: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('home-brands')),
-
-      onSnapshot(collection(db, 'home-config', 'data', 'home-partners'), snap => {
-        const { values } = readCollection(snap.docs, (id, raw) => normalizeRoundCardItem('home-partners', id, raw));
-        setConfig(prev => {
-          const next = { ...prev, localPartners: values.sort(byOrderThenId) };
-          persistHomeConfigCache(next);
-          return next;
-        });
-      }, fail('home-partners')),
-    ];
-
-    return () => unsubs.forEach(unsub => unsub());
+  const retry = useCallback(() => {
+    hasCoherentCacheRef.current = false;
+    setConfig((prev) => ({
+      ...prev,
+      status: 'loading',
+      loading: true,
+      error: false,
+      hasCoherentCache: false,
+    }));
+    setRetryNonce((n) => n + 1);
   }, []);
 
-  return config;
+  useEffect(() => {
+    let active = true;
+    let initialCommitted = false;
+
+    const settled = new Set<HomeConfigSourceKey>();
+    const failed = new Set<HomeConfigSourceKey>();
+
+    // Buffer mutável para acumular o primeiro lote completo antes do commit atômico
+    const buffer: InternalHomeConfigState = {
+      vitrines: [],
+      periodConfig: {},
+      megaOfertas: [],
+      heroBanners: [],
+      condoFavorites: [],
+      homeLayout: [],
+      brands: [],
+      localPartners: [],
+      issues: [],
+      status: hasCoherentCacheRef.current ? 'stale' : 'loading',
+      loading: !hasCoherentCacheRef.current,
+      error: false,
+      hasCoherentCache: hasCoherentCacheRef.current,
+    };
+
+    const commitAtomicSnapshot = (timedOut = false) => {
+      if (!active) return;
+
+      const allCriticalFailed = CRITICAL_CONFIG_SOURCES.every(
+        (key) => failed.has(key) || (timedOut && !settled.has(key)),
+      );
+
+      if (allCriticalFailed && !hasCoherentCacheRef.current) {
+        initialCommitted = true;
+        setConfig((prev) => ({
+          ...prev,
+          status: 'error',
+          loading: false,
+          error: true,
+        }));
+        return;
+      }
+
+      const nextState: InternalHomeConfigState = {
+        ...buffer,
+        status: 'ready',
+        loading: false,
+        error: failed.size > 0,
+        hasCoherentCache: hasCoherentCacheRef.current,
+      };
+
+      initialCommitted = true;
+      setConfig(nextState);
+
+      // Só persiste no cache v2 se todas as 8 coleções responderam sem falha crítica
+      if (settled.size === HOME_CONFIG_SOURCES.length && failed.size === 0) {
+        persistCoherentHomeSnapshot(nextState);
+      }
+    };
+
+    const markSettled = (key: HomeConfigSourceKey, isError = false) => {
+      settled.add(key);
+      if (isError) {
+        failed.add(key);
+      } else {
+        failed.delete(key);
+      }
+
+      if (!initialCommitted) {
+        if (settled.size >= HOME_CONFIG_SOURCES.length) {
+          window.clearTimeout(bootstrapTimer);
+          commitAtomicSnapshot(false);
+        }
+        return;
+      }
+
+      // Pós-bootstrap: atualizações em tempo real do CRM entram suavemente sem piscar
+      const updatedState: InternalHomeConfigState = {
+        ...buffer,
+        status: 'ready',
+        loading: false,
+        error: failed.size > 0,
+        hasCoherentCache: hasCoherentCacheRef.current,
+      };
+      setConfig(updatedState);
+      if (settled.size === HOME_CONFIG_SOURCES.length && failed.size === 0) {
+        persistCoherentHomeSnapshot(updatedState);
+      }
+    };
+
+    const fail = (key: HomeConfigSourceKey, label: string) => () => {
+      console.warn(`[home-config] Falha ao ler ${label}.`);
+      markSettled(key, true);
+    };
+
+    const bootstrapTimer = window.setTimeout(() => {
+      if (!initialCommitted) {
+        commitAtomicSnapshot(true);
+      }
+    }, INITIAL_SYNC_TIMEOUT_MS);
+
+    const unsubs = [
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'vitrines'),
+        (snap) => {
+          const { values, issues } = readCollection(snap.docs, normalizeVitrine);
+          buffer.vitrines = values.sort(byOrderThenId);
+          buffer.issues = [...buffer.issues.filter((i) => i.scope !== 'vitrines'), ...issues];
+          markSettled('vitrines');
+        },
+        fail('vitrines', 'vitrines'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'period-config'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, normalizePeriodConfig);
+          const periods: Record<string, PeriodConfig> = {};
+          values.forEach((p) => {
+            periods[p.id] = p;
+          });
+          buffer.periodConfig = periods;
+          markSettled('periodConfig');
+        },
+        fail('periodConfig', 'period-config'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'mega-ofertas'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, normalizeMegaOferta);
+          buffer.megaOfertas = values.sort(byOrderThenId);
+          markSettled('megaOfertas');
+        },
+        fail('megaOfertas', 'mega-ofertas'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'hero-banners'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, normalizeHeroBanner);
+          buffer.heroBanners = values.sort(byOrderThenId);
+          markSettled('heroBanners');
+        },
+        fail('heroBanners', 'hero-banners'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'condo-favorites'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, normalizeCondoFavorite);
+          buffer.condoFavorites = values.sort(byOrderThenId);
+          markSettled('condoFavorites');
+        },
+        fail('condoFavorites', 'condo-favorites'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'home-layout'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, normalizeHomeLayoutBlock);
+          buffer.homeLayout = values.sort(byOrderThenId);
+          markSettled('homeLayout');
+        },
+        fail('homeLayout', 'home-layout'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'home-brands'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, (id, raw) =>
+            normalizeRoundCardItem('home-brands', id, raw),
+          );
+          buffer.brands = values.sort(byOrderThenId);
+          markSettled('brands');
+        },
+        fail('brands', 'home-brands'),
+      ),
+
+      onSnapshot(
+        collection(db, 'home-config', 'data', 'home-partners'),
+        (snap) => {
+          const { values } = readCollection(snap.docs, (id, raw) =>
+            normalizeRoundCardItem('home-partners', id, raw),
+          );
+          buffer.localPartners = values.sort(byOrderThenId);
+          markSettled('localPartners');
+        },
+        fail('localPartners', 'home-partners'),
+      ),
+    ];
+
+    return () => {
+      active = false;
+      window.clearTimeout(bootstrapTimer);
+      unsubs.forEach((unsub) => unsub());
+    };
+  }, [retryNonce]);
+
+  return {
+    ...config,
+    retry,
+  };
 };

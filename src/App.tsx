@@ -4,6 +4,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { subscribeProductsWithMedia } from './services/imageUploadService';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
+import { HomeReadinessProvider, useHomeReadiness } from './contexts/HomeReadinessContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BottomNav } from './components/BottomNav';
 import { AgeVerificationModal } from './components/AgeVerificationModal';
@@ -89,16 +90,20 @@ function PageLoader() {
 
 function PageTransitionLayout() {
   const location = useLocation();
+  const { isHomeShellReady } = useHomeReadiness();
   const isCategoryRoute = ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname);
+  const hideTopbarDuringHomeBootstrap = location.pathname === '/' && !isHomeShellReady;
 
   if (isCategoryRoute) {
     return (
       <>
-        <div className="category-topbar-wrapper">
-          <div className="app" style={{ paddingBottom: 0 }}>
-            <Topbar />
+        {!hideTopbarDuringHomeBootstrap && (
+          <div className="category-topbar-wrapper">
+            <div className="app" style={{ paddingBottom: 0 }}>
+              <Topbar />
+            </div>
           </div>
-        </div>
+        )}
         <div key={location.pathname} className="route-transition-wrapper">
           <Outlet />
         </div>
@@ -120,9 +125,11 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
   const isExemptRoute = ['/login', '/register', '/forgot-password', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
   if (isExemptRoute) return <>{children}</>;
 
-  if (loading || profileLoading) return null; // Wait for profile
+  // Na rota pública `/`, não bloqueamos a montagem da Home enquanto o Auth carrega em paralelo.
+  // Se o usuário estiver autenticado com onboarding pendente, redireciona assim que o perfil chegar.
+  if (location.pathname !== '/' && (loading || profileLoading)) return null;
 
-  if (user && userProfile && !isAdmin && !userProfile.onboardingComplete) {
+  if (!loading && !profileLoading && user && userProfile && !isAdmin && !userProfile.onboardingComplete) {
     const returnPath = `${location.pathname}${location.search}`;
     return <Navigate to={`/onboarding?returnUrl=${encodeURIComponent(returnPath)}`} state={{ from: returnPath }} replace />;
   }
@@ -132,7 +139,9 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
+  const { isHomeShellReady, reportHomeState, dismissAppSplash } = useHomeReadiness();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [productsRetryNonce, setProductsRetryNonce] = useState(0);
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -147,33 +156,31 @@ function AppContent() {
     return () => window.removeEventListener('theme-changed', handleThemeChange);
   }, [theme]);
 
+  // Coordenação explícita do splash:
+  // - Em rotas não-Home: libera após o primeiro paint.
+  // - Na rota `/`: NÃO usa timeout curto de 1300ms; aguarda explicitamente o coordenador da Home.
+  //   Apenas um teto catastrófico (12s) aciona estado de erro/retry para nunca travar indefinidamente.
   useEffect(() => {
-    let dismissed = false;
-    const dismissSplash = () => {
-      if (dismissed) return;
-      dismissed = true;
-      const splash = document.getElementById('pwa-splash-screen');
-      if (splash) {
-        splash.classList.add('fade-out');
-        setTimeout(() => {
-          splash.remove();
-        }, 450);
-      }
-    };
+    (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash = dismissAppSplash;
 
-    // Global coordinator for components when initial critical content is hydrated
-    (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash = () => {
-      setTimeout(dismissSplash, 100);
-    };
+    if (location.pathname !== '/') {
+      const raf = requestAnimationFrame(() => dismissAppSplash());
+      return () => {
+        cancelAnimationFrame(raf);
+        delete (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
+      };
+    }
 
-    // Safe fallback timeout (1300ms) to ensure splash screen never hangs on slow network
-    const fallbackTimeout = setTimeout(dismissSplash, 1300);
+    const catastrophicCeiling = window.setTimeout(() => {
+      reportHomeState('error');
+      dismissAppSplash();
+    }, 12_000);
 
     return () => {
-      clearTimeout(fallbackTimeout);
+      window.clearTimeout(catastrophicCeiling);
       delete (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
     };
-  }, []);
+  }, [location.pathname, dismissAppSplash, reportHomeState]);
 
   // Capture referral code from URL query params
   useEffect(() => {
@@ -186,12 +193,21 @@ function AppContent() {
 
   // Real-time Firestore sync of products (+ media gallery overrides) to localStorage
   useEffect(() => {
+    const onRetry = () => setProductsRetryNonce((n) => n + 1);
+    window.addEventListener('app-products-retry', onRetry);
     const unsub = subscribeProductsWithMedia((list) => {
-      localStorage.setItem('app-products', JSON.stringify(list));
+      try {
+        localStorage.setItem('app-products', JSON.stringify(list));
+      } catch {
+        // ignore quota errors
+      }
       window.dispatchEvent(new Event('app-products-updated'));
     });
-    return () => unsub();
-  }, []);
+    return () => {
+      window.removeEventListener('app-products-retry', onRetry);
+      unsub();
+    };
+  }, [productsRetryNonce]);
 
   // Determinar cor do status bar com base na rota e tema para continuidade perfeita
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -538,7 +554,9 @@ function AppContent() {
         </Suspense>
       </GlobalOnboardingGuard>
 
-      {location.pathname !== '/onboarding' && !location.pathname.startsWith('/admin') && <BottomNav />}
+      {location.pathname !== '/onboarding' &&
+        !location.pathname.startsWith('/admin') &&
+        (location.pathname !== '/' || isHomeShellReady) && <BottomNav />}
     </>
   );
 }
@@ -558,10 +576,12 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ToastProvider>
-          <BrowserRouter>
-            <ScrollToTop />
-            <AppContent />
-          </BrowserRouter>
+          <HomeReadinessProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <AppContent />
+            </BrowserRouter>
+          </HomeReadinessProvider>
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>

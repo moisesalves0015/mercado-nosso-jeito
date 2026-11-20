@@ -27,7 +27,9 @@ export const useAdminConfig = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const safetyTimer = window.setTimeout(() => setLoading(false), 5000);
     const unsub = onSnapshot(doc(db, 'settings', 'admin'), (docSnap) => {
+      window.clearTimeout(safetyTimer);
       if (docSnap.exists()) {
         const data = docSnap.data();
         // Campos ausentes/inválidos viram string vazia (nunca undefined nos componentes).
@@ -40,11 +42,15 @@ export const useAdminConfig = () => {
         });
       }
       setLoading(false);
-    }, (error) => {
-      console.error('[settings/admin] Falha ao ler configuração.', error);
+    }, () => {
+      window.clearTimeout(safetyTimer);
+      console.warn('[settings/admin] Falha ao ler configuração.');
       setLoading(false);
     });
-    return () => unsub();
+    return () => {
+      window.clearTimeout(safetyTimer);
+      unsub();
+    };
   }, []);
 
   return { config, loading };
