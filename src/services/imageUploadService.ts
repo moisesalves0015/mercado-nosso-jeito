@@ -127,13 +127,20 @@ export async function uploadOrCompressImage(
   return dataUrl;
 }
 
+export interface VideoMetadata {
+  posterImage: string;
+  width?: number;
+  height?: number;
+  aspectRatio?: string;
+}
+
 /**
- * Captures a representative poster thumbnail from a video file using HTML5 canvas.
+ * Captures video metadata (dimensions, aspect ratio and canvas poster thumbnail).
  */
-export function captureVideoPoster(file: File): Promise<string> {
+export function captureVideoMetadata(file: File): Promise<VideoMetadata> {
   return new Promise((resolve) => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
-      return resolve('');
+      return resolve({ posterImage: '' });
     }
     const video = document.createElement('video');
     const blobUrl = URL.createObjectURL(file);
@@ -151,7 +158,7 @@ export function captureVideoPoster(file: File): Promise<string> {
 
     const timer = setTimeout(() => {
       cleanup();
-      resolve('');
+      resolve({ posterImage: '' });
     }, 4000);
 
     video.onloadeddata = () => {
@@ -165,10 +172,11 @@ export function captureVideoPoster(file: File): Promise<string> {
     video.onseeked = () => {
       clearTimeout(timer);
       try {
-        const targetWidth = Math.min(video.videoWidth || 640, 640);
-        const targetHeight = Math.round(
-          (targetWidth * (video.videoHeight || 360)) / (video.videoWidth || 640)
-        );
+        const vw = video.videoWidth || 640;
+        const vh = video.videoHeight || 360;
+        const aspectRatio = `${vw} / ${vh}`;
+        const targetWidth = Math.min(vw, 640);
+        const targetHeight = Math.round((targetWidth * vh) / vw);
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, targetWidth);
         canvas.height = Math.max(1, targetHeight);
@@ -177,22 +185,30 @@ export function captureVideoPoster(file: File): Promise<string> {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const poster = canvas.toDataURL('image/jpeg', 0.82);
           cleanup();
-          resolve(poster);
+          resolve({ posterImage: poster, width: vw, height: vh, aspectRatio });
           return;
         }
       } catch {
         // ignore canvas extraction errors
       }
       cleanup();
-      resolve('');
+      resolve({ posterImage: '', width: video.videoWidth || undefined, height: video.videoHeight || undefined });
     };
 
     video.onerror = () => {
       clearTimeout(timer);
       cleanup();
-      resolve('');
+      resolve({ posterImage: '' });
     };
   });
+}
+
+/**
+ * Captures a representative poster thumbnail from a video file using HTML5 canvas.
+ */
+export async function captureVideoPoster(file: File): Promise<string> {
+  const meta = await captureVideoMetadata(file);
+  return meta.posterImage;
 }
 
 /**
@@ -201,7 +217,7 @@ export function captureVideoPoster(file: File): Promise<string> {
  */
 export async function uploadBannerMediaFile(
   file: File
-): Promise<{ url: string; mediaType: 'image' | 'video'; posterImage?: string }> {
+): Promise<{ url: string; mediaType: 'image' | 'video'; posterImage?: string; aspectRatio?: string }> {
   const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name);
 
   if (!isVideo) {
@@ -220,8 +236,11 @@ export async function uploadBannerMediaFile(
   }
 
   let posterImage = '';
+  let aspectRatio = '';
   try {
-    posterImage = await captureVideoPoster(file);
+    const meta = await captureVideoMetadata(file);
+    posterImage = meta.posterImage;
+    aspectRatio = meta.aspectRatio || '';
   } catch {
     // poster extraction is optional
   }
@@ -230,7 +249,7 @@ export async function uploadBannerMediaFile(
   // Completely eliminates Firebase Storage CORS errors and Firestore 1MB limits
   try {
     const mediaUri = await saveVideoFileToChunkedStore(file);
-    return { url: mediaUri, mediaType: 'video', posterImage };
+    return { url: mediaUri, mediaType: 'video', posterImage, aspectRatio };
   } catch (chunkErr) {
     console.error('[uploadBannerMediaFile] Falha ao processar e salvar vídeo fragmentado:', chunkErr);
     throw new Error(

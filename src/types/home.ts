@@ -96,6 +96,7 @@ export interface MegaOfertaConfig {
 
 export type BannerPlacement =
   | 'home'
+  | 'home-inline'
   | 'promotions'
   | 'bebidas'
   | 'padaria'
@@ -121,6 +122,7 @@ export interface HeroBannerConfig {
   videoUrl?: string;
   mediaType?: 'image' | 'video';
   posterImage?: string;
+  aspectRatio?: string;
 }
 
 /** home-config/data/condo-favorites/{id} — curadoria administrativa dos favoritos do condomínio. */
@@ -128,4 +130,48 @@ export interface CondoFavoriteConfig {
   id: string;
   productId: string;
   order: number;
+}
+
+/** Tipos de blocos ordenáveis na Home via Construtor No-Code do CRM Admin. */
+export type HomeBlockType =
+  | 'hero'
+  | 'quick_categories'
+  | 'search'
+  | 'period_selector'
+  | 'social_proof'
+  | 'vitrine'
+  | 'banner'
+  | 'mega_ofertas'
+  | 'brands'
+  | 'local_partners'
+  | 'promo_banners'
+  | 'benefit_cards'
+  | 'categories'
+  | 'condo_favorites';
+
+/** home-config/data/home-layout/{id} — bloco posicionável na estrutura da Home. */
+export interface HomeLayoutBlock {
+  id: string;
+  type: HomeBlockType;
+  label: string;
+  /** ID de referência: vitrine.id (quando type='vitrine') ou banner.id (quando type='banner'). */
+  refId?: string;
+  /** Título opcional customizado (ex.: para Marcas ou Parceiros Locais). */
+  title?: string;
+  /** Subtítulo opcional customizado. */
+  subtitle?: string;
+  order: number;
+  active: boolean;
+}
+
+/** home-config/data/home-brands/{id} e home-config/data/home-partners/{id} — cards redondos. */
+export interface RoundCardItem {
+  id: string;
+  name: string;
+  subtitle?: string;
+  image: string;
+  link: string;
+  badge?: string;
+  order: number;
+  active: boolean;
 }

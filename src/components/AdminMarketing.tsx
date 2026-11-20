@@ -4,7 +4,7 @@ import {
   ArrowUp, ArrowDown, Eye, EyeOff, Image, Link2, Star, Tag,
   RefreshCw, Search, Megaphone, ChevronUp, Save, UploadCloud,
   AlertCircle, Sunrise, Sun, Sunset, Moon, Wind, Heart, Sparkles,
-  Video, Film,
+  Video, Film, LayoutList, Award, Store,
 } from 'lucide-react';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc, getDocs,
@@ -12,10 +12,21 @@ import {
 import { db } from '../firebase';
 import { defaultProducts } from '../data/defaultProducts';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
+import { DEFAULT_BRANDS, DEFAULT_LOCAL_PARTNERS } from '../data/defaultHomeExtras';
 import { uploadOrCompressImage, uploadBannerMediaFile } from '../services/imageUploadService';
 import { useResolvedMediaUrl } from '../services/mediaStorageService';
 import { sanitizeBannerImageUrl, cleanImageUrl, handleImageError } from '../utils/imageUrl';
-import type { VitrineConfig, MegaOfertaConfig, HeroBannerConfig, PeriodConfig, CondoFavoriteConfig } from '../hooks/useHomeConfig';
+import type {
+  VitrineConfig,
+  MegaOfertaConfig,
+  HeroBannerConfig,
+  PeriodConfig,
+  CondoFavoriteConfig,
+  HomeLayoutBlock,
+  RoundCardItem,
+} from '../hooks/useHomeConfig';
+import { AdminHomeLayoutBuilder } from './admin/AdminHomeLayoutBuilder';
+import { AdminRoundCardsManager } from './admin/AdminRoundCardsManager';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -27,7 +38,16 @@ interface Product {
   active?: boolean;
 }
 
-type SubTab = 'vitrines' | 'favoritos' | 'megaOfertas' | 'periodos' | 'heroBanners' | 'campanhas';
+type SubTab =
+  | 'layout'
+  | 'vitrines'
+  | 'heroBanners'
+  | 'brands'
+  | 'partners'
+  | 'favoritos'
+  | 'megaOfertas'
+  | 'periodos'
+  | 'campanhas';
 
 const PERIOD_LABELS: Record<string, { label: string; sub: string; icon: React.ElementType }> = {
   morning:   { label: 'Manhã',      sub: 'Café da manhã', icon: Sunrise },
@@ -121,7 +141,8 @@ const btnIconSm = (color = crmTheme.textSecondary): React.CSSProperties => ({
 
 export const BANNER_PAGES = [
   { id: 'all', label: 'Todas as Páginas', icon: '🌐' },
-  { id: 'home', label: 'Home (Principal)', icon: '🏠' },
+  { id: 'home', label: 'Home (Topo Hero)', icon: '🏠' },
+  { id: 'home-inline', label: 'Home (Entre Vitrines)', icon: '🧩' },
   { id: 'promotions', label: 'Promoções', icon: '🔥' },
   { id: 'bebidas', label: 'Bebidas', icon: '🍻' },
   { id: 'padaria', label: 'Padaria', icon: '🥐' },
@@ -132,6 +153,8 @@ export const BANNER_PAGES = [
 export function getPlacementMeta(placement?: string) {
   const p = (placement || 'home').toLowerCase().trim();
   switch (p) {
+    case 'home-inline':
+      return { label: 'Home (Entre Vitrines)', icon: '🧩', bg: 'rgba(236, 72, 153, 0.15)', text: '#be185d', border: 'rgba(236, 72, 153, 0.35)' };
     case 'promotions':
       return { label: 'Promoções', icon: '🔥', bg: 'rgba(239, 68, 68, 0.15)', text: '#fca5a5', border: 'rgba(239, 68, 68, 0.3)' };
     case 'bebidas':
@@ -967,6 +990,9 @@ export const AdminMarketing: React.FC = () => {
   const [periodConfig, setPeriodConfig] = useState<Record<string, PeriodConfig>>({});
   const [heroBanners, setHeroBanners] = useState<HeroBannerConfig[]>([]);
   const [condoFavorites, setCondoFavorites] = useState<CondoFavoriteConfig[]>([]);
+  const [homeLayout, setHomeLayout] = useState<HomeLayoutBlock[]>([]);
+  const [brands, setBrands] = useState<RoundCardItem[]>([]);
+  const [localPartners, setLocalPartners] = useState<RoundCardItem[]>([]);
 
   // ── UI State ──
   const [saving, setSaving] = useState(false);
@@ -1022,6 +1048,15 @@ export const AdminMarketing: React.FC = () => {
       }),
       onSnapshot(collection(db, 'home-config', 'data', 'condo-favorites'), snap => {
         setCondoFavorites(snap.docs.map(d => ({ id: d.id, ...d.data() } as CondoFavoriteConfig)).sort((a, b) => a.order - b.order));
+      }),
+      onSnapshot(collection(db, 'home-config', 'data', 'home-layout'), snap => {
+        setHomeLayout(snap.docs.map(d => ({ id: d.id, ...d.data() } as HomeLayoutBlock)).sort((a, b) => a.order - b.order));
+      }),
+      onSnapshot(collection(db, 'home-config', 'data', 'home-brands'), snap => {
+        setBrands(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoundCardItem)).sort((a, b) => a.order - b.order));
+      }),
+      onSnapshot(collection(db, 'home-config', 'data', 'home-partners'), snap => {
+        setLocalPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoundCardItem)).sort((a, b) => a.order - b.order));
       }),
     ];
     return () => unsubs.forEach(u => u());
@@ -1513,7 +1548,8 @@ export const AdminMarketing: React.FC = () => {
           videoUrl: result.url,
           mediaType: 'video',
           posterImage: result.posterImage || prev.posterImage || '',
-          image: prev.image || result.posterImage || '',
+          aspectRatio: result.aspectRatio || prev.aspectRatio || '',
+          image: result.posterImage || prev.image || '',
         }));
         alert('Vídeo carregado com sucesso! Clique em "Salvar Banner" para aplicar permanentemente.');
       } else {
@@ -1557,6 +1593,7 @@ export const AdminMarketing: React.FC = () => {
               videoUrl: result.url,
               mediaType: 'video',
               posterImage: result.posterImage || banner.posterImage || '',
+              aspectRatio: result.aspectRatio || '',
               updatedAt: new Date().toISOString(),
             },
             { merge: true }
@@ -1657,6 +1694,7 @@ export const AdminMarketing: React.FC = () => {
         mediaType: isVideo ? 'video' : 'image',
         videoUrl: resolvedVideoUrl || '',
         posterImage: bannerDraft.posterImage?.trim() || '',
+        aspectRatio: bannerDraft.aspectRatio?.trim() || '',
         updatedAt: new Date().toISOString(),
       };
 
@@ -1753,12 +1791,15 @@ export const AdminMarketing: React.FC = () => {
 
       {/* ── Sub Tab Nav ── */}
       <div style={{ display: 'flex', gap: 4, background: crmTheme.cardBg, padding: '8px 12px', borderRadius: 14, border: `1px solid ${crmTheme.border}`, overflowX: 'auto', scrollbarWidth: 'none', boxShadow: crmTheme.shadowSm }}>
-        <SubTabBtn id="vitrines"    label="Vitrines"     icon={Layers}     badge={vitrines.length}    activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="favoritos"   label="Favoritos"    icon={Heart}      badge={condoFavorites.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="megaOfertas" label="Mega Ofertas" icon={Zap}         badge={megaOfertas.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="periodos"    label="Períodos"     icon={Clock}                                  activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="heroBanners" label="Banners por Página" icon={Image} badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
-        <SubTabBtn id="campanhas"   label="Campanhas"    icon={Megaphone}                              activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="layout"      label="Estrutura Home" icon={LayoutList} badge={homeLayout.length || undefined} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="vitrines"    label="Vitrines"       icon={Layers}     badge={vitrines.length}    activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="heroBanners" label="Banners"        icon={Image}      badge={heroBanners.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="brands"      label="Marcas"         icon={Award}      badge={brands.length || undefined} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="partners"    label="Parceiros"      icon={Store}      badge={localPartners.length || undefined} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="favoritos"   label="Favoritos"      icon={Heart}      badge={condoFavorites.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="megaOfertas" label="Mega Ofertas"   icon={Zap}        badge={megaOfertas.length} activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="periodos"    label="Períodos"       icon={Clock}                                  activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
+        <SubTabBtn id="campanhas"   label="Campanhas"      icon={Megaphone}                              activeSubTab={activeSubTab} setActiveSubTab={setActiveSubTab} />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
@@ -2326,6 +2367,14 @@ export const AdminMarketing: React.FC = () => {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => setActiveSubTab('layout')}
+                  style={{ ...btnGhost, color: '#be185d', borderColor: 'rgba(236,72,153,0.4)' }}
+                  title="Mover banners entre vitrines e organizar a ordem da página Home"
+                >
+                  <LayoutList size={13} /> Organizar Posição na Home
+                </button>
+                <button
+                  type="button"
                   onClick={seedAllPageBanners}
                   disabled={saving}
                   style={{ ...btnGhost, color: crmTheme.primary, borderColor: crmTheme.primary }}
@@ -2449,7 +2498,8 @@ export const AdminMarketing: React.FC = () => {
                         }));
                       }}
                     >
-                      <option value="home">🏠 Home (Página Principal)</option>
+                      <option value="home">🏠 Home (Topo / Hero Principal)</option>
+                      <option value="home-inline">🧩 Home (Entre Vitrines)</option>
                       <option value="promotions">🔥 Promoções (/promotions)</option>
                       <option value="bebidas">🍻 Bebidas (/bebidas)</option>
                       <option value="padaria">🥐 Padaria (/padaria)</option>
@@ -2607,7 +2657,7 @@ export const AdminMarketing: React.FC = () => {
                             style={{
                               width: 160,
                               height: 90,
-                              objectFit: 'cover',
+                              objectFit: 'contain',
                               borderRadius: 6,
                               flexShrink: 0,
                               border: '1px solid rgba(255,255,255,0.2)',
@@ -2818,13 +2868,13 @@ export const AdminMarketing: React.FC = () => {
                       <AdminVideoPreview
                         videoSrc={videoSrc}
                         poster={banner.posterImage ? sanitizeBannerImageUrl(banner.posterImage) : undefined}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     ) : banner.image ? (
                       <img
                         src={sanitizeBannerImageUrl(banner.image)}
                         alt={banner.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     ) : (
                       <Image size={18} color={crmTheme.textMuted} />
@@ -3045,6 +3095,45 @@ export const AdminMarketing: React.FC = () => {
             );
           })}
         </div>
+      )}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* SUB-ABA: ESTRUTURA HOME (NO-CODE PAGE BUILDER)                         */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'layout' && (
+        <AdminHomeLayoutBuilder
+          homeLayout={homeLayout}
+          vitrines={vitrines}
+          heroBanners={heroBanners}
+          onGoToBanners={() => setActiveSubTab('heroBanners')}
+        />
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* SUB-ABA: MARCAS (CARDS REDONDOS)                                       */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'brands' && (
+        <AdminRoundCardsManager
+          collectionName="home-brands"
+          title="Marcas em Destaque (Cards Redondos)"
+          description="Gerencie a lista vertical de cards redondos de Marcas exibida na Home. Suba logos, ordene e defina links de destino."
+          items={brands}
+          defaultSeedItems={DEFAULT_BRANDS}
+          accentColor="#d97706"
+        />
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* SUB-ABA: PARCEIROS LOCAIS (CARDS REDONDOS)                             */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'partners' && (
+        <AdminRoundCardsManager
+          collectionName="home-partners"
+          title="Parceiros Locais (Cards Redondos)"
+          description="Gerencie a lista vertical de cards redondos de Parceiros Locais exibida na Home. Cadastre negócios locais, selos e links."
+          items={localPartners}
+          defaultSeedItems={DEFAULT_LOCAL_PARTNERS}
+          accentColor="#059669"
+        />
       )}
     </div>
   );

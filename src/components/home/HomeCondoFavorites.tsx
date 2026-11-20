@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Heart } from 'lucide-react';
 import { PromoCard } from '../PromoCard';
 import type { CondoFavoriteConfig } from '../../types/home';
 import type { Catalog } from '../../hooks/useCatalog';
@@ -39,12 +38,11 @@ export const HomeCondoFavorites = ({ catalog, favorites }: { catalog: Catalog; f
   }, [favorites, catalog.byId]);
 
   return (
-    <section style={{ margin: '24px 0 8px' }} aria-labelledby="home-favorites-title">
-      <div className="section-header" style={{ padding: '0 8px', marginBottom: '10px' }}>
-        <h2 id="home-favorites-title" style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Heart size={14} fill="#f87171" color="#f87171" aria-hidden="true" />
-          Favoritos do Condomínio
-        </h2>
+    <section className="section standard-section" style={{ margin: '24px 0 8px' }} aria-labelledby="home-favorites-title">
+      <div className="section-header">
+        <div className="section-header-left">
+          <h2 id="home-favorites-title">Favoritos do Condomínio</h2>
+        </div>
       </div>
       {catalog.loading || products.length === 0 ? (
         <div className="section-state-message" role="status">

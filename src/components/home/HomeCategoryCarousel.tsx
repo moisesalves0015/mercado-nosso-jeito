@@ -58,19 +58,11 @@ export const HomeCategoryCarousel = ({
     <>
       <div
         className="section-header"
-        style={{ padding: '0 8px', marginBottom: '4px', marginTop: '12px' }}
+        style={{ marginTop: '12px' }}
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: '13.5px',
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.2px',
-          }}
-        >
-          Categorias
-        </h2>
+        <div className="section-header-left">
+          <h2>Categorias</h2>
+        </div>
         {showHeaderLink && (
           <Link to="/categories" className="glass-ver-todas-btn">
             Ver todas <span style={{ color: '#FFDF73' }} aria-hidden="true">&gt;</span>

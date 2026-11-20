@@ -32,6 +32,7 @@ export const PageHeroBanner: React.FC<PageHeroBannerProps> = ({
           videoUrl: b.videoUrl,
           mediaType: b.mediaType,
           posterImage: b.posterImage,
+          aspectRatio: b.aspectRatio,
         }));
     }
 

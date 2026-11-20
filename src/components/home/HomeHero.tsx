@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { KeyboardEvent, TouchEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { resolveLink } from '../../utils/homeProducts';
@@ -17,6 +17,7 @@ export interface HeroSlide {
   videoUrl?: string;
   mediaType?: 'image' | 'video';
   posterImage?: string;
+  aspectRatio?: string;
 }
 
 const ROTATE_MS = 4500;
@@ -26,11 +27,34 @@ const HeroSlideVideoItem: React.FC<{
   videoSrc: string;
   poster?: string;
   active: boolean;
-}> = ({ videoSrc, poster, active }) => {
+  slideRatio?: string;
+  onRatioDetected?: (ratio: string) => void;
+}> = ({ videoSrc, poster, active, slideRatio, onRatioDetected }) => {
   const resolved = useResolvedMediaUrl(videoSrc);
+  const [aspectRatio, setAspectRatio] = useState<string | undefined>(slideRatio);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const applyDimensions = useCallback((v: HTMLVideoElement) => {
+    if (v.videoWidth && v.videoHeight) {
+      const ratio = `${v.videoWidth} / ${v.videoHeight}`;
+      setAspectRatio(ratio);
+      onRatioDetected?.(ratio);
+    }
+  }, [onRatioDetected]);
 
   return (
     <video
+      ref={(el) => {
+        videoRef.current = el;
+        if (el) {
+          if (el.videoWidth && el.videoHeight && !aspectRatio) {
+            applyDimensions(el);
+          }
+          if (active) {
+            el.play().catch(() => {});
+          }
+        }
+      }}
       src={resolved || undefined}
       poster={poster ? sanitizeBannerImageUrl(poster, '') : undefined}
       autoPlay
@@ -40,28 +64,28 @@ const HeroSlideVideoItem: React.FC<{
       webkit-playsinline="true"
       preload="auto"
       className="hero-slide-video"
+      onLoadedMetadata={(e) => applyDimensions(e.currentTarget)}
+      onLoadedData={(e) => applyDimensions(e.currentTarget)}
+      onCanPlay={(e) => applyDimensions(e.currentTarget)}
       style={{
         width: '100%',
-        height: 'auto',
+        height: '100%',
         display: 'block',
         pointerEvents: 'none',
+        objectFit: 'contain',
+        objectPosition: 'center',
         background: 'transparent',
-      }}
-      ref={(el) => {
-        if (el && active) {
-          el.play().catch(() => {});
-        }
       }}
     />
   );
 };
 
 /**
- * Carrossel de banners da Home.
+ * Carrossel de banners inteligente e adaptável.
+ *  - Identifica e utiliza a proporção da mídia ativa (aspect-ratio intrínseco ou configurado).
+ *  - Ajusta a altura da exibição proporcionalmente à largura disponível, sem cortes nem distorções.
+ *  - Exibe vídeos horizontais em sua totalidade de ponta a ponta sem forçar alturas incompatíveis.
  *  - Rotação automática pausa com mouse, foco ou `prefers-reduced-motion`.
- *  - O timer NÃO reinicia a cada troca de slide (depende só de quantidade/pausa).
- *  - O índice é sempre limitado à quantidade atual (banner removido não deixa o carrossel vazio).
- *  - Teclado: ←/→ no carrossel; pontos são botões reais.
  */
 export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
   const count = slides.length;
@@ -70,8 +94,18 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const [slideRatios, setSlideRatios] = useState<Record<string, string>>({});
+
+  const registerSlideRatio = useCallback((id: string, ratio: string) => {
+    setSlideRatios(prev => {
+      if (prev[id] === ratio) return prev;
+      return { ...prev, [id]: ratio };
+    });
+  }, []);
 
   const index = count > 0 ? Math.min(rawIndex, count - 1) : 0;
+  const currentSlide = slides[index];
+  const currentRatio = currentSlide ? (slideRatios[currentSlide.id] || currentSlide.aspectRatio || '16 / 9') : '16 / 9';
 
   useEffect(() => {
     if (count <= 1 || reducedMotion || paused) return;
@@ -119,26 +153,40 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
       onFocus={() => setPaused(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false); }}
       onKeyDown={onKeyDown}
+      style={{
+        aspectRatio: currentRatio,
+        maxHeight: '85vh',
+        transition: 'aspect-ratio 0.25s ease',
+      }}
     >
-      <div className="hero-slider-track" style={{ transform: `translateX(-${index * 100}%)` }} aria-live={paused || reducedMotion ? 'polite' : 'off'}>
+      <div
+        className="hero-slider-track"
+        style={{
+          transform: `translateX(-${index * 100}%)`,
+          height: '100%',
+        }}
+        aria-live={paused || reducedMotion ? 'polite' : 'off'}
+      >
         {slides.map((slide, idx) => {
           const active = idx === index;
           const link = resolveLink(slide.link);
-          const isVideoExt = (url?: string) => Boolean(url && (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/')));
+          const isVideoExt = (url?: string) => Boolean(url && (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('data:video/') || url.startsWith('firestore-media://')));
           const isVideo = slide.mediaType === 'video' || Boolean(slide.videoUrl) || isVideoExt(slide.image);
           const videoSrc = slide.videoUrl || (isVideoExt(slide.image) ? slide.image : undefined);
           const cleanedImage = sanitizeBannerImageUrl(slide.image, '');
-          const poster = slide.posterImage || (slide.videoUrl && !isVideoExt(slide.image) ? cleanedImage : undefined);
+          const poster = slide.posterImage || undefined;
 
           const common = {
             className: `hero-slide${isVideo || cleanedImage ? '' : ' hero-slide--text'}`,
             style: {
               position: 'relative' as const,
-              overflow: 'hidden' as const,
               background: 'transparent',
               width: '100%',
-              height: 'auto',
-              display: 'block',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
             },
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,
@@ -147,8 +195,14 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
           // Slides fora de vista não entram na ordem de tabulação.
           const tabIndex = active ? undefined : -1;
           const content = isVideo && videoSrc ? (
-            <div style={{ position: 'relative', width: '100%', height: 'auto', overflow: 'hidden', display: 'block', background: 'transparent' }}>
-              <HeroSlideVideoItem videoSrc={videoSrc} poster={poster} active={active} />
+            <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+              <HeroSlideVideoItem
+                videoSrc={videoSrc}
+                poster={poster}
+                active={active}
+                slideRatio={slide.aspectRatio}
+                onRatioDetected={(ratio) => registerSlideRatio(slide.id, ratio)}
+              />
               {slide.title && (
                 <div
                   style={{
@@ -172,9 +226,22 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
               src={cleanedImage}
               alt={slide.title || 'Banner'}
               className="hero-slide-img"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  registerSlideRatio(slide.id, `${img.naturalWidth} / ${img.naturalHeight}`);
+                }
+              }}
+              ref={(img) => {
+                if (img && img.naturalWidth && img.naturalHeight && !slideRatios[slide.id]) {
+                  registerSlideRatio(slide.id, `${img.naturalWidth} / ${img.naturalHeight}`);
+                }
+              }}
               style={{
                 width: '100%',
-                height: 'auto',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center',
                 display: 'block',
                 pointerEvents: 'none',
                 background: 'transparent',

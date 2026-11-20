@@ -1,14 +1,9 @@
 /**
- * Home — vitrine principal.
+ * Home — vitrine principal composicional (No-Code Page Builder).
  *
- * Esta página apenas COMPÕE blocos; cada bloco vive em src/components/home/*.
- * Fontes de dados:
- *  - produtos:        useCatalog (coleção `products`, mesmo cache de busca/detalhe/carrinho);
- *  - editorial:       useHomeConfig (`home-config/data/*`, normalizado e validado);
- *  - suporte/prazo:   useAdminConfig (`settings/admin`);
- *  - frete:           useShippingConfig (`settings/shipping`);
- *  - categorias:      src/data/homeCategories.ts (declarativo).
- * Nenhum produto, preço ou métrica fictícia é gerado no front-end.
+ * A ordem e visibilidade de todos os blocos da Home são controladas em tempo real
+ * pelo CRM Admin (`home-config/data/home-layout`), permitindo posicionar banners
+ * entre vitrines, reordenar seções e gerenciar Marcas e Parceiros Locais.
  */
 import { useMemo, useEffect } from 'react';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
@@ -23,6 +18,7 @@ import { HomeMegaOffers } from '../components/home/HomeMegaOffers';
 import { HomeBenefitCards, HomePromoBanners } from '../components/home/HomeBenefitCards';
 import { HomeCategoryCarousel } from '../components/home/HomeCategoryCarousel';
 import { HomeCondoFavorites } from '../components/home/HomeCondoFavorites';
+import { HomeRoundCardList } from '../components/home/HomeRoundCardList';
 import { HomeFooter } from '../components/home/HomeFooter';
 import { HomeFullPageSkeleton } from '../components/home/HomeFullPageSkeleton';
 import { useCatalog } from '../hooks/useCatalog';
@@ -31,9 +27,15 @@ import { useAdminConfig } from '../hooks/useAdminConfig';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { QUICK_CATEGORIES, VISUAL_CATEGORIES } from '../data/homeCategories';
 import { DEFAULT_HERO_BANNERS } from '../data/defaultHeroBanners';
+import {
+  DEFAULT_BRANDS,
+  DEFAULT_LOCAL_PARTNERS,
+  buildDefaultHomeLayout,
+} from '../data/defaultHomeExtras';
 import { buildShowcases } from '../utils/homeShowcases';
+import type { HeroBannerConfig, HomeLayoutBlock } from '../types/home';
 
-const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map(b => ({
+const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map((b) => ({
   id: b.id,
   image: b.image,
   link: b.link,
@@ -42,37 +44,82 @@ const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map(b => ({
 
 const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
 
+const toHeroSlide = (b: HeroBannerConfig): HeroSlide => ({
+  id: b.id,
+  title: b.title || 'Banner',
+  image: b.image,
+  link: b.link,
+  videoUrl: b.videoUrl,
+  mediaType: b.mediaType,
+  posterImage: b.posterImage,
+  aspectRatio: b.aspectRatio,
+});
+
 export const Home = () => {
   const catalog = useCatalog();
   const homeConfig = useHomeConfig();
   const { config: adminConfig } = useAdminConfig();
   const { config: shippingConfig } = useShippingConfig();
 
-  // Cópia ordenada de banners ativos (nunca muta o array recebido do hook).
+  // Banners principais do topo (Hero)
   const heroSlides = useMemo<HeroSlide[]>(() => {
     if (homeConfig.heroBanners.length === 0) return DEFAULT_HERO_SLIDES;
     const activeBanners = homeConfig.heroBanners.filter(
-      b => b.active !== false && (!b.placement || b.placement === 'home' || b.placement === 'all')
+      (b) => b.active !== false && (!b.placement || b.placement === 'home' || b.placement === 'all'),
     );
     if (activeBanners.length === 0) return DEFAULT_HERO_SLIDES;
-    return [...activeBanners].sort(byOrder).map(b => ({
-      id: b.id,
-      title: b.title || 'Banner',
-      image: b.image,
-      link: b.link,
-      videoUrl: b.videoUrl,
-      mediaType: b.mediaType,
-      posterImage: b.posterImage,
-    }));
+    return [...activeBanners].sort(byOrder).map(toHeroSlide);
   }, [homeConfig.heroBanners]);
+
+  // Banners intermediários cadastrados com placement='home-inline'
+  const inlineBanners = useMemo<HeroBannerConfig[]>(
+    () =>
+      homeConfig.heroBanners
+        .filter((b) => b.active !== false && b.placement === 'home-inline')
+        .sort(byOrder),
+    [homeConfig.heroBanners],
+  );
 
   const showcases = useMemo(
     () => buildShowcases(homeConfig.vitrines, catalog.products, catalog.byId),
     [homeConfig.vitrines, catalog.products, catalog.byId],
   );
 
-  const quickCategories = useMemo(() => QUICK_CATEGORIES.filter(c => c.active).sort(byOrder), []);
-  const visualCategories = useMemo(() => VISUAL_CATEGORIES.filter(c => c.active).sort(byOrder), []);
+  const showcasesById = useMemo(() => {
+    const map = new Map<string, (typeof showcases)[number]>();
+    showcases.forEach((s) => map.set(s.key, s));
+    return map;
+  }, [showcases]);
+
+  const bannersById = useMemo(() => {
+    const map = new Map<string, HeroBannerConfig>();
+    homeConfig.heroBanners.forEach((b) => map.set(b.id, b));
+    return map;
+  }, [homeConfig.heroBanners]);
+
+  const quickCategories = useMemo(() => QUICK_CATEGORIES.filter((c) => c.active).sort(byOrder), []);
+  const visualCategories = useMemo(() => VISUAL_CATEGORIES.filter((c) => c.active).sort(byOrder), []);
+
+  const effectiveBrands = useMemo(
+    () => (homeConfig.brands.length > 0 ? homeConfig.brands : DEFAULT_BRANDS),
+    [homeConfig.brands],
+  );
+
+  const effectivePartners = useMemo(
+    () => (homeConfig.localPartners.length > 0 ? homeConfig.localPartners : DEFAULT_LOCAL_PARTNERS),
+    [homeConfig.localPartners],
+  );
+
+  // Estrutura efetiva da Home: customizada no CRM Admin ou fallback padrão inteligente
+  const effectiveLayout = useMemo<HomeLayoutBlock[]>(() => {
+    if (homeConfig.homeLayout.length > 0) {
+      return [...homeConfig.homeLayout].sort(byOrder);
+    }
+    return buildDefaultHomeLayout(
+      showcases.map((s) => ({ id: s.key, title: s.title })),
+      inlineBanners,
+    );
+  }, [homeConfig.homeLayout, showcases, inlineBanners]);
 
   const isPageReady =
     (!catalog.loading || catalog.products.length > 0) &&
@@ -91,60 +138,138 @@ export const Home = () => {
     return <HomeFullPageSkeleton />;
   }
 
+  const renderBlock = (block: HomeLayoutBlock) => {
+    if (block.active === false) return null;
+
+    switch (block.type) {
+      case 'hero':
+        return <HomeHero key={block.id} slides={heroSlides} />;
+
+      case 'quick_categories':
+        return <HomeQuickCategories key={block.id} items={quickCategories} />;
+
+      case 'search':
+        return <HomeSearch key={block.id} />;
+
+      case 'period_selector':
+        return (
+          <HomePeriodSelector
+            key={block.id}
+            catalog={catalog}
+            periodConfig={homeConfig.periodConfig}
+          />
+        );
+
+      case 'social_proof':
+        return (
+          <div key={block.id} style={{ padding: '0 var(--content-padding-x, 14px)' }}>
+            <SocialProofBanner />
+          </div>
+        );
+
+      case 'vitrine': {
+        if (!block.refId) return null;
+        const matched = showcasesById.get(block.refId);
+        if (!matched) return null;
+        return <HomeVitrineList key={block.id} showcases={[matched]} catalog={catalog} />;
+      }
+
+      case 'banner': {
+        if (!block.refId) return null;
+        const single = bannersById.get(block.refId);
+        if (single) {
+          if (single.active === false) return null;
+          return (
+            <div key={block.id} className="home-inline-banner-slot">
+              <HomeHero slides={[toHeroSlide(single)]} />
+            </div>
+          );
+        }
+        // Fallback: refId pode ser um placement (ex.: 'home-inline')
+        const group = homeConfig.heroBanners
+          .filter((b) => b.active !== false && b.placement === block.refId)
+          .sort(byOrder);
+        if (group.length === 0) return null;
+        return (
+          <div key={block.id} className="home-inline-banner-slot">
+            <HomeHero slides={group.map(toHeroSlide)} />
+          </div>
+        );
+      }
+
+      case 'mega_ofertas':
+        return (
+          <HomeMegaOffers
+            key={block.id}
+            catalog={catalog}
+            megaOfertas={homeConfig.megaOfertas}
+          />
+        );
+
+      case 'brands':
+        return (
+          <HomeRoundCardList
+            key={block.id}
+            title={block.title || 'Principais Marcas'}
+            subtitle={block.subtitle || 'As marcas que você confia sempre geladas e fresquinhas'}
+            items={effectiveBrands}
+            variant="brands"
+            linkText="Ver tudo >"
+            to="/search"
+          />
+        );
+
+      case 'local_partners':
+        return (
+          <HomeRoundCardList
+            key={block.id}
+            title={block.title || 'Parceiros Locais'}
+            subtitle={block.subtitle || 'Comércios e produtores selecionados perto de você'}
+            items={effectivePartners}
+            variant="partners"
+          />
+        );
+
+      case 'promo_banners':
+        return (
+          <HomePromoBanners
+            key={block.id}
+            freeShippingThreshold={shippingConfig.freeShippingThreshold}
+          />
+        );
+
+      case 'benefit_cards':
+        return <HomeBenefitCards key={block.id} deliveryEta={adminConfig.deliveryEta} />;
+
+      case 'categories':
+        return <HomeCategoryCarousel key={block.id} items={visualCategories} />;
+
+      case 'condo_favorites':
+        return (
+          <HomeCondoFavorites
+            key={block.id}
+            catalog={catalog}
+            favorites={homeConfig.condoFavorites}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="page-fade-in" style={{ width: '100%', overflowX: 'hidden' }}>
-      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
-        <div className="app" style={{ position: 'relative', zIndex: 1, paddingBottom: 6 }}>
-          {/* Convite de instalação do PWA */}
-          <PwaInstallBanner />
-
-          {/* Carrossel de banners (admin: home-config/data/hero-banners) */}
-          <HomeHero slides={heroSlides} />
-
-          {/* Atalhos rápidos + busca */}
-          <HomeQuickCategories items={quickCategories} />
-          <HomeSearch />
-        </div>
-      </div>
-
       <main className="app" style={{ paddingTop: 0 }}>
+        <PwaInstallBanner />
+
         {homeConfig.error && (
           <div className="section-state-message" role="status">
             Algumas seções da página podem estar desatualizadas. Tente recarregar em instantes.
           </div>
         )}
 
-        {/* Os mais pedidos por horário */}
-        <HomePeriodSelector catalog={catalog} periodConfig={homeConfig.periodConfig} />
-
-        {/* Mensagens editoriais (sem números fabricados) */}
-        <div style={{ padding: '0 var(--content-padding-x, 14px)' }}>
-          <SocialProofBanner />
-        </div>
-
-        {/* Vitrines — grupo 1 */}
-        <HomeVitrineList showcases={showcases.slice(0, 2)} catalog={catalog} />
-
-        {/* MEGA OFERTAS */}
-        <HomeMegaOffers catalog={catalog} megaOfertas={homeConfig.megaOfertas} />
-
-        {/* Vitrines — grupo 2 */}
-        <HomeVitrineList showcases={showcases.slice(2, 4)} catalog={catalog} />
-
-        {/* Frete grátis / indicação */}
-        <HomePromoBanners freeShippingThreshold={shippingConfig.freeShippingThreshold} />
-
-        {/* Vitrines — grupo 3 (inclui todas as restantes) */}
-        <HomeVitrineList showcases={showcases.slice(4)} catalog={catalog} />
-
-        {/* Entrega, Clube e segurança */}
-        <HomeBenefitCards deliveryEta={adminConfig.deliveryEta} />
-
-        {/* Categorias ilustradas */}
-        <HomeCategoryCarousel items={visualCategories} />
-
-        {/* Favoritos do Condomínio */}
-        <HomeCondoFavorites catalog={catalog} favorites={homeConfig.condoFavorites} />
+        {effectiveLayout.map(renderBlock)}
 
         <HomeFooter config={adminConfig} />
       </main>

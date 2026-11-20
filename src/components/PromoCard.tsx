@@ -184,7 +184,23 @@ export const PromoCard = ({
     }, wasEmpty ? 650 : 50);
   };
 
-  const hasPercentBadge = badge?.includes('% OFF');
+  const parsedPercent = (() => {
+    if (badge) {
+      const pctMatch = badge.match(/(\d+(?:[.,]\d+)?)\s*%/);
+      if (pctMatch) return `${pctMatch[1]}%`;
+      const onlyNum = badge.trim().match(/^-?(\d+)$/);
+      if (onlyNum) return `${onlyNum[1]}%`;
+    }
+    const regularNum =
+      typeof price === 'number'
+        ? price
+        : Number(String(price ?? '').replace(/[^\d.,-]/g, '').replace(',', '.'));
+    if (Number.isFinite(regularNum) && regularNum > 0 && effectivePrice > 0 && effectivePrice < regularNum) {
+      const pct = Math.round(((regularNum - effectivePrice) / regularNum) * 100);
+      if (pct > 0) return `${pct}%`;
+    }
+    return null;
+  })();
 
   return (
     <div className="product-card mega-oferta-wrapper" ref={cardRef}>
@@ -207,18 +223,16 @@ export const PromoCard = ({
         >
           <span style={{ fontSize: '26px', fontWeight: 900, lineHeight: 1 }}>{rank}</span>
         </div>
-      ) : badge && (
-        <div className={`badge-promo-top-left ${badge.includes('%') ? 'badge-square' : ''}`}>
-          {hasPercentBadge ? (
-            <>
-              <span className="badge-percent">{badge.split(' ')[0]}</span>
-              <span className="badge-off">{badge.split(' ')[1]}</span>
-            </>
-          ) : (
-            badge
-          )}
+      ) : parsedPercent ? (
+        <div className="badge-promo-top-left badge-square" aria-label={`${parsedPercent} OFF`}>
+          <span className="badge-percent">{parsedPercent}</span>
+          <span className="badge-off">OFF</span>
         </div>
-      )}
+      ) : badge ? (
+        <div className="badge-promo-top-left">
+          {badge.toUpperCase()}
+        </div>
+      ) : null}
       <Link
         to={`/product/${encodeURIComponent(id)}`}
         style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}

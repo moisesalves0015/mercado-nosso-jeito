@@ -15,16 +15,20 @@ import { db } from '../firebase';
 import type {
   CondoFavoriteConfig,
   HeroBannerConfig,
+  HomeLayoutBlock,
   MegaOfertaConfig,
   PeriodConfig,
+  RoundCardItem,
   VitrineConfig,
 } from '../types/home';
 import {
   byOrderThenId,
   normalizeCondoFavorite,
   normalizeHeroBanner,
+  normalizeHomeLayoutBlock,
   normalizeMegaOferta,
   normalizePeriodConfig,
+  normalizeRoundCardItem,
   normalizeVitrine,
 } from '../utils/homeProducts';
 import type { ConfigIssue } from '../utils/homeProducts';
@@ -35,6 +39,8 @@ export type {
   MegaOfertaConfig,
   HeroBannerConfig,
   CondoFavoriteConfig,
+  HomeLayoutBlock,
+  RoundCardItem,
 } from '../types/home';
 
 export interface HomeConfig {
@@ -43,6 +49,9 @@ export interface HomeConfig {
   megaOfertas: MegaOfertaConfig[];
   heroBanners: HeroBannerConfig[];
   condoFavorites: CondoFavoriteConfig[];
+  homeLayout: HomeLayoutBlock[];
+  brands: RoundCardItem[];
+  localPartners: RoundCardItem[];
   /** Problemas de configuração encontrados na última leitura (para diagnóstico/painel). */
   issues: ConfigIssue[];
   /** true até a primeira resposta das vitrines (ou erro). */
@@ -78,6 +87,9 @@ function loadCachedHomeConfig(): HomeConfig {
             megaOfertas: Array.isArray(parsed.megaOfertas) ? parsed.megaOfertas : [],
             heroBanners,
             condoFavorites: Array.isArray(parsed.condoFavorites) ? parsed.condoFavorites : [],
+            homeLayout: Array.isArray(parsed.homeLayout) ? parsed.homeLayout : [],
+            brands: Array.isArray(parsed.brands) ? parsed.brands : [],
+            localPartners: Array.isArray(parsed.localPartners) ? parsed.localPartners : [],
             issues: [],
             loading: false,
             error: false,
@@ -94,6 +106,9 @@ function loadCachedHomeConfig(): HomeConfig {
     megaOfertas: [],
     heroBanners: [],
     condoFavorites: [],
+    homeLayout: [],
+    brands: [],
+    localPartners: [],
     issues: [],
     loading: true,
     error: false,
@@ -117,6 +132,9 @@ function persistHomeConfigCache(cfg: HomeConfig) {
         megaOfertas: cfg.megaOfertas,
         heroBanners: safeHeroBanners,
         condoFavorites: cfg.condoFavorites,
+        homeLayout: cfg.homeLayout,
+        brands: cfg.brands,
+        localPartners: cfg.localPartners,
       })
     );
   } catch {
@@ -199,6 +217,33 @@ export const useHomeConfig = () => {
           return next;
         });
       }, fail('condo-favorites')),
+
+      onSnapshot(collection(db, 'home-config', 'data', 'home-layout'), snap => {
+        const { values } = readCollection(snap.docs, normalizeHomeLayoutBlock);
+        setConfig(prev => {
+          const next = { ...prev, homeLayout: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
+      }, fail('home-layout')),
+
+      onSnapshot(collection(db, 'home-config', 'data', 'home-brands'), snap => {
+        const { values } = readCollection(snap.docs, (id, raw) => normalizeRoundCardItem('home-brands', id, raw));
+        setConfig(prev => {
+          const next = { ...prev, brands: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
+      }, fail('home-brands')),
+
+      onSnapshot(collection(db, 'home-config', 'data', 'home-partners'), snap => {
+        const { values } = readCollection(snap.docs, (id, raw) => normalizeRoundCardItem('home-partners', id, raw));
+        setConfig(prev => {
+          const next = { ...prev, localPartners: values.sort(byOrderThenId) };
+          persistHomeConfigCache(next);
+          return next;
+        });
+      }, fail('home-partners')),
     ];
 
     return () => unsubs.forEach(unsub => unsub());

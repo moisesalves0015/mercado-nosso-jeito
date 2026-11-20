@@ -10,14 +10,17 @@
  */
 import type {
   CondoFavoriteConfig,
+  HomeBlockType,
   HomeCategoryLink,
   HeroBannerConfig,
+  HomeLayoutBlock,
   HomePeriod,
   HomeProduct,
   HomeTheme,
   HomeLayout,
   MegaOfertaConfig,
   PeriodConfig,
+  RoundCardItem,
   VitrineConfig,
 } from '../types/home';
 import { getEffectiveProductPrice, parsePrice } from './productPricing';
@@ -212,7 +215,15 @@ export function getPeriodForHour(hour: number): HomePeriod {
 // ─── Normalização da configuração ───────────────────────────────────────────
 
 export interface ConfigIssue {
-  scope: 'vitrines' | 'period-config' | 'mega-ofertas' | 'hero-banners' | 'condo-favorites';
+  scope:
+    | 'vitrines'
+    | 'period-config'
+    | 'mega-ofertas'
+    | 'hero-banners'
+    | 'condo-favorites'
+    | 'home-layout'
+    | 'home-brands'
+    | 'home-partners';
   id: string;
   message: string;
 }
@@ -220,6 +231,22 @@ export interface ConfigIssue {
 const THEMES: HomeTheme[] = ['hero', 'purple', 'orange', 'green'];
 const LAYOUTS: HomeLayout[] = ['horizontal', 'grid', 'carousel'];
 const PERIODS: HomePeriod[] = ['morning', 'lunch', 'afternoon', 'night', 'dawn'];
+const BLOCK_TYPES: HomeBlockType[] = [
+  'hero',
+  'quick_categories',
+  'search',
+  'period_selector',
+  'social_proof',
+  'vitrine',
+  'banner',
+  'mega_ofertas',
+  'brands',
+  'local_partners',
+  'promo_banners',
+  'benefit_cards',
+  'categories',
+  'condo_favorites',
+];
 
 const toOrder = (value: unknown): number => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
@@ -349,6 +376,7 @@ export function normalizeHeroBanner(id: string, raw: unknown): { value: HeroBann
       videoUrl: videoUrl || undefined,
       mediaType,
       posterImage: posterImage || undefined,
+      aspectRatio: asTrimmedString((raw as Record<string, unknown>).aspectRatio) || undefined,
     },
     issues,
   };
@@ -360,6 +388,57 @@ export function normalizeCondoFavorite(id: string, raw: unknown): { value: Condo
     return { value: null, issues: [{ scope: 'condo-favorites', id, message: 'Favorito sem productId; ignorado.' }] };
   }
   return { value: { id, productId, order: toOrder((raw as Record<string, unknown>).order) }, issues: [] };
+}
+
+export function normalizeHomeLayoutBlock(id: string, raw: unknown): { value: HomeLayoutBlock | null; issues: ConfigIssue[] } {
+  if (!isRecord(raw)) {
+    return { value: null, issues: [{ scope: 'home-layout', id, message: 'Bloco de layout inválido.' }] };
+  }
+  const rawType = asTrimmedString(raw.type) as HomeBlockType;
+  if (!BLOCK_TYPES.includes(rawType)) {
+    return { value: null, issues: [{ scope: 'home-layout', id, message: `Tipo de bloco desconhecido (${rawType || 'vazio'}).` }] };
+  }
+  return {
+    value: {
+      id,
+      type: rawType,
+      label: asTrimmedString(raw.label) || rawType,
+      refId: asTrimmedString(raw.refId) || undefined,
+      title: asTrimmedString(raw.title) || undefined,
+      subtitle: asTrimmedString(raw.subtitle) || undefined,
+      order: toOrder(raw.order),
+      active: raw.active !== false,
+    },
+    issues: [],
+  };
+}
+
+export function normalizeRoundCardItem(
+  scope: 'home-brands' | 'home-partners',
+  id: string,
+  raw: unknown,
+): { value: RoundCardItem | null; issues: ConfigIssue[] } {
+  if (!isRecord(raw)) {
+    return { value: null, issues: [{ scope, id, message: 'Item inválido.' }] };
+  }
+  const name = asTrimmedString(raw.name);
+  if (!name) {
+    return { value: null, issues: [{ scope, id, message: 'Item sem nome; ignorado.' }] };
+  }
+  const link = resolveLink(raw.link);
+  return {
+    value: {
+      id,
+      name,
+      subtitle: asTrimmedString(raw.subtitle) || undefined,
+      image: asTrimmedString(raw.image),
+      link: link?.href ?? '',
+      badge: asTrimmedString(raw.badge) || undefined,
+      order: toOrder(raw.order),
+      active: raw.active !== false,
+    },
+    issues: [],
+  };
 }
 
 // ─── Destino do "Ver tudo" ──────────────────────────────────────────────────
