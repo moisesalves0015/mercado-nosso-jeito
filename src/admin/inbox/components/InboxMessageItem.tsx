@@ -3,7 +3,6 @@ import { Bot, MessageSquare, Paperclip, Star } from 'lucide-react';
 import { formatDateTime } from '../../components/AdminUi';
 import {
   INBOX_PRIORITY_META,
-  INBOX_STATUS_LABELS,
   INBOX_TYPE_LABELS,
   SYSTEM_AGENTS_BY_ID,
 } from '../agents';
@@ -40,125 +39,136 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
       role="option"
       aria-selected={isSelected}
       onClick={onSelect}
-      className={`w-full text-left px-4 py-3.5 transition-colors border-b border-[#e3e7ec] last:border-b-0 relative group ${
+      className={`w-full text-left px-4 py-3 transition-colors border-b border-[#eceff4] last:border-b-0 relative group ${
         isSelected
-          ? 'bg-[#eef5ff]'
+          ? 'bg-[#e8f0fe]'
           : isUnread
-          ? 'bg-[#f8fbff] hover:bg-[#f1f5f9]'
-          : 'bg-white hover:bg-[#f6f7f9]'
+          ? 'bg-white hover:bg-[#f5f8fd] hover:shadow-[inset_0_-1px_0_#dadce0]'
+          : 'bg-[#f9fafb]/80 hover:bg-[#f2f4f8]'
       }`}
     >
-      {/* Left selection / unread indicator */}
-      {isSelected ? (
+      {/* Subtle left bar for unread */}
+      {isUnread && (
         <span
-          className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-[#2563eb]"
+          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#1a73e8]"
           aria-hidden="true"
         />
-      ) : isUnread ? (
-        <span
-          className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r bg-[#60a5fa]"
-          aria-hidden="true"
-        />
-      ) : null}
+      )}
 
-      {/* Row 1: Sender avatar + Name + Source badge + Time */}
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* Desktop Gmail-style horizontal row + Clean mobile stacking */}
+      <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 min-w-0">
+        {/* Left: Unread dot + Avatar + Star + Sender Name */}
+        <div className="flex items-center gap-2.5 md:w-60 lg:w-64 shrink-0 min-w-0">
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              isUnread ? 'bg-[#1a73e8]' : 'bg-transparent'
+            }`}
+            aria-label={isUnread ? 'Não lida' : undefined}
+          />
+
           {message.source === 'human' ? (
             <span
-              className="w-6 h-6 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-[11px] font-bold shrink-0"
+              className="w-7 h-7 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-[11px] font-bold shrink-0"
               title={`Sócio: ${message.senderName}`}
             >
               {message.senderName.slice(0, 1).toUpperCase()}
             </span>
           ) : (
             <span
-              className="w-6 h-6 rounded-full bg-[#eef5ff] text-[#2563eb] border border-[#bfdbfe] flex items-center justify-center shrink-0"
+              className="w-7 h-7 rounded-full bg-[#e8f0fe] text-[#1967d2] border border-[#d2e3fc] flex items-center justify-center shrink-0"
               title={`Agente Sistêmico: ${agent?.name || message.senderName}`}
             >
-              <Bot size={13} />
+              <Bot size={14} />
             </span>
           )}
 
-          <span
-            className={`text-xs truncate ${
-              isUnread ? 'font-bold text-[#17202a]' : 'font-medium text-[#374151]'
+          <Star
+            size={14}
+            className={`shrink-0 ${
+              isStarred ? 'text-[#f59e0b] fill-[#f59e0b]' : 'text-[#cbd5e1]'
             }`}
-          >
-            {message.senderName}
-          </span>
+            aria-label={isStarred ? 'Favorita' : undefined}
+          />
 
+          <div className="min-w-0 flex-1 flex items-center gap-1.5">
+            <span
+              className={`text-[13px] truncate ${
+                isUnread ? 'font-bold text-[#1f1f1f]' : 'font-medium text-[#444746]'
+              }`}
+            >
+              {message.senderName}
+            </span>
+            {message.source !== 'human' && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#f3e8ff] text-[#6d28d9] font-medium shrink-0">
+                Bot
+              </span>
+            )}
+          </div>
+
+          {/* Mobile Date */}
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded font-medium border shrink-0 ${
-              message.source === 'human'
-                ? 'bg-[#f6f7f9] text-[#5b6573] border-[#e3e7ec]'
-                : 'bg-[#f5f3ff] text-[#6d28d9] border-[#ddd6fe]'
+            className={`md:hidden text-[11px] tabular-nums ml-auto shrink-0 ${
+              isUnread ? 'font-bold text-[#1f1f1f]' : 'text-[#5f6368]'
             }`}
           >
-            {message.source === 'human' ? 'Humana' : agent ? `Automática · ${agent.sector}` : 'Automática'}
+            {formatDateTime(message.createdAt)}
           </span>
         </div>
 
-        <span className="text-[11px] text-[#838e9b] font-medium shrink-0 tabular-nums">
-          {formatDateTime(message.createdAt)}
-        </span>
-      </div>
+        {/* Center: Subject — Snippet (Gmail-style single line on desktop) */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 pl-6 md:pl-0">
+          {message.priority !== 'informative' && (
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border shrink-0 ${
+                PRIORITY_CHIP_CLASSES[message.priority]
+              }`}
+            >
+              {INBOX_PRIORITY_META[message.priority].label}
+            </span>
+          )}
 
-      {/* Row 2: Unread dot + Star + Subject */}
-      <div className="flex items-center gap-1.5 mb-1 pl-8">
-        {isUnread && (
-          <span
-            className="w-2 h-2 rounded-full bg-[#2563eb] shrink-0"
-            title="Não lida"
-            aria-label="Mensagem não lida"
-          />
-        )}
-        {isStarred && (
-          <Star size={12} className="text-[#d97706] fill-[#f59e0b] shrink-0" aria-label="Favorita" />
-        )}
-        <h4
-          className={`text-[13px] truncate flex-1 ${
-            isUnread ? 'font-bold text-[#17202a]' : 'font-semibold text-[#1f2937]'
-          }`}
-        >
-          {message.subject}
-        </h4>
-      </div>
+          <p className="text-[13px] truncate min-w-0 flex-1">
+            <span className={isUnread ? 'font-bold text-[#1f1f1f]' : 'font-medium text-[#1f1f1f]'}>
+              {message.subject}
+            </span>
+            <span className="text-[#5f6368] font-normal">
+              {' '}
+              — {message.body}
+            </span>
+          </p>
+        </div>
 
-      {/* Row 3: Short Preview */}
-      <p className="text-xs text-[#5b6573] line-clamp-2 leading-relaxed mb-2 pl-8">
-        {message.body}
-      </p>
-
-      {/* Row 4: Discreet semantic chips & counts */}
-      <div className="flex flex-wrap items-center gap-1.5 pl-8">
-        <span
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
-            PRIORITY_CHIP_CLASSES[message.priority]
-          }`}
-        >
-          {INBOX_PRIORITY_META[message.priority].label}
-        </span>
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#f6f7f9] text-[#5b6573] border border-[#e3e7ec]">
-          {INBOX_TYPE_LABELS[message.type]}
-        </span>
-        {message.status !== 'new' && message.status !== 'read' && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#f6f7f9] text-[#5b6573] border border-[#e3e7ec]">
-            {INBOX_STATUS_LABELS[message.status]}
+        {/* Right: Type badge, Attachment/Comment counts, and Date */}
+        <div className="flex items-center gap-2.5 pl-6 md:pl-0 shrink-0">
+          <span className="hidden lg:inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-[#f1f3f4] text-[#5f6368]">
+            {INBOX_TYPE_LABELS[message.type]}
           </span>
-        )}
 
-        <div className="ml-auto flex items-center gap-2 text-[#838e9b]">
           {message.commentCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium" title="Comentários">
-              <MessageSquare size={11} /> {message.commentCount}
+            <span
+              className="inline-flex items-center gap-1 text-[11px] text-[#5f6368] font-medium"
+              title="Comentários"
+            >
+              <MessageSquare size={12} /> {message.commentCount}
             </span>
           )}
+
           {message.attachmentCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium" title="Anexos">
-              <Paperclip size={11} /> {message.attachmentCount}
+            <span
+              className="inline-flex items-center gap-1 text-[11px] text-[#5f6368] font-medium"
+              title="Anexos"
+            >
+              <Paperclip size={12} /> {message.attachmentCount}
             </span>
           )}
+
+          <span
+            className={`hidden md:inline-block text-[11px] tabular-nums w-28 text-right ${
+              isUnread ? 'font-bold text-[#1f1f1f]' : 'font-medium text-[#5f6368]'
+            }`}
+          >
+            {formatDateTime(message.createdAt)}
+          </span>
         </div>
       </div>
     </button>

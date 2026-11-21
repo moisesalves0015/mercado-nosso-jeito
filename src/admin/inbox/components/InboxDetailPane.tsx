@@ -194,131 +194,175 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Detail Header (Open by default) */}
-      <div className="pb-4 border-b border-[#e3e7ec] space-y-3">
-        {/* Mobile back button */}
-        <div className="flex items-center justify-between lg:hidden">
-          <button
-            type="button"
-            onClick={onBackMobile}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-[#e3e7ec] text-[#17202a] hover:bg-[#f1f4f7]"
-          >
-            <ArrowLeft size={14} /> Voltar à caixa de entrada
-          </button>
-        </div>
+    <div className="space-y-5">
+      {/* Gmail / iOS Mail Top Sticky Action Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#eceff4]">
+        <button
+          type="button"
+          onClick={onBackMobile}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-[#1f1f1f] hover:bg-[#f1f3f4] transition-colors"
+        >
+          <ArrowLeft size={16} />
+          <span>Voltar para a caixa</span>
+        </button>
 
-        {/* Top Chips & Quick Icon Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-                PRIORITY_BADGE_CLASSES[message.priority]
-              }`}
-            >
-              {INBOX_PRIORITY_META[message.priority].label}
-            </span>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f6f7f9] border border-[#e3e7ec] text-[#5b6573]">
-              {INBOX_TYPE_LABELS[message.type]}
-            </span>
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]">
-              {INBOX_STATUS_LABELS[message.status]}
-            </span>
-            {message.source !== 'human' && (
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f5f3ff] border border-[#ddd6fe] text-[#6d28d9]">
-                Automática {agent ? `· ${agent.sector}` : ''}
-              </span>
-            )}
-            {message.occurrenceCount > 1 && (
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#fffbeb] text-[#b45309] border border-[#fde68a]">
-                {message.occurrenceCount}x ocorrências
-              </span>
-            )}
-          </div>
-
-          {/* Quick Header Icons */}
+        {/* Grouped Quick Actions (Gmail/Outlook style) */}
+        <div className="flex flex-wrap items-center gap-1">
           {canEdit && (
-            <div className="flex items-center gap-1 shrink-0">
+            <>
               <button
                 type="button"
                 title={isUnread ? 'Marcar como lida' : 'Marcar como não lida'}
                 onClick={() => onToggleRead(!isUnread)}
                 aria-label={isUnread ? 'Marcar como lida' : 'Marcar como não lida'}
-                className="p-1.5 rounded-lg border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7] transition-colors"
+                className="p-2 rounded-full text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] transition-colors"
               >
-                <MailOpen size={14} />
+                <MailOpen size={16} />
               </button>
               <button
                 type="button"
                 title={isStarred ? 'Remover favorito' : 'Marcar como favorito'}
                 onClick={() => onToggleStarred(!isStarred)}
                 aria-label={isStarred ? 'Remover favorito' : 'Marcar como favorito'}
-                className="p-1.5 rounded-lg border border-[#e3e7ec] bg-white text-[#d97706] hover:bg-[#f1f4f7] transition-colors"
+                className="p-2 rounded-full text-[#d97706] hover:bg-[#fef3c7]/50 transition-colors"
               >
-                <Star size={14} className={isStarred ? 'fill-[#f59e0b]' : ''} />
+                <Star size={16} className={isStarred ? 'fill-[#f59e0b]' : ''} />
               </button>
               <button
                 type="button"
                 title="Confirmar ciência desta mensagem"
                 onClick={onConfirmReceipt}
                 aria-label="Confirmar ciência"
-                className="p-1.5 rounded-lg border border-[#e3e7ec] bg-white text-[#167a52] hover:bg-[#e8f4ee] transition-colors"
+                className="p-2 rounded-full text-[#167a52] hover:bg-[#e8f4ee] transition-colors"
               >
-                <CheckCheck size={14} />
+                <CheckCheck size={16} />
               </button>
-            </div>
+            </>
+          )}
+
+          {(canEdit || canArchive || canAdminAgents) && (
+            <span className="w-px h-5 bg-[#e3e7ec] mx-1 hidden sm:inline-block" aria-hidden="true" />
+          )}
+
+          {canEdit && message.status !== 'resolved' && (
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateStatus(
+                  { messageId: message.id, status: 'resolved' },
+                  'Mensagem marcada como resolvida.',
+                )
+              }
+              title="Marcar como resolvida"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#167a52] hover:bg-[#e8f4ee] transition-colors"
+            >
+              <Check size={14} />
+              <span className="hidden sm:inline">Resolver</span>
+            </button>
+          )}
+
+          {canArchive && message.status !== 'archived' && (
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateStatus({ messageId: message.id, status: 'archived' }, 'Mensagem arquivada.')
+              }
+              title="Arquivar mensagem"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] transition-colors"
+            >
+              <Archive size={14} />
+              <span className="hidden sm:inline">Arquivar</span>
+            </button>
+          )}
+
+          {canAdminAgents && message.agentId && message.deduplicationKey && (
+            <button
+              type="button"
+              onClick={() => onMuteSimilarAlerts(message.agentId!, message.deduplicationKey!)}
+              title="Silenciar novos comunicados semelhantes deste agente"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#b7791f] hover:bg-[#fffbeb] transition-colors"
+            >
+              <BellOff size={14} />
+              <span className="hidden sm:inline">Silenciar</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Subject & Discreet Status Tags */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-semibold text-[#1f1f1f] tracking-tight leading-snug mr-1">
+            {message.subject}
+          </h2>
+          <span
+            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
+              PRIORITY_BADGE_CLASSES[message.priority]
+            }`}
+          >
+            {INBOX_PRIORITY_META[message.priority].label}
+          </span>
+          <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f1f3f4] text-[#5f6368]">
+            {INBOX_TYPE_LABELS[message.type]}
+          </span>
+          <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f1f3f4] text-[#1f1f1f]">
+            {INBOX_STATUS_LABELS[message.status]}
+          </span>
+          {message.source !== 'human' && (
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#f3e8ff] text-[#6d28d9]">
+              Automática {agent ? `· ${agent.sector}` : ''}
+            </span>
+          )}
+          {message.occurrenceCount > 1 && (
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#fffbeb] text-[#b45309] border border-[#fde68a]">
+              {message.occurrenceCount}x ocorrências
+            </span>
           )}
         </div>
 
-        {/* Subject */}
-        <h2 className="text-lg sm:text-xl font-bold text-[#17202a] tracking-tight leading-snug">
-          {message.subject}
-        </h2>
-
-        {/* Sender & Recipient Metadata Card */}
-        <div className="p-3.5 rounded-xl bg-[#f6f7f9] border border-[#e3e7ec] space-y-2 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              {message.source === 'human' ? (
-                <span className="w-7 h-7 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-xs font-bold shrink-0">
-                  {message.senderName.slice(0, 1).toUpperCase()}
-                </span>
-              ) : (
-                <span className="w-7 h-7 rounded-full bg-[#eef5ff] text-[#2563eb] border border-[#bfdbfe] flex items-center justify-center shrink-0">
-                  <Bot size={14} />
-                </span>
-              )}
-              <div className="min-w-0">
-                <span className="font-semibold text-[#17202a]">{message.senderName}</span>
+        {/* Gmail-style Sender & Recipient Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-3 min-w-0">
+            {message.source === 'human' ? (
+              <span className="w-10 h-10 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-sm font-bold shrink-0">
+                {message.senderName.slice(0, 1).toUpperCase()}
+              </span>
+            ) : (
+              <span className="w-10 h-10 rounded-full bg-[#e8f0fe] text-[#1967d2] border border-[#d2e3fc] flex items-center justify-center shrink-0">
+                <Bot size={18} />
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm font-semibold text-[#1f1f1f]">{message.senderName}</span>
                 {message.senderRole && (
-                  <span className="text-[#5b6573] ml-1.5">({message.senderRole})</span>
+                  <span className="text-xs text-[#5f6368]">&lt;{message.senderRole}&gt;</span>
                 )}
               </div>
+              <div className="text-xs text-[#5f6368] truncate">
+                para{' '}
+                <span className="font-medium text-[#1f1f1f]">
+                  {message.toAll
+                    ? 'Todos os sócios administradores'
+                    : message.toUserIds.map((id) => partnerNameMap[id] || id).join(', ') || 'Sócios'}
+                </span>
+              </div>
             </div>
-
-            <span className="text-[11px] text-[#838e9b] shrink-0 font-medium tabular-nums">
-              {formatDateTime(message.createdAt)}
-            </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#e3e7ec] text-[11px]">
-            <span className="text-[#5b6573] truncate">
-              Para:{' '}
-              <strong className="text-[#17202a] font-semibold">
-                {message.toAll
-                  ? 'Todos os sócios administradores'
-                  : message.toUserIds.map((id) => partnerNameMap[id] || id).join(', ') || 'Sócios'}
-              </strong>
+          <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 shrink-0 pl-13 sm:pl-0">
+            <span className="text-xs text-[#5f6368] font-medium tabular-nums">
+              {formatDateTime(message.createdAt)}
             </span>
-            <span className="inline-flex items-center gap-1 text-[#167a52] shrink-0 font-medium">
-              <Users size={12} /> Visível aos 3 sócios
+            <span className="inline-flex items-center gap-1 text-[11px] text-[#167a52] font-medium">
+              <Users size={11} /> Visível aos 3 sócios
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main Message Body (Open by default) */}
-      <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#e3e7ec] text-sm text-[#17202a] whitespace-pre-wrap leading-relaxed selection:bg-[#eef5ff]">
+      {/* Main Message Body (Spacious, open by default) */}
+      <div className="py-4 px-1 sm:px-2 text-[14px] sm:text-[15px] text-[#1f1f1f] whitespace-pre-wrap leading-7 selection:bg-[#e8f0fe]">
         {message.body}
       </div>
 
@@ -351,22 +395,22 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
         </div>
       )}
 
-      {/* Primary Action Toolbar (Open by default) */}
-      <div className="p-3 rounded-xl bg-[#f6f7f9] border border-[#e3e7ec] flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Primary Decision / Task Bar */}
+      {(canApprove && !message.decision) || canEdit ? (
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#eceff4]">
           {canApprove && !message.decision && (
             <>
               <button
                 type="button"
                 onClick={() => onPromptDecision('approved', 'Aprovar proposta / comunicado', false)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white shadow-2xs transition-colors"
               >
                 <CheckCircle2 size={14} /> Aprovar
               </button>
               <button
                 type="button"
                 onClick={() => onPromptDecision('rejected', 'Rejeitar proposta', true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#fef2f2] hover:bg-[#fee2e2] text-[#c2414b] border border-[#fecaca] transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#fef2f2] hover:bg-[#fee2e2] text-[#c2414b] border border-[#fecaca] transition-colors"
               >
                 <XCircle size={14} /> Rejeitar
               </button>
@@ -377,53 +421,13 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
             <button
               type="button"
               onClick={onOpenTaskModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white hover:bg-[#f1f4f7] text-[#17202a] border border-[#e3e7ec] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium bg-white hover:bg-[#f1f3f4] text-[#1f1f1f] border border-[#dadce0] transition-colors"
             >
               <ClipboardList size={14} /> Converter em Tarefa
             </button>
           )}
         </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-          {canEdit && message.status !== 'resolved' && (
-            <button
-              type="button"
-              onClick={() =>
-                onUpdateStatus(
-                  { messageId: message.id, status: 'resolved' },
-                  'Mensagem marcada como resolvida.',
-                )
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white hover:bg-[#e8f4ee] text-[#167a52] border border-[#e3e7ec] hover:border-[#b9ddc8] transition-colors"
-            >
-              <Check size={14} /> Resolver
-            </button>
-          )}
-
-          {canArchive && message.status !== 'archived' && (
-            <button
-              type="button"
-              onClick={() =>
-                onUpdateStatus({ messageId: message.id, status: 'archived' }, 'Mensagem arquivada.')
-              }
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white hover:bg-[#f1f4f7] text-[#5b6573] border border-[#e3e7ec] transition-colors"
-            >
-              <Archive size={14} /> Arquivar
-            </button>
-          )}
-
-          {canAdminAgents && message.agentId && message.deduplicationKey && (
-            <button
-              type="button"
-              onClick={() => onMuteSimilarAlerts(message.agentId!, message.deduplicationKey!)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white hover:bg-[#fffbeb] text-[#b7791f] border border-[#e3e7ec] hover:border-[#fde68a] transition-colors"
-              title="Silenciar novos comunicados semelhantes deste agente"
-            >
-              <BellOff size={14} /> Silenciar
-            </button>
-          )}
-        </div>
-      </div>
+      ) : null}
 
       {/* Reactions Row */}
       <div className="flex flex-wrap items-center gap-1.5">
