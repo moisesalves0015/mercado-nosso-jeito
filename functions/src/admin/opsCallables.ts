@@ -339,6 +339,14 @@ export const adminUpsertProduct = functions.https.onCall(async (data, context) =
       throw new HttpsError('not-found', 'Produto não encontrado.');
     }
 
+    const rawImage = typeof req.image === 'string' ? req.image.trim() : undefined;
+    if (rawImage && rawImage.length > 750_000) {
+      throw new HttpsError(
+        'invalid-argument',
+        'A imagem principal é muito grande para o banco de dados. Use uma imagem menor.',
+      );
+    }
+
     const prev = snap.exists ? (snap.data() as Record<string, unknown>) : null;
     const payload: Record<string, unknown> = {
       id: productId,
@@ -347,16 +355,34 @@ export const adminUpsertProduct = functions.https.onCall(async (data, context) =
       category,
       active: req.active === undefined ? (prev?.active ?? true) : req.active === true,
       featured: req.featured === undefined ? Boolean(prev?.featured) : req.featured === true,
-      image: optStr(req.image, 500_000) ?? (prev?.image as string | undefined) ?? '',
+      image: rawImage !== undefined ? rawImage : ((prev?.image as string | undefined) ?? ''),
       updatedAt: nowIso,
       updatedBy: actor.uid,
     };
 
     if (Array.isArray(req.images)) {
-      payload.images = req.images
-        .map((img) => optStr(img, 500_000))
-        .filter((img): img is string => Boolean(img))
-        .slice(0, 8);
+      const cleanedImages: string[] = [];
+      for (const img of req.images.slice(0, 8)) {
+        if (typeof img !== 'string') continue;
+        const trimmed = img.trim();
+        if (!trimmed) continue;
+        if (trimmed.length > 750_000) {
+          throw new HttpsError(
+            'invalid-argument',
+            'Uma das imagens complementares excede o tamanho máximo permitido.',
+          );
+        }
+        cleanedImages.push(trimmed);
+      }
+      payload.images = cleanedImages;
+    }
+
+    const approxBytes = JSON.stringify(payload).length;
+    if (approxBytes > 950_000) {
+      throw new HttpsError(
+        'invalid-argument',
+        'O total de imagens do produto excede o limite de 1 MB do Firestore. Remova algumas imagens complementares.',
+      );
     }
     if (req.promoActive !== undefined) {
       payload.promoActive = Boolean(req.promoActive);

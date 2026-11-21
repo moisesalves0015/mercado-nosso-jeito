@@ -14,12 +14,13 @@ import {
 } from '../src/admin/routes.ts';
 
 describe('Admin Routes & Navigation Tree', () => {
-  it('defines all 16 core administrative modules with valid permissions', () => {
-    assert.equal(ADMIN_NAV_ITEMS.length, 16);
+  it('defines all 17 core administrative modules with valid permissions', () => {
+    assert.equal(ADMIN_NAV_ITEMS.length, 17);
     const paths = ADMIN_NAV_ITEMS.map((i) => i.path);
     assert.deepEqual(paths, [
       '/admin/dashboard',
       '/admin/orders',
+      '/admin/inbox',
       '/admin/support',
       '/admin/customers',
       '/admin/products',

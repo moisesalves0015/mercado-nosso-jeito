@@ -339,5 +339,73 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── Inbox ADM (shared partner-admin inbox, forum, decisions & systemic agents) ───
+    // Only active admin / superadmin partners (`isAdmin()`) may read.
+    // Non-admin staff, customers, and banned/suspended users are denied.
+    // Systemic agent messages (`senderType == 'system_agent'` / `source == 'system'`)
+    // and immutable history entries can only be written by Cloud Functions (Admin SDK).
+    match /admin_inbox_messages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+                    && request.resource.data.senderType == 'human'
+                    && request.resource.data.source == 'human'
+                    && request.resource.data.senderUserId == request.auth.uid
+                    && (!('agentId' in request.resource.data) || request.resource.data.agentId == null);
+      allow update: if isAdmin()
+                    && request.resource.data.senderType == resource.data.senderType
+                    && request.resource.data.source == resource.data.source
+                    && request.resource.data.senderUserId == resource.data.senderUserId
+                    && request.resource.data.agentId == resource.data.agentId;
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if isAdmin();
+        allow create: if isAdmin()
+                      && request.resource.data.authorUserId == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      match /reactions/{reactionId} {
+        allow read: if isAdmin();
+        allow create, update: if isAdmin()
+                              && request.resource.data.userId == request.auth.uid;
+        allow delete: if isAdmin() && resource.data.userId == request.auth.uid;
+      }
+
+      match /history/{historyId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      match /attachments/{attachmentId} {
+        allow read: if isAdmin();
+        allow create: if isAdmin()
+                      && request.resource.data.uploadedByUserId == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isAdmin();
+        allow create, update: if isAdmin();
+        allow delete: if false;
+      }
+    }
+
+    match /admin_inbox_tasks/{taskId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /admin_system_agents/{agentId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /admin_agent_rules/{ruleId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
   }
 }

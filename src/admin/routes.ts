@@ -29,7 +29,8 @@ export interface AdminNavItem {
     | 'KeyRound'
     | 'ScrollText'
     | 'Settings'
-    | 'FolderTree';
+    | 'FolderTree'
+    | 'Inbox';
 }
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
@@ -59,6 +60,15 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
     description: 'Gestão completa do fluxo de pedidos, separação, entrega e conciliação Pix.',
     requiredPermissions: ['pedidos:view', 'pedidos:edit', 'pedidos:approve'],
     iconName: 'ShoppingBag',
+  },
+  {
+    id: 'inbox',
+    label: 'Inbox ADM',
+    path: '/admin/inbox',
+    group: 'operacao',
+    description: 'Caixa administrativa compartilhada entre sócios, decisões, tarefas e agentes sistêmicos.',
+    requiredPermissions: ['inbox:view', 'inbox:admin'],
+    iconName: 'Inbox',
   },
   {
     id: 'support',
@@ -205,6 +215,8 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
 export const LEGACY_ADMIN_REDIRECTS: ReadonlyArray<{ from: string; to: string }> = [
   { from: '/admin/visao-geral', to: '/admin/dashboard' },
   { from: '/admin/pedidos', to: '/admin/orders' },
+  { from: '/admin/caixa', to: '/admin/inbox' },
+  { from: '/admin/mensagens', to: '/admin/inbox' },
   { from: '/admin/clientes', to: '/admin/customers' },
   { from: '/admin/crm', to: '/admin/customers' },
   { from: '/admin/suporte', to: '/admin/support' },

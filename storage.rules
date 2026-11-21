@@ -50,5 +50,22 @@ service firebase.storage {
                     && request.resource.contentType.matches('(image|video)/.*');
       allow delete: if isAuthenticated();
     }
+
+    // Inbox ADM private attachments (max 15MB, strictly private to admins / signed URLs):
+    match /admin-inbox/{messageId}/{attachmentId}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isAdmin()
+                    && request.resource.size < 15 * 1024 * 1024
+                    && (
+                      request.resource.contentType.matches('image/(jpeg|jpg|png|webp)')
+                      || request.resource.contentType == 'application/pdf'
+                      || request.resource.contentType == 'text/csv'
+                      || request.resource.contentType == 'text/plain'
+                      || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                      || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                      || request.resource.contentType == 'application/vnd.ms-excel'
+                    );
+      allow delete: if false;
+    }
   }
 }

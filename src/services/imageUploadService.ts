@@ -297,20 +297,53 @@ export interface ProductMediaOverride {
  * so that even if a deployed Cloud Function truncates `products.image` to 1024 chars,
  * the full image is always preserved and restored across reloads.
  */
+function formatFirestoreWriteError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const code = (err as { code?: string })?.code ?? '';
+  if (
+    code === 'resource-exhausted' ||
+    code === 'invalid-argument' ||
+    /exceeds the maximum allowed size|longer than \d+ bytes|maximum size/i.test(msg)
+  ) {
+    return 'As imagens juntas ultrapassam o limite de 1 MB do banco de dados. Remova algumas imagens extras ou reduza o tamanho.';
+  }
+  if (code === 'permission-denied') {
+    return 'Sem permissão no Firestore para gravar este produto/imagem.';
+  }
+  if (code === 'unavailable' || /offline|network/i.test(msg)) {
+    return 'Sem conexão com o banco de dados. Verifique sua internet e tente novamente.';
+  }
+  return msg || 'Erro desconhecido ao gravar imagem no banco de dados.';
+}
+
 export async function persistProductFullData(
   targetId: string,
   payload: Record<string, unknown>,
   isNew: boolean,
-  pStock: number
-): Promise<void> {
+  pStock: number,
+  options?: { cloudSaved?: boolean }
+): Promise<{ productsSaved: boolean; mediaSaved: boolean }> {
   const fullDoc = isNew ? { id: targetId, ...payload, stock: pStock } : { id: targetId, ...payload };
 
-  try {
-    await setDoc(doc(db, 'products', targetId), fullDoc, { merge: true });
-  } catch {
-    // Ignore if direct write on `products` is restricted by legacy rule; media subcollection below will persist it.
+  const approxSize = JSON.stringify(fullDoc).length;
+  if (approxSize > 980_000) {
+    throw new Error(
+      `O produto com as imagens selecionadas tem ${(approxSize / 1024).toFixed(0)} KB e excede o limite de 1 MB do banco de dados. Remova imagens complementares para salvar.`
+    );
   }
 
+  let productsSaved = Boolean(options?.cloudSaved);
+  let productsErr: unknown = null;
+  try {
+    await setDoc(doc(db, 'products', targetId), fullDoc, { merge: true });
+    productsSaved = true;
+  } catch (err) {
+    productsErr = err;
+    console.error('[persistProductFullData] Erro ao salvar em products:', err);
+  }
+
+  let mediaSaved = false;
+  let mediaErr: unknown = null;
   try {
     await setDoc(
       doc(db, 'home-config', 'data', 'product-media', targetId),
@@ -322,11 +355,22 @@ export async function persistProductFullData(
       },
       { merge: true }
     );
-  } catch {
-    // Ignore if offline
+    mediaSaved = true;
+  } catch (err) {
+    mediaErr = err;
+    console.warn('[persistProductFullData] Erro ao salvar espelho em product-media:', err);
+  }
+
+  if (!productsSaved && !mediaSaved) {
+    throw new Error(formatFirestoreWriteError(productsErr || mediaErr));
+  }
+
+  if (!productsSaved && productsErr) {
+    throw new Error(formatFirestoreWriteError(productsErr));
   }
 
   syncProductInLocalStorage(targetId, fullDoc);
+  return { productsSaved, mediaSaved };
 }
 
 /**

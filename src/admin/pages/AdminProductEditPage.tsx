@@ -320,6 +320,8 @@ export const AdminProductEditPage: React.FC = () => {
 
       // 1. Save or Update via Cloud Function + direct Firestore merge to guarantee full image & gallery persistence
       let targetId = id || `prod_${Date.now()}`;
+      let cloudSaved = false;
+      let cloudErr: unknown = null;
       try {
         const fn = httpsCallable(functions, 'adminUpsertProduct');
         if (isNew) {
@@ -335,13 +337,25 @@ export const AdminProductEditPage: React.FC = () => {
           });
           targetId = id!;
         }
-      } catch (cloudErr) {
-        console.warn('Fallback para Firestore direto:', cloudErr);
+        cloudSaved = true;
+      } catch (err) {
+        cloudErr = err;
+        console.warn('Falha na Cloud Function adminUpsertProduct, tentando persistência direta:', err);
       }
 
       // Always persist the complete payload (including un-truncated Data URI image & gallery)
       // to Firestore (`products` + `home-config/data/product-media`) and sync localStorage immediately.
-      await persistProductFullData(targetId, payload, isNew, pStock);
+      try {
+        await persistProductFullData(targetId, payload, isNew, pStock, { cloudSaved });
+      } catch (persistErr) {
+        const reason =
+          persistErr instanceof Error
+            ? persistErr.message
+            : cloudErr instanceof Error
+            ? cloudErr.message
+            : 'Falha ao gravar produto e imagens no Firestore.';
+        throw new Error(reason, { cause: persistErr ?? cloudErr });
+      }
 
       // If existing product and an explicit stock delta was entered:
       const deltaNum = parseInt(stockAdjustDelta, 10) || 0;
@@ -397,7 +411,11 @@ export const AdminProductEditPage: React.FC = () => {
       navigate(`/admin/products/${targetId}/view`);
     } catch (err) {
       console.error(err);
-      showToast('Erro ao salvar produto. Verifique as permissões.', 'err');
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Erro ao salvar produto. Verifique as permissões e o tamanho das imagens.';
+      showToast(message, 'err');
     } finally {
       setSaving(false);
     }

@@ -20,6 +20,7 @@ export const MODULES = [
   'auditoria',
   'suporte',
   'relatorios',
+  'inbox',
 ] as const;
 
 export const ACTIONS = [

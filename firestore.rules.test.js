@@ -307,4 +307,76 @@ describe('Firestore Rules - RBAC, superadmin and audit (Fase 1)', () => {
     await assertSucceeds(customerDb.collection('users').doc('customer').collection('clube').doc('profile').get());
     await assertFails(customerDb.collection('users').doc('customer').collection('clube').doc('profile').update({ diamonds: 99999 }));
   });
+
+  // ── Inbox ADM ────────────────────────────────────────────────────────────
+  it('admin_inbox_messages: only active admins can read; non-admin staff & customers denied; blocks system_agent spoofing, history tampering & physical delete', async () => {
+    await seed((db) =>
+      db.collection('admin_inbox_messages').doc('msg1').set({
+        type: 'message',
+        source: 'human',
+        senderType: 'human',
+        senderUserId: 'a1',
+        agentId: null,
+        subject: 'Assunto interno',
+        body: 'Conteúdo interno',
+        createdAt: '2026-11-20T00:00:00.000Z',
+      }),
+    );
+    await seed((db) =>
+      db
+        .collection('admin_inbox_messages')
+        .doc('msg1')
+        .collection('history')
+        .doc('h1')
+        .set({ action: 'created', actorId: 'a1', createdAt: '2026-11-20T00:00:00.000Z' }),
+    );
+    await assignment('a1', 'admin');
+    await assignment('op', 'operacoes');
+
+    const adminDb = testEnv.authenticatedContext('a1', { admin: true }).firestore();
+    const opDb = testEnv.authenticatedContext('op').firestore();
+    const customerDb = testEnv.authenticatedContext('customer').firestore();
+
+    // Non-admin staff & customer denied
+    await assertFails(opDb.collection('admin_inbox_messages').doc('msg1').get());
+    await assertFails(customerDb.collection('admin_inbox_messages').doc('msg1').get());
+    await assertFails(testEnv.unauthenticatedContext().firestore().collection('admin_inbox_messages').doc('msg1').get());
+
+    // Admin can read
+    await assertSucceeds(adminDb.collection('admin_inbox_messages').doc('msg1').get());
+
+    // Admin cannot spoof system_agent or another sender
+    await assertFails(
+      adminDb.collection('admin_inbox_messages').doc('spoof_agent').set({
+        senderType: 'system_agent',
+        source: 'system',
+        senderUserId: 'a1',
+        agentId: 'ana_estoque',
+        subject: 'Spoof',
+        body: 'Fake',
+      }),
+    );
+    await assertFails(
+      adminDb.collection('admin_inbox_messages').doc('spoof_sender').set({
+        senderType: 'human',
+        source: 'human',
+        senderUserId: 'other_partner',
+        agentId: null,
+        subject: 'Spoof',
+        body: 'Fake',
+      }),
+    );
+
+    // History is immutable and messages cannot be physically deleted
+    await assertFails(
+      adminDb
+        .collection('admin_inbox_messages')
+        .doc('msg1')
+        .collection('history')
+        .doc('h2')
+        .set({ action: 'forged' }),
+    );
+    await assertFails(adminDb.collection('admin_inbox_messages').doc('msg1').delete());
+    await assertFails(adminDb.collection('admin_agent_rules').doc('ana_estoque').set({ active: false }));
+  });
 });

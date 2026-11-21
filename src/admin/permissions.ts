@@ -19,6 +19,7 @@ export const MODULES = [
   'relatorios',
   'configuracoes',
   'auditoria',
+  'inbox',
 ] as const;
 
 export type ModuleId = (typeof MODULES)[number];
@@ -38,6 +39,7 @@ export const MODULE_LABELS: Record<ModuleId, string> = {
   relatorios: 'Relatórios & Analytics',
   configuracoes: 'Configurações da Loja',
   auditoria: 'Auditoria & Segurança',
+  inbox: 'Inbox ADM',
 };
 
 export const ACTIONS = [

@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FolderTree,
   Headphones,
+  Inbox,
   KeyRound,
   LayoutDashboard,
   LogOut,
@@ -28,6 +29,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AdminDataProvider, useAdminData } from './AdminDataContext';
+import { subscribeInboxMessages } from '../services/adminInboxService';
+import { isUnreadByUser } from './inbox/normalizers';
 import './adminTheme.css';
 import {
   ADMIN_NAV_ITEMS,
@@ -54,6 +57,7 @@ const ICON_MAP: Record<AdminNavItem['iconName'], React.ReactNode> = {
   ScrollText: <ScrollText size={18} />,
   Settings: <Settings size={18} />,
   FolderTree: <FolderTree size={18} />,
+  Inbox: <Inbox size={18} />,
 };
 
 const AdminShellInner: React.FC = () => {
@@ -66,6 +70,26 @@ const AdminShellInner: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [quickQuery, setQuickQuery] = useState('');
   const [quickOpen, setQuickOpen] = useState(false);
+  const [inboxCounts, setInboxCounts] = useState({ unread: 0, critical: 0 });
+
+  const canViewInbox = canAny(['inbox:view', 'inbox:admin']);
+  useEffect(() => {
+    if (!canViewInbox || !userProfile?.uid) return;
+    return subscribeInboxMessages(
+      100,
+      (msgs) => {
+        const active = msgs.filter((m) => m.status !== 'archived');
+        const unread = active.filter((m) => isUnreadByUser(m, userProfile.uid)).length;
+        const critical = active.filter(
+          (m) => m.priority === 'critical' && m.status !== 'resolved',
+        ).length;
+        setInboxCounts({ unread, critical });
+      },
+      () => {
+        /* ignore badge listener errors */
+      },
+    );
+  }, [canViewInbox, userProfile?.uid]);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -96,11 +120,12 @@ const AdminShellInner: React.FC = () => {
 
     return {
       orders: pendingOrders,
+      inbox: inboxCounts.unread,
       support: openTickets,
       inventory: lowStock,
       finance: awaitingPix,
     } as Record<string, number>;
-  }, [orders, products, tickets]);
+  }, [orders, products, tickets, inboxCounts.unread]);
 
   // Filter nav items by caller's permissions
   const visibleGroups = useMemo(() => {
@@ -366,8 +391,18 @@ const AdminShellInner: React.FC = () => {
             </nav>
           </div>
 
-          {/* Right controls: Quick Search + Role Badge + Profile */}
+          {/* Right controls: Critical Inbox Pill + Quick Search + Role Badge + Profile */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            {canViewInbox && inboxCounts.critical > 0 && (
+              <Link
+                to="/admin/inbox"
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-200 border border-rose-500/35 hover:bg-rose-500/25 transition-colors"
+                title="Mensagens críticas abertas na Inbox ADM"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                {inboxCounts.critical} crítica{inboxCounts.critical > 1 ? 's' : ''}
+              </Link>
+            )}
             <div className="relative hidden md:block w-60 lg:w-72">
               <Search
                 size={15}

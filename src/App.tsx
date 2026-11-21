@@ -63,6 +63,7 @@ const AdminRolesPage          = lazy(() => import('./admin/pages/AdminRolesPage'
 const AdminAuditPage          = lazy(() => import('./admin/pages/AdminAuditPage').then(m => ({ default: m.AdminAuditPage })));
 const AdminSettingsPage       = lazy(() => import('./admin/pages/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 const AdminNotFoundPage       = lazy(() => import('./admin/pages/AdminNotFoundPage').then(m => ({ default: m.AdminNotFoundPage })));
+const AdminInboxPage          = lazy(() => import('./admin/pages/AdminInboxPage').then(m => ({ default: m.AdminInboxPage })));
 
 function LegacyProductRedirect() {
   const { id } = useParams<{ id: string }>();
@@ -332,6 +333,14 @@ function AppContent() {
               element={
                 <ProtectedRoute requiredPermissions={['pedidos:view', 'pedidos:edit', 'pedidos:approve']}>
                   <AdminOrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="inbox"
+              element={
+                <ProtectedRoute requiredPermissions={['inbox:view', 'inbox:admin']}>
+                  <AdminInboxPage />
                 </ProtectedRoute>
               }
             />

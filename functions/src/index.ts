@@ -1958,4 +1958,5 @@ export const adminCleanAllDiamonds = functions.https.onCall(async (_data, contex
 export * from './admin/callables';
 export * from './admin/opsCallables';
 export * from './admin/metricsCallables';
+export * from './admin/inboxCallables';
 export * from './adCampaignAdmin';
