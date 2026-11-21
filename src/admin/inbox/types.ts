@@ -2,6 +2,25 @@
  * Modelos de domínio da Inbox ADM — compartilhados entre UI, serviços e testes.
  */
 
+export type QuickFilter =
+  | 'all'
+  | 'human'
+  | 'system_agent'
+  | 'unread'
+  | 'critical'
+  | 'important'
+  | 'to_me'
+  | 'to_all'
+  | 'awaiting_my_reply'
+  | 'awaiting_decision'
+  | 'alert'
+  | 'insight'
+  | 'task_suggestion'
+  | 'approved'
+  | 'rejected'
+  | 'resolved'
+  | 'archived';
+
 export type SystemAgentId =
   | 'ana_estoque'
   | 'bia_vendas'
