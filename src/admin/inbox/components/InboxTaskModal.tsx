@@ -78,14 +78,14 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
     >
       <form
         onSubmit={handleSubmit}
-        className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-xs"
+        className="bg-white border border-[#e3e7ec] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-xs text-[#17202a]"
       >
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--adm-border)]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#e3e7ec]">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-[var(--adm-gold-soft)] text-[var(--adm-gold)]">
+            <span className="p-1.5 rounded-lg bg-[#e8f4ee] text-[#167a52]">
               <CheckSquare size={16} />
             </span>
-            <h3 id="convert-task-title" className="text-sm font-bold text-[var(--adm-text)]">
+            <h3 id="convert-task-title" className="text-sm font-bold text-[#17202a]">
               Converter em Tarefa Operacional
             </h3>
           </div>
@@ -93,27 +93,28 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar modal de tarefa"
-            className="p-1 rounded-lg text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-surface-elevated)]"
+            className="p-1 rounded-lg text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
           >
             <X size={16} />
           </button>
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+          <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
             Título da Tarefa
           </label>
           <input
             type="text"
+            autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex: Ajustar margem do item..."
-            className="w-full px-3 py-2 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-gold-border)]"
+            className="w-full px-3 py-2 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a]"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+          <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
             Descrição / Contexto
           </label>
           <textarea
@@ -121,19 +122,19 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Detalhes para execução..."
-            className="w-full p-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-gold-border)]"
+            className="w-full p-3 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a]"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Prioridade
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as InboxPriority)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)]"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
             >
               <option value="informative">Informativa</option>
               <option value="attention">Atenção</option>
@@ -143,13 +144,13 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Responsável
             </label>
             <select
               value={assignedToUserId}
               onChange={(e) => setAssignedToUserId(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)]"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
             >
               <option value="">Sem responsável</option>
               {partners.map((p) => (
@@ -161,7 +162,7 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Prazo limite
             </label>
             <div className="relative">
@@ -169,7 +170,7 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
                 type="date"
                 value={dueAt}
                 onChange={(e) => setDueAt(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)]"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
               />
               <Calendar size={12} className="hidden" />
             </div>
@@ -177,7 +178,7 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+          <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
             Checklist (um item por linha)
           </label>
           <textarea
@@ -185,22 +186,22 @@ export const InboxTaskModal: React.FC<InboxTaskModalProps> = ({
             onChange={(e) => setChecklistText(e.target.value)}
             rows={3}
             placeholder="Ex: Conferir estoque físico&#10;Acionar fornecedor&#10;Validar preço"
-            className="w-full p-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-gold-border)] font-mono text-[11px]"
+            className="w-full p-3 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] font-mono text-[11px]"
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-[var(--adm-border)]">
+        <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e7ec]">
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-2 rounded-lg font-medium border border-[var(--adm-border)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)]"
+            className="px-3.5 py-2 rounded-lg font-medium border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[var(--adm-gold)] text-[#09120e] disabled:opacity-50 hover:opacity-95"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold bg-[#167a52] hover:bg-[#106441] text-white disabled:opacity-50"
           >
             {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
             Criar Tarefa

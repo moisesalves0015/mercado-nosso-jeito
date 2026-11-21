@@ -110,3 +110,51 @@
   }
 }
 
+/* ── Inbox ADM Scoped Light Mail Theme (Apple Mail / macOS Light) ── */
+.admin-shell .inbox-light-shell {
+  --adm-bg: #f6f7f9;
+  --adm-bg-subtle: #fbfcfd;
+  --adm-surface: #ffffff;
+  --adm-surface-elevated: #ffffff;
+  --adm-surface-hover: #f1f4f7;
+  --adm-surface-selected: #eef5ff;
+  --adm-border: #e3e7ec;
+  --adm-border-strong: #cfd6df;
+
+  --adm-text: #17202a;
+  --adm-text-muted: #5b6573;
+  --adm-text-dim: #838e9b;
+
+  --adm-brand: #167a52;
+  --adm-brand-hover: #106441;
+  --adm-brand-soft: #e8f4ee;
+  --adm-brand-border: #b9ddc8;
+
+  --adm-focus: #2563eb;
+  --adm-danger: #c2414b;
+  --adm-warning: #b7791f;
+  --adm-info: #2563eb;
+
+  background-color: var(--adm-bg);
+  color: var(--adm-text);
+  border-radius: 16px;
+}
+
+.admin-shell .inbox-light-shell :focus-visible {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+.admin-shell .inbox-light-shell ::-webkit-scrollbar-track {
+  background: #f1f4f7;
+}
+
+.admin-shell .inbox-light-shell ::-webkit-scrollbar-thumb {
+  background: #cfd6df;
+  border-radius: 4px;
+}
+
+.admin-shell .inbox-light-shell ::-webkit-scrollbar-thumb:hover {
+  background: #aeb8c4;
+}
+

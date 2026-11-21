@@ -21,108 +21,72 @@ export const InboxSummaryBar: React.FC<InboxSummaryBarProps> = ({
   const items: Array<{
     id: QuickFilter;
     label: string;
-    sublabel: string;
     value: number;
     icon: React.ReactNode;
-    tone: 'sky' | 'rose' | 'amber' | 'indigo';
+    dotClass: string;
+    activeClass: string;
   }> = [
     {
       id: 'unread',
-      label: 'Não Lidas',
-      sublabel: 'Para sua leitura',
+      label: 'Não lidas',
       value: kpis.unread,
-      icon: <MailOpen size={16} />,
-      tone: 'sky',
+      icon: <MailOpen size={13} className="text-[#2563eb]" />,
+      dotClass: 'bg-[#2563eb]',
+      activeClass: 'bg-[#eef5ff] border-[#bfdbfe] text-[#1d4ed8]',
     },
     {
       id: 'critical',
-      label: 'Críticas Abertas',
-      sublabel: 'Prioridade máxima',
+      label: 'Críticas',
       value: kpis.critical,
-      icon: <Flame size={16} />,
-      tone: 'rose',
+      icon: <Flame size={13} className="text-[#c2414b]" />,
+      dotClass: 'bg-[#c2414b]',
+      activeClass: 'bg-[#fef2f2] border-[#fecaca] text-[#b91c1c]',
     },
     {
       id: 'awaiting_my_reply',
-      label: 'Aguard. Resposta',
-      sublabel: 'Direcionadas a você',
+      label: 'Aguard. resposta',
       value: kpis.awaitingReply,
-      icon: <UserCheck size={16} />,
-      tone: 'amber',
+      icon: <UserCheck size={13} className="text-[#b7791f]" />,
+      dotClass: 'bg-[#b7791f]',
+      activeClass: 'bg-[#fffbeb] border-[#fde68a] text-[#92400e]',
     },
     {
       id: 'awaiting_decision',
-      label: 'Aguard. Decisão',
-      sublabel: 'Aprovações & propostas',
+      label: 'Aguard. decisão',
       value: kpis.awaitingDecision,
-      icon: <ShieldAlert size={16} />,
-      tone: 'indigo',
+      icon: <ShieldAlert size={13} className="text-[#6d28d9]" />,
+      dotClass: 'bg-[#6d28d9]',
+      activeClass: 'bg-[#f5f3ff] border-[#ddd6fe] text-[#5b21b6]',
     },
   ];
 
-  const toneClasses: Record<string, { bg: string; text: string; border: string; badge: string }> = {
-    sky: {
-      bg: 'hover:bg-sky-500/10 active:bg-sky-500/15',
-      text: 'text-sky-300',
-      border: 'border-sky-500/25',
-      badge: 'bg-sky-500/15 text-sky-200',
-    },
-    rose: {
-      bg: 'hover:bg-rose-500/10 active:bg-rose-500/15',
-      text: 'text-rose-300',
-      border: 'border-rose-500/25',
-      badge: 'bg-rose-500/15 text-rose-200',
-    },
-    amber: {
-      bg: 'hover:bg-amber-500/10 active:bg-amber-500/15',
-      text: 'text-amber-300',
-      border: 'border-amber-500/25',
-      badge: 'bg-amber-500/15 text-amber-200',
-    },
-    indigo: {
-      bg: 'hover:bg-teal-500/10 active:bg-teal-500/15',
-      text: 'text-teal-300',
-      border: 'border-teal-500/25',
-      badge: 'bg-teal-500/15 text-teal-200',
-    },
-  };
-
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Resumo operacional">
       {items.map((item) => {
         const isSelected = activeFilter === item.id;
-        const tone = toneClasses[item.tone];
-
         return (
           <button
             key={item.id}
             type="button"
             onClick={() => onSelectFilter(isSelected ? 'all' : item.id)}
-            className={`group text-left p-3.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-3 ${
+            aria-pressed={isSelected}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               isSelected
-                ? 'bg-[var(--adm-surface-elevated)] border-[var(--adm-gold-border)] shadow-sm'
-                : 'bg-[var(--adm-surface)] border-[var(--adm-border)] hover:border-[var(--adm-border-strong)] ' +
-                  tone.bg
+                ? `${item.activeClass} font-semibold shadow-2xs`
+                : 'bg-white border-[#e3e7ec] text-[#5b6573] hover:bg-[#f1f4f7] hover:text-[#17202a]'
             }`}
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className={`${tone.text} shrink-0`}>{item.icon}</span>
-                <span className="text-[11px] font-semibold tracking-wide uppercase text-[var(--adm-text-muted)] truncate">
-                  {item.label}
-                </span>
-              </div>
-              <p className="text-[11px] text-[var(--adm-text-dim)] truncate">{item.sublabel}</p>
-            </div>
-            <div
-              className={`text-lg font-bold tabular-nums px-2.5 py-1 rounded-lg border ${
+            {item.icon}
+            <span>{item.label}</span>
+            <span
+              className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold tabular-nums ${
                 isSelected
-                  ? 'bg-[var(--adm-gold-soft)] text-[var(--adm-gold)] border-[var(--adm-gold-border)]'
-                  : 'bg-[var(--adm-bg)] text-[var(--adm-text)] border-[var(--adm-border)]'
+                  ? 'bg-white/80 text-current'
+                  : 'bg-[#f1f4f7] text-[#17202a]'
               }`}
             >
               {item.value}
-            </div>
+            </span>
           </button>
         );
       })}

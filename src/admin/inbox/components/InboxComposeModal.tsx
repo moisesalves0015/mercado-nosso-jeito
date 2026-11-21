@@ -135,24 +135,32 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
     }
   };
 
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="compose-modal-title"
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-[#17202a]/40 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
     >
       <form
         onSubmit={handleSubmit}
-        className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 space-y-4 shadow-2xl"
+        className="bg-white border border-[#e3e7ec] rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-[#17202a]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--adm-border)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e3e7ec] bg-[#fbfcfd] shrink-0">
           <div>
-            <h3 id="compose-modal-title" className="text-sm font-bold text-[var(--adm-text)]">
+            <h3 id="compose-modal-title" className="text-sm font-bold text-[#17202a]">
               Nova Mensagem Administrativa
             </h3>
-            <p className="text-[11px] text-[var(--adm-text-dim)]">
+            <p className="text-[11px] text-[#5b6573]">
               Caixa compartilhada entre os sócios administradores
             </p>
           </div>
@@ -160,14 +168,15 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar formulário de nova mensagem"
-            className="p-1 rounded-lg text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] hover:bg-[var(--adm-surface-elevated)]"
+            className="p-1.5 rounded-lg text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
           >
             <X size={16} />
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {/* Privacy Pill */}
-        <div className="p-2.5 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20 text-[11px] text-emerald-300 flex items-center gap-2">
+        <div className="p-2.5 rounded-xl bg-[#e8f4ee] border border-[#b9ddc8] text-[11px] text-[#167a52] flex items-center gap-2 font-medium">
           <Users size={14} className="shrink-0" />
           <span>
             Todos os sócios administradores têm visibilidade integral de todas as mensagens.
@@ -177,13 +186,13 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         {/* Recipients (To) */}
         <div className="space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[var(--adm-text-muted)]">Destinatários:</span>
-            <label className="flex items-center gap-1.5 text-xs text-[var(--adm-text)] cursor-pointer">
+            <span className="text-[11px] font-semibold text-[#5b6573]">Destinatários:</span>
+            <label className="flex items-center gap-1.5 text-xs text-[#17202a] cursor-pointer">
               <input
                 type="checkbox"
                 checked={toAll}
                 onChange={(e) => setToAll(e.target.checked)}
-                className="rounded"
+                className="rounded accent-[#167a52]"
               />
               Enviar para todos os sócios
             </label>
@@ -204,8 +213,8 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
                     }
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border transition-colors ${
                       checked
-                        ? 'bg-[var(--adm-gold-soft)] border-[var(--adm-gold-border)] text-[var(--adm-gold)] font-medium'
-                        : 'bg-[var(--adm-bg)] border-[var(--adm-border)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)]'
+                        ? 'bg-[#eef5ff] border-[#bfdbfe] text-[#1d4ed8] font-semibold'
+                        : 'bg-white border-[#e3e7ec] text-[#5b6573] hover:text-[#17202a]'
                     }`}
                   >
                     <span>{p.name}</span>
@@ -219,13 +228,13 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         {/* Type & Priority */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Tipo de Mensagem
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as InboxMessageType)}
-              className="w-full px-2.5 py-2 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="message">Mensagem comum</option>
               <option value="note">Nota interna</option>
@@ -236,13 +245,13 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Prioridade
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as InboxPriority)}
-              className="w-full px-2.5 py-2 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="w-full px-2.5 py-2 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="informative">Informativa</option>
               <option value="attention">Atenção</option>
@@ -254,21 +263,22 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
 
         {/* Subject */}
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+          <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
             Assunto
           </label>
           <input
             type="text"
+            autoFocus
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Assunto claro e direto..."
-            className="w-full px-3 py-2 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-gold-border)]"
+            className="w-full px-3 py-2 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] placeholder:text-[#838e9b]"
           />
         </div>
 
         {/* Body */}
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+          <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
             Mensagem
           </label>
           <textarea
@@ -276,20 +286,20 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
             onChange={(e) => setBody(e.target.value)}
             rows={5}
             placeholder="Descreva a mensagem, contexto, dúvida ou alinhamento..."
-            className="w-full p-3 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-xs text-[var(--adm-text)] focus:outline-none focus:border-[var(--adm-gold-border)] leading-relaxed"
+            className="w-full p-3 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] placeholder:text-[#838e9b] leading-relaxed"
           />
         </div>
 
         {/* Assignment & Routing */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Responsável (opcional)
             </label>
             <select
               value={assignedToUserId}
               onChange={(e) => setAssignedToUserId(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="">Nenhum</option>
               {partners.map((p) => (
@@ -301,13 +311,13 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Aguardar resposta de
             </label>
             <select
               value={requestedResponseFromUserId}
               onChange={(e) => setRequestedResponseFromUserId(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="">Ninguém específico</option>
               {partners.map((p) => (
@@ -319,21 +329,21 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)] mb-1">
+            <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
               Prazo limite
             </label>
             <input
               type="date"
               value={dueAt}
               onChange={(e) => setDueAt(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             />
           </div>
         </div>
 
         {/* Link Entities */}
-        <div className="space-y-1.5 text-xs pt-1 border-t border-[var(--adm-border)]">
-          <label className="block text-[11px] font-semibold text-[var(--adm-text-muted)]">
+        <div className="space-y-1.5 text-xs pt-2 border-t border-[#e3e7ec]">
+          <label className="block text-[11px] font-semibold text-[#5b6573]">
             Vincular entidade do sistema (opcional)
           </label>
           <div className="flex flex-wrap gap-2">
@@ -343,7 +353,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
                 setEntityType(e.target.value as InboxEntityType);
                 setEntityId('');
               }}
-              className="px-2 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="product">Produto</option>
               <option value="order">Pedido</option>
@@ -353,7 +363,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
             <select
               value={entityId}
               onChange={(e) => setEntityId(e.target.value)}
-              className="flex-1 min-w-[180px] px-2 py-1.5 rounded-lg bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[var(--adm-text)]"
+              className="flex-1 min-w-[180px] px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-[#17202a]"
             >
               <option value="">Selecione o item...</option>
               {entityChoices.map((c) => (
@@ -365,7 +375,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
             <button
               type="button"
               onClick={handleAddEntity}
-              className="px-3 py-1.5 rounded-lg border border-[var(--adm-border)] text-[var(--adm-gold)] font-medium hover:bg-[var(--adm-surface-elevated)]"
+              className="px-3.5 py-1.5 rounded-lg border border-[#e3e7ec] bg-white text-[#17202a] font-medium hover:bg-[#f1f4f7]"
             >
               Vincular
             </button>
@@ -376,7 +386,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
               {relatedEntities.map((ent) => (
                 <span
                   key={`${ent.type}_${ent.id}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[11px] text-[var(--adm-text-muted)]"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f6f7f9] border border-[#e3e7ec] text-[11px] text-[#5b6573]"
                 >
                   <span>{ent.label}</span>
                   <button
@@ -386,7 +396,8 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
                         prev.filter((x) => !(x.type === ent.type && x.id === ent.id)),
                       )
                     }
-                    className="hover:text-[var(--adm-text)]"
+                    className="hover:text-[#17202a]"
+                    aria-label={`Remover ${ent.label}`}
                   >
                     <X size={11} />
                   </button>
@@ -397,9 +408,9 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         </div>
 
         {/* Attachments */}
-        <div className="space-y-1.5 text-xs pt-1 border-t border-[var(--adm-border)]">
+        <div className="space-y-1.5 text-xs pt-2 border-t border-[#e3e7ec]">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-semibold text-[var(--adm-text-muted)] inline-flex items-center gap-1">
+            <label className="text-[11px] font-semibold text-[#5b6573] inline-flex items-center gap-1">
               <Paperclip size={13} />
               Anexos privados (JPG, PNG, WEBP, PDF, CSV, XLSX, DOCX, TXT — máx. 15 MB)
             </label>
@@ -425,7 +436,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
               }
               setPendingFiles((prev) => [...prev, ...valid]);
             }}
-            className="text-xs text-[var(--adm-text-muted)]"
+            className="text-xs text-[#5b6573]"
           />
 
           {pendingFiles.length > 0 && (
@@ -433,14 +444,15 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
               {pendingFiles.map((f, i) => (
                 <span
                   key={`${f.name}_${i}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--adm-bg)] border border-[var(--adm-border)] text-[11px]"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f6f7f9] border border-[#e3e7ec] text-[11px] text-[#17202a]"
                 >
-                  <FileText size={11} className="text-[var(--adm-text-dim)]" />
+                  <FileText size={11} className="text-[#838e9b]" />
                   <span className="truncate max-w-[140px]">{f.name}</span>
                   <button
                     type="button"
                     onClick={() => setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="hover:text-[var(--adm-text)]"
+                    className="hover:text-[#c2414b]"
+                    aria-label={`Remover ${f.name}`}
                   >
                     <X size={11} />
                   </button>
@@ -451,29 +463,30 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         </div>
 
         {/* Create Task Toggle */}
-        <label className="flex items-center gap-2 text-xs text-[var(--adm-text)] cursor-pointer pt-1">
+        <label className="flex items-center gap-2 text-xs text-[#17202a] cursor-pointer pt-1">
           <input
             type="checkbox"
             checked={createTaskAlong}
             onChange={(e) => setCreateTaskAlong(e.target.checked)}
-            className="rounded"
+            className="rounded accent-[#167a52]"
           />
           Criar tarefa operacional vinculada automaticamente
         </label>
+        </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 pt-3 border-t border-[var(--adm-border)]">
+        {/* Fixed Footer */}
+        <div className="flex justify-end gap-2 px-6 py-3.5 border-t border-[#e3e7ec] bg-[#fbfcfd] shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg font-medium border border-[var(--adm-border)] text-[var(--adm-text-muted)] hover:text-[var(--adm-text)]"
+            className="px-4 py-2 rounded-lg text-xs font-medium border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[var(--adm-gold)] text-[#09120e] disabled:opacity-50 hover:opacity-95"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white disabled:opacity-50"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             Enviar Mensagem

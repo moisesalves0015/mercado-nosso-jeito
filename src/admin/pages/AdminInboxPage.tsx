@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData } from '../AdminDataContext';
-import { EmptyState, PageHeader } from '../components/AdminUi';
-import { SYSTEM_AGENTS } from '../inbox/agents';
+import { SYSTEM_AGENTS, SYSTEM_AGENTS_BY_ID } from '../inbox/agents';
 import {
   isMessageVisibleToPartner,
   isUnreadByUser,
@@ -351,6 +350,44 @@ export const AdminInboxPage: React.FC = () => {
     return count;
   }, [agentFilter, sectorFilter, priorityFilter, periodFilter]);
 
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (agentFilter !== 'all') {
+      const ag = SYSTEM_AGENTS_BY_ID[agentFilter as SystemAgentId];
+      parts.push(`Agente: ${ag ? ag.name : agentFilter}`);
+    }
+    if (sectorFilter !== 'all') parts.push(`Setor: ${sectorFilter}`);
+    if (priorityFilter !== 'all') {
+      const pLabels: Record<string, string> = {
+        critical: 'Crítica',
+        important: 'Importante',
+        attention: 'Atenção',
+        informative: 'Informativa',
+      };
+      parts.push(`Prioridade: ${pLabels[priorityFilter] || priorityFilter}`);
+    }
+    if (periodFilter !== 'all') {
+      const dLabels: Record<string, string> = {
+        '24h': 'Últimas 24h',
+        '7d': 'Últimos 7 dias',
+        '30d': 'Últimos 30 dias',
+      };
+      parts.push(dLabels[periodFilter] || periodFilter);
+    }
+    return parts.join(' · ');
+  }, [agentFilter, sectorFilter, priorityFilter, periodFilter]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (decisionPrompt) setDecisionPrompt(null);
+        else if (showAdvancedFilters) setShowAdvancedFilters(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [decisionPrompt, showAdvancedFilters]);
+
   const handleClearAdvancedFilters = () => {
     setAgentFilter('all');
     setSectorFilter('all');
@@ -512,68 +549,90 @@ export const AdminInboxPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Apple-style Top Header */}
-      <PageHeader
-        title="Inbox ADM"
-        badge="Sócios & Agentes"
-        subtitle="Caixa administrativa compartilhada entre os sócios, fórum de decisões, tarefas e comunicados de funcionários sistêmicos."
-        actions={
-          <div className="flex items-center gap-2">
-            {isOffline && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-200 border border-amber-500/30">
-                <WifiOff size={13} /> Offline
-              </span>
-            )}
+    <div className="inbox-light-shell p-4 sm:p-5 border border-[#e3e7ec] shadow-sm space-y-4">
+      {/* Email Client Top Header (Clean & Horizontal) */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#e3e7ec]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-[#e8f4ee] border border-[#b9ddc8] text-[#167a52] flex items-center justify-center shrink-0">
+            <Inbox size={20} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-bold text-[#17202a] tracking-tight leading-none">
+                Inbox ADM
+              </h1>
+              {kpis.unread > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#eef5ff] text-[#1d4ed8] border border-[#bfdbfe] tabular-nums">
+                  {kpis.unread} não lida{kpis.unread > 1 ? 's' : ''}
+                </span>
+              )}
+              {isOffline && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fde68a]">
+                  <WifiOff size={12} /> Offline
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#5b6573] mt-1 truncate">
+              Caixa compartilhada dos sócios & funcionários sistêmicos
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setViewMode(viewMode === 'inbox' ? 'agents' : 'inbox')}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+              viewMode === 'agents'
+                ? 'bg-[#eef5ff] text-[#1d4ed8] border-[#bfdbfe] font-semibold'
+                : 'bg-white hover:bg-[#f1f4f7] text-[#17202a] border-[#e3e7ec]'
+            }`}
+          >
+            <Settings size={14} />
+            {viewMode === 'agents' ? 'Voltar para Caixa' : 'Agentes (11)'}
+          </button>
+
+          {canAdminAgents && (
             <button
               type="button"
-              onClick={() => setViewMode(viewMode === 'inbox' ? 'agents' : 'inbox')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                viewMode === 'agents'
-                  ? 'bg-blue-500/15 text-blue-400 border-blue-500/30 font-semibold'
-                  : 'bg-slate-800/70 hover:bg-slate-750 text-slate-300 hover:text-white border-slate-700/60'
-              }`}
+              disabled={busyAction !== null}
+              onClick={() => handleRunAgents()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white hover:bg-[#f1f4f7] text-[#17202a] border border-[#e3e7ec] disabled:opacity-50 transition-colors"
             >
-              <Settings size={13} />
-              {viewMode === 'agents' ? 'Voltar para Caixa' : 'Funcionários Sistêmicos (11)'}
+              {busyAction === 'run_all' ? (
+                <Loader2 size={14} className="animate-spin text-[#167a52]" />
+              ) : (
+                <RefreshCw size={14} className="text-[#5b6573]" />
+              )}
+              Executar agentes
             </button>
-            {canAdminAgents && (
-              <button
-                type="button"
-                disabled={busyAction !== null}
-                onClick={() => handleRunAgents()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/70 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700/60 disabled:opacity-50 transition-colors"
-              >
-                {busyAction === 'run_all' ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={13} />
-                )}
-                Executar Agentes
-              </button>
-            )}
-            {canCreate && (
-              <button
-                type="button"
-                onClick={() => setComposeOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#007AFF] hover:bg-[#0071E3] text-white shadow-sm transition-colors"
-              >
-                <Plus size={14} />
-                Nova Mensagem
-              </button>
-            )}
-          </div>
-        }
-      />
+          )}
+
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => setComposeOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white shadow-2xs transition-colors"
+            >
+              <Plus size={14} />
+              Nova mensagem
+            </button>
+          )}
+        </div>
+      </header>
 
       {syncError && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 text-xs flex items-center gap-2">
-          <AlertTriangle size={15} />
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="p-3 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#c2414b] text-xs flex items-center gap-2"
+        >
+          <AlertTriangle size={15} className="shrink-0" />
           <span>{syncError}</span>
         </div>
       )}
 
-      {/* Operational Summary Bar (KPIs with click-to-filter) */}
+      {/* Compact Operational Summary Strip (Secondary to Mail List) */}
       <InboxSummaryBar
         kpis={kpis}
         activeFilter={quickFilter}
@@ -590,277 +649,352 @@ export const AdminInboxPage: React.FC = () => {
           onShowToast={showToast}
         />
       ) : (
-        <>
-          {/* Apple Mail Toolbar (Search + Collapsible Filters + Folder Navigation) */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3.5 shadow-sm backdrop-blur-sm">
-            {/* Search Input & Advanced Filters Toggle */}
-            <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
-              <div className="relative flex-1">
-                <Search
-                  size={14}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar mensagens, remetente, setor, assunto ou entidade..."
-                  className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-950/70 border border-slate-700/80 text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  aria-expanded={showAdvancedFilters}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                    showAdvancedFilters || activeAdvancedFilterCount > 0
-                      ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                      : 'bg-slate-800/70 text-slate-300 border-slate-700/60 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <Filter size={13} />
-                  <span>Filtros avançados</span>
-                  {activeAdvancedFilterCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
-                      {activeAdvancedFilterCount}
-                    </span>
-                  )}
-                  {showAdvancedFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </button>
-
-                {activeAdvancedFilterCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAdvancedFilters}
-                    className="p-2 rounded-xl border border-slate-700/60 text-slate-400 hover:text-white hover:bg-slate-800/70"
-                    title="Limpar filtros avançados"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Collapsible Advanced Filters Section (Minimized by default) */}
-            {showAdvancedFilters && (
-              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 animate-in fade-in duration-150 text-xs">
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
-                    Funcionário Sistêmico
-                  </label>
-                  <select
-                    value={agentFilter}
-                    onChange={(e) => setAgentFilter(e.target.value)}
-                    aria-label="Filtrar por agente"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-700/80 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Todos os agentes</option>
-                    {SYSTEM_AGENTS.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} ({a.sector})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
-                    Setor do Mercado
-                  </label>
-                  <select
-                    value={sectorFilter}
-                    onChange={(e) => setSectorFilter(e.target.value)}
-                    aria-label="Filtrar por setor"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-700/80 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Todos os setores</option>
-                    {SECTORS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
-                    Prioridade
-                  </label>
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    aria-label="Filtrar por prioridade"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-700/80 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Todas as prioridades</option>
-                    <option value="critical">Crítica</option>
-                    <option value="important">Importante</option>
-                    <option value="attention">Atenção</option>
-                    <option value="informative">Informativa</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
-                    Período
-                  </label>
-                  <select
-                    value={periodFilter}
-                    onChange={(e) => {
-                      setPeriodFilter(e.target.value as 'all' | '24h' | '7d' | '30d');
-                      setPeriodRefMs(Date.now());
-                    }}
-                    aria-label="Filtrar por período"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-700/80 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Todo o histórico</option>
-                    <option value="24h">Últimas 24 horas</option>
-                    <option value="7d">Últimos 7 dias</option>
-                    <option value="30d">Últimos 30 dias</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* Folder Navigation Tabs */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+          {/* Desktop Mail Sidebar */}
+          <aside className="hidden lg:block lg:col-span-3 xl:col-span-2 sticky top-20">
             <InboxFolderNav
+              variant="sidebar"
               activeFilter={quickFilter}
               onSelectFilter={(f) => setQuickFilter(f)}
               counts={folderCounts}
             />
-          </div>
+          </aside>
 
-          {/* Master-Detail Split Pane (Apple Mail Layout) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            {/* Left Column: Message List */}
-            <div
-              className={`lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm backdrop-blur-sm ${
-                selectedMessage ? 'hidden lg:block' : 'block'
-              }`}
-            >
-              <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 bg-slate-800/40">
-                <span className="font-semibold text-slate-200">
-                  {filteredMessages.length} mensagem(ns)
-                </span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-                  <Users size={12} /> Visível aos sócios
-                </span>
-              </div>
-
-              {loadingList ? (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  <Loader2 size={20} className="animate-spin mx-auto mb-2 text-blue-500" />
-                  Carregando mensagens da Inbox...
-                </div>
-              ) : filteredMessages.length === 0 ? (
-                <div className="p-4">
-                  <EmptyState
-                    icon={<Inbox size={22} />}
-                    title="Nenhuma mensagem nesta pasta"
-                    description="Envie uma nova mensagem interna ou execute os agentes sistêmicos para gerar análises operacionais."
+          {/* Main Mail Workspace */}
+          <div className="lg:col-span-9 xl:col-span-10 space-y-3 min-w-0">
+            {/* Search & Collapsible Advanced Filters Toolbar */}
+            <div className="bg-white border border-[#e3e7ec] rounded-xl p-3 space-y-2.5 shadow-2xs">
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+                <div className="relative flex-1">
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#838e9b]"
+                  />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar mensagens, remetente, setor, assunto ou entidade..."
+                    aria-label="Buscar na Inbox ADM"
+                    className="w-full pl-9 pr-3.5 py-2 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a] placeholder:text-[#838e9b] focus:bg-white focus:outline-none focus:border-[#2563eb]"
                   />
                 </div>
-              ) : (
-                <div
-                  role="listbox"
-                  aria-label="Lista de mensagens da Inbox"
-                  className="divide-y divide-slate-800/70 max-h-[72vh] overflow-y-auto"
-                >
-                  {filteredMessages.map((msg) => (
-                    <InboxMessageItem
-                      key={msg.id}
-                      message={msg}
-                      isSelected={msg.id === selectedMessageId}
-                      isUnread={isUnreadByUser(msg, currentUid)}
-                      currentUid={currentUid}
-                      onSelect={() => setSelectedMessageId(msg.id)}
-                    />
-                  ))}
-                </div>
-              )}
 
-              {messages.length >= limitCount && (
-                <div className="p-3 border-t border-slate-800 text-center bg-slate-800/30">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setLimitCount((c) => c + 50)}
-                    className="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    aria-expanded={showAdvancedFilters}
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                      showAdvancedFilters || activeAdvancedFilterCount > 0
+                        ? 'bg-[#eef5ff] text-[#1d4ed8] border-[#bfdbfe]'
+                        : 'bg-white text-[#5b6573] border-[#e3e7ec] hover:text-[#17202a] hover:bg-[#f1f4f7]'
+                    }`}
                   >
-                    Carregar mais mensagens
+                    <Filter size={13} />
+                    <span>Filtros</span>
+                    {activeAdvancedFilterCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#2563eb] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                        {activeAdvancedFilterCount}
+                      </span>
+                    )}
+                    {showAdvancedFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                   </button>
+
+                  {activeAdvancedFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAdvancedFilters}
+                      className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg border border-[#e3e7ec] bg-white text-xs font-medium text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
+                      title="Limpar filtros avançados"
+                    >
+                      <X size={13} />
+                      <span>Limpar</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Filters Summary when panel is collapsed */}
+              {!showAdvancedFilters && activeAdvancedFilterCount > 0 && (
+                <div className="text-[11px] text-[#5b6573] bg-[#f6f7f9] px-3 py-1.5 rounded-lg border border-[#e3e7ec]">
+                  <strong className="text-[#17202a]">
+                    {activeAdvancedFilterCount} filtro{activeAdvancedFilterCount > 1 ? 's' : ''} ativo{activeAdvancedFilterCount > 1 ? 's' : ''}
+                  </strong>{' '}
+                  — {activeFilterSummary}
                 </div>
               )}
+
+              {/* Collapsible Advanced Filters Panel (Minimized by default) */}
+              {showAdvancedFilters && (
+                <div className="pt-2.5 border-t border-[#e3e7ec] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Funcionário Sistêmico
+                    </label>
+                    <select
+                      value={agentFilter}
+                      onChange={(e) => setAgentFilter(e.target.value)}
+                      aria-label="Filtrar por agente"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
+                    >
+                      <option value="all">Todos os agentes</option>
+                      {SYSTEM_AGENTS.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} ({a.sector})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Setor do Mercado
+                    </label>
+                    <select
+                      value={sectorFilter}
+                      onChange={(e) => setSectorFilter(e.target.value)}
+                      aria-label="Filtrar por setor"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
+                    >
+                      <option value="all">Todos os setores</option>
+                      {SECTORS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Prioridade
+                    </label>
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => setPriorityFilter(e.target.value)}
+                      aria-label="Filtrar por prioridade"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
+                    >
+                      <option value="all">Todas as prioridades</option>
+                      <option value="critical">Crítica</option>
+                      <option value="important">Importante</option>
+                      <option value="attention">Atenção</option>
+                      <option value="informative">Informativa</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Período
+                    </label>
+                    <select
+                      value={periodFilter}
+                      onChange={(e) => {
+                        setPeriodFilter(e.target.value as 'all' | '24h' | '7d' | '30d');
+                        setPeriodRefMs(Date.now());
+                      }}
+                      aria-label="Filtrar por período"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#f6f7f9] border border-[#e3e7ec] text-xs text-[#17202a]"
+                    >
+                      <option value="all">Todo o histórico</option>
+                      <option value="24h">Últimas 24 horas</option>
+                      <option value="7d">Últimos 7 dias</option>
+                      <option value="30d">Últimos 30 dias</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile/Tablet Horizontal Folder Tabs */}
+              <div className="lg:hidden pt-1">
+                <InboxFolderNav
+                  variant="tabs"
+                  activeFilter={quickFilter}
+                  onSelectFilter={(f) => setQuickFilter(f)}
+                  counts={folderCounts}
+                />
+              </div>
             </div>
 
-            {/* Right Column: Reading Detail Pane */}
-            <div
-              className={`lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm backdrop-blur-sm ${
-                selectedMessage ? 'block' : 'hidden lg:block'
-              }`}
-            >
-              {!selectedMessage ? (
-                <div className="py-12">
-                  <EmptyState
-                    icon={<Inbox size={24} />}
-                    title="Nenhuma mensagem selecionada"
-                    description="Escolha uma mensagem na lista ao lado para ler o conteúdo, discutir com os sócios, registrar decisões ou converter em tarefa."
-                  />
+            {/* Master-Detail Split Pane */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              {/* Left Column: Email List */}
+              <div
+                className={`lg:col-span-5 bg-white border border-[#e3e7ec] rounded-xl overflow-hidden shadow-2xs ${
+                  selectedMessage ? 'hidden lg:block' : 'block'
+                }`}
+              >
+                <div className="px-4 py-2.5 border-b border-[#e3e7ec] flex items-center justify-between text-xs bg-[#fbfcfd]">
+                  <span className="font-semibold text-[#17202a]">
+                    {filteredMessages.length} mensagem(ns)
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] text-[#167a52] font-medium">
+                    <Users size={12} /> Visível aos sócios
+                  </span>
                 </div>
-              ) : (
-                <InboxDetailPane
-                  message={selectedMessage}
-                  currentUid={currentUid}
-                  partners={partners}
-                  canEdit={canEdit}
-                  canApprove={canApprove}
-                  canArchive={canArchive}
-                  canAdminAgents={canAdminAgents}
-                  can={can}
-                  comments={comments}
-                  reactions={reactions}
-                  history={history}
-                  attachments={attachments}
-                  tasks={tasks}
-                  busyAction={busyAction}
-                  uploadProgress={uploadProgress}
-                  onBackMobile={() => setSelectedMessageId(null)}
-                  onToggleRead={(unread) => markInboxMessageRead(selectedMessage.id, unread)}
-                  onToggleStarred={(starred) =>
-                    handleStatusPatch({ messageId: selectedMessage.id, starred })
-                  }
-                  onConfirmReceipt={() =>
-                    handleStatusPatch(
-                      { messageId: selectedMessage.id, confirmReceipt: true },
-                      'Ciência confirmada com sucesso.',
-                    )
-                  }
-                  onReaction={handleReaction}
-                  onPromptDecision={(kind, label, requireReason) => {
-                    setDecisionPrompt({ kind, label, requireReason });
-                    setDecisionReason('');
-                  }}
-                  onOpenTaskModal={() => setTaskModalOpen(true)}
-                  onUpdateStatus={handleStatusPatch}
-                  onMuteSimilarAlerts={async (agentId, deduplicationKey) => {
-                    try {
-                      await muteSimilarInboxAlerts(agentId as SystemAgentId, deduplicationKey);
-                      showToast('Alertas semelhantes silenciados.', 'ok');
-                    } catch (err) {
-                      showToast(err instanceof Error ? err.message : 'Erro ao silenciar.', 'err');
+
+                {loadingList ? (
+                  <div className="p-10 text-center text-xs text-[#5b6573]" aria-live="polite">
+                    <Loader2 size={20} className="animate-spin mx-auto mb-2 text-[#167a52]" />
+                    Carregando mensagens da Inbox...
+                  </div>
+                ) : filteredMessages.length === 0 ? (
+                  <div className="p-8 text-center space-y-3">
+                    <div className="w-11 h-11 rounded-full bg-[#f6f7f9] border border-[#e3e7ec] text-[#838e9b] flex items-center justify-center mx-auto">
+                      <Inbox size={20} />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-[#17202a]">
+                        {messages.length === 0
+                          ? 'Sua caixa de entrada está vazia'
+                          : 'Nenhuma mensagem encontrada'}
+                      </h3>
+                      <p className="text-xs text-[#5b6573] max-w-xs mx-auto leading-relaxed">
+                        {messages.length === 0
+                          ? 'Envie uma nova mensagem entre os sócios ou execute os agentes sistêmicos para iniciar as comunicações.'
+                          : 'Os filtros aplicados não retornaram resultados nesta pasta.'}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      {messages.length > 0 && (activeAdvancedFilterCount > 0 || quickFilter !== 'all' || searchQuery) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickFilter('all');
+                            setSearchQuery('');
+                            handleClearAdvancedFilters();
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-[#e3e7ec] text-[#17202a] hover:bg-[#f1f4f7]"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
+                      {canCreate && (
+                        <button
+                          type="button"
+                          onClick={() => setComposeOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white"
+                        >
+                          <Plus size={13} /> Nova mensagem
+                        </button>
+                      )}
+                      {canAdminAgents && (
+                        <button
+                          type="button"
+                          disabled={busyAction !== null}
+                          onClick={() => handleRunAgents()}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-[#e3e7ec] text-[#17202a] hover:bg-[#f1f4f7]"
+                        >
+                          <RefreshCw size={13} /> Executar agentes
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    role="listbox"
+                    aria-label="Lista de mensagens da Inbox"
+                    className="max-h-[72vh] overflow-y-auto"
+                  >
+                    {filteredMessages.map((msg) => (
+                      <InboxMessageItem
+                        key={msg.id}
+                        message={msg}
+                        isSelected={msg.id === selectedMessageId}
+                        isUnread={isUnreadByUser(msg, currentUid)}
+                        currentUid={currentUid}
+                        onSelect={() => setSelectedMessageId(msg.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {messages.length >= limitCount && (
+                  <div className="p-3 border-t border-[#e3e7ec] text-center bg-[#fbfcfd]">
+                    <button
+                      type="button"
+                      onClick={() => setLimitCount((c) => c + 50)}
+                      className="text-xs font-semibold text-[#2563eb] hover:underline"
+                    >
+                      Carregar mais mensagens
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Email Reading Detail Pane */}
+              <div
+                className={`lg:col-span-7 bg-white border border-[#e3e7ec] rounded-xl p-5 sm:p-6 shadow-2xs ${
+                  selectedMessage ? 'block' : 'hidden lg:block'
+                }`}
+              >
+                {!selectedMessage ? (
+                  <div className="py-16 text-center space-y-2">
+                    <div className="w-12 h-12 rounded-full bg-[#f6f7f9] border border-[#e3e7ec] text-[#838e9b] flex items-center justify-center mx-auto">
+                      <Inbox size={22} />
+                    </div>
+                    <h3 className="text-sm font-semibold text-[#17202a]">
+                      Nenhuma mensagem selecionada
+                    </h3>
+                    <p className="text-xs text-[#5b6573] max-w-sm mx-auto leading-relaxed">
+                      Selecione um e-mail na lista à esquerda para ler o conteúdo completo, registrar decisões, comentar ou converter em tarefa.
+                    </p>
+                  </div>
+                ) : (
+                  <InboxDetailPane
+                    message={selectedMessage}
+                    currentUid={currentUid}
+                    partners={partners}
+                    canEdit={canEdit}
+                    canApprove={canApprove}
+                    canArchive={canArchive}
+                    canAdminAgents={canAdminAgents}
+                    can={can}
+                    comments={comments}
+                    reactions={reactions}
+                    history={history}
+                    attachments={attachments}
+                    tasks={tasks}
+                    busyAction={busyAction}
+                    uploadProgress={uploadProgress}
+                    onBackMobile={() => setSelectedMessageId(null)}
+                    onToggleRead={(unread) => markInboxMessageRead(selectedMessage.id, unread)}
+                    onToggleStarred={(starred) =>
+                      handleStatusPatch({ messageId: selectedMessage.id, starred })
                     }
-                  }}
-                  onOpenAttachment={handleOpenAttachment}
-                  onAttachFile={handleAttachFileToSelected}
-                  onSendComment={handleSendComment}
-                  onToggleChecklist={handleToggleChecklistItem}
-                  onNavigateEntity={handleNavigateEntity}
-                />
-              )}
+                    onConfirmReceipt={() =>
+                      handleStatusPatch(
+                        { messageId: selectedMessage.id, confirmReceipt: true },
+                        'Ciência confirmada com sucesso.',
+                      )
+                    }
+                    onReaction={handleReaction}
+                    onPromptDecision={(kind, label, requireReason) => {
+                      setDecisionPrompt({ kind, label, requireReason });
+                      setDecisionReason('');
+                    }}
+                    onOpenTaskModal={() => setTaskModalOpen(true)}
+                    onUpdateStatus={handleStatusPatch}
+                    onMuteSimilarAlerts={async (agentId, deduplicationKey) => {
+                      try {
+                        await muteSimilarInboxAlerts(agentId as SystemAgentId, deduplicationKey);
+                        showToast('Alertas semelhantes silenciados.', 'ok');
+                      } catch (err) {
+                        showToast(err instanceof Error ? err.message : 'Erro ao silenciar.', 'err');
+                      }
+                    }}
+                    onOpenAttachment={handleOpenAttachment}
+                    onAttachFile={handleAttachFileToSelected}
+                    onSendComment={handleSendComment}
+                    onToggleChecklist={handleToggleChecklistItem}
+                    onNavigateEntity={handleNavigateEntity}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Compose Message Modal */}
@@ -901,18 +1035,19 @@ export const AdminInboxPage: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="decision-modal-title"
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-[#17202a]/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-3.5 shadow-2xl">
-            <h3 id="decision-modal-title" className="text-sm font-bold text-slate-100">
+          <div className="bg-white border border-[#e3e7ec] rounded-2xl max-w-md w-full p-6 space-y-3.5 shadow-2xl text-[#17202a]">
+            <h3 id="decision-modal-title" className="text-sm font-bold text-[#17202a]">
               {decisionPrompt.label}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#5b6573]">
               {decisionPrompt.requireReason
                 ? 'Informe obrigatoriamente a justificativa para registro na auditoria:'
                 : 'Você pode registrar uma observação opcional para registro na auditoria:'}
             </p>
             <textarea
+              autoFocus
               value={decisionReason}
               onChange={(e) => setDecisionReason(e.target.value)}
               rows={3}
@@ -921,13 +1056,13 @@ export const AdminInboxPage: React.FC = () => {
                   ? 'Justificativa obrigatória...'
                   : 'Observação opcional...'
               }
-              className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+              className="w-full p-3 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] placeholder:text-[#838e9b]"
             />
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => setDecisionPrompt(null)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-medium border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-800"
+                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
               >
                 Cancelar
               </button>
@@ -935,7 +1070,11 @@ export const AdminInboxPage: React.FC = () => {
                 type="button"
                 disabled={busyAction === 'decision'}
                 onClick={handleDecisionConfirm}
-                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[#007AFF] hover:bg-[#0071E3] text-white shadow-sm"
+                className={`px-4 py-2 rounded-lg text-xs font-semibold text-white ${
+                  decisionPrompt.kind === 'rejected' || decisionPrompt.kind === 'disagree_reaction'
+                    ? 'bg-[#c2414b] hover:bg-[#a6343d]'
+                    : 'bg-[#167a52] hover:bg-[#106441]'
+                }`}
               >
                 Confirmar
               </button>

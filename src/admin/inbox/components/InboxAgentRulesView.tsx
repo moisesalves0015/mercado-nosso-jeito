@@ -117,17 +117,17 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
   return (
     <div className="space-y-4">
       {/* Apple-style Subheader */}
-      <div className="p-4 rounded-xl bg-[var(--adm-surface)] border border-[var(--adm-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 rounded-xl bg-white border border-[#e3e7ec] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-teal-500/15 text-teal-300">
+            <span className="p-1.5 rounded-lg bg-[#eef5ff] text-[#2563eb]">
               <Bot size={16} />
             </span>
-            <h2 className="text-sm font-bold text-[var(--adm-text)]">
+            <h2 className="text-sm font-bold text-[#17202a]">
               Central de Funcionários Sistêmicos (11 Agentes)
             </h2>
           </div>
-          <p className="text-[11px] text-[var(--adm-text-dim)] mt-0.5">
+          <p className="text-[11px] text-[#5b6573] mt-0.5">
             Agentes operacionais automatizados com governança transparente: apenas propõem ações baseadas em dados reais e nunca alteram dados sensíveis sem aprovação humana.
           </p>
         </div>
@@ -137,12 +137,12 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
             type="button"
             disabled={busyAction !== null}
             onClick={() => onRunAgent()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[var(--adm-gold-soft)] text-[var(--adm-gold)] border border-[var(--adm-gold-border)] hover:bg-[var(--adm-gold-soft)]/80 disabled:opacity-50 shrink-0"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-[#17202a] border border-[#e3e7ec] hover:bg-[#f1f4f7] disabled:opacity-50 shrink-0 transition-colors"
           >
             {busyAction === 'run_all' ? (
               <Loader2 size={13} className="animate-spin" />
             ) : (
-              <Zap size={13} />
+              <Zap size={13} className="text-[#167a52]" />
             )}
             Executar Todos Agora
           </button>
@@ -161,10 +161,10 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
           return (
             <div
               key={agent.id}
-              className={`rounded-xl border transition-all duration-150 ${
+              className={`rounded-xl border transition-all duration-150 overflow-hidden ${
                 rule.active
-                  ? 'bg-[var(--adm-surface)] border-[var(--adm-border)] hover:border-[var(--adm-border-strong)]'
-                  : 'bg-[var(--adm-bg)] border-[var(--adm-border)]/60 opacity-80'
+                  ? 'bg-white border-[#e3e7ec] hover:border-[#cfd6df] shadow-2xs'
+                  : 'bg-[#fbfcfd] border-[#e3e7ec] opacity-80'
               }`}
             >
               {/* Agent Card Header */}
@@ -172,21 +172,21 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold border border-[#e3e7ec]"
                       style={{ backgroundColor: agent.badgeBg, color: agent.accentColor }}
                     >
                       <Bot size={16} />
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-xs font-bold text-[var(--adm-text)] truncate">
+                        <h3 className="text-xs font-bold text-[#17202a] truncate">
                           {agent.name}
                         </h3>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--adm-bg)] text-[var(--adm-text-dim)] border border-[var(--adm-border)] shrink-0">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f6f7f9] text-[#5b6573] border border-[#e3e7ec] shrink-0 font-medium">
                           {agent.sector}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[var(--adm-text-dim)] truncate">
+                      <p className="text-[11px] text-[#5b6573] truncate">
                         {agent.roleTitle}
                       </p>
                     </div>
@@ -198,27 +198,27 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                       disabled={!canAdmin}
                       checked={rule.active}
                       onChange={(e) => patchDraft(agent.id, { active: e.target.checked })}
-                      className="rounded"
+                      className="rounded accent-[#167a52]"
                     />
-                    <span className={rule.active ? 'text-emerald-300' : 'text-[var(--adm-text-dim)]'}>
+                    <span className={rule.active ? 'text-[#167a52] font-semibold' : 'text-[#838e9b]'}>
                       {rule.active ? 'Ativo' : 'Pausado'}
                     </span>
                   </label>
                 </div>
 
-                <p className="text-[11px] text-[var(--adm-text-muted)] line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-[#5b6573] line-clamp-2 leading-relaxed">
                   {agent.description}
                 </p>
 
                 {/* Sources pill row */}
-                <div className="flex flex-wrap items-center gap-1 text-[10px] text-[var(--adm-text-dim)] pt-1">
+                <div className="flex flex-wrap items-center gap-1 text-[10px] text-[#838e9b] pt-1">
                   <span className="inline-flex items-center gap-1 mr-1">
                     <Database size={10} /> Fontes:
                   </span>
                   {agent.allowedDataSources.map((ds) => (
                     <span
                       key={ds}
-                      className="px-1.5 py-0.2 rounded bg-[var(--adm-bg)] border border-[var(--adm-border)]"
+                      className="px-1.5 py-0.5 rounded bg-[#f6f7f9] border border-[#e3e7ec] text-[#5b6573]"
                     >
                       {ds}
                     </span>
@@ -227,12 +227,12 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
               </div>
 
               {/* Expansion Accordion Toggle */}
-              <div className="px-4 py-2 border-t border-[var(--adm-border)]/60 bg-[var(--adm-surface-elevated)]/30 flex items-center justify-between">
+              <div className="px-4 py-2 border-t border-[#e3e7ec] bg-[#fbfcfd] flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setExpandedAgentId(isExpanded ? null : agent.id)}
                   aria-expanded={isExpanded}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--adm-text-muted)] hover:text-[var(--adm-gold)] transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#5b6573] hover:text-[#17202a] transition-colors"
                 >
                   <span>{isExpanded ? 'Ocultar configurações' : 'Configurações e regras'}</span>
                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -244,7 +244,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                       type="button"
                       disabled={busyAction !== null || !rule.active}
                       onClick={() => onRunAgent(agent.id)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--adm-border)] text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[#e3e7ec] bg-white text-[#167a52] hover:bg-[#e8f4ee] hover:border-[#b9ddc8] disabled:opacity-50 transition-colors"
                     >
                       {isRunningThis ? (
                         <Loader2 size={11} className="animate-spin" />
@@ -259,11 +259,11 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
 
               {/* Collapsible Settings Body */}
               {isExpanded && (
-                <div className="p-4 border-t border-[var(--adm-border)] space-y-3.5 bg-[var(--adm-bg)]/40 text-xs">
+                <div className="p-4 border-t border-[#e3e7ec] space-y-3.5 bg-[#f6f7f9] text-xs">
                   {/* Parameter Fields */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--adm-text-dim)] mb-1">
+                      <label className="block text-[10px] font-semibold text-[#5b6573] mb-1">
                         Janela de Análise (h)
                       </label>
                       <input
@@ -277,12 +277,12 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                             analysisWindowHours: Number(e.target.value) || 24,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text)] font-mono text-[11px]"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-[#17202a] font-mono text-[11px]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--adm-text-dim)] mb-1">
+                      <label className="block text-[10px] font-semibold text-[#5b6573] mb-1">
                         Intervalo Mín. (min)
                       </label>
                       <input
@@ -296,12 +296,12 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                             minIntervalMinutes: Number(e.target.value) || 180,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text)] font-mono text-[11px]"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-[#17202a] font-mono text-[11px]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--adm-text-dim)] mb-1">
+                      <label className="block text-[10px] font-semibold text-[#5b6573] mb-1">
                         Prioridade Padrão
                       </label>
                       <select
@@ -312,7 +312,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                             defaultPriority: e.target.value as InboxPriority,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text)] text-[11px]"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-[#17202a] text-[11px]"
                       >
                         <option value="informative">Informativa</option>
                         <option value="attention">Atenção</option>
@@ -325,7 +325,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                   {/* Assignee & Threshold */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--adm-text-dim)] mb-1">
+                      <label className="block text-[10px] font-semibold text-[#5b6573] mb-1">
                         Responsável Sugerido
                       </label>
                       <select
@@ -336,7 +336,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                             suggestedAssigneeUid: e.target.value || undefined,
                           })
                         }
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text)] text-[11px]"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-[#17202a] text-[11px]"
                       >
                         <option value="">Automático / Todos os Sócios</option>
                         {partners.map((p) => (
@@ -349,7 +349,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
 
                     {(agent.id === 'ana_estoque' || agent.id === 'rafael_compras') && (
                       <div>
-                        <label className="block text-[10px] font-semibold text-[var(--adm-text-dim)] mb-1">
+                        <label className="block text-[10px] font-semibold text-[#5b6573] mb-1">
                           Limiar de Estoque Crítico
                         </label>
                         <input
@@ -363,14 +363,14 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                               stockThreshold: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text)] font-mono text-[11px]"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-[#17202a] font-mono text-[11px]"
                         />
                       </div>
                     )}
                   </div>
 
                   {/* Auto Task checkbox */}
-                  <label className="flex items-center gap-2 text-xs text-[var(--adm-text-muted)] cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-[#5b6573] cursor-pointer">
                     <input
                       type="checkbox"
                       disabled={!canAdmin}
@@ -378,7 +378,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                       onChange={(e) =>
                         patchDraft(agent.id, { autoCreateTaskOnCritical: e.target.checked })
                       }
-                      className="rounded"
+                      className="rounded accent-[#167a52]"
                     />
                     <span>Gerar proposta de tarefa operacional automaticamente quando o comunicado for crítico</span>
                   </label>
@@ -386,14 +386,14 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                   {/* Muted keys */}
                   {rule.mutedKeys.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-[10px] font-semibold text-[var(--adm-text-dim)]">
+                      <span className="text-[10px] font-semibold text-[#5b6573]">
                         Alertas Semelhantes Silenciados:
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {rule.mutedKeys.map((k) => (
                           <span
                             key={k}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[10px] text-[var(--adm-text-dim)]"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-[#e3e7ec] text-[10px] text-[#5b6573]"
                           >
                             <span>{k}</span>
                             {canAdmin && (
@@ -404,7 +404,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                                     mutedKeys: rule.mutedKeys.filter((x) => x !== k),
                                   })
                                 }
-                                className="hover:text-rose-300"
+                                className="hover:text-[#c2414b]"
                                 title="Reativar este alerta"
                               >
                                 ×
@@ -417,37 +417,37 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                   )}
 
                   {/* Safeguards Summary */}
-                  <div className="p-2.5 rounded-lg bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[10px] space-y-1 text-[var(--adm-text-dim)]">
-                    <p className="flex items-center gap-1 font-semibold text-[var(--adm-text-muted)]">
-                      <Shield size={11} className="text-emerald-400" /> Governança & Salvaguardas:
+                  <div className="p-2.5 rounded-lg bg-white border border-[#e3e7ec] text-[10px] space-y-1 text-[#5b6573]">
+                    <p className="flex items-center gap-1 font-semibold text-[#17202a]">
+                      <Shield size={11} className="text-[#167a52]" /> Governança & Salvaguardas:
                     </p>
                     <p>• Sugere: {agent.suggestedActions.join('; ')}</p>
-                    <p className="text-amber-300/80">• Restrições: {agent.forbiddenDirectActions.join('; ')}</p>
+                    <p className="text-[#b7791f]">• Restrições: {agent.forbiddenDirectActions.join('; ')}</p>
                   </div>
 
                   {/* Dry Run Test Proposal results */}
                   {proposals && (
-                    <div className="p-3 rounded-lg bg-teal-500/[0.05] border border-teal-500/25 space-y-1.5 text-[11px]">
-                      <div className="flex items-center justify-between text-teal-300 font-bold">
+                    <div className="p-3 rounded-lg bg-[#eef5ff] border border-[#bfdbfe] space-y-1.5 text-[11px]">
+                      <div className="flex items-center justify-between text-[#1d4ed8] font-bold">
                         <span className="flex items-center gap-1">
                           <Sparkles size={12} /> Resultado Simulação Dry-Run:
                         </span>
                         <span>{proposals.length} item(ns)</span>
                       </div>
                       {proposals.length === 0 ? (
-                        <p className="text-[var(--adm-text-dim)]">
+                        <p className="text-[#5b6573]">
                           Nenhuma divergência ou oportunidade pendente nos dados reais do momento.
                         </p>
                       ) : (
                         proposals.map((p, idx) => (
                           <div
                             key={idx}
-                            className="p-2 rounded bg-[var(--adm-surface)] border border-[var(--adm-border)] text-[var(--adm-text-muted)]"
+                            className="p-2 rounded bg-white border border-[#dbeafe] text-[#5b6573]"
                           >
-                            <span className="font-semibold text-[var(--adm-text)]">
+                            <span className="font-semibold text-[#17202a]">
                               [{p.priority.toUpperCase()}] {p.subject}
                             </span>
-                            <p className="text-[10px] text-[var(--adm-text-dim)] mt-0.5">
+                            <p className="text-[10px] text-[#838e9b] mt-0.5">
                               {p.observedFact}
                             </p>
                           </div>
@@ -458,12 +458,12 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
 
                   {/* Action buttons */}
                   {canAdmin && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--adm-border)]/60">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#e3e7ec]">
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleSave(agent.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--adm-gold)] text-[#09120e] hover:opacity-95"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white"
                         >
                           <Save size={12} /> Salvar Regra
                         </button>
@@ -471,7 +471,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                           type="button"
                           disabled={isTestingThis}
                           onClick={() => handleTest(agent.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--adm-border)] text-[var(--adm-text)] hover:bg-[var(--adm-surface)]"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#e3e7ec] bg-white text-[#17202a] hover:bg-[#f1f4f7]"
                         >
                           {isTestingThis ? (
                             <Loader2 size={12} className="animate-spin" />
@@ -485,7 +485,7 @@ export const InboxAgentRulesView: React.FC<InboxAgentRulesViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleReset(agent.id)}
-                        className="inline-flex items-center gap-1 text-[11px] text-[var(--adm-text-dim)] hover:text-[var(--adm-text)]"
+                        className="inline-flex items-center gap-1 text-[11px] text-[#838e9b] hover:text-[#17202a]"
                       >
                         <RotateCcw size={11} /> Restaurar Padrão
                       </button>
