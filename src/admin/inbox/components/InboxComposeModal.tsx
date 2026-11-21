@@ -429,7 +429,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
                   size: f.size,
                 });
                 if (!v.valid) {
-                  onError(v.reason || `Arquivo inválido: ${f.name}`);
+                  onError(('reason' in v ? v.reason : undefined) || `Arquivo inválido: ${f.name}`);
                 } else {
                   valid.push(f);
                 }

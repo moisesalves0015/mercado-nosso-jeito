@@ -494,7 +494,7 @@ export const AdminInboxPage: React.FC = () => {
     if (!selectedMessage) return;
     const validation = validateInboxAttachment({ fileName: file.name, mimeType: file.type, size: file.size });
     if (!validation.valid) {
-      showToast(validation.reason || 'Arquivo inválido.', 'err');
+      showToast(('reason' in validation ? validation.reason : undefined) || 'Arquivo inválido.', 'err');
       return;
     }
     setUploadProgress(0);
