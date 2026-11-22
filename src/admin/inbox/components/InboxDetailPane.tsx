@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle,
   Archive,
   ArrowLeft,
   BellOff,
@@ -25,8 +24,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Star,
-  ThumbsDown,
-  ThumbsUp,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -101,18 +98,6 @@ interface InboxDetailPaneProps {
   onNavigateEntity: (entity: InboxEntityReference) => void;
 }
 
-const REACTION_BUTTONS: Array<{
-  type: InboxReactionType;
-  label: string;
-  icon: React.ReactNode;
-}> = [
-  { type: 'like', label: 'Curtir', icon: <ThumbsUp size={12} /> },
-  { type: 'agree', label: 'Concordo', icon: <Check size={12} /> },
-  { type: 'disagree', label: 'Discordo', icon: <ThumbsDown size={12} /> },
-  { type: 'attention', label: 'Atenção', icon: <AlertTriangle size={12} /> },
-  { type: 'check', label: 'Ciente', icon: <CheckCheck size={12} /> },
-];
-
 const PRIORITY_BADGE_CLASSES: Record<InboxPriority, string> = {
   informative: 'bg-[#eff6ff] text-[#1d4ed8] border-[#dbeafe]',
   attention: 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]',
@@ -136,7 +121,6 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   canAdminAgents,
   can,
   comments,
-  reactions,
   history,
   attachments,
   tasks,
@@ -146,7 +130,6 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   onToggleRead,
   onToggleStarred,
   onConfirmReceipt,
-  onReaction,
   onPromptDecision,
   onOpenTaskModal,
   onUpdateStatus,
@@ -160,7 +143,27 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   const [commentText, setCommentText] = useState('');
   const [commentKind, setCommentKind] = useState<'comment' | 'forward' | 'request_info'>('comment');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [showResolveMenu, setShowResolveMenu] = useState(false);
+  const resolveMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!showResolveMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (resolveMenuRef.current && !resolveMenuRef.current.contains(e.target as Node)) {
+        setShowResolveMenu(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowResolveMenu(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [showResolveMenu]);
 
   // Secondary blocks start CLOSED by default for calm initial reading
   const [showRouting, setShowRouting] = useState(false);
@@ -244,21 +247,105 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
             <span className="w-px h-5 bg-[#e3e7ec] mx-1 hidden sm:inline-block" aria-hidden="true" />
           )}
 
-          {canEdit && message.status !== 'resolved' && (
-            <button
-              type="button"
-              onClick={() =>
-                onUpdateStatus(
-                  { messageId: message.id, status: 'resolved' },
-                  'Mensagem marcada como resolvida.',
-                )
-              }
-              title="Marcar como resolvida"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#167a52] hover:bg-[#e8f4ee] transition-colors"
-            >
-              <Check size={14} />
-              <span className="hidden sm:inline">Resolver</span>
-            </button>
+          {(canEdit || canApprove) && (
+            <div ref={resolveMenuRef} className="relative">
+              <div className="inline-flex items-center rounded-full border border-[#b9ddc8] bg-[#e8f4ee] overflow-hidden">
+                {canEdit && message.status !== 'resolved' ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateStatus(
+                        { messageId: message.id, status: 'resolved' },
+                        'Mensagem marcada como resolvida.',
+                      )
+                    }
+                    title="Marcar como resolvida"
+                    className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 text-xs font-semibold text-[#167a52] hover:bg-[#d7ede1] transition-colors"
+                  >
+                    <Check size={14} />
+                    <span>Resolver</span>
+                  </button>
+                ) : (
+                  <span className="pl-3 pr-1.5 py-1.5 text-xs font-semibold text-[#167a52]">
+                    Ações
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowResolveMenu((v) => !v)}
+                  aria-expanded={showResolveMenu}
+                  aria-label="Mais ações de resolução, decisão e tarefa"
+                  className="px-2 py-1.5 text-[#167a52] hover:bg-[#d7ede1] border-l border-[#b9ddc8] transition-colors"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+
+              {showResolveMenu && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-1.5 w-52 bg-white border border-[#e3e7ec] rounded-xl shadow-lg py-1.5 z-30 text-xs"
+                >
+                  {canEdit && message.status !== 'resolved' && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setShowResolveMenu(false);
+                        onUpdateStatus(
+                          { messageId: message.id, status: 'resolved' },
+                          'Mensagem marcada como resolvida.',
+                        );
+                      }}
+                      className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-[#167a52] hover:bg-[#f6f8fc] font-medium"
+                    >
+                      <Check size={14} /> Marcar como resolvida
+                    </button>
+                  )}
+
+                  {canApprove && !message.decision && (
+                    <>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowResolveMenu(false);
+                          onPromptDecision('approved', 'Aprovar proposta / comunicado', false);
+                        }}
+                        className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-[#167a52] hover:bg-[#f6f8fc] font-medium"
+                      >
+                        <CheckCircle2 size={14} /> Aprovar
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setShowResolveMenu(false);
+                          onPromptDecision('rejected', 'Rejeitar proposta', true);
+                        }}
+                        className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-[#c2414b] hover:bg-[#fef2f2] font-medium"
+                      >
+                        <XCircle size={14} /> Rejeitar
+                      </button>
+                    </>
+                  )}
+
+                  {canEdit && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setShowResolveMenu(false);
+                        onOpenTaskModal();
+                      }}
+                      className="w-full px-3.5 py-2 text-left flex items-center gap-2 text-[#1f1f1f] hover:bg-[#f6f8fc] font-medium"
+                    >
+                      <ClipboardList size={14} className="text-[#5f6368]" /> Converter em Tarefa
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {canArchive && message.status !== 'archived' && (
@@ -394,65 +481,6 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
           )}
         </div>
       )}
-
-      {/* Primary Decision / Task Bar */}
-      {(canApprove && !message.decision) || canEdit ? (
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#eceff4]">
-          {canApprove && !message.decision && (
-            <>
-              <button
-                type="button"
-                onClick={() => onPromptDecision('approved', 'Aprovar proposta / comunicado', false)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white shadow-2xs transition-colors"
-              >
-                <CheckCircle2 size={14} /> Aprovar
-              </button>
-              <button
-                type="button"
-                onClick={() => onPromptDecision('rejected', 'Rejeitar proposta', true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#fef2f2] hover:bg-[#fee2e2] text-[#c2414b] border border-[#fecaca] transition-colors"
-              >
-                <XCircle size={14} /> Rejeitar
-              </button>
-            </>
-          )}
-
-          {canEdit && (
-            <button
-              type="button"
-              onClick={onOpenTaskModal}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium bg-white hover:bg-[#f1f3f4] text-[#1f1f1f] border border-[#dadce0] transition-colors"
-            >
-              <ClipboardList size={14} /> Converter em Tarefa
-            </button>
-          )}
-        </div>
-      ) : null}
-
-      {/* Reactions Row */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {REACTION_BUTTONS.map((btn) => {
-          const count = message.reactionCounts[btn.type] ?? 0;
-          const mine = reactions.some((r) => r.userId === currentUid && r.type === btn.type);
-
-          return (
-            <button
-              key={btn.type}
-              type="button"
-              onClick={() => onReaction(btn.type)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                mine
-                  ? 'bg-[#eef5ff] text-[#1d4ed8] border-[#bfdbfe] font-semibold'
-                  : 'bg-white text-[#5b6573] border-[#e3e7ec] hover:text-[#17202a] hover:bg-[#f6f7f9]'
-              }`}
-            >
-              {btn.icon}
-              <span>{btn.label}</span>
-              {count > 0 && <span className="font-bold tabular-nums">({count})</span>}
-            </button>
-          );
-        })}
-      </div>
 
       {/* Collapsible Secondary Sections (CLOSED BY DEFAULT) */}
       <div className="space-y-2.5 pt-1">
