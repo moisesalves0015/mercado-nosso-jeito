@@ -25,6 +25,8 @@ import type {
   HomeLayoutBlock,
   RoundCardItem,
 } from '../hooks/useHomeConfig';
+import type { UpsellShowcaseConfig, UpsellShowcaseId } from '../types/home';
+import { defaultUpsellConfig, normalizeUpsellConfig } from '../utils/upsellRecommendations';
 import { AdminHomeLayoutBuilder } from './admin/AdminHomeLayoutBuilder';
 import { AdminRoundCardsManager } from './admin/AdminRoundCardsManager';
 
@@ -993,6 +995,10 @@ export const AdminMarketing: React.FC = () => {
   const [homeLayout, setHomeLayout] = useState<HomeLayoutBlock[]>([]);
   const [brands, setBrands] = useState<RoundCardItem[]>([]);
   const [localPartners, setLocalPartners] = useState<RoundCardItem[]>([]);
+  const [upsellConfigs, setUpsellConfigs] = useState<Record<UpsellShowcaseId, UpsellShowcaseConfig>>({
+    cart: defaultUpsellConfig('cart'),
+    checkout: defaultUpsellConfig('checkout'),
+  });
 
   // ── UI State ──
   const [saving, setSaving] = useState(false);
@@ -1000,6 +1006,8 @@ export const AdminMarketing: React.FC = () => {
   // Vitrines
   const [editingVitrineId, setEditingVitrineId] = useState<string | null>(null);
   const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [editingUpsellId, setEditingUpsellId] = useState<UpsellShowcaseId | null>(null);
+  const [upsellDraft, setUpsellDraft] = useState<Partial<UpsellShowcaseConfig>>({});
 
   // Mega Ofertas
   const [moSearch, setMoSearch] = useState('');
@@ -1058,9 +1066,51 @@ export const AdminMarketing: React.FC = () => {
       onSnapshot(collection(db, 'home-config', 'data', 'home-partners'), snap => {
         setLocalPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoundCardItem)).sort((a, b) => a.order - b.order));
       }),
+      onSnapshot(collection(db, 'home-config', 'data', 'upsell-config'), snap => {
+        const next: Record<UpsellShowcaseId, UpsellShowcaseConfig> = {
+          cart: defaultUpsellConfig('cart'),
+          checkout: defaultUpsellConfig('checkout'),
+        };
+        snap.docs.forEach(d => {
+          if (d.id === 'cart' || d.id === 'checkout') {
+            next[d.id] = normalizeUpsellConfig(d.id, d.data() as Record<string, unknown>);
+          }
+        });
+        setUpsellConfigs(next);
+      }),
     ];
     return () => unsubs.forEach(u => u());
   }, []);
+
+  // ── Upsell Vitrines (Leve também: Carrinho & Checkout) ─────────────────────
+  const persistUpsell = useCallback(async (id: UpsellShowcaseId, patch: Partial<UpsellShowcaseConfig>) => {
+    const current = upsellConfigs[id] ?? defaultUpsellConfig(id);
+    const merged: UpsellShowcaseConfig = { ...current, ...patch, id };
+    await setDoc(doc(db, 'home-config', 'data', 'upsell-config', id), merged, { merge: true });
+  }, [upsellConfigs]);
+
+  const toggleUpsellActive = useCallback(async (id: UpsellShowcaseId) => {
+    const current = upsellConfigs[id] ?? defaultUpsellConfig(id);
+    await persistUpsell(id, { active: !current.active });
+  }, [upsellConfigs, persistUpsell]);
+
+  const toggleUpsellAuto = useCallback(async (id: UpsellShowcaseId) => {
+    const current = upsellConfigs[id] ?? defaultUpsellConfig(id);
+    await persistUpsell(id, { isAuto: !current.isAuto });
+  }, [upsellConfigs, persistUpsell]);
+
+  const saveUpsellDraft = useCallback(async (id: UpsellShowcaseId) => {
+    setSaving(true);
+    try {
+      await persistUpsell(id, {
+        title: upsellDraft.title?.trim() || 'Leve também',
+        maxProducts: Math.max(1, Math.min(20, Number(upsellDraft.maxProducts || 8))),
+      });
+      setEditingUpsellId(null);
+    } finally {
+      setSaving(false);
+    }
+  }, [persistUpsell, upsellDraft]);
 
   // ── Vitrine Ops ─────────────────────────────────────────────────────────────
   const saveVitrine = useCallback(async (data: Partial<VitrineConfig>, id?: string) => {
@@ -2006,6 +2056,143 @@ export const AdminMarketing: React.FC = () => {
               </div>
             );
           })}
+
+          {/* Vitrines "Leve também" (Carrinho & Checkout) */}
+          <div style={{ marginTop: 12, paddingTop: 14, borderTop: `1px dashed ${crmTheme.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <h3 style={{ margin: 0, color: crmTheme.textPrimary, fontSize: 15, fontWeight: 900 }}>
+                Vitrines &ldquo;Leve também&rdquo; (Carrinho &amp; Checkout)
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: crmTheme.textSecondary }}>
+                Deixe em <strong>Auto</strong> (combinações inteligentes no Carrinho e guloseimas no Checkout) ou escolha manualmente os produtos.
+              </p>
+            </div>
+
+            {(['cart', 'checkout'] as UpsellShowcaseId[]).map((upsellId) => {
+              const cfg = upsellConfigs[upsellId] ?? defaultUpsellConfig(upsellId);
+              const isEditing = editingUpsellId === upsellId;
+              const isCart = upsellId === 'cart';
+
+              return (
+                <div key={upsellId} style={{ ...card, border: isEditing ? `1px solid ${crmTheme.primary}` : `1px solid ${crmTheme.border}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 900, color: crmTheme.textPrimary }}>
+                          {isCart ? '🛒 Carrinho — ' : '💳 Checkout — '}{cfg.title}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 9.5,
+                            fontWeight: 800,
+                            padding: '2px 7px',
+                            borderRadius: 999,
+                            background: cfg.isAuto ? crmTheme.accentLight : crmTheme.primaryLight,
+                            color: cfg.isAuto ? crmTheme.accent : crmTheme.primary,
+                          }}
+                        >
+                          {cfg.isAuto ? 'Automático' : 'Manual'}
+                        </span>
+                      </div>
+                      <p style={{ margin: '2px 0 0', fontSize: 11, color: crmTheme.textSecondary }}>
+                        {isCart
+                          ? 'Auto: sugere produtos que combinam com os itens no carrinho.'
+                          : 'Auto: sugere guloseimas (doces, chocolates e snacks) para compra por impulso.'}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button style={toggle(cfg.isAuto)} onClick={() => toggleUpsellAuto(upsellId)} title="Alternar entre Auto e Manual">
+                          <div style={toggleKnob(cfg.isAuto)} />
+                        </button>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: cfg.isAuto ? crmTheme.accent : crmTheme.textMuted }}>Auto</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button style={toggle(cfg.active)} onClick={() => toggleUpsellActive(upsellId)} title="Ativar/Desativar vitrine">
+                          <div style={toggleKnob(cfg.active)} />
+                        </button>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: cfg.active ? crmTheme.success : crmTheme.textMuted }}>
+                          {cfg.active ? 'Ativa' : 'Oculta'}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        style={btnGhost}
+                        onClick={() => {
+                          if (isEditing) {
+                            setEditingUpsellId(null);
+                          } else {
+                            setEditingUpsellId(upsellId);
+                            setUpsellDraft({ title: cfg.title, maxProducts: cfg.maxProducts });
+                          }
+                        }}
+                      >
+                        <Edit2 size={12} /> {isEditing ? 'Fechar' : 'Configurar'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isEditing && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${crmTheme.border}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={labelSt}>Título da Vitrine</label>
+                          <input
+                            style={inputSt}
+                            value={upsellDraft.title ?? cfg.title}
+                            onChange={(e) => setUpsellDraft((d) => ({ ...d, title: e.target.value }))}
+                            placeholder="Leve também"
+                          />
+                        </div>
+                        <div>
+                          <label style={labelSt}>Máx. de produtos</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={20}
+                            style={inputSt}
+                            value={upsellDraft.maxProducts ?? cfg.maxProducts}
+                            onChange={(e) => setUpsellDraft((d) => ({ ...d, maxProducts: Number(e.target.value) }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ ...labelSt, marginBottom: 6 }}>
+                          Produtos selecionados ({cfg.productIds.length}) {cfg.isAuto ? '— opcional no modo Auto (aparecem primeiro)' : '— exibidos no modo Manual'}
+                        </label>
+                        <ProductPicker
+                          products={products}
+                          selectedIds={cfg.productIds}
+                          onChangeIds={(ids) => persistUpsell(upsellId, { productIds: ids })}
+                          onAdd={(id: string) =>
+                            persistUpsell(upsellId, {
+                              productIds: cfg.productIds.includes(id) ? cfg.productIds : [...cfg.productIds, id],
+                            })
+                          }
+                          onRemove={(id: string) =>
+                            persistUpsell(upsellId, {
+                              productIds: cfg.productIds.filter((x) => x !== id),
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                        <button type="button" style={btnGhost} onClick={() => setEditingUpsellId(null)}>Fechar</button>
+                        <button type="button" style={btnGold} disabled={saving} onClick={() => saveUpsellDraft(upsellId)}>
+                          <Save size={12} /> Salvar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

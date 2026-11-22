@@ -3,8 +3,9 @@ import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { useShippingConfig } from '../hooks/useShippingConfig';
 import { useCatalog } from '../hooks/useCatalog';
+import { useUpsellConfig } from '../hooks/useUpsellConfig';
 import { getEffectiveProductPrice } from '../utils/productPricing';
-import { isHomeProductPurchasable } from '../utils/homeProducts';
+import { buildCartComplementaryProducts } from '../utils/upsellRecommendations';
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag, Truck, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { MercadoLogo } from './Login';
@@ -15,6 +16,7 @@ export function Cart() {
   const { user } = useAuth();
   const { config: shippingConfig } = useShippingConfig();
   const catalog = useCatalog();
+  const upsellConfig = useUpsellConfig();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [couponFeedback, setCouponFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -33,33 +35,21 @@ export function Cart() {
   const estimatedTotal = Math.max(0, totalPrice - discount + deliveryFee);
   const totalSavings = discount + (isFreeShipping ? baseShippingFee : 0);
 
-  // Produtos reais do catálogo que ainda não estão no carrinho, priorizando itens que ajudam a completar o frete grátis
+  // Produtos que combinam com o que já está no carrinho (ou escolhidos manualmente no Admin)
   const recommendations = useMemo(() => {
-    const inCartIds = new Set(cartItems.map((i) => i.id));
-    const available = catalog.products
-      .filter((p) => !inCartIds.has(p.id) && isHomeProductPurchasable(p))
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        price: getEffectiveProductPrice(p),
-        image: p.image,
-      }))
-      .filter((p) => p.price > 0);
-
-    if (available.length > 0) {
-      if (!isFreeShipping && missingForFreeShipping > 0) {
-        available.sort((a, b) => {
-          const aCovers = a.price >= missingForFreeShipping ? 0 : 1;
-          const bCovers = b.price >= missingForFreeShipping ? 0 : 1;
-          if (aCovers !== bCovers) return aCovers - bCovers;
-          return Math.abs(a.price - missingForFreeShipping) - Math.abs(b.price - missingForFreeShipping);
-        });
-      }
-      return available.slice(0, 8);
-    }
-
-    return [];
-  }, [catalog.products, cartItems, isFreeShipping, missingForFreeShipping]);
+    const resolved = buildCartComplementaryProducts({
+      config: upsellConfig.cart,
+      cartItems,
+      products: catalog.products,
+      productsById: catalog.byId,
+    });
+    return resolved.map((p) => ({
+      id: p.id,
+      title: p.title,
+      price: getEffectiveProductPrice(p),
+      image: p.image,
+    }));
+  }, [upsellConfig.cart, cartItems, catalog.products, catalog.byId]);
 
   const applyCoupon = () => {
     const normalized = couponCode.trim().toUpperCase();
@@ -304,17 +294,14 @@ export function Cart() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <h3 style={{ fontSize: 12.5, fontWeight: 900, color: 'var(--text-primary)', margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 5 }}>
                   <Sparkles size={13} color="#D4AF37" />
-                  Leve também
+                  {upsellConfig.cart.title || 'Leve também'}
                 </h3>
-                {!isFreeShipping && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37' }}>
-                    Complete o frete grátis
-                  </span>
-                )}
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  {upsellConfig.cart.isAuto ? 'Combinam com seu carrinho' : 'Seleção especial'}
+                </span>
               </div>
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
                 {recommendations.map((prod) => {
-                  const coversShipping = !isFreeShipping && prod.price >= missingForFreeShipping;
                   const justAdded = recentlyAddedId === prod.id;
                   return (
                     <div
@@ -323,7 +310,7 @@ export function Cart() {
                         minWidth: 112,
                         maxWidth: 118,
                         background: 'var(--card-gradient)',
-                        border: coversShipping ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-primary)',
+                        border: '1px solid var(--border-primary)',
                         borderRadius: 12,
                         padding: '8px',
                         display: 'flex',
@@ -333,22 +320,6 @@ export function Cart() {
                         flexShrink: 0,
                       }}
                     >
-                      {coversShipping && (
-                        <span
-                          style={{
-                            fontSize: 8.5,
-                            fontWeight: 800,
-                            color: '#10b981',
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            padding: '1px 6px',
-                            borderRadius: 999,
-                            marginBottom: 4,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Fecha frete grátis
-                        </span>
-                      )}
                       <div style={{ width: 46, height: 46, borderRadius: 8, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
                       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
@@ -64,11 +64,11 @@ function isAmbiguousOrderError(err: unknown): boolean {
   ].includes(code);
 }
 
-// ── Complementary products shown in summary step ───────────────────────────────
-const COMPLEMENTARY_PRODUCTS = [
-  { id: 'prod-danone', title: 'Danone Grego', price: 18.90, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80' },
-  { id: 'prod-melitta', title: 'Café Melitta', price: 24.50, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80' },
-];
+// ── Checkout upsell ("Leve também") uses catalog + Admin upsell-config ─────────
+import { useCatalog } from '../hooks/useCatalog';
+import { useUpsellConfig } from '../hooks/useUpsellConfig';
+import { getEffectiveProductPrice } from '../utils/productPricing';
+import { buildCheckoutCandyProducts } from '../utils/upsellRecommendations';
 
 export function Checkout() {
   const navigate = useNavigate();
@@ -77,7 +77,25 @@ export function Checkout() {
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
   const { config: shippingConfig } = useShippingConfig();
   const { config: adminConfig } = useAdminConfig();
+  const catalog = useCatalog();
+  const upsellConfig = useUpsellConfig();
+  const [recentlyAddedUpsellId, setRecentlyAddedUpsellId] = useState<string | null>(null);
   const isPixAvailable = !!adminConfig.pixKey;
+
+  const checkoutRecommendations = useMemo(() => {
+    const resolved = buildCheckoutCandyProducts({
+      config: upsellConfig.checkout,
+      cartItems,
+      products: catalog.products,
+      productsById: catalog.byId,
+    });
+    return resolved.map((p) => ({
+      id: p.id,
+      title: p.title,
+      price: getEffectiveProductPrice(p),
+      image: p.image,
+    }));
+  }, [upsellConfig.checkout, cartItems, catalog.products, catalog.byId]);
 
   // Idempotency key: generated once per checkout session mount.
   // If the user navigates away and returns, a new key is generated.
@@ -405,19 +423,58 @@ export function Checkout() {
                 </div>
               </div>
 
-              <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 8 }}>Leve também</h3>
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10, marginBottom: 10, scrollbarWidth: 'none' }}>
-                {COMPLEMENTARY_PRODUCTS.map((prod) => (
-                  <div key={prod.id} style={{ minWidth: 105, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} loading="lazy" />
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 24, overflow: 'hidden' }}>{prod.title}</span>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
-                    <button onClick={() => addToCart(prod, 1)} style={{ background: 'var(--input-bg)', border: '1px solid #D4AF37', color: '#D4AF37', borderRadius: 5, padding: '3px 0', width: '100%', fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3 }}><Plus size={10} /> Aproveite</button>
+              {checkoutRecommendations.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                      {upsellConfig.checkout.title || 'Leve também'}
+                    </h3>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      {upsellConfig.checkout.isAuto ? 'Guloseimas para aproveitar' : 'Seleção especial'}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10, marginBottom: 10, scrollbarWidth: 'none' }}>
+                    {checkoutRecommendations.map((prod) => {
+                      const justAdded = recentlyAddedUpsellId === prod.id;
+                      return (
+                        <div key={prod.id} style={{ minWidth: 108, maxWidth: 116, flexShrink: 0, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                          <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} loading="lazy" />
+                          </div>
+                          <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.2 }}>{prod.title}</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              addToCart(prod, 1);
+                              setRecentlyAddedUpsellId(prod.id);
+                              window.setTimeout(() => setRecentlyAddedUpsellId((cur) => (cur === prod.id ? null : cur)), 1200);
+                            }}
+                            style={{
+                              background: justAdded ? '#10b981' : 'var(--input-bg)',
+                              border: justAdded ? '1px solid #10b981' : '1px solid #D4AF37',
+                              color: justAdded ? '#ffffff' : '#D4AF37',
+                              borderRadius: 5,
+                              padding: '3px 0',
+                              width: '100%',
+                              fontSize: 10,
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: 3,
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <Plus size={10} /> {justAdded ? 'Adicionado!' : 'Aproveite'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               <button onClick={() => setStep('delivery')} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 14 }}>
                 Continuar para Entrega <ChevronRight size={16} />

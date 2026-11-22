@@ -84,6 +84,18 @@ export interface PeriodConfig {
   background?: string;
 }
 
+export type UpsellShowcaseId = 'cart' | 'checkout';
+
+/** home-config/data/upsell-config/{cart|checkout} */
+export interface UpsellShowcaseConfig {
+  id: UpsellShowcaseId;
+  title: string;
+  active: boolean;
+  isAuto: boolean;
+  productIds: string[];
+  maxProducts: number;
+}
+
 /** home-config/data/mega-ofertas/{id} */
 export interface MegaOfertaConfig {
   id: string;
