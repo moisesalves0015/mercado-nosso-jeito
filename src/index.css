@@ -6714,7 +6714,7 @@ body.light-mode .topbar-search-container {
   padding: 4px 7px;
   border-radius: 10px 0 12px 0;
   border: 1.5px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.45);
+  box-shadow: none;
   z-index: 5;
   text-transform: uppercase !important;
   letter-spacing: 0.5px;
