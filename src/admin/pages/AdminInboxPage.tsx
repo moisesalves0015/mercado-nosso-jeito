@@ -155,14 +155,41 @@ export const AdminInboxPage: React.FC = () => {
     };
   }, []);
 
-  // Load partners
+  // Load partners (re-runs when auth settles and falls back to current admin if empty)
   useEffect(() => {
+    if (!currentUid) return;
     listInboxPartners()
-      .then((list) => setPartners(list))
+      .then((list) => {
+        if (list.length > 0) {
+          setPartners(list);
+        } else {
+          setPartners([
+            {
+              uid: currentUid,
+              name: userProfile?.name || 'Sócio Admin',
+              email: userProfile?.email || '',
+              roleId: staffAccess?.roleId || 'admin',
+              roleLabel: 'Administrador',
+            },
+          ]);
+        }
+      })
       .catch(() => {
-        /* non-fatal */
+        setPartners((prev) =>
+          prev.length > 0
+            ? prev
+            : [
+                {
+                  uid: currentUid,
+                  name: userProfile?.name || 'Sócio Admin',
+                  email: userProfile?.email || '',
+                  roleId: staffAccess?.roleId || 'admin',
+                  roleLabel: 'Administrador',
+                },
+              ],
+        );
       });
-  }, []);
+  }, [currentUid, userProfile?.name, userProfile?.email, staffAccess?.roleId]);
 
   // Subscribe messages
   useEffect(() => {
@@ -635,15 +662,50 @@ export const AdminInboxPage: React.FC = () => {
     if (!canEdit) return;
     const updated = task.checklist.map((c) => (c.id === itemId ? { ...c, done: !c.done } : c));
     const allDone = updated.length > 0 && updated.every((c) => c.done);
+    const nextStatus = allDone ? 'done' : task.status === 'open' ? 'in_progress' : task.status;
     try {
       await updateInboxTask({
         taskId: task.id,
         messageId: task.messageId,
         checklist: updated,
-        status: allDone ? 'done' : task.status === 'open' ? 'in_progress' : task.status,
+        status: nextStatus,
       });
+      if (allDone) {
+        showToast('Checklist 100% concluído! Tarefa finalizada e e-mail resolvido automaticamente.', 'ok');
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Erro ao atualizar checklist.', 'err');
+    }
+  };
+
+  const handleUpdateTaskStatus = async (
+    task: InboxTask,
+    status: 'open' | 'in_progress' | 'done' | 'cancelled',
+  ) => {
+    if (!canEdit) return;
+    setBusyAction(`task_${task.id}`);
+    try {
+      const updatedChecklist =
+        status === 'done' && task.checklist.length > 0
+          ? task.checklist.map((c) => ({ ...c, done: true }))
+          : undefined;
+      await updateInboxTask({
+        taskId: task.id,
+        messageId: task.messageId,
+        status,
+        ...(updatedChecklist ? { checklist: updatedChecklist } : {}),
+      });
+      if (status === 'done') {
+        showToast('Tarefa concluída e mensagem resolvida automaticamente.', 'ok');
+      } else if (status === 'in_progress') {
+        showToast('Tarefa colocada em andamento.', 'ok');
+      } else if (status === 'open') {
+        showToast('Tarefa reaberta.', 'ok');
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Erro ao atualizar tarefa.', 'err');
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -1209,6 +1271,7 @@ export const AdminInboxPage: React.FC = () => {
                   onAttachFile={handleAttachFileToSelected}
                   onSendComment={handleSendComment}
                   onToggleChecklist={handleToggleChecklistItem}
+                  onUpdateTaskStatus={handleUpdateTaskStatus}
                   onNavigateEntity={handleNavigateEntity}
                 />
               </div>

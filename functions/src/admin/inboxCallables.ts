@@ -522,12 +522,31 @@ export const inboxUpdateStatus = functions.https.onCall(async (data, context) =>
         }
         updates.status = data.status;
         if (data.status === 'archived') updates.archivedAt = nowTs;
-        actions.push(`status -> ${data.status}`);
+        const stPt: Record<string, string> = {
+          new: 'Nova',
+          read: 'Lida',
+          in_review: 'Em análise',
+          awaiting_reply: 'Aguardando resposta',
+          in_discussion: 'Em discussão',
+          approved: 'Aprovada',
+          rejected: 'Rejeitada',
+          converted_to_task: 'Convertida em tarefa',
+          in_progress: 'Em andamento',
+          resolved: 'Resolvida',
+          archived: 'Arquivada',
+        };
+        actions.push(`Status alterado para ${stPt[data.status] || data.status}`);
       }
 
       if (typeof data?.priority === 'string' && VALID_PRIORITIES.has(data.priority)) {
         updates.priority = data.priority;
-        actions.push(`prioridade -> ${data.priority}`);
+        const prPt: Record<string, string> = {
+          informative: 'Informativa',
+          attention: 'Atenção',
+          important: 'Importante',
+          critical: 'Crítica',
+        };
+        actions.push(`Prioridade alterada para ${prPt[data.priority] || data.priority}`);
       }
 
       if ('assignedToUserId' in (data || {})) {
@@ -825,6 +844,16 @@ export const inboxUpdateTask = functions.https.onCall(async (data, context) => {
       actorName: actor.name,
       actorType: 'human',
       action: `task_updated_${String(updates.status || 'checklist')}`,
+      details:
+        updates.status === 'done'
+          ? 'Tarefa concluída e mensagem resolvida automaticamente'
+          : updates.status === 'in_progress'
+          ? 'Tarefa colocada em andamento'
+          : updates.status === 'open'
+          ? 'Tarefa reaberta'
+          : updates.status === 'cancelled'
+          ? 'Tarefa cancelada'
+          : 'Checklist da tarefa atualizado',
       createdAt: nowTs,
     });
 

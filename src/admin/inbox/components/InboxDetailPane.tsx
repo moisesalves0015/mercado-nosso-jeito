@@ -95,7 +95,60 @@ interface InboxDetailPaneProps {
   onAttachFile: (file: File) => void;
   onSendComment: (text: string, kind: 'comment' | 'forward' | 'request_info') => Promise<void>;
   onToggleChecklist: (task: InboxTask, itemId: string) => void;
+  onUpdateTaskStatus?: (
+    task: InboxTask,
+    status: 'open' | 'in_progress' | 'done' | 'cancelled',
+  ) => void;
   onNavigateEntity: (entity: InboxEntityReference) => void;
+}
+
+const TASK_STATUS_META: Record<
+  InboxTask['status'],
+  { label: string; badgeClass: string }
+> = {
+  open: {
+    label: 'Aberta',
+    badgeClass: 'bg-[#eff6ff] text-[#1d4ed8] border-[#dbeafe]',
+  },
+  in_progress: {
+    label: 'Em andamento',
+    badgeClass: 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]',
+  },
+  done: {
+    label: 'Concluída',
+    badgeClass: 'bg-[#e8f4ee] text-[#167a52] border-[#b9ddc8]',
+  },
+  cancelled: {
+    label: 'Cancelada',
+    badgeClass: 'bg-[#f6f7f9] text-[#838e9b] border-[#e3e7ec]',
+  },
+};
+
+function formatHistoryAction(action: string, details?: string): string {
+  if (details && !details.startsWith('task_updated_')) return details;
+  const map: Record<string, string> = {
+    task_updated_done: 'Tarefa concluída e mensagem resolvida automaticamente',
+    task_updated_in_progress: 'Tarefa colocada em andamento',
+    task_updated_open: 'Tarefa reaberta',
+    task_updated_cancelled: 'Tarefa cancelada',
+    task_updated_checklist: 'Checklist da tarefa atualizado',
+    message_created: 'Mensagem criada',
+    decision_approved: 'Proposta aprovada',
+    decision_rejected: 'Proposta rejeitada',
+    decision_disagreed: 'Discordância registrada',
+    attachment_uploaded: 'Anexo enviado',
+  };
+  if (map[action]) return map[action];
+  return action
+    .replace(/status -> resolved/gi, 'Status alterado para Resolvida')
+    .replace(/status -> in_progress/gi, 'Status alterado para Em andamento')
+    .replace(/status -> in_review/gi, 'Status alterado para Em análise')
+    .replace(/status -> awaiting_reply/gi, 'Status alterado para Aguardando resposta')
+    .replace(/status -> archived/gi, 'Status alterado para Arquivada')
+    .replace(/prioridade -> critical/gi, 'Prioridade alterada para Crítica')
+    .replace(/prioridade -> important/gi, 'Prioridade alterada para Importante')
+    .replace(/prioridade -> attention/gi, 'Prioridade alterada para Atenção')
+    .replace(/prioridade -> informative/gi, 'Prioridade alterada para Informativa');
 }
 
 const PRIORITY_BADGE_CLASSES: Record<InboxPriority, string> = {
@@ -138,6 +191,7 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   onAttachFile,
   onSendComment,
   onToggleChecklist,
+  onUpdateTaskStatus,
   onNavigateEntity,
 }) => {
   const [commentText, setCommentText] = useState('');
@@ -561,76 +615,86 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
             </button>
 
             {showRouting && (
-              <div className="p-4 pt-3 border-t border-[#e3e7ec] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-[#fbfcfd]">
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
-                    Responsável
-                  </label>
-                  <select
-                    value={message.assignedToUserId ?? ''}
-                    onChange={(e) =>
-                      onUpdateStatus(
-                        { messageId: message.id, assignedToUserId: e.target.value || null },
-                        'Responsável atualizado.',
-                      )
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a]"
-                  >
-                    <option value="">Sem responsável</option>
-                    {partners.map((p) => (
-                      <option key={p.uid} value={p.uid}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="p-4 pt-3 border-t border-[#e3e7ec] space-y-2.5 text-xs bg-[#fbfcfd]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Responsável
+                    </label>
+                    <select
+                      disabled={busyAction === 'status'}
+                      value={message.assignedToUserId ?? ''}
+                      onChange={(e) =>
+                        onUpdateStatus(
+                          { messageId: message.id, assignedToUserId: e.target.value || null },
+                          'Responsável atualizado.',
+                        )
+                      }
+                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] disabled:opacity-60"
+                    >
+                      <option value="">Sem responsável</option>
+                      {partners.map((p) => (
+                        <option key={p.uid} value={p.uid}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
-                    Aguardando resposta de
-                  </label>
-                  <select
-                    value={message.requestedResponseFromUserId ?? ''}
-                    onChange={(e) =>
-                      onUpdateStatus(
-                        {
-                          messageId: message.id,
-                          requestedResponseFromUserId: e.target.value || null,
-                        },
-                        'Solicitação de resposta atualizada.',
-                      )
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a]"
-                  >
-                    <option value="">Ninguém específico</option>
-                    {partners.map((p) => (
-                      <option key={p.uid} value={p.uid}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Aguardando resposta de
+                    </label>
+                    <select
+                      disabled={busyAction === 'status'}
+                      value={message.requestedResponseFromUserId ?? ''}
+                      onChange={(e) =>
+                        onUpdateStatus(
+                          {
+                            messageId: message.id,
+                            requestedResponseFromUserId: e.target.value || null,
+                          },
+                          'Solicitação de resposta atualizada.',
+                        )
+                      }
+                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] disabled:opacity-60"
+                    >
+                      <option value="">Ninguém específico</option>
+                      {partners.map((p) => (
+                        <option key={p.uid} value={p.uid}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
-                    Prioridade
-                  </label>
-                  <select
-                    value={message.priority}
-                    onChange={(e) =>
-                      onUpdateStatus(
-                        { messageId: message.id, priority: e.target.value as InboxPriority },
-                        'Prioridade atualizada.',
-                      )
-                    }
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a]"
-                  >
-                    <option value="informative">Informativa</option>
-                    <option value="attention">Atenção</option>
-                    <option value="important">Importante</option>
-                    <option value="critical">Crítica</option>
-                  </select>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#5b6573] mb-1">
+                      Prioridade
+                    </label>
+                    <select
+                      disabled={busyAction === 'status'}
+                      value={message.priority}
+                      onChange={(e) =>
+                        onUpdateStatus(
+                          { messageId: message.id, priority: e.target.value as InboxPriority },
+                          'Prioridade atualizada.',
+                        )
+                      }
+                      className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#e3e7ec] text-xs text-[#17202a] disabled:opacity-60"
+                    >
+                      <option value="informative">Informativa</option>
+                      <option value="attention">Atenção</option>
+                      <option value="important">Importante</option>
+                      <option value="critical">Crítica</option>
+                    </select>
+                  </div>
                 </div>
+                {busyAction === 'status' && (
+                  <p className="text-[11px] text-[#167a52] font-medium">
+                    Salvando alteração...
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -684,69 +748,154 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
           </div>
         )}
 
-        {/* Accordion: Linked Tasks & Interactive Checklist */}
-        {tasks.length > 0 && (
+        {/* Accordion: Linked Tasks & Interactive Checklist with Automated Resolution */}
+        {(tasks.length > 0 || canEdit) && (
           <div className="rounded-xl border border-[#e3e7ec] overflow-hidden bg-white">
-            <button
-              type="button"
-              onClick={() => setShowTasks(!showTasks)}
-              aria-expanded={showTasks}
-              className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-[#f6f7f9] transition-colors"
-            >
-              <div className="flex items-center gap-2">
+            <div className="px-4 py-2.5 flex items-center justify-between bg-white">
+              <button
+                type="button"
+                onClick={() => setShowTasks(!showTasks)}
+                aria-expanded={showTasks}
+                className="flex items-center gap-2 text-xs font-semibold text-[#17202a] flex-1 text-left"
+              >
                 <ClipboardList size={14} className="text-[#838e9b]" />
-                <span className="text-xs font-semibold text-[#17202a]">
-                  Tarefas vinculadas ({tasks.length})
-                </span>
-              </div>
-              {showTasks ? (
-                <ChevronUp size={15} className="text-[#838e9b]" />
-              ) : (
-                <ChevronDown size={15} className="text-[#838e9b]" />
+                <span>Tarefas vinculadas ({tasks.length})</span>
+                {showTasks ? (
+                  <ChevronUp size={15} className="text-[#838e9b] ml-1" />
+                ) : (
+                  <ChevronDown size={15} className="text-[#838e9b] ml-1" />
+                )}
+              </button>
+
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={onOpenTaskModal}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#167a52] hover:text-[#106441] shrink-0"
+                >
+                  <Plus size={13} /> Nova tarefa
+                </button>
               )}
-            </button>
+            </div>
 
             {showTasks && (
-              <div className="p-4 pt-3 border-t border-[#e3e7ec] space-y-2.5 bg-[#fbfcfd]">
-                {tasks.map((t) => (
-                  <div
-                    key={t.id}
-                    className="p-3.5 rounded-lg bg-white border border-[#e3e7ec] space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-[#17202a]">{t.title}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-[#f6f7f9] border border-[#e3e7ec] text-[#5b6573] font-medium">
-                        {t.status}
-                      </span>
-                    </div>
-                    {t.assignedToName && (
-                      <p className="text-[11px] text-[#5b6573]">
-                        Responsável: <strong className="text-[#17202a]">{t.assignedToName}</strong>
-                      </p>
-                    )}
-                    {t.checklist.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        {t.checklist.map((item) => (
-                          <label
-                            key={item.id}
-                            className="flex items-center gap-2 text-xs text-[#5b6573] cursor-pointer hover:text-[#17202a] transition-colors"
+              <div className="p-4 pt-3 border-t border-[#e3e7ec] space-y-3 bg-[#fbfcfd]">
+                {tasks.length === 0 ? (
+                  <p className="text-xs text-[#838e9b]">
+                    Nenhuma tarefa vinculada a este e-mail. Clique em &ldquo;Nova tarefa&rdquo; para criar e automatizar a resolução.
+                  </p>
+                ) : (
+                  tasks.map((t) => {
+                    const meta = TASK_STATUS_META[t.status] || TASK_STATUS_META.open;
+                    const doneCount = t.checklist.filter((c) => c.done).length;
+                    const totalCount = t.checklist.length;
+                    const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : t.status === 'done' ? 100 : 0;
+                    const isTaskBusy = busyAction === `task_${t.id}`;
+
+                    return (
+                      <div
+                        key={t.id}
+                        className="p-3.5 rounded-xl bg-white border border-[#e3e7ec] space-y-2.5 shadow-2xs"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-[#17202a]">{t.title}</span>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${meta.badgeClass}`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={item.done}
-                              disabled={!canEdit}
-                              onChange={() => onToggleChecklist(t, item.id)}
-                              className="rounded accent-[#167a52]"
-                            />
-                            <span className={item.done ? 'line-through opacity-60' : ''}>
-                              {item.label}
+                            {meta.label}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#5b6573]">
+                          {t.assignedToName && (
+                            <span>
+                              Responsável: <strong className="text-[#17202a]">{t.assignedToName}</strong>
                             </span>
-                          </label>
-                        ))}
+                          )}
+                          {t.dueAt && (
+                            <span>
+                              Prazo: <strong className="text-[#17202a]">{formatDateTime(t.dueAt)}</strong>
+                            </span>
+                          )}
+                        </div>
+
+                        {totalCount > 0 && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-[#5b6573]">
+                              <span>Progresso do checklist</span>
+                              <span className="font-semibold tabular-nums">
+                                {doneCount}/{totalCount} ({pct}%)
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-[#eceff4] overflow-hidden">
+                              <div
+                                className="h-full bg-[#167a52] transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {t.checklist.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            {t.checklist.map((item) => (
+                              <label
+                                key={item.id}
+                                className="flex items-center gap-2 text-xs text-[#5b6573] cursor-pointer hover:text-[#17202a] transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={item.done}
+                                  disabled={!canEdit || isTaskBusy}
+                                  onChange={() => onToggleChecklist(t, item.id)}
+                                  className="rounded accent-[#167a52]"
+                                />
+                                <span className={item.done ? 'line-through opacity-60' : ''}>
+                                  {item.label}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {canEdit && onUpdateTaskStatus && (
+                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#eceff4]">
+                            {t.status === 'open' && (
+                              <button
+                                type="button"
+                                disabled={isTaskBusy}
+                                onClick={() => onUpdateTaskStatus(t, 'in_progress')}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#fffbeb] text-[#b45309] border border-[#fde68a] hover:bg-[#fef3c7] disabled:opacity-50"
+                              >
+                                Iniciar tarefa
+                              </button>
+                            )}
+                            {t.status !== 'done' && (
+                              <button
+                                type="button"
+                                disabled={isTaskBusy}
+                                onClick={() => onUpdateTaskStatus(t, 'done')}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#167a52] text-white hover:bg-[#106441] disabled:opacity-50"
+                              >
+                                <Check size={12} /> Concluir e resolver e-mail
+                              </button>
+                            )}
+                            {t.status === 'done' && (
+                              <button
+                                type="button"
+                                disabled={isTaskBusy}
+                                onClick={() => onUpdateTaskStatus(t, 'open')}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white text-[#5b6573] border border-[#e3e7ec] hover:bg-[#f1f4f7] disabled:opacity-50"
+                              >
+                                Reabrir tarefa
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             )}
           </div>
@@ -961,7 +1110,7 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
                 >
                   <span>
                     <strong className="text-[#17202a]">{h.actorName}</strong> •{' '}
-                    {h.details || h.action}
+                    {formatHistoryAction(h.action, h.details)}
                     {h.justification ? ` — "${h.justification}"` : ''}
                   </span>
                   <span className="shrink-0 text-[#838e9b] tabular-nums">
