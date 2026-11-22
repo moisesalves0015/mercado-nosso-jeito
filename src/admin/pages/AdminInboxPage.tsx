@@ -8,7 +8,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Settings,
   Users,
   WifiOff,
   X,
@@ -29,7 +28,6 @@ import {
 } from '../inbox/normalizers';
 import type {
   AdminInboxMessage,
-  AgentRuleConfig,
   InboxAttachment,
   InboxComment,
   InboxEntityReference,
@@ -49,7 +47,6 @@ import {
   markInboxMessageRead,
   muteSimilarInboxAlerts,
   runInboxAgents,
-  subscribeAgentRules,
   subscribeInboxMessages,
   subscribeMessageAttachments,
   subscribeMessageComments,
@@ -61,14 +58,12 @@ import {
   updateInboxTask,
   uploadInboxAttachment,
 } from '../../services/adminInboxService';
-import { InboxSummaryBar, type InboxCategoryTab } from '../inbox/components/InboxSummaryBar';
 import { InboxFolderNav } from '../inbox/components/InboxFolderNav';
 import { InboxMessageItem } from '../inbox/components/InboxMessageItem';
 import { InboxDetailPane } from '../inbox/components/InboxDetailPane';
 import { InboxComposeModal } from '../inbox/components/InboxComposeModal';
 import { InboxTaskModal } from '../inbox/components/InboxTaskModal';
 import { InboxAttachmentPreviewModal } from '../inbox/components/InboxAttachmentPreviewModal';
-import { InboxAgentRulesView } from '../inbox/components/InboxAgentRulesView';
 
 const SECTORS = Array.from(new Set(SYSTEM_AGENTS.map((a) => a.sector)));
 
@@ -84,9 +79,6 @@ export const AdminInboxPage: React.FC = () => {
   const canArchive = can('inbox:archive') || can('inbox:admin');
   const canAdminAgents = can('inbox:admin');
 
-  // Top-level view mode
-  const [viewMode, setViewMode] = useState<'inbox' | 'agents'>('inbox');
-
   // Messages & pagination
   const [messages, setMessages] = useState<AdminInboxMessage[]>([]);
   const [limitCount, setLimitCount] = useState(50);
@@ -96,13 +88,11 @@ export const AdminInboxPage: React.FC = () => {
     typeof navigator !== 'undefined' ? !navigator.onLine : false,
   );
 
-  // Partners & Agent rules
+  // Partners
   const [partners, setPartners] = useState<PartnerAdminMember[]>([]);
-  const [agentRules, setAgentRules] = useState<Record<string, AgentRuleConfig>>({});
 
   // Filters
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
-  const [categoryTab, setCategoryTab] = useState<InboxCategoryTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'human' | 'system_agent'>('all');
   const [scopeFilter, setScopeFilter] = useState<'all' | 'to_me' | 'to_all' | 'awaiting_my_reply' | 'unassigned'>('all');
@@ -207,17 +197,6 @@ export const AdminInboxPage: React.FC = () => {
     );
     return unsub;
   }, [limitCount]);
-
-  // Subscribe agent rules
-  useEffect(() => {
-    const unsub = subscribeAgentRules(
-      (rules) => setAgentRules(rules),
-      () => {
-        /* fallback to defaults */
-      },
-    );
-    return unsub;
-  }, []);
 
   const selectedMessage = useMemo(
     () => messages.find((m) => m.id === selectedMessageId) ?? null,
@@ -340,10 +319,6 @@ export const AdminInboxPage: React.FC = () => {
       if (quickFilter === 'resolved' && m.status !== 'resolved') return false;
       if (quickFilter === 'archived' && m.status !== 'archived') return false;
 
-      if (categoryTab === 'human' && m.source !== 'human') return false;
-      if (categoryTab === 'system_agent' && m.source === 'human') return false;
-      if (categoryTab === 'critical' && m.priority !== 'critical') return false;
-
       if (sourceFilter === 'human' && m.source !== 'human') return false;
       if (sourceFilter === 'system_agent' && m.source === 'human') return false;
 
@@ -386,7 +361,6 @@ export const AdminInboxPage: React.FC = () => {
   }, [
     messages,
     quickFilter,
-    categoryTab,
     currentUid,
     sourceFilter,
     scopeFilter,
@@ -402,18 +376,6 @@ export const AdminInboxPage: React.FC = () => {
     searchQuery,
     staffAccess?.permissions,
   ]);
-
-  const categoryTabCounts = useMemo(() => {
-    const active = messages.filter((m) =>
-      quickFilter === 'archived' ? m.status === 'archived' : m.status !== 'archived',
-    );
-    return {
-      all: active.length,
-      human: active.filter((m) => m.source === 'human').length,
-      systemAgent: active.filter((m) => m.source !== 'human').length,
-      critical: active.filter((m) => m.priority === 'critical').length,
-    };
-  }, [messages, quickFilter]);
 
   const activeAdvancedFilterCount = useMemo(() => {
     let count = 0;
@@ -712,16 +674,16 @@ export const AdminInboxPage: React.FC = () => {
   return (
     <div className="inbox-light-shell flex-1 flex flex-col w-full min-h-[calc(100vh-4rem)] bg-[#f6f8fc]">
       {/* Gmail / iOS Mail Full-Width Top App Bar */}
-      <header className="px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e3e7ec] bg-[#f6f8fc]">
+      <header className="px-3 sm:px-4 py-2 flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[#e3e7ec] bg-[#f6f8fc]">
         {/* Left: Brand Title + Unread Badge */}
-        <div className="flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#e8f4ee] border border-[#b9ddc8] text-[#167a52] flex items-center justify-center shrink-0">
-              <Inbox size={18} />
+        <div className="flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#e8f4ee] border border-[#b9ddc8] text-[#167a52] flex items-center justify-center shrink-0">
+              <Inbox size={16} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-[#1f1f1f] tracking-tight leading-none">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-base font-bold text-[#1f1f1f] tracking-tight leading-none">
                   Inbox ADM
                 </h1>
                 {kpis.unread > 0 && (
@@ -741,102 +703,85 @@ export const AdminInboxPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Compose Button */}
-          {canCreate && (
-            <button
-              type="button"
-              onClick={() => setComposeOpen(true)}
-              className="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white shadow-2xs"
-            >
-              <Plus size={14} />
-              Escrever
-            </button>
-          )}
+          {/* Mobile Compose + Refresh Buttons */}
+          <div className="lg:hidden flex items-center gap-1.5">
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => setComposeOpen(true)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white shadow-2xs"
+              >
+                <Plus size={13} />
+                Escrever
+              </button>
+            )}
+            {canAdminAgents && (
+              <button
+                type="button"
+                disabled={busyAction !== null}
+                onClick={() => handleRunAgents()}
+                title="Atualizar Inbox e executar agentes"
+                aria-label="Atualizar Inbox"
+                className="inline-flex items-center justify-center p-1.5 rounded-full bg-white hover:bg-[#f1f3f4] text-[#444746] border border-[#dadce0] disabled:opacity-50 transition-colors"
+              >
+                {busyAction === 'run_all' ? (
+                  <Loader2 size={14} className="animate-spin text-[#167a52]" />
+                ) : (
+                  <RefreshCw size={14} className="text-[#5f6368]" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Center: Gmail-Style Pill Search Bar with Integrated Filters */}
-        {viewMode === 'inbox' && (
-          <div className="flex-1 max-w-2xl">
-            <div className="flex items-center bg-[#eaf1fb] focus-within:bg-white focus-within:shadow-md border border-transparent focus-within:border-[#d2e3fc] rounded-full px-3.5 py-1.5 transition-all">
-              <Search size={15} className="text-[#5f6368] shrink-0 mr-2.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Pesquisar e-mails, remetentes, setores ou entidades..."
-                aria-label="Pesquisar na Inbox ADM"
-                className="w-full bg-transparent text-xs sm:text-[13px] text-[#1f1f1f] placeholder:text-[#5f6368] focus:outline-none"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  aria-label="Limpar pesquisa"
-                  className="p-1 rounded-full text-[#5f6368] hover:bg-[#dfe6f0] hover:text-[#1f1f1f] mr-1"
-                >
-                  <X size={13} />
-                </button>
-              )}
+        <div className="flex-1 max-w-2xl">
+          <div className="flex items-center bg-[#eaf1fb] focus-within:bg-white focus-within:shadow-md border border-transparent focus-within:border-[#d2e3fc] rounded-full px-3 py-1 transition-all">
+            <Search size={14} className="text-[#5f6368] shrink-0 mr-2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Pesquisar e-mails, remetentes, setores ou entidades..."
+              aria-label="Pesquisar na Inbox ADM"
+              className="w-full bg-transparent text-xs text-[#1f1f1f] placeholder:text-[#5f6368] focus:outline-none"
+            />
+            {searchQuery && (
               <button
                 type="button"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                aria-expanded={showAdvancedFilters}
-                title="Filtros avançados"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${
-                  showAdvancedFilters || activeAdvancedFilterCount > 0
-                    ? 'bg-[#d2e3fc] text-[#1967d2] font-semibold'
-                    : 'text-[#5f6368] hover:bg-[#dfe6f0] hover:text-[#1f1f1f]'
-                }`}
+                onClick={() => setSearchQuery('')}
+                aria-label="Limpar pesquisa"
+                className="p-1 rounded-full text-[#5f6368] hover:bg-[#dfe6f0] hover:text-[#1f1f1f] mr-1"
               >
-                <Filter size={13} />
-                <span className="hidden sm:inline">Filtros</span>
-                {activeAdvancedFilterCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#1967d2] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
-                    {activeAdvancedFilterCount}
-                  </span>
-                )}
+                <X size={12} />
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Right: Clean Utility Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {canAdminAgents && (
+            )}
             <button
               type="button"
-              disabled={busyAction !== null}
-              onClick={() => handleRunAgents()}
-              title="Executar análise dos 11 agentes agora"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-white hover:bg-[#f1f3f4] text-[#444746] border border-[#dadce0] disabled:opacity-50 transition-colors"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              aria-expanded={showAdvancedFilters}
+              title="Filtros avançados"
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors shrink-0 ${
+                showAdvancedFilters || activeAdvancedFilterCount > 0
+                  ? 'bg-[#d2e3fc] text-[#1967d2] font-semibold'
+                  : 'text-[#5f6368] hover:bg-[#dfe6f0] hover:text-[#1f1f1f]'
+              }`}
             >
-              {busyAction === 'run_all' ? (
-                <Loader2 size={14} className="animate-spin text-[#167a52]" />
-              ) : (
-                <RefreshCw size={14} className="text-[#5f6368]" />
+              <Filter size={12} />
+              <span className="hidden sm:inline">Filtros</span>
+              {activeAdvancedFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#1967d2] text-white text-[10px] font-bold flex items-center justify-center tabular-nums">
+                  {activeAdvancedFilterCount}
+                </span>
               )}
-              <span className="hidden xl:inline">Executar agentes</span>
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setViewMode(viewMode === 'inbox' ? 'agents' : 'inbox')}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium border transition-colors ${
-              viewMode === 'agents'
-                ? 'bg-[#e8f0fe] text-[#1967d2] border-[#d2e3fc] font-semibold'
-                : 'bg-white hover:bg-[#f1f3f4] text-[#444746] border-[#dadce0]'
-            }`}
-          >
-            <Settings size={14} />
-            <span>{viewMode === 'agents' ? 'Voltar à Caixa' : 'Agentes (11)'}</span>
-          </button>
+          </div>
         </div>
       </header>
 
       {/* Collapsible Rich Advanced Filters Drawer (Closed by default) */}
-      {viewMode === 'inbox' && showAdvancedFilters && (
-        <div className="bg-white border-b border-[#e3e7ec] px-4 sm:px-6 py-4 shadow-sm space-y-3 text-xs">
+      {showAdvancedFilters && (
+        <div className="bg-white border-b border-[#e3e7ec] px-3 sm:px-4 py-2.5 shadow-sm space-y-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-[#1f1f1f]">Filtros avançados</span>
             <div className="flex items-center gap-3">
@@ -1039,8 +984,8 @@ export const AdminInboxPage: React.FC = () => {
       )}
 
       {/* Active Filter Summary Pill Bar when filters are minimized */}
-      {viewMode === 'inbox' && !showAdvancedFilters && activeAdvancedFilterCount > 0 && (
-        <div className="flex items-center justify-between gap-2 text-xs text-[#444746] bg-white px-4 sm:px-6 py-2 border-b border-[#d2e3fc]">
+      {!showAdvancedFilters && activeAdvancedFilterCount > 0 && (
+        <div className="flex items-center justify-between gap-2 text-xs text-[#444746] bg-white px-3 sm:px-4 py-1.5 border-b border-[#d2e3fc]">
           <span>
             <strong className="text-[#1967d2]">
               {activeAdvancedFilterCount} filtro{activeAdvancedFilterCount > 1 ? 's' : ''} ativo{activeAdvancedFilterCount > 1 ? 's' : ''}
@@ -1068,69 +1013,53 @@ export const AdminInboxPage: React.FC = () => {
         </div>
       )}
 
-      {viewMode === 'agents' ? (
-        <div className="p-4 sm:p-6">
-          <InboxAgentRulesView
-            rules={agentRules}
-            partners={partners}
-            canAdmin={canAdminAgents}
-            busyAction={busyAction}
-            onRunAgent={handleRunAgents}
-            onShowToast={showToast}
-          />
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch">
-          {/* Gmail-Style Left Sidebar (Desktop) */}
-          <aside className="hidden lg:block w-56 shrink-0 p-3 bg-[#f6f8fc]">
-            <div className="sticky top-20">
-              <InboxFolderNav
-                variant="sidebar"
-                activeFilter={quickFilter}
-                onSelectFilter={(f) => {
-                  setQuickFilter(f);
-                  setSelectedMessageId(null);
-                }}
-                counts={folderCounts}
-                canCreate={canCreate}
-                onCompose={() => setComposeOpen(true)}
-              />
-            </div>
-          </aside>
-
-          {/* Mobile Folder Selector Pills */}
-          <div className="w-full lg:hidden px-3 py-2 bg-[#f6f8fc] border-b border-[#e3e7ec]">
+      <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch">
+        {/* Gmail-Style Left Sidebar (Desktop) */}
+        <aside className="hidden lg:block w-48 shrink-0 p-2 bg-[#f6f8fc]">
+          <div className="sticky top-16">
             <InboxFolderNav
-              variant="tabs"
+              variant="sidebar"
               activeFilter={quickFilter}
               onSelectFilter={(f) => {
                 setQuickFilter(f);
                 setSelectedMessageId(null);
               }}
               counts={folderCounts}
+              canCreate={canCreate}
+              onCompose={() => setComposeOpen(true)}
+              canRefresh={canAdminAgents}
+              refreshBusy={busyAction === 'run_all'}
+              onRefresh={() => handleRunAgents()}
             />
           </div>
+        </aside>
 
-          {/* Full-Bleed White Email Workspace (100% Width & Height, Zero Outer Margins) */}
-          <div className="flex-1 w-full min-w-0 bg-white lg:border-l border-[#e3e7ec] flex flex-col">
-            {!selectedMessage ? (
-              <>
-                {/* Gmail Category Tabs inside the List Card */}
-                <InboxSummaryBar
-                  counts={categoryTabCounts}
-                  activeTab={categoryTab}
-                  onSelectTab={(t) => setCategoryTab(t)}
-                />
+        {/* Mobile Folder Selector Pills */}
+        <div className="w-full lg:hidden px-2.5 py-1.5 bg-[#f6f8fc] border-b border-[#e3e7ec]">
+          <InboxFolderNav
+            variant="tabs"
+            activeFilter={quickFilter}
+            onSelectFilter={(f) => {
+              setQuickFilter(f);
+              setSelectedMessageId(null);
+            }}
+            counts={folderCounts}
+          />
+        </div>
 
-                {/* Sub-header with count & shared status */}
-                <div className="px-4 sm:px-6 py-2 border-b border-[#eceff4] flex items-center justify-between text-[11px] bg-[#fbfcfd] text-[#5f6368]">
-                  <span>
-                    <strong className="text-[#1f1f1f]">{filteredMessages.length}</strong> mensagem(ns)
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[#167a52] font-medium">
-                    <Users size={11} /> Caixa compartilhada
-                  </span>
-                </div>
+        {/* Full-Bleed White Email Workspace (100% Width & Height, Zero Outer Margins) */}
+        <div className="flex-1 w-full min-w-0 bg-white lg:border-l border-[#e3e7ec] flex flex-col">
+          {!selectedMessage ? (
+            <>
+              {/* Sub-header with count & shared status */}
+              <div className="px-3 sm:px-4 py-1.5 border-b border-[#eceff4] flex items-center justify-between text-[11px] bg-[#fbfcfd] text-[#5f6368]">
+                <span>
+                  <strong className="text-[#1f1f1f]">{filteredMessages.length}</strong> mensagem(ns)
+                </span>
+                <span className="inline-flex items-center gap-1 text-[#167a52] font-medium">
+                  <Users size={11} /> Caixa compartilhada
+                </span>
+              </div>
 
                 {loadingList ? (
                   <div className="p-14 text-center text-xs text-[#5f6368]" aria-live="polite">
@@ -1156,16 +1085,15 @@ export const AdminInboxPage: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                       {messages.length > 0 &&
-                        (activeAdvancedFilterCount > 0 || quickFilter !== 'all' || categoryTab !== 'all' || searchQuery) && (
+                        (activeAdvancedFilterCount > 0 || quickFilter !== 'all' || searchQuery) && (
                           <button
                             type="button"
                             onClick={() => {
                               setQuickFilter('all');
-                              setCategoryTab('all');
                               setSearchQuery('');
                               handleClearAdvancedFilters();
                             }}
-                            className="px-3.5 py-2 rounded-full text-xs font-medium bg-white border border-[#dadce0] text-[#1f1f1f] hover:bg-[#f1f3f4]"
+                            className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-[#dadce0] text-[#1f1f1f] hover:bg-[#f1f3f4]"
                           >
                             Limpar filtros
                           </button>
@@ -1224,7 +1152,7 @@ export const AdminInboxPage: React.FC = () => {
               </>
             ) : (
               /* Full-Width Email Reading View (Gmail / Outlook Style) */
-              <div className="p-4 sm:p-6 lg:p-7">
+              <div className="p-3 sm:p-4">
                 <InboxDetailPane
                   message={selectedMessage}
                   currentUid={currentUid}
@@ -1276,9 +1204,8 @@ export const AdminInboxPage: React.FC = () => {
                 />
               </div>
             )}
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Compose Message Modal */}
       {composeOpen && (

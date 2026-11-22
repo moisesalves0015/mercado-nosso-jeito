@@ -251,9 +251,9 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Gmail / iOS Mail Top Sticky Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#eceff4]">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#eceff4]">
         <button
           type="button"
           onClick={onBackMobile}
@@ -437,9 +437,8 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
             {message.subject}
           </h2>
           <span
-            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-              PRIORITY_BADGE_CLASSES[message.priority]
-            }`}
+            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${PRIORITY_BADGE_CLASSES[message.priority]
+              }`}
           >
             {INBOX_PRIORITY_META[message.priority].label}
           </span>
@@ -510,11 +509,10 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
       {/* Decision Banner (if already decided) */}
       {message.decision && (
         <div
-          className={`p-3.5 rounded-xl border text-xs space-y-1 ${
-            message.decision.outcome === 'rejected'
+          className={`p-3.5 rounded-xl border text-xs space-y-1 ${message.decision.outcome === 'rejected'
               ? 'bg-[#fef2f2] border-[#fecaca] text-[#991b1b]'
               : 'bg-[#e8f4ee] border-[#b9ddc8] text-[#14532d]'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="font-bold uppercase tracking-wide">
@@ -732,11 +730,10 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
                       key={`${ent.type}_${ent.id}_${idx}`}
                       type="button"
                       onClick={() => onNavigateEntity(ent)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
-                        allowed
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${allowed
                           ? 'bg-white hover:border-[#2563eb] text-[#17202a] border-[#e3e7ec] font-medium'
                           : 'bg-[#f6f7f9] text-[#838e9b] border-[#e3e7ec] opacity-70 cursor-not-allowed'
-                      }`}
+                        }`}
                     >
                       {allowed ? <ExternalLink size={12} /> : <Lock size={12} />}
                       <span>{ent.label}</span>

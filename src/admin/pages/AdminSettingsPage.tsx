@@ -1,18 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { CreditCard, Plus, Save, Settings, Trash2, Truck } from 'lucide-react';
+import { Bot, CreditCard, Plus, Save, Settings, Trash2, Truck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData, type ShippingSettings, type StoreSettings } from '../AdminDataContext';
 import { formatCurrency, PageHeader } from '../components/AdminUi';
+import { InboxAgentRulesView } from '../inbox/components/InboxAgentRulesView';
+import type { AgentRuleConfig, PartnerAdminMember, SystemAgentId } from '../inbox/types';
+import {
+  listInboxPartners,
+  runInboxAgents,
+  subscribeAgentRules,
+} from '../../services/adminInboxService';
 
 export const AdminSettingsPage: React.FC = () => {
-  const { canAny } = useAuth();
+  const { can, canAny } = useAuth();
   const {
     storeSettings,
     shippingSettings,
     actionLoading,
     saveStoreSettings,
     saveShippingSettings,
+    showToast,
   } = useAdminData();
+
+  const [activeTab, setActiveTab] = useState<'store' | 'agents'>('store');
+  const [agentRules, setAgentRules] = useState<Record<string, AgentRuleConfig>>({});
+  const [partners, setPartners] = useState<PartnerAdminMember[]>([]);
+  const [agentBusyAction, setAgentBusyAction] = useState<string | null>(null);
 
   const [storeForm, setStoreForm] = useState<StoreSettings>(storeSettings);
   const [shipForm, setShipForm] = useState<ShippingSettings>(shippingSettings);
@@ -20,6 +33,35 @@ export const AdminSettingsPage: React.FC = () => {
   const [newCondoFee, setNewCondoFee] = useState(5);
 
   const canEdit = canAny(['configuracoes:edit', 'configuracoes:admin']);
+  const canViewAgents = can('inbox:admin') || can('inbox:view');
+  const canAdminAgents = can('inbox:admin');
+
+  useEffect(() => {
+    if (!canViewAgents) return;
+    listInboxPartners()
+      .then((list) => setPartners(list))
+      .catch(() => {});
+    const unsub = subscribeAgentRules(
+      (rules) => setAgentRules(rules),
+      () => {},
+    );
+    return unsub;
+  }, [canViewAgents]);
+
+  const handleRunAgents = async (agentId?: SystemAgentId) => {
+    setAgentBusyAction(agentId ? `run_${agentId}` : 'run_all');
+    try {
+      const res = await runInboxAgents(agentId);
+      showToast(
+        `Análise concluída: ${res.createdCount} nova(s), ${res.deduplicatedCount} deduplicada(s).`,
+        'ok',
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Erro ao executar agentes.', 'err');
+    } finally {
+      setAgentBusyAction(null);
+    }
+  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -66,11 +108,50 @@ export const AdminSettingsPage: React.FC = () => {
     <div className="space-y-5">
       <PageHeader
         title="Configurações Operacionais da Loja"
-        subtitle="Dados de recebimento Pix exibidos no checkout, canais de atendimento ao morador e política de frete por condomínio."
+        subtitle="Dados de recebimento Pix, política de frete por condomínio e governança dos funcionários sistêmicos."
         badge="Parâmetros"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {canViewAgents && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--adm-border)] pb-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab('store')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+              activeTab === 'store'
+                ? 'bg-[var(--adm-brand-soft)] text-[var(--adm-brand)] border-[var(--adm-brand-border)]'
+                : 'bg-[var(--adm-surface)] text-[var(--adm-text-muted)] border-[var(--adm-border)] hover:text-[var(--adm-text)]'
+            }`}
+          >
+            <Settings size={14} /> Loja, Pix & Frete
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('agents')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+              activeTab === 'agents'
+                ? 'bg-[var(--adm-brand-soft)] text-[var(--adm-brand)] border-[var(--adm-brand-border)]'
+                : 'bg-[var(--adm-surface)] text-[var(--adm-text-muted)] border-[var(--adm-border)] hover:text-[var(--adm-text)]'
+            }`}
+          >
+            <Bot size={14} /> Funcionários Sistêmicos (11 Agentes)
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'agents' && canViewAgents ? (
+        <div className="inbox-light-shell p-4 sm:p-5 rounded-xl border border-[#e3e7ec]">
+          <InboxAgentRulesView
+            rules={agentRules}
+            partners={partners}
+            canAdmin={canAdminAgents}
+            busyAction={agentBusyAction}
+            onRunAgent={handleRunAgents}
+            onShowToast={showToast}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Store & Pix Settings */}
         <form
           onSubmit={handleStoreSubmit}
@@ -317,6 +398,7 @@ export const AdminSettingsPage: React.FC = () => {
           )}
         </form>
       </div>
+      )}
     </div>
   );
 };

@@ -39,7 +39,7 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
       role="option"
       aria-selected={isSelected}
       onClick={onSelect}
-      className={`w-full text-left px-4 py-3 transition-colors border-b border-[#eceff4] last:border-b-0 relative group ${
+      className={`w-full text-left px-3 py-2 transition-colors border-b border-[#eceff4] last:border-b-0 relative group ${
         isSelected
           ? 'bg-[#e8f0fe]'
           : isUnread
@@ -50,17 +50,17 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
       {/* Subtle left bar for unread */}
       {isUnread && (
         <span
-          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#1a73e8]"
+          className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#1a73e8]"
           aria-hidden="true"
         />
       )}
 
       {/* Desktop Gmail-style horizontal row + Clean mobile stacking */}
-      <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 min-w-0">
+      <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2.5 min-w-0">
         {/* Left: Unread dot + Avatar + Star + Sender Name */}
-        <div className="flex items-center gap-2.5 md:w-60 lg:w-64 shrink-0 min-w-0">
+        <div className="flex items-center gap-2 md:w-52 lg:w-56 shrink-0 min-w-0">
           <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               isUnread ? 'bg-[#1a73e8]' : 'bg-transparent'
             }`}
             aria-label={isUnread ? 'Não lida' : undefined}
@@ -68,22 +68,22 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
 
           {message.source === 'human' ? (
             <span
-              className="w-7 h-7 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-[11px] font-bold shrink-0"
+              className="w-6 h-6 rounded-full bg-[#e8f4ee] text-[#167a52] border border-[#b9ddc8] flex items-center justify-center text-[10px] font-bold shrink-0"
               title={`Sócio: ${message.senderName}`}
             >
               {message.senderName.slice(0, 1).toUpperCase()}
             </span>
           ) : (
             <span
-              className="w-7 h-7 rounded-full bg-[#e8f0fe] text-[#1967d2] border border-[#d2e3fc] flex items-center justify-center shrink-0"
+              className="w-6 h-6 rounded-full bg-[#e8f0fe] text-[#1967d2] border border-[#d2e3fc] flex items-center justify-center shrink-0"
               title={`Agente Sistêmico: ${agent?.name || message.senderName}`}
             >
-              <Bot size={14} />
+              <Bot size={12} />
             </span>
           )}
 
           <Star
-            size={14}
+            size={13}
             className={`shrink-0 ${
               isStarred ? 'text-[#f59e0b] fill-[#f59e0b]' : 'text-[#cbd5e1]'
             }`}
