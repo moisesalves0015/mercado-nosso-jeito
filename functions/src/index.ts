@@ -1480,23 +1480,44 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('already-exists', 'Cancelamento deste pedido já está em processamento.');
     }
 
+    // IMPORTANT (Firestore rule): ALL READS MUST PRECEDE ALL WRITES in a transaction.
+    // Read all products before performing any transaction.set() or transaction.update().
+    const items = (orderData.items ?? []) as Array<{ id?: string; productId?: string; quantity: number }>;
+    interface ProductToRefund {
+      ref: FirebaseFirestore.DocumentReference;
+      stockToAdd: number;
+      currentStock: number;
+    }
+    const productsToRefund: ProductToRefund[] = [];
+
+    for (const item of items) {
+      const pId = item.id || item.productId;
+      if (typeof pId === 'string' && pId.trim()) {
+        const productRef = db.collection('products').doc(pId.trim());
+        const productSnap = await transaction.get(productRef);
+        if (productSnap.exists) {
+          const pData = productSnap.data()!;
+          if (pData.stock !== undefined) {
+            productsToRefund.push({
+              ref: productRef,
+              stockToAdd: Number(item.quantity) || 0,
+              currentStock: Number(pData.stock),
+            });
+          }
+        }
+      }
+    }
+
+    // ── NOW PERFORM ALL WRITES (no more reads allowed below) ──────────────────
     transaction.set(idempotencyRef, {
       requestedAt: admin.firestore.FieldValue.serverTimestamp(),
       by: callerUid,
       reason: reason || (canCancelAny ? 'Cancelado pelo administrador' : 'Cancelado pelo cliente'),
     });
 
-    // Refund stock atomically (only if not already refunded)
-    const items = (orderData.items ?? []) as Array<{ id: string; quantity: number }>;
-    for (const item of items) {
-      const productRef = db.collection('products').doc(item.id);
-      const productSnap = await transaction.get(productRef);
-      if (productSnap.exists) {
-        const pData = productSnap.data()!;
-        if (pData.stock !== undefined) {
-          transaction.update(productRef, { stock: Number(pData.stock) + item.quantity });
-        }
-      }
+    // Refund stock atomically
+    for (const p of productsToRefund) {
+      transaction.update(p.ref, { stock: p.currentStock + p.stockToAdd });
     }
 
     // Update order status, paymentStatus (if not approved/completed), and timeline

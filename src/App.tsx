@@ -198,9 +198,19 @@ function AppContent() {
     window.addEventListener('app-products-retry', onRetry);
     const unsub = subscribeProductsWithMedia((list) => {
       try {
-        localStorage.setItem('app-products', JSON.stringify(list));
+        // Strip heavy base64 data URIs from client cache to keep localStorage light & prevent QuotaExceededError
+        const sanitized = list.map((p) => {
+          const isHugeDataUri = typeof p.image === 'string' && p.image.startsWith('data:') && p.image.length > 1500;
+          return isHugeDataUri ? { ...p, image: '' } : p;
+        });
+        localStorage.setItem('app-products', JSON.stringify(sanitized));
       } catch {
-        // ignore quota errors
+        // If quota still exceeded, remove app-products from localStorage so critical keys (like cart/auth) never fail
+        try {
+          localStorage.removeItem('app-products');
+        } catch {
+          // ignore
+        }
       }
       window.dispatchEvent(new Event('app-products-updated'));
     });
