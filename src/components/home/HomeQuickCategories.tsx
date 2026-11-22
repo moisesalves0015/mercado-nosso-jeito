@@ -130,7 +130,7 @@ export const HomeQuickCategories = ({ items }: { items: HomeCategoryLink[] }) =>
               letterSpacing: '-0.1px',
             }}
           >
-            termina em
+            Termina em
           </span>
 
           {/* Fundo vermelho separado nas horas, minutos e segundos, números em branco */}

@@ -9526,9 +9526,9 @@ body.light-mode .roulette-bg-overlay {
 .flash-offer-digit-box {
   background: #E53935;
   color: #ffffff;
-  padding: 1px 4px;
+  padding: 1.5px 5px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 900;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-variant-numeric: tabular-nums;
@@ -9542,7 +9542,7 @@ body.light-mode .roulette-bg-overlay {
 .flash-offer-colon {
   color: #ffffff;
   font-weight: 800;
-  font-size: 10px;
+  font-size: 11.5px;
   line-height: 1;
 }
 
