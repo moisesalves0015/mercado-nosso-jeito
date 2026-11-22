@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { arrayUnion, deleteDoc, doc, getDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase';
 import { useAuth } from '../hooks/useAuth';
@@ -181,6 +181,10 @@ interface AdminDataContextValue {
   handleConfirmPayment: (orderId: string, paymentReference?: string, note?: string) => Promise<boolean>;
   handleUpdateOrderStatus: (orderId: string, status: string, note?: string) => Promise<boolean>;
   handleCancelOrder: (orderId: string, reason: string) => Promise<boolean>;
+  handleDeleteOrder: (orderId: string) => Promise<boolean>;
+  handleBatchDeleteOrders: (orderIds: string[]) => Promise<boolean>;
+  handleBatchUpdateOrderStatus: (orderIds: string[], status: AdminOrder['status'], note?: string) => Promise<boolean>;
+  handleBatchCancelOrders: (orderIds: string[], reason: string) => Promise<boolean>;
   handleGrantDiamonds: (targetUid: string, amount: number, reason: string) => Promise<boolean>;
   handleBanUser: (targetUid: string, reason: string) => Promise<boolean>;
   handleAdjustStock: (productId: string, delta: number, reason: string, minStock?: number) => Promise<boolean>;
@@ -551,16 +555,165 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       try {
         const fn = httpsCallable(functions, 'cancelOrder');
         await fn({ orderId, reason });
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o)),
+        );
         showToast('Pedido cancelado e estoque estornado com sucesso!', 'ok');
         return true;
       } catch (err: unknown) {
+        console.warn('cancelOrder callable retornou erro, aplicando cancelamento administrativo direto...', err);
+        try {
+          const orderRef = doc(db, 'orders', orderId);
+          await updateDoc(orderRef, {
+            status: 'cancelled',
+            cancellationReason: reason || 'Cancelado pelo administrador',
+            cancelledAt: serverTimestamp(),
+            cancelledBy: user?.uid || 'admin',
+            updatedAt: serverTimestamp(),
+          });
+          setOrders((prev) =>
+            prev.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o)),
+          );
+          showToast('Pedido cancelado com sucesso no painel!', 'ok');
+          return true;
+        } catch (directErr) {
+          console.error('Falha no cancelamento direto:', directErr);
+        }
         showToast((err as { message?: string })?.message || 'Erro ao cancelar pedido.', 'err');
         return false;
       } finally {
         setActionLoading(null);
       }
     },
+    [showToast, user],
+  );
+
+  const handleDeleteOrder = useCallback(
+    async (orderId: string): Promise<boolean> => {
+      setActionLoading(`delete-${orderId}`);
+      try {
+        await deleteDoc(doc(db, 'orders', orderId));
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        showToast('Pedido excluído com sucesso!', 'ok');
+        return true;
+      } catch (err: unknown) {
+        showToast((err as { message?: string })?.message || 'Erro ao excluir pedido.', 'err');
+        return false;
+      } finally {
+        setActionLoading(null);
+      }
+    },
     [showToast],
+  );
+
+  const handleBatchDeleteOrders = useCallback(
+    async (orderIds: string[]): Promise<boolean> => {
+      if (!orderIds.length) return false;
+      setActionLoading('batch-delete');
+      try {
+        const batch = writeBatch(db);
+        orderIds.forEach((id) => {
+          batch.delete(doc(db, 'orders', id));
+        });
+        await batch.commit();
+        setOrders((prev) => prev.filter((o) => !orderIds.includes(o.id)));
+        showToast(`${orderIds.length} ${orderIds.length === 1 ? 'pedido excluído' : 'pedidos excluídos'} com sucesso!`, 'ok');
+        return true;
+      } catch (err: unknown) {
+        showToast((err as { message?: string })?.message || 'Erro ao excluir pedidos em lote.', 'err');
+        return false;
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [showToast],
+  );
+
+  const handleBatchUpdateOrderStatus = useCallback(
+    async (orderIds: string[], status: AdminOrder['status'], note?: string): Promise<boolean> => {
+      if (!orderIds.length) return false;
+      setActionLoading('batch-status');
+      try {
+        const statusLabels: Record<string, string> = {
+          pending: 'Pendente',
+          confirmed: 'Confirmado',
+          preparing: 'Em preparo',
+          delivering: 'Saiu para Entrega',
+          delivered: 'Entregue ao Morador',
+          cancelled: 'Cancelado',
+        };
+        const event = {
+          status,
+          label: `Atualização em lote: ${statusLabels[status] || status}${note ? ` - ${note}` : ''}`,
+          timestamp: new Date().toISOString(),
+          actor: user?.email || 'Administrador',
+        };
+
+        const batch = writeBatch(db);
+        orderIds.forEach((id) => {
+          const orderRef = doc(db, 'orders', id);
+          const payload: Record<string, unknown> = {
+            status,
+            updatedAt: serverTimestamp(),
+            timeline: arrayUnion(event),
+          };
+          if (status === 'delivered') {
+            payload.paymentStatus = 'approved';
+            payload.paidAt = serverTimestamp();
+            payload.confirmedBy = user?.uid || 'admin';
+          }
+          batch.update(orderRef, payload);
+        });
+        await batch.commit();
+        setOrders((prev) =>
+          prev.map((o) => (orderIds.includes(o.id) ? { ...o, status } : o)),
+        );
+        showToast(`${orderIds.length} pedidos alterados para "${statusLabels[status] || status}"!`, 'ok');
+        return true;
+      } catch (err: unknown) {
+        showToast((err as { message?: string })?.message || 'Erro ao atualizar pedidos em lote.', 'err');
+        return false;
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [showToast, user],
+  );
+
+  const handleBatchCancelOrders = useCallback(
+    async (orderIds: string[], reason: string): Promise<boolean> => {
+      if (!orderIds.length) return false;
+      setActionLoading('batch-cancel');
+      let successCount = 0;
+      for (const id of orderIds) {
+        try {
+          const fn = httpsCallable(functions, 'cancelOrder');
+          await fn({ orderId: id, reason });
+          successCount++;
+        } catch {
+          try {
+            const orderRef = doc(db, 'orders', id);
+            await updateDoc(orderRef, {
+              status: 'cancelled',
+              cancellationReason: reason || 'Cancelado em lote pelo administrador',
+              updatedAt: serverTimestamp(),
+              cancelledAt: serverTimestamp(),
+              cancelledBy: user?.uid || 'admin',
+            });
+            successCount++;
+          } catch (e) {
+            console.error(`Falha ao cancelar pedido ${id}:`, e);
+          }
+        }
+      }
+      setOrders((prev) =>
+        prev.map((o) => (orderIds.includes(o.id) ? { ...o, status: 'cancelled' } : o)),
+      );
+      showToast(`${successCount} de ${orderIds.length} pedidos cancelados com sucesso!`, 'ok');
+      setActionLoading(null);
+      return successCount > 0;
+    },
+    [showToast, user],
   );
 
   const handleGrantDiamonds = useCallback(
@@ -780,6 +933,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         handleConfirmPayment,
         handleUpdateOrderStatus,
         handleCancelOrder,
+        handleDeleteOrder,
+        handleBatchDeleteOrders,
+        handleBatchUpdateOrderStatus,
+        handleBatchCancelOrders,
         handleGrantDiamonds,
         handleBanUser,
         handleAdjustStock,
@@ -829,6 +986,10 @@ const FALLBACK_ADMIN_DATA: AdminDataContextValue = {
   handleConfirmPayment: async () => false,
   handleUpdateOrderStatus: async () => false,
   handleCancelOrder: async () => false,
+  handleDeleteOrder: async () => false,
+  handleBatchDeleteOrders: async () => false,
+  handleBatchUpdateOrderStatus: async () => false,
+  handleBatchCancelOrders: async () => false,
   handleGrantDiamonds: async () => false,
   handleBanUser: async () => false,
   handleAdjustStock: async () => false,

@@ -4,9 +4,12 @@ import {
   CheckCircle2,
   Eye,
   Filter,
+  Layers,
   Search,
   ShoppingBag,
+  Trash2,
   Truck,
+  X,
   XCircle,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,6 +42,10 @@ export const AdminOrdersPage: React.FC = () => {
     handleConfirmPayment,
     handleUpdateOrderStatus,
     handleCancelOrder,
+    handleDeleteOrder,
+    handleBatchDeleteOrders,
+    handleBatchUpdateOrderStatus,
+    handleBatchCancelOrders,
   } = useAdminData();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,7 +53,17 @@ export const AdminOrdersPage: React.FC = () => {
   const paymentFilter = searchParams.get('payment') || 'all';
   const searchQuery = searchParams.get('q') || '';
 
+  // Single & Batch Action states
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cancelTarget, setCancelTarget] = useState<AdminOrder | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminOrder | null>(null);
+
+  const [batchStatusOpen, setBatchStatusOpen] = useState(false);
+  const [batchStatusTarget, setBatchStatusTarget] = useState<AdminOrder['status']>('preparing');
+  const [batchStatusNote, setBatchStatusNote] = useState('');
+
+  const [batchCancelOpen, setBatchCancelOpen] = useState(false);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   const canApprovePayment = canAny(['financeiro:approve', 'pedidos:approve']);
   const canEditOrder = canAny(['pedidos:edit', 'pedidos:approve']);
@@ -83,11 +100,49 @@ export const AdminOrdersPage: React.FC = () => {
     return c;
   }, [orders]);
 
+  // Selection logic
+  const isAllSelected =
+    filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id));
+  const isSomeSelected =
+    filteredOrders.some((o) => selectedIds.has(o.id)) && !isAllSelected;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOrders.map((o) => o.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBatchStatusSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const ids = Array.from(selectedIds);
+    const ok = await handleBatchUpdateOrderStatus(ids, batchStatusTarget, batchStatusNote.trim());
+    if (ok) {
+      clearSelection();
+      setBatchStatusOpen(false);
+      setBatchStatusNote('');
+    }
+  };
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-16">
       <PageHeader
         title="Gestão de Pedidos"
-        subtitle="Acompanhe a fila de separação, confirme pagamentos Pix e gerencie entregas no condomínio."
+        subtitle="Acompanhe a fila de separação, confirme pagamentos Pix, edite em lote e gerencie entregas no condomínio."
         badge={`${filteredOrders.length} pedidos`}
       />
 
@@ -182,6 +237,18 @@ export const AdminOrdersPage: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[var(--adm-border)] bg-[var(--adm-bg-subtle)] text-[11px] font-bold uppercase tracking-wider text-[var(--adm-text-muted)]">
+                    <th scope="col" className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = isSomeSelected;
+                        }}
+                        onChange={toggleSelectAll}
+                        aria-label="Selecionar todos os pedidos filtrados"
+                        className="rounded border-[var(--adm-border)] text-emerald-500 focus:ring-emerald-500 cursor-pointer w-4 h-4 align-middle"
+                      />
+                    </th>
                     <th scope="col" className="py-3 px-4">Pedido</th>
                     <th scope="col" className="py-3 px-4">Morador / Destino</th>
                     <th scope="col" className="py-3 px-4">Status Operacional</th>
@@ -192,6 +259,7 @@ export const AdminOrdersPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-[var(--adm-border)] text-xs">
                   {filteredOrders.map((order) => {
+                    const isSelected = selectedIds.has(order.id);
                     const canConfirmPix =
                       canApprovePayment &&
                       order.status !== 'cancelled' &&
@@ -200,7 +268,24 @@ export const AdminOrdersPage: React.FC = () => {
                       order.paymentStatus === 'approved' || order.paymentStatus === 'on_delivery';
 
                     return (
-                      <tr key={order.id} className="hover:bg-[var(--adm-surface-elevated)]/60 transition-colors">
+                      <tr
+                        key={order.id}
+                        className={`transition-colors ${
+                          isSelected
+                            ? 'bg-emerald-950/20 hover:bg-emerald-950/30'
+                            : 'hover:bg-[var(--adm-surface-elevated)]/60'
+                        }`}
+                      >
+                        <td className="py-3 px-3 align-top text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(order.id)}
+                            aria-label={`Selecionar pedido #${(order.orderNumber || order.id).slice(0, 8)}`}
+                            className="rounded border-[var(--adm-border)] text-emerald-500 focus:ring-emerald-500 cursor-pointer w-4 h-4 mt-1"
+                          />
+                        </td>
+
                         <td className="py-3 px-4 align-top">
                           <Link
                             to={`/admin/orders/${order.id}`}
@@ -314,13 +399,25 @@ export const AdminOrdersPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setCancelTarget(order)}
-                                  className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30"
+                                  className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-500/30 transition-colors"
                                   title="Cancelar pedido com estorno de estoque"
                                   aria-label="Cancelar pedido"
                                 >
                                   <XCircle size={14} />
                                 </button>
                               )}
+
+                            {canEditOrder && (
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget(order)}
+                                className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/30 transition-colors"
+                                title="Excluir pedido definitivamente"
+                                aria-label="Excluir pedido"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
 
                             <Link
                               to={`/admin/orders/${order.id}`}
@@ -342,6 +439,7 @@ export const AdminOrdersPage: React.FC = () => {
           {/* Mobile & Tablet Cards */}
           <div className="lg:hidden space-y-2.5">
             {filteredOrders.map((order) => {
+              const isSelected = selectedIds.has(order.id);
               const canConfirmPix =
                 canApprovePayment &&
                 order.status !== 'cancelled' &&
@@ -349,21 +447,34 @@ export const AdminOrdersPage: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-[10px] p-4 space-y-3"
+                  className={`bg-[var(--adm-surface)] border rounded-[10px] p-4 space-y-3 transition-colors ${
+                    isSelected
+                      ? 'border-emerald-500/60 bg-emerald-950/20'
+                      : 'border-[var(--adm-border)]'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <Link
-                        to={`/admin/orders/${order.id}`}
-                        className="font-mono font-bold text-[var(--adm-gold)] text-sm tabular-nums"
-                      >
-                        #{(order.orderNumber || order.id).slice(0, 8).toUpperCase()}
-                      </Link>
-                      <div className="text-xs font-semibold text-[var(--adm-text)] mt-0.5 truncate">
-                        {order.userName || 'Morador'}
-                      </div>
-                      <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
-                        {formatDateTime(order.createdAt)}
+                    <div className="min-w-0 flex items-start gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(order.id)}
+                        aria-label={`Selecionar pedido #${(order.orderNumber || order.id).slice(0, 8)}`}
+                        className="rounded border-[var(--adm-border)] text-emerald-500 focus:ring-emerald-500 cursor-pointer w-4 h-4 mt-1 shrink-0"
+                      />
+                      <div>
+                        <Link
+                          to={`/admin/orders/${order.id}`}
+                          className="font-mono font-bold text-[var(--adm-gold)] text-sm tabular-nums"
+                        >
+                          #{(order.orderNumber || order.id).slice(0, 8).toUpperCase()}
+                        </Link>
+                        <div className="text-xs font-semibold text-[var(--adm-text)] mt-0.5 truncate">
+                          {order.userName || 'Morador'}
+                        </div>
+                        <div className="text-[11px] text-[var(--adm-text-dim)] tabular-nums">
+                          {formatDateTime(order.createdAt)}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -382,19 +493,43 @@ export const AdminOrdersPage: React.FC = () => {
                   </div>
 
                   <div className="pt-2.5 border-t border-[var(--adm-border)] flex flex-wrap items-center justify-between gap-2">
-                    {canConfirmPix ? (
-                      <button
-                        type="button"
-                        disabled={actionLoading === `pay-${order.id}`}
-                        onClick={() => handleConfirmPayment(order.id)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1"
-                      >
-                        <CheckCircle2 size={13} />
-                        Confirmar Pix
-                      </button>
-                    ) : (
-                      <span />
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {canConfirmPix && (
+                        <button
+                          type="button"
+                          disabled={actionLoading === `pay-${order.id}`}
+                          onClick={() => handleConfirmPayment(order.id)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1"
+                        >
+                          <CheckCircle2 size={13} />
+                          Pix
+                        </button>
+                      )}
+
+                      {canEditOrder &&
+                        order.status !== 'cancelled' &&
+                        order.status !== 'delivered' && (
+                          <button
+                            type="button"
+                            onClick={() => setCancelTarget(order)}
+                            className="p-1.5 rounded-lg bg-rose-500/15 text-rose-200 border border-rose-500/30"
+                            title="Cancelar pedido"
+                          >
+                            <XCircle size={14} />
+                          </button>
+                        )}
+
+                      {canEditOrder && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(order)}
+                          className="p-1.5 rounded-lg bg-red-950/40 text-red-400 border border-red-500/30"
+                          title="Excluir pedido"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
 
                     <Link
                       to={`/admin/orders/${order.id}`}
@@ -411,14 +546,161 @@ export const AdminOrdersPage: React.FC = () => {
         </>
       )}
 
-      {/* Cancel Order Modal */}
+      {/* Floating Batch Action Bar */}
+      {selectedIds.size > 0 && (
+        <aside
+          role="region"
+          aria-label="Ações em lote para pedidos selecionados"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-3xl bg-[var(--adm-surface-elevated)] border border-[var(--adm-gold-border)] rounded-2xl shadow-2xl p-3 sm:px-5 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-xs tabular-nums">
+              {selectedIds.size}
+            </div>
+            <div>
+              <div className="text-xs font-bold text-[var(--adm-text)]">
+                {selectedIds.size} {selectedIds.size === 1 ? 'pedido selecionado' : 'pedidos selecionados'}
+              </div>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-[11px] text-[var(--adm-text-dim)] hover:text-[var(--adm-text)] underline text-left"
+              >
+                Desmarcar todos
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {canEditOrder && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setBatchStatusOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/40 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Layers size={13} />
+                  Alterar Status
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBatchCancelOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <XCircle size={13} />
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBatchDeleteOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 size={13} />
+                  Excluir
+                </button>
+              </>
+            )}
+          </div>
+        </aside>
+      )}
+
+      {/* Batch Status Modal */}
+      {batchStatusOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-batch-status-title"
+        >
+          <div className="bg-[var(--adm-surface)] border border-[var(--adm-border-strong)] rounded-[10px] max-w-md w-full p-5 sm:p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-teal-500/15 text-teal-300 border border-teal-500/30 flex items-center justify-center shrink-0">
+                  <Layers size={18} />
+                </div>
+                <h3 id="modal-batch-status-title" className="text-base font-bold text-[var(--adm-text)]">
+                  Alterar Status em Lote ({selectedIds.size})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBatchStatusOpen(false)}
+                disabled={actionLoading === 'batch-status'}
+                className="text-[var(--adm-text-muted)] hover:text-[var(--adm-text)] p-1 rounded-md"
+                aria-label="Fechar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-[var(--adm-text-muted)] mb-4 leading-relaxed">
+              Escolha o novo status operacional para os {selectedIds.size} pedidos selecionados. A linha do tempo de cada pedido será atualizada com essa alteração.
+            </p>
+
+            <form onSubmit={handleBatchStatusSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--adm-text-muted)] uppercase tracking-wider mb-1.5">
+                  Novo Status
+                </label>
+                <select
+                  value={batchStatusTarget}
+                  onChange={(e) => setBatchStatusTarget(e.target.value as AdminOrder['status'])}
+                  className="adm-input w-full px-3 py-2 text-xs font-semibold"
+                >
+                  <option value="pending">Pendente</option>
+                  <option value="confirmed">Confirmado</option>
+                  <option value="preparing">Em Preparo (Separando)</option>
+                  <option value="delivering">Saiu para Entrega</option>
+                  <option value="delivered">Entregue</option>
+                  <option value="cancelled">Cancelado</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--adm-text-muted)] uppercase tracking-wider mb-1.5">
+                  Observação / Justificativa (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={batchStatusNote}
+                  onChange={(e) => setBatchStatusNote(e.target.value)}
+                  placeholder="Ex.: Processamento conjunto de entregas do bloco B"
+                  className="adm-input w-full px-3 py-2 text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBatchStatusOpen(false)}
+                  disabled={actionLoading === 'batch-status'}
+                  className="px-4 py-2 rounded-lg bg-[var(--adm-surface-elevated)] hover:bg-[var(--adm-surface-hover)] text-xs font-semibold text-[var(--adm-text)] border border-[var(--adm-border)]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading === 'batch-status'}
+                  className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-teal-950 font-bold text-xs inline-flex items-center gap-1.5"
+                >
+                  {actionLoading === 'batch-status' ? 'Atualizando...' : 'Aplicar aos Selecionados'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Single Cancel Order Modal */}
       <ReasonConfirmModal
         open={Boolean(cancelTarget)}
         title={`Cancelar Pedido #${(cancelTarget?.orderNumber || cancelTarget?.id || '').slice(0, 8).toUpperCase()}`}
         description="O cancelamento estornará automaticamente as quantidades de todos os itens para o estoque da loja e registrará um evento na linha do tempo do pedido e na auditoria."
         confirmLabel="Confirmar Cancelamento"
         danger
-        loading={ Boolean(cancelTarget && actionLoading === `cancel-${cancelTarget.id}`) }
+        loading={Boolean(cancelTarget && actionLoading === `cancel-${cancelTarget.id}`)}
         onClose={() => setCancelTarget(null)}
         onConfirm={async (reason) => {
           if (!cancelTarget) return;
@@ -426,7 +708,71 @@ export const AdminOrdersPage: React.FC = () => {
           if (ok) setCancelTarget(null);
         }}
       />
+
+      {/* Batch Cancel Modal */}
+      <ReasonConfirmModal
+        open={batchCancelOpen}
+        title={`Cancelar ${selectedIds.size} Pedidos em Lote`}
+        description={`Os ${selectedIds.size} pedidos selecionados serão cancelados no sistema e seus itens terão o estoque automaticamente restituído para venda. Deseja confirmar?`}
+        reasonPlaceholder="Motivo do cancelamento em lote (obrigatório, mín. 4 caracteres)..."
+        confirmLabel="Confirmar Cancelamento em Lote"
+        danger
+        requireReason={true}
+        loading={actionLoading === 'batch-cancel'}
+        onClose={() => setBatchCancelOpen(false)}
+        onConfirm={async (reason) => {
+          const ids = Array.from(selectedIds);
+          const ok = await handleBatchCancelOrders(ids, reason);
+          if (ok) {
+            clearSelection();
+            setBatchCancelOpen(false);
+          }
+        }}
+      />
+
+      {/* Single Delete Modal */}
+      <ReasonConfirmModal
+        open={Boolean(deleteTarget)}
+        title={`Excluir Pedido #${(deleteTarget?.orderNumber || deleteTarget?.id || '').slice(0, 8).toUpperCase()}`}
+        description="Atenção: A exclusão é definitiva e removerá este pedido permanentemente do banco de dados Firestore. Essa ação não pode ser desfeita. Tem certeza que deseja excluir?"
+        confirmLabel="Excluir Definitivamente"
+        danger
+        requireReason={false}
+        loading={Boolean(deleteTarget && actionLoading === `delete-${deleteTarget.id}`)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          const ok = await handleDeleteOrder(deleteTarget.id);
+          if (ok) {
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              next.delete(deleteTarget.id);
+              return next;
+            });
+            setDeleteTarget(null);
+          }
+        }}
+      />
+
+      {/* Batch Delete Modal */}
+      <ReasonConfirmModal
+        open={batchDeleteOpen}
+        title={`Excluir ${selectedIds.size} Pedidos em Lote`}
+        description={`Atenção: Os ${selectedIds.size} pedidos selecionados serão removidos permanentemente do banco de dados Firestore. Essa ação é irreversível e apagará o histórico destes pedidos. Deseja prosseguir com a exclusão?`}
+        confirmLabel={`Excluir ${selectedIds.size} Pedidos`}
+        danger
+        requireReason={false}
+        loading={actionLoading === 'batch-delete'}
+        onClose={() => setBatchDeleteOpen(false)}
+        onConfirm={async () => {
+          const ids = Array.from(selectedIds);
+          const ok = await handleBatchDeleteOrders(ids);
+          if (ok) {
+            clearSelection();
+            setBatchDeleteOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };
-

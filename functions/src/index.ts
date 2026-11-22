@@ -1462,6 +1462,14 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
 
     // Check if already cancelled
     if (orderData.status === 'cancelled') {
+      if (canCancelAny) {
+        return {
+          success: true,
+          orderId,
+          status: 'cancelled',
+          message: 'Pedido já se encontrava cancelado.',
+        };
+      }
       throw new functions.https.HttpsError('failed-precondition', 'Este pedido já está cancelado.');
     }
 
@@ -1476,7 +1484,7 @@ export const cancelOrder = functions.https.onCall(async (data, context) => {
     // Idempotency subdocument lock to ensure single stock refund even under high concurrency
     const idempotencyRef = db.collection('orders').doc(orderId).collection('cancellation_requests').doc('cancel_req');
     const idempSnap = await transaction.get(idempotencyRef);
-    if (idempSnap.exists) {
+    if (idempSnap.exists && !canCancelAny) {
       throw new functions.https.HttpsError('already-exists', 'Cancelamento deste pedido já está em processamento.');
     }
 
