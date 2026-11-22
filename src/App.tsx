@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, Outlet } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { subscribeProductsWithMedia } from './services/imageUploadService';
+import { setInMemoryProducts, subscribeProductsWithMedia } from './services/imageUploadService';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { HomeReadinessProvider, useHomeReadiness } from './contexts/HomeReadinessContext';
@@ -192,26 +192,67 @@ function AppContent() {
     }
   }, [location.search]);
 
-  // Real-time Firestore sync of products (+ media gallery overrides) to localStorage
+  // Real-time Firestore sync of products (+ media gallery overrides) to memory and localStorage
   useEffect(() => {
     const onRetry = () => setProductsRetryNonce((n) => n + 1);
     window.addEventListener('app-products-retry', onRetry);
     const unsub = subscribeProductsWithMedia((list) => {
+      // 1. Always update memory cache first so all views have immediate zero-latency access
+      setInMemoryProducts(list);
+
+      // 2. Strip heavy base64 data URIs from client cache to keep localStorage light & prevent QuotaExceededError
+      const sanitized: Array<Record<string, unknown>> = list.map((p) => {
+        const isHugeDataUri = typeof p.image === 'string' && p.image.startsWith('data:') && p.image.length > 1000;
+        const cleanImages = Array.isArray(p.images)
+          ? p.images
+              .map((img) => (typeof img === 'string' && img.startsWith('data:') && img.length > 1000 ? '' : img))
+              .filter(Boolean)
+          : p.images;
+        return {
+          ...p,
+          image: isHugeDataUri ? '' : p.image,
+          images: cleanImages,
+        };
+      });
+
+      // 3. Persist to storage with automatic self-healing on quota failure
       try {
-        // Strip heavy base64 data URIs from client cache to keep localStorage light & prevent QuotaExceededError
-        const sanitized = list.map((p) => {
-          const isHugeDataUri = typeof p.image === 'string' && p.image.startsWith('data:') && p.image.length > 1500;
-          return isHugeDataUri ? { ...p, image: '' } : p;
-        });
         localStorage.setItem('app-products', JSON.stringify(sanitized));
       } catch {
-        // If quota still exceeded, remove app-products from localStorage so critical keys (like cart/auth) never fail
         try {
-          localStorage.removeItem('app-products');
+          // Evict non-critical large caches that might be hogging quota
+          localStorage.removeItem('app-home-config-v2');
+          localStorage.removeItem('home_snapshot_v1');
+
+          // Try storing compact lightweight version (no extra metadata or heavy strings)
+          const compact = sanitized.map((item) => {
+            const p = item as Record<string, unknown>;
+            return {
+              id: p.id,
+              title: p.title,
+              price: p.price,
+              costPrice: p.costPrice,
+              category: p.category,
+              stock: p.stock,
+              active: p.active,
+              badge: p.badge,
+              diamondReward: p.diamondReward,
+              promoActive: p.promoActive,
+              promoPrice: p.promoPrice,
+              image: typeof p.image === 'string' && !p.image.startsWith('data:') ? p.image : '',
+            };
+          });
+          localStorage.setItem('app-products', JSON.stringify(compact));
         } catch {
-          // ignore
+          // If localStorage is completely full/blocked, persist in sessionStorage
+          try {
+            sessionStorage.setItem('app-products', JSON.stringify(sanitized));
+          } catch {
+            // Memory cache remains active and guarantees uninterrupted operation
+          }
         }
       }
+
       window.dispatchEvent(new Event('app-products-updated'));
     });
     return () => {

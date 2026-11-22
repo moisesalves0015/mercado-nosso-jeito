@@ -259,6 +259,17 @@ export async function uploadBannerMediaFile(
   }
 }
 
+// In-memory products cache accessible across all components and hooks
+let inMemoryProductsCache: Array<Record<string, unknown>> | null = null;
+
+export function getInMemoryProducts(): Array<Record<string, unknown>> | null {
+  return inMemoryProductsCache;
+}
+
+export function setInMemoryProducts(list: Array<Record<string, unknown>>) {
+  inMemoryProductsCache = list;
+}
+
 /**
  * Synchronizes an updated or created product in `localStorage['app-products']`
  * and dispatches `app-products-updated` so all public vitrines, search, and detail views
@@ -277,7 +288,12 @@ export function syncProductInLocalStorage(
     } else {
       list.unshift({ ...payload, id: productId });
     }
-    localStorage.setItem('app-products', JSON.stringify(list));
+    setInMemoryProducts(list);
+    try {
+      localStorage.setItem('app-products', JSON.stringify(list));
+    } catch {
+      // quota fallback handled in App/useCatalog
+    }
     window.dispatchEvent(new Event('app-products-updated'));
   } catch (err) {
     console.warn('[syncProductInLocalStorage] Could not update local cache:', err);
@@ -449,14 +465,22 @@ export function subscribeProductsWithMedia(
         images: Array.isArray(m.images) && m.images.length > 0 ? m.images : p.images,
       };
     });
+    setInMemoryProducts(merged);
     onUpdate(merged);
   };
 
-  const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
-    rawProducts = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-    productsLoaded = true;
-    emit();
-  });
+  const unsubProducts = onSnapshot(
+    collection(db, 'products'),
+    (snap) => {
+      rawProducts = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      productsLoaded = true;
+      emit();
+    },
+    (error) => {
+      console.warn('[subscribeProductsWithMedia] Firestore produtos onSnapshot error:', error);
+      window.dispatchEvent(new Event('app-products-error'));
+    }
+  );
 
   const unsubMedia = onSnapshot(
     collection(db, 'home-config', 'data', 'product-media'),

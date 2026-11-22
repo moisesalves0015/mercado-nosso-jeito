@@ -88,7 +88,11 @@ export const Bebidas = () => {
       });
 
       if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
+        try {
+          localStorage.setItem('app-products', JSON.stringify(allProds));
+        } catch {
+          // ignore quota limits safely
+        }
       }
 
       setBebidas(allProds.filter(p => p.category === 'Bebidas'));

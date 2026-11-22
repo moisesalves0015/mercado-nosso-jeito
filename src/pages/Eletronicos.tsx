@@ -70,7 +70,11 @@ export const Eletronicos = () => {
       });
 
       if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
+        try {
+          localStorage.setItem('app-products', JSON.stringify(allProds));
+        } catch {
+          // ignore quota limits safely
+        }
       }
 
       setEletronicoProds(allProds.filter(p => p.category === 'Eletrônicos'));

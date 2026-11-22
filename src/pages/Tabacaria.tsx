@@ -70,7 +70,11 @@ export const Tabacaria = () => {
       });
 
       if (updated) {
-        localStorage.setItem('app-products', JSON.stringify(allProds));
+        try {
+          localStorage.setItem('app-products', JSON.stringify(allProds));
+        } catch {
+          // ignore quota limits safely
+        }
       }
 
       setTabacariaProds(allProds.filter(p => p.category === 'Tabacaria'));

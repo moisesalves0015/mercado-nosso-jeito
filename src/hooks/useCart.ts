@@ -59,9 +59,9 @@ const persistCartToStorage = (items: CartItem[]) => {
     console.warn('localStorage quota exceeded on app-cart. Attempting self-healing cleanup...', err);
   }
 
-  // Self-healing attempt 1: Evict dispensable large client-side caches (can be re-fetched from Firestore)
+  // Self-healing attempt 1: Evict dispensable large snapshot caches (can be re-fetched from Firestore)
   try {
-    localStorage.removeItem('app-products');
+    localStorage.removeItem('app-home-config-v2');
     localStorage.removeItem('home_snapshot_v1');
     localStorage.setItem('app-cart', payload);
     return;
