@@ -115,10 +115,13 @@ export function Cart() {
 
       <div className="commerce-shell commerce-fade-in">
       {/* ── Page title ──────────────────────────── */}
-      <div style={{ padding: '4px 0 10px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Meu Carrinho</h1>
+      <div className="commerce-header-row">
+        <div>
+          <h1 className="commerce-title">Meu Carrinho</h1>
+          <p className="commerce-subtitle">Revise seus itens e aproveite entrega expressa</p>
+        </div>
         {totalItems > 0 && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>
+          <span className="commerce-count-badge">
             {totalItems} {totalItems === 1 ? 'item' : 'itens'}
           </span>
         )}
@@ -126,12 +129,12 @@ export function Cart() {
 
       {cartItems.length === 0 ? (
         <div style={{ padding: '64px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div className="clube-mission-icon-box" style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--card-bg)', border: '1px solid var(--border-gold)' }}>
-            <ShoppingBag size={26} color="#D4AF37" />
+          <div className="clube-mission-icon-box" style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            <ShoppingBag size={28} color="#10b981" />
           </div>
-          <h3 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, margin: '18px 0 6px 0' }}>Seu carrinho está vazio</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 12.5, margin: '0 0 26px 0', maxWidth: 260, lineHeight: 1.5 }}>
-            Adicione produtos refrescantes ou guloseimas e receba em até 20 minutos!
+          <h3 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, margin: '18px 0 6px 0', letterSpacing: '-0.3px' }}>Seu carrinho está vazio</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '0 0 24px 0', maxWidth: 280, lineHeight: 1.5 }}>
+            Que tal adicionar produtos refrescantes, bebidas ou guloseimas e receber em minutos?
           </p>
           <button
             type="button"
@@ -139,8 +142,8 @@ export function Cart() {
             style={{ width: '100%', maxWidth: 260 }}
             onClick={() => navigate('/')}
           >
-            Ir às Compras
-            <ChevronRight size={16} />
+            <span>Ver Ofertas do Dia</span>
+            <ChevronRight size={17} />
           </button>
         </div>
       ) : (
@@ -159,7 +162,7 @@ export function Cart() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
                   <span style={{ color: '#D4AF37', fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3px' }}>⚡ Envio Condomínio</span>
                 </div>
-                <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>Entrega Rápida</h3>
+                <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>Entrega Expressa</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '11px', margin: 0 }}>Seus produtos entregues em até 20 minutos direto na sua porta!</p>
               </div>
               <span className="commerce-pulse-icon" style={{ fontSize: '28px' }}>⚡</span>
@@ -292,13 +295,13 @@ export function Cart() {
           {/* LISTA "LEVE TAMBÉM" ANTES DO RESUMO DO PEDIDO */}
           {recommendations.length > 0 && (
             <div style={{ marginBottom: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <h3 style={{ fontSize: 12.5, fontWeight: 900, color: 'var(--text-primary)', margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Sparkles size={13} color="#D4AF37" />
-                  {upsellConfig.cart.title || 'Leve também'}
-                </h3>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                  {upsellConfig.cart.isAuto ? 'Combinam com seu carrinho' : 'Seleção especial'}
+              <div className="commerce-section-header">
+                <div className="commerce-section-header-title">
+                  <Sparkles size={15} color="#10b981" />
+                  <h3>{upsellConfig.cart.title || 'Aproveite e Leve Também'}</h3>
+                </div>
+                <span className="commerce-section-tag">
+                  {upsellConfig.cart.isAuto ? 'Combinações recomendadas' : 'Seleção especial'}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
@@ -308,12 +311,12 @@ export function Cart() {
                     <div
                       key={prod.id}
                       style={{
-                        minWidth: 112,
-                        maxWidth: 118,
+                        minWidth: 114,
+                        maxWidth: 120,
                         background: 'var(--card-gradient)',
                         border: '1px solid var(--border-primary)',
                         borderRadius: 12,
-                        padding: '8px',
+                        padding: '10px 8px',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -321,13 +324,13 @@ export function Cart() {
                         flexShrink: 0,
                       }}
                     >
-                      <div style={{ width: 46, height: 46, borderRadius: 8, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 8, background: '#fff', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.25 }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.25 }}>
                         {prod.title}
                       </span>
-                      <span style={{ fontSize: 11.5, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>
                         R$ {prod.price.toFixed(2)}
                       </span>
                       <button
@@ -337,24 +340,19 @@ export function Cart() {
                           setRecentlyAddedId(prod.id);
                           window.setTimeout(() => setRecentlyAddedId((cur) => (cur === prod.id ? null : cur)), 1200);
                         }}
-                        style={{
-                          background: justAdded ? '#10b981' : 'var(--input-bg)',
-                          border: justAdded ? '1px solid #10b981' : '1px solid #D4AF37',
-                          color: justAdded ? '#ffffff' : '#D4AF37',
-                          borderRadius: 6,
-                          padding: '4px 0',
-                          width: '100%',
-                          fontSize: 10,
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: 3,
-                          transition: 'all 0.2s ease',
-                        }}
+                        className={`commerce-btn-pill-add ${justAdded ? 'is-added' : ''}`}
                       >
-                        <Plus size={10} /> {justAdded ? 'Adicionado!' : 'Aproveite'}
+                        {justAdded ? (
+                          <>
+                            <CheckCircle2 size={12} />
+                            <span>Adicionado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={12} />
+                            <span>Adicionar</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   );
@@ -365,7 +363,7 @@ export function Cart() {
 
           {/* COUPON BOX */}
           <div style={{ marginBottom: 18 }}>
-            <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 14, padding: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 14, padding: '8px 10px 8px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
               <Tag size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
               <input 
                 type="text" 
@@ -375,22 +373,13 @@ export function Cart() {
                   setCouponCode(e.target.value);
                   if (couponFeedback) setCouponFeedback(null);
                 }}
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 11, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
               />
               <button
                 type="button"
                 onClick={applyCoupon}
                 disabled={applyingCoupon}
-                className={`commerce-btn-pill ${applyingCoupon ? 'is-loading' : ''}`}
-                style={{
-                  background: 'var(--back-btn-bg)',
-                  border: '1px solid var(--border-primary)',
-                  color: 'var(--text-primary)',
-                  textTransform: 'uppercase',
-                  height: 30,
-                  fontSize: 9.5,
-                  fontWeight: 900,
-                }}
+                className={`commerce-btn-coupon ${applyingCoupon ? 'is-loading' : ''}`}
               >
                 {applyingCoupon ? 'Aplicando...' : 'Aplicar'}
               </button>
@@ -412,26 +401,26 @@ export function Cart() {
 
           {/* CHECKOUT BOX */}
           <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 18, padding: 16, marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <h3 style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-primary)', margin: '0 0 4px 0', borderBottom: '1px solid var(--border-primary)', paddingBottom: 6, textAlign: 'left' }}>Resumo do Pedido</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px 0', borderBottom: '1px solid var(--border-primary)', paddingBottom: 8, textAlign: 'left', letterSpacing: '-0.2px' }}>Resumo do Pedido</h3>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' }}>
               <span>Itens ({totalItems})</span>
-              <span>R$ {totalPrice.toFixed(2)}</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {totalPrice.toFixed(2)}</span>
             </div>
 
             {discount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#34C759', fontWeight: 700 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#10b981', fontWeight: 700 }}>
                 <span>Desconto Especial (10%)</span>
-                <span>- R$ {discount.toFixed(2)}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>- R$ {discount.toFixed(2)}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' }}>
               <span>Taxa de Entrega</span>
               {isFreeShipping ? (
-                <span style={{ color: '#2ecc71', fontWeight: 800 }}>GRÁTIS</span>
+                <span style={{ color: '#10b981', fontWeight: 800 }}>GRÁTIS</span>
               ) : (
-                <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>R$ {baseShippingFee.toFixed(2)}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>R$ {baseShippingFee.toFixed(2)}</span>
               )}
             </div>
 
@@ -441,42 +430,43 @@ export function Cart() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: 800,
                   color: '#10b981',
                   background: 'rgba(16, 185, 129, 0.1)',
-                  padding: '6px 10px',
-                  borderRadius: 8,
+                  padding: '7px 12px',
+                  borderRadius: 9,
                 }}
               >
                 <span>Economia total neste pedido</span>
-                <span>R$ {totalSavings.toFixed(2)}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {totalSavings.toFixed(2)}</span>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', borderTop: '1px dashed var(--border-primary)', paddingTop: 10, marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', borderTop: '1px dashed var(--border-primary)', paddingTop: 10, marginTop: 4 }}>
               <span>Total Estimado</span>
-              <span style={{ color: 'var(--text-primary)' }}>R$ {estimatedTotal.toFixed(2)}</span>
+              <span style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>R$ {estimatedTotal.toFixed(2)}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 10.5, color: '#10b981', fontWeight: 700, marginTop: 4 }}>
-              <ShieldCheck size={13} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11, color: '#10b981', fontWeight: 700, marginTop: 4 }}>
+              <ShieldCheck size={14} />
               <span>Entrega rápida garantida no condomínio</span>
             </div>
 
             <button
               type="button"
               className={`commerce-btn-primary ${checkoutLoading ? 'is-loading' : ''}`}
-              style={{ width: '100%', marginTop: 6 }}
+              style={{ width: '100%', marginTop: 8 }}
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >
               {checkoutLoading ? (
-                'Abrindo checkout...'
+                'Carregando checkout...'
               ) : (
                 <>
-                  <span>Seguir com a Compra · R$ {estimatedTotal.toFixed(2)}</span>
-                  <ChevronRight size={16} />
+                  <span>Finalizar Compra</span>
+                  <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
+                  <ChevronRight size={17} />
                 </>
               )}
             </button>

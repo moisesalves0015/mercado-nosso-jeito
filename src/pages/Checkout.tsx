@@ -10,9 +10,9 @@ import { collection, query, getDocs } from 'firebase/firestore';
 import { db, fns } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import {
-  ArrowLeft, CheckCircle, MapPin,
+  ArrowLeft, CheckCircle, CheckCircle2, MapPin,
   ChevronRight, AlertTriangle, ShieldCheck, Clock,
-  Plus, Lock, Award, ShoppingCart
+  Plus, Lock, Award, ShoppingCart, Sparkles
 } from 'lucide-react';
 import { MercadoLogo } from './Login';
 
@@ -318,11 +318,12 @@ export function Checkout() {
               <ShoppingCart size={32} color="#D4AF37" />
             </div>
             <div>
-              <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Seu carrinho está vazio</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 260, lineHeight: 1.5 }}>Que tal dar uma olhada em nossas ofertas e encher o carrinho?</p>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Seu carrinho está vazio</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 280, lineHeight: 1.5 }}>Que tal dar uma olhada em nossas ofertas e encher o carrinho?</p>
             </div>
             <button onClick={() => navigate('/')} className="commerce-btn-primary" style={{ marginTop: 8, width: '100%', maxWidth: 260 }}>
-              Explorar produtos 🛍️
+              <span>Explorar Produtos</span>
+              <ChevronRight size={17} />
             </button>
           </div>
         </div>
@@ -344,32 +345,39 @@ export function Checkout() {
             }} className="btn-icon-round" aria-label="Voltar">
               <ArrowLeft size={16} />
             </button>
+            <div className="commerce-topbar-center">
+              <span className="commerce-topbar-title">Finalizar Pedido</span>
+              <span className="commerce-secure-pill">
+                <ShieldCheck size={11} /> Compra 100% Segura
+              </span>
+            </div>
             <MercadoLogo size="sm" />
-            <div style={{ width: 34 }} />
           </div>
         </div>
 
         <div className="commerce-shell commerce-fade-in">
-          <div style={{ padding: '4px 0 10px' }}>
-            <h1 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Checkout</h1>
-          </div>
-
-          {/* Progress Bar */}
+          {/* Stepper */}
           {step !== 'success' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '0 10px' }}>
-              <div onClick={() => setStep('summary')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: step === 'summary' ? 1 : 0.5, cursor: 'pointer' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: step === 'summary' ? '#D4AF37' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: step === 'summary' ? '#000' : 'var(--text-secondary)', fontWeight: 'bold', fontSize: 12 }}>1</div>
-                <span style={{ fontSize: 9, marginTop: 3, color: 'var(--text-primary)' }}>Resumo</span>
+            <div className="commerce-stepper">
+              <div onClick={() => setStep('summary')} className="commerce-stepper-item">
+                <div className={`commerce-stepper-bubble ${step === 'summary' ? 'is-active' : 'is-done'}`}>
+                  {step !== 'summary' ? <CheckCircle2 size={15} /> : '1'}
+                </div>
+                <span className={`commerce-stepper-label ${step === 'summary' ? 'is-active' : ''}`}>1. Itens</span>
               </div>
-              <div style={{ flex: 1, height: 2, background: 'var(--border-primary)', margin: '12px 8px 0' }} />
-              <div onClick={() => setStep('delivery')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: step === 'delivery' ? 1 : 0.5, cursor: 'pointer' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: step === 'delivery' ? '#D4AF37' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: step === 'delivery' ? '#000' : 'var(--text-secondary)', fontWeight: 'bold', fontSize: 12 }}>2</div>
-                <span style={{ fontSize: 9, marginTop: 3, color: 'var(--text-primary)' }}>Entrega</span>
+              <div className={`commerce-stepper-line ${step === 'delivery' || step === 'payment' ? 'is-active' : ''}`} />
+              <div onClick={() => setStep('delivery')} className="commerce-stepper-item">
+                <div className={`commerce-stepper-bubble ${step === 'delivery' ? 'is-active' : step === 'payment' ? 'is-done' : 'is-idle'}`}>
+                  {step === 'payment' ? <CheckCircle2 size={15} /> : '2'}
+                </div>
+                <span className={`commerce-stepper-label ${step === 'delivery' ? 'is-active' : ''}`}>2. Entrega</span>
               </div>
-              <div style={{ flex: 1, height: 2, background: 'var(--border-primary)', margin: '12px 8px 0' }} />
-              <div onClick={() => { if (step !== 'summary') setStep('payment'); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: step === 'payment' ? 1 : 0.5, cursor: step === 'summary' ? 'not-allowed' : 'pointer' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: step === 'payment' ? '#D4AF37' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: step === 'payment' ? '#000' : 'var(--text-secondary)', fontWeight: 'bold', fontSize: 12 }}>3</div>
-                <span style={{ fontSize: 9, marginTop: 3, color: 'var(--text-primary)' }}>Pagamento</span>
+              <div className={`commerce-stepper-line ${step === 'payment' ? 'is-active' : ''}`} />
+              <div onClick={() => { if (step !== 'summary') setStep('payment'); }} className="commerce-stepper-item" style={{ cursor: step === 'summary' ? 'not-allowed' : 'pointer' }}>
+                <div className={`commerce-stepper-bubble ${step === 'payment' ? 'is-active' : 'is-idle'}`}>
+                  3
+                </div>
+                <span className={`commerce-stepper-label ${step === 'payment' ? 'is-active' : ''}`}>3. Pagamento</span>
               </div>
             </div>
           )}
@@ -413,44 +421,49 @@ export function Checkout() {
                 </div>
               )}
 
-              <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 8, marginTop: 4 }}>Resumo do Pedido</h2>
+              <div className="commerce-section-header">
+                <div className="commerce-section-header-title">
+                  <h2>Resumo dos Itens</h2>
+                </div>
+              </div>
               <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
                 {cartItems.map((item) => (
                   <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-primary)' }}>
                     <div style={{ width: 40, height: 40, borderRadius: 7, background: 'var(--input-bg)', backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 12 }}>{item.title}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 12.5 }}>{item.title}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.quantity}x R$ {item.price.toFixed(2)}</div>
                     </div>
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 13 }}>R$ {(item.quantity * item.price).toFixed(2)}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>R$ {(item.quantity * item.price).toFixed(2)}</div>
                   </div>
                 ))}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontWeight: 'bold', fontSize: 14, color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontWeight: 800, fontSize: 14, color: 'var(--text-primary)' }}>
                   <span>Subtotal</span>
-                  <span>R$ {totalPrice.toFixed(2)}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {totalPrice.toFixed(2)}</span>
                 </div>
               </div>
 
               {checkoutRecommendations.length > 0 && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
-                      {upsellConfig.checkout.title || 'Leve também'}
-                    </h3>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                      {upsellConfig.checkout.isAuto ? 'Guloseimas para aproveitar' : 'Seleção especial'}
+                  <div className="commerce-section-header">
+                    <div className="commerce-section-header-title">
+                      <Sparkles size={14} color="#10b981" />
+                      <h3>{upsellConfig.checkout.title || 'Leve Também'}</h3>
+                    </div>
+                    <span className="commerce-section-tag">
+                      {upsellConfig.checkout.isAuto ? 'Guloseimas & complementos' : 'Seleção especial'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10, marginBottom: 10, scrollbarWidth: 'none' }}>
                     {checkoutRecommendations.map((prod) => {
                       const justAdded = recentlyAddedUpsellId === prod.id;
                       return (
-                        <div key={prod.id} style={{ minWidth: 108, maxWidth: 116, flexShrink: 0, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                          <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div key={prod.id} style={{ minWidth: 110, maxWidth: 118, flexShrink: 0, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '10px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                          <div style={{ width: 46, height: 46, borderRadius: 7, background: '#fff', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} loading="lazy" />
                           </div>
-                          <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.2 }}>{prod.title}</span>
-                          <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.25 }}>{prod.title}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>R$ {prod.price.toFixed(2)}</span>
                           <button
                             type="button"
                             onClick={() => {
@@ -458,24 +471,19 @@ export function Checkout() {
                               setRecentlyAddedUpsellId(prod.id);
                               window.setTimeout(() => setRecentlyAddedUpsellId((cur) => (cur === prod.id ? null : cur)), 1200);
                             }}
-                            style={{
-                              background: justAdded ? '#10b981' : 'var(--input-bg)',
-                              border: justAdded ? '1px solid #10b981' : '1px solid #D4AF37',
-                              color: justAdded ? '#ffffff' : '#D4AF37',
-                              borderRadius: 5,
-                              padding: '3px 0',
-                              width: '100%',
-                              fontSize: 10,
-                              fontWeight: 'bold',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              gap: 3,
-                              transition: 'all 0.2s ease',
-                            }}
+                            className={`commerce-btn-pill-add ${justAdded ? 'is-added' : ''}`}
                           >
-                            <Plus size={10} /> {justAdded ? 'Adicionado!' : 'Aproveite'}
+                            {justAdded ? (
+                              <>
+                                <CheckCircle2 size={12} />
+                                <span>Adicionado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={12} />
+                                <span>Adicionar</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       );
@@ -484,8 +492,9 @@ export function Checkout() {
                 </>
               )}
 
-              <button type="button" onClick={() => setStep('delivery')} className="commerce-btn-primary" style={{ width: '100%', marginTop: 4 }}>
-                Continuar para Entrega <ChevronRight size={16} />
+              <button type="button" onClick={() => setStep('delivery')} className="commerce-btn-primary" style={{ width: '100%', marginTop: 6 }}>
+                <span>Continuar para a Entrega</span>
+                <ChevronRight size={17} />
               </button>
             </div>
           )}
@@ -493,56 +502,86 @@ export function Checkout() {
           {/* STEP 2: DELIVERY */}
           {step === 'delivery' && (
             <div className="checkout-step">
-              <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 10, marginTop: 2 }}>Onde deseja receber?</h2>
+              <div className="commerce-section-header">
+                <div className="commerce-section-header-title">
+                  <h2>Onde deseja receber?</h2>
+                </div>
+              </div>
 
-              <div style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid var(--border-gold)', borderRadius: 10, padding: '8px 10px', marginBottom: 12, fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.4 }}>
-                <ShieldCheck size={16} color="#D4AF37" style={{ flexShrink: 0, marginTop: 2 }} />
-                <span><strong>O Nosso Jeito é 100% digital!</strong> Entrega rápida direto no seu condomínio. Escolha a preferência:</span>
+              <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 12, padding: '10px 12px', marginBottom: 12, fontSize: 12, color: 'var(--text-primary)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.4 }}>
+                <ShieldCheck size={16} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
+                <span><strong>O Nosso Jeito é 100% digital!</strong> Entrega expressa direto no seu condomínio. Escolha sua preferência:</span>
               </div>
 
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                <button onClick={() => setDeliveryMethod('apartment')} style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'apartment' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'apartment' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                  <MapPin size={20} color={deliveryMethod === 'apartment' ? '#D4AF37' : 'var(--text-secondary)'} />
-                  <span style={{ fontWeight: 'bold', fontSize: 12 }}>No Apartamento</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Entregador sobe até a porta</span>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('apartment')}
+                  className={`commerce-select-card ${deliveryMethod === 'apartment' ? 'is-selected' : ''}`}
+                  style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+                >
+                  <MapPin size={22} color={deliveryMethod === 'apartment' ? '#10b981' : 'var(--text-secondary)'} />
+                  <span style={{ fontWeight: 800, fontSize: 12.5, color: 'var(--text-primary)' }}>No Apartamento</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.25 }}>Entregador sobe até a porta</span>
                 </button>
-                <button onClick={() => setDeliveryMethod('lobby')} style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: deliveryMethod === 'lobby' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: deliveryMethod === 'lobby' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                  <CheckCircle size={20} color={deliveryMethod === 'lobby' ? '#D4AF37' : 'var(--text-secondary)'} />
-                  <span style={{ fontWeight: 'bold', fontSize: 12 }}>Na Portaria</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Deixamos na portaria/guarita</span>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMethod('lobby')}
+                  className={`commerce-select-card ${deliveryMethod === 'lobby' ? 'is-selected' : ''}`}
+                  style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+                >
+                  <CheckCircle size={22} color={deliveryMethod === 'lobby' ? '#10b981' : 'var(--text-secondary)'} />
+                  <span style={{ fontWeight: 800, fontSize: 12.5, color: 'var(--text-primary)' }}>Na Portaria</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.25 }}>Deixamos na portaria/guarita</span>
                 </button>
               </div>
 
-              <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px' }}>
-                <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 'bold' }}>Endereço de Entrega</h3>
+              <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '12px' }}>
+                <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 800 }}>Endereço de Entrega</h3>
                 {addresses.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {addresses.map((a) => (
-                      <div key={a.id} onClick={() => setAddress(a)} style={{ padding: '8px 10px', borderRadius: 8, border: address?.id === a.id ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: address?.id === a.id ? 'rgba(212,175,55,0.05)' : 'var(--input-bg)', cursor: 'pointer' }}>
-                        <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: 13 }}>{a.street}, {a.number}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.neighborhood} - {a.city}</div>
+                      <div
+                        key={a.id}
+                        onClick={() => setAddress(a)}
+                        className={`commerce-select-card ${address?.id === a.id ? 'is-selected' : ''}`}
+                        style={{ padding: '10px 12px' }}
+                      >
+                        <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>{a.street}, {a.number}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{a.neighborhood} - {a.city}</div>
                       </div>
                     ))}
-                    <button onClick={() => navigate('/addresses')} style={{ padding: '8px', background: 'var(--input-bg)', border: '1px dashed var(--border-gold)', borderRadius: 7, color: '#D4AF37', marginTop: 4, cursor: 'pointer', fontWeight: 'bold', fontSize: 13 }}>
-                      + Adicionar Novo Endereço
+                    <button
+                      type="button"
+                      onClick={() => navigate('/addresses')}
+                      className="commerce-btn-dashed"
+                      style={{ marginTop: 4 }}
+                    >
+                      <Plus size={14} /> Adicionar Novo Endereço
                     </button>
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '12px 20px' }}>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Nenhum endereço cadastrado.</p>
-                    <button onClick={() => navigate('/addresses')} style={{ padding: '7px 16px', background: 'var(--border-primary)', border: 'none', borderRadius: 8, color: 'var(--text-primary)', marginTop: 6, cursor: 'pointer', fontSize: 13 }}>
-                      Adicionar Endereço
+                    <button
+                      type="button"
+                      onClick={() => navigate('/addresses')}
+                      className="commerce-btn-primary"
+                      style={{ height: 38, fontSize: 12.5, marginTop: 6 }}
+                    >
+                      <Plus size={14} /> Cadastrar Endereço
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="commerce-btn-row" style={{ marginTop: 14 }}>
+              <div className="commerce-btn-row" style={{ marginTop: 16 }}>
                 <button type="button" onClick={() => setStep('summary')} className="commerce-btn-secondary" style={{ flex: 1 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
                 <button type="button" onClick={handleNext} className="commerce-btn-primary" style={{ flex: 2 }}>
-                  Ir p/ Pagamento <ChevronRight size={16} />
+                  <span>Avançar para Pagamento</span>
+                  <ChevronRight size={17} />
                 </button>
               </div>
             </div>
@@ -551,96 +590,124 @@ export function Checkout() {
           {/* STEP 3: PAYMENT */}
           {step === 'payment' && (
             <div className="checkout-step">
-              <h2 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 10, marginTop: 2 }}>Pagamento</h2>
+              <div className="commerce-section-header">
+                <div className="commerce-section-header-title">
+                  <h2>3. Forma de Pagamento</h2>
+                </div>
+              </div>
 
-              <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
+              <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, color: 'var(--text-secondary)', fontSize: 12 }}>
                   <span>Subtotal</span>
-                  <span>R$ {totalPrice.toFixed(2)}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {totalPrice.toFixed(2)}</span>
                 </div>
                 {couponApplied && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: '#34C759', fontSize: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, color: '#10b981', fontSize: 12, fontWeight: 700 }}>
                     <span>Desconto estimado</span>
-                    <span>- R$ {previewDiscount.toFixed(2)}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>- R$ {previewDiscount.toFixed(2)}</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, color: 'var(--text-secondary)', fontSize: 12 }}>
                   <span>Entrega (estimada)</span>
-                  <span>{previewDeliveryFee === 0 ? 'Grátis' : `R$ ${previewDeliveryFee.toFixed(2)}`}</span>
+                  <span>{previewDeliveryFee === 0 ? <strong style={{ color: '#10b981' }}>Grátis</strong> : `R$ ${previewDeliveryFee.toFixed(2)}`}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', fontSize: 15 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-primary)', color: 'var(--text-primary)', fontWeight: 800, fontSize: 15 }}>
                   <span>Total estimado</span>
-                  <span>R$ {previewTotal.toFixed(2)}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>R$ {previewTotal.toFixed(2)}</span>
                 </div>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '6px 0 0', textAlign: 'right' }}>
                   * Valor final confirmado pelo servidor ao finalizar.
                 </p>
 
                 {/* Coupon input */}
-                <div style={{ display: 'flex', gap: 7, marginTop: 10, borderTop: '1px solid var(--border-primary)', paddingTop: 10 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, borderTop: '1px solid var(--border-primary)', paddingTop: 10 }}>
                   <input
                     type="text"
                     placeholder="Cupom de desconto"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     disabled={couponApplied}
-                    style={{ flex: 1, padding: '7px 10px', borderRadius: 7, border: '1px solid var(--border-primary)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: 12 }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border-primary)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}
                   />
-                  <button onClick={applyCouponLocally} disabled={couponApplied} style={{ padding: '0 12px', borderRadius: 7, background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', cursor: couponApplied ? 'not-allowed' : 'pointer', fontSize: 12 }}>
-                    {couponApplied ? '✓' : 'Aplicar'}
+                  <button
+                    type="button"
+                    onClick={applyCouponLocally}
+                    disabled={couponApplied}
+                    className="commerce-btn-coupon"
+                    style={{ cursor: couponApplied ? 'not-allowed' : 'pointer' }}
+                  >
+                    {couponApplied ? '✓ Aplicado' : 'Aplicar'}
                   </button>
                 </div>
               </div>
 
-              <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)' }}>Forma de Pagamento</h3>
+              <h3 style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-primary)', fontWeight: 800 }}>Escolha como pagar</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button onClick={() => isPixAvailable && setPaymentMethod('pix')} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'pix' ? '2px solid #34C759' : '1px solid var(--border-primary)', background: paymentMethod === 'pix' ? 'rgba(52,199,89,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: isPixAvailable ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 10, opacity: isPixAvailable ? 1 : 0.5 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'pix' ? '#34C759' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'pix' ? '#34C759' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => isPixAvailable && setPaymentMethod('pix')}
+                  className={`commerce-select-card ${paymentMethod === 'pix' ? 'is-selected' : ''}`}
+                  style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, opacity: isPixAvailable ? 1 : 0.5, cursor: isPixAvailable ? 'pointer' : 'not-allowed' }}
+                >
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: paymentMethod === 'pix' ? '#10b981' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'pix' ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {paymentMethod === 'pix' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ fontWeight: 'bold', fontSize: 13 }}>Pix</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--text-primary)' }}>Pix</span>
                       {isPixAvailable ? (
-                        <span style={{ fontSize: 9, background: 'rgba(52,199,89,0.15)', color: '#34C759', padding: '2px 6px', borderRadius: 4, fontWeight: 'bold', textTransform: 'uppercase' }}>Recomendado</span>
+                        <span style={{ fontSize: 9.5, background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: 6, fontWeight: 800, textTransform: 'uppercase' }}>Recomendado</span>
                       ) : (
-                        <span style={{ fontSize: 9, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '2px 6px', borderRadius: 4, fontWeight: 'bold', textTransform: 'uppercase' }}>Indisponível</span>
+                        <span style={{ fontSize: 9.5, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '2px 8px', borderRadius: 6, fontWeight: 800, textTransform: 'uppercase' }}>Indisponível</span>
                       )}
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                       {isPixAvailable ? 'Aprovação manual (10 mins)' : 'Chave não configurada no admin'}
                     </span>
                   </div>
                 </button>
 
-                <button onClick={() => { if (deliveryMethod !== 'lobby') setPaymentMethod('on_delivery'); }} style={{ padding: '10px 12px', borderRadius: 10, border: paymentMethod === 'on_delivery' ? '2px solid #D4AF37' : '1px solid var(--border-primary)', background: paymentMethod === 'on_delivery' ? 'rgba(212,175,55,0.1)' : 'var(--card-bg)', color: 'var(--text-primary)', cursor: deliveryMethod === 'lobby' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 10, opacity: deliveryMethod === 'lobby' ? 0.5 : 1 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: paymentMethod === 'on_delivery' ? '#D4AF37' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'on_delivery' ? '#D4AF37' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {paymentMethod === 'on_delivery' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#000' }} />}
+                <button
+                  type="button"
+                  onClick={() => { if (deliveryMethod !== 'lobby') setPaymentMethod('on_delivery'); }}
+                  className={`commerce-select-card ${paymentMethod === 'on_delivery' ? 'is-selected' : ''}`}
+                  style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, opacity: deliveryMethod === 'lobby' ? 0.5 : 1, cursor: deliveryMethod === 'lobby' ? 'not-allowed' : 'pointer' }}
+                >
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: paymentMethod === 'on_delivery' ? '#10b981' : 'transparent', border: '2px solid', borderColor: paymentMethod === 'on_delivery' ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {paymentMethod === 'on_delivery' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: 13 }}>Pagamento na Entrega</span>
-                    <span style={{ fontSize: 11, color: deliveryMethod === 'lobby' ? '#ef4444' : 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                    <span style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--text-primary)' }}>Pagamento na Entrega</span>
+                    <span style={{ fontSize: 11, color: deliveryMethod === 'lobby' ? '#ef4444' : 'var(--text-secondary)', marginTop: 2 }}>
                       {deliveryMethod === 'lobby' ? 'Indisponível para entrega na portaria' : 'Pague com cartão ou dinheiro ao receber'}
                     </span>
                   </div>
                 </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 12, marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#34C759' }}>
-                  <Lock size={11} /> <span style={{ fontSize: 10, fontWeight: 'bold' }}>Pagamento Seguro</span>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 14, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10b981' }}>
+                  <Lock size={12} /> <span style={{ fontSize: 10.5, fontWeight: 700 }}>Pagamento Seguro</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#34C759' }}>
-                  <ShieldCheck size={11} /> <span style={{ fontSize: 10, fontWeight: 'bold' }}>Dados Criptografados</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10b981' }}>
+                  <ShieldCheck size={12} /> <span style={{ fontSize: 10.5, fontWeight: 700 }}>Dados Criptografados</span>
                 </div>
               </div>
 
-              <div className="commerce-btn-row" style={{ marginTop: 8 }}>
+              <div className="commerce-btn-row" style={{ marginTop: 10 }}>
                 <button type="button" onClick={() => setStep('delivery')} disabled={loading} className="commerce-btn-secondary" style={{ flex: 1 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
                 <button type="button" onClick={() => void handleFinish()} disabled={loading} className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`} style={{ flex: 2 }}>
-                  {loading ? 'Finalizando pedido...' : <><ShieldCheck size={16} /> Finalizar</>}
+                  {loading ? (
+                    'Finalizando seu pedido...'
+                  ) : (
+                    <>
+                      <ShieldCheck size={17} />
+                      <span>Confirmar e Finalizar</span>
+                      <span className="commerce-btn-badge">R$ {previewTotal.toFixed(2)}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -649,19 +716,19 @@ export function Checkout() {
           {/* STEP 4: SUCCESS */}
           {step === 'success' && confirmedOrder && (
             <div style={{ textAlign: 'center', padding: '20px 8px' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52, 199, 89, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                <CheckCircle size={38} color="#34C759" />
+              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                <CheckCircle size={40} color="#10b981" />
               </div>
-              <h2 style={{ color: 'var(--text-primary)', marginBottom: 5, fontWeight: 900, fontSize: 18 }}>Pedido Criado com Sucesso!</h2>
+              <h2 style={{ color: 'var(--text-primary)', marginBottom: 5, fontWeight: 800, fontSize: 19, letterSpacing: '-0.3px' }}>Pedido Criado com Sucesso! 🎉</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: 14, fontSize: 13 }}>
-                Seu pedido <strong>{confirmedOrder.orderNumber}</strong> foi gravado no sistema.
-                Total do pedido: <strong>R$ {confirmedOrder.total.toFixed(2)}</strong>
+                Seu pedido <strong>#{confirmedOrder.orderNumber}</strong> foi gravado no sistema.
+                Total: <strong>R$ {confirmedOrder.total.toFixed(2)}</strong>
               </p>
 
               {/* Payment countdown or On Delivery badge */}
               {confirmedOrder.paymentStatus === 'approved' ? (
-                <div style={{ background: 'rgba(52,199,89,0.06)', border: '1.5px solid rgba(52,199,89,0.3)', borderRadius: 12, padding: '14px', marginBottom: 14, textAlign: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#34C759', marginBottom: 6 }}>
+                <div style={{ background: 'rgba(16,185,129,0.08)', border: '1.5px solid rgba(16,185,129,0.3)', borderRadius: 12, padding: '14px', marginBottom: 14, textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#10b981', marginBottom: 6 }}>
                     <ShieldCheck size={16} />
                     <span style={{ fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>Pagamento Aprovado</span>
                   </div>
@@ -699,11 +766,11 @@ export function Checkout() {
 
               {paymentMethod === 'pix' && adminConfig.pixKey && (
                 <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '12px 14px', marginBottom: 14 }}>
-                  <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 'bold' }}>Dados da Chave Pix</h3>
+                  <h3 style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, fontWeight: 800 }}>Dados da Chave Pix</h3>
                   
                   <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: 8, textAlign: 'left', marginBottom: 10 }}>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Chave Pix:</div>
-                    <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{adminConfig.pixKey}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', wordBreak: 'break-all' }}>{adminConfig.pixKey}</div>
                     
                     {adminConfig.pixName && (
                       <>
@@ -713,17 +780,23 @@ export function Checkout() {
                     )}
                   </div>
                   
-                  <button onClick={() => { navigator.clipboard.writeText(adminConfig.pixKey); toastSuccess('Copiado!', 'Chave Pix copiada'); }} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', border: '1px solid #34C759', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(adminConfig.pixKey); toastSuccess('Copiado!', 'Chave Pix copiada'); }}
+                    className="commerce-btn-dashed"
+                    style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: '#10b981', borderStyle: 'solid' }}
+                  >
                     Copiar Chave Pix
                   </button>
                 </div>
               )}
 
               <button type="button" onClick={() => navigate('/orders')} className="commerce-btn-primary" style={{ width: '100%', marginBottom: 10 }}>
-                Acompanhar Status do Pedido
+                <span>Acompanhar Meus Pedidos</span>
+                <ChevronRight size={17} />
               </button>
               <button type="button" onClick={() => navigate('/')} className="commerce-btn-secondary" style={{ width: '100%' }}>
-                Voltar à Loja
+                <span>Voltar para a Loja</span>
               </button>
             </div>
           )}
