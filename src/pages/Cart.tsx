@@ -2,8 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { useShippingConfig } from '../hooks/useShippingConfig';
-import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag } from 'lucide-react';
-import { useState } from 'react';
+import { useCatalog } from '../hooks/useCatalog';
+import { getEffectiveProductPrice } from '../utils/productPricing';
+import { isHomeProductPurchasable } from '../utils/homeProducts';
+import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag, Truck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { MercadoLogo } from './Login';
 
 export function Cart() {
@@ -11,44 +14,65 @@ export function Cart() {
   const { cartItems, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice, addToCart } = useCart();
   const { user } = useAuth();
   const { config: shippingConfig } = useShippingConfig();
+  const catalog = useCatalog();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
   const checkoutLoading = false;
 
   const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
   const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
   const isFreeShipping = totalPrice >= freeShippingThreshold;
   const deliveryFee = isFreeShipping ? 0 : baseShippingFee;
-  const estimatedTotal = totalPrice - discount + deliveryFee;
+  const missingForFreeShipping = Math.max(0, freeShippingThreshold - totalPrice);
+  const progressPercent =
+    freeShippingThreshold > 0
+      ? Math.min(100, Math.round((totalPrice / freeShippingThreshold) * 100))
+      : 100;
+  const estimatedTotal = Math.max(0, totalPrice - discount + deliveryFee);
+  const totalSavings = discount + (isFreeShipping ? baseShippingFee : 0);
 
-  // Recommended related items
-  const recommendations = [
-    {
-      id: 'prod-danone',
-      title: 'Danone Grego',
-      price: 18.90,
-      image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 'prod-melitta',
-      title: 'Café Melitta',
-      price: 24.50,
-      image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 'prod-dobem',
-      title: 'Suco Do Bem',
-      price: 12.90,
-      image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=150&q=80',
+  // Produtos reais do catálogo que ainda não estão no carrinho, priorizando itens que ajudam a completar o frete grátis
+  const recommendations = useMemo(() => {
+    const inCartIds = new Set(cartItems.map((i) => i.id));
+    const available = catalog.products
+      .filter((p) => !inCartIds.has(p.id) && isHomeProductPurchasable(p))
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        price: getEffectiveProductPrice(p),
+        image: p.image,
+      }))
+      .filter((p) => p.price > 0);
+
+    if (available.length > 0) {
+      if (!isFreeShipping && missingForFreeShipping > 0) {
+        available.sort((a, b) => {
+          const aCovers = a.price >= missingForFreeShipping ? 0 : 1;
+          const bCovers = b.price >= missingForFreeShipping ? 0 : 1;
+          if (aCovers !== bCovers) return aCovers - bCovers;
+          return Math.abs(a.price - missingForFreeShipping) - Math.abs(b.price - missingForFreeShipping);
+        });
+      }
+      return available.slice(0, 8);
     }
-  ];
+
+    return [];
+  }, [catalog.products, cartItems, isFreeShipping, missingForFreeShipping]);
 
   const applyCoupon = () => {
-    if (couponCode.toUpperCase() === 'DOBEMFRETE' || couponCode.toUpperCase() === 'NOSSOJEITO10') {
+    const normalized = couponCode.trim().toUpperCase();
+    if (!normalized) {
+      setCouponFeedback({ type: 'err', text: 'Digite um código de cupom antes de aplicar.' });
+      return;
+    }
+    if (normalized === 'DOBEMFRETE' || normalized === 'NOSSOJEITO10') {
       setDiscount(totalPrice * 0.1);
-      alert('Cupom premium de 10% de desconto aplicado com sucesso!');
+      setCouponFeedback({ type: 'ok', text: 'Cupom de 10% aplicado com sucesso!' });
     } else {
-      alert('Cupom inválido ou expirado.');
+      setDiscount(0);
+      setCouponFeedback({ type: 'err', text: 'Cupom inválido ou expirado.' });
     }
   };
 
@@ -143,6 +167,78 @@ export function Cart() {
           </div>
 
           <div style={{ padding: '0 16px' }}>
+            {/* PROGRESSO & INCENTIVO PARA FRETE GRÁTIS (%) */}
+            <div
+              style={{
+                background: isFreeShipping
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(52, 211, 153, 0.06))'
+                  : 'var(--card-gradient)',
+                border: isFreeShipping ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-gold)',
+                borderRadius: 14,
+                padding: '12px 14px',
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                  {isFreeShipping ? (
+                    <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                  ) : (
+                    <Truck size={16} color="#D4AF37" style={{ flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'left' }}>
+                    {isFreeShipping
+                      ? 'Parabéns! Você desbloqueou Frete Grátis'
+                      : `Faltam R$ ${missingForFreeShipping.toFixed(2)} para Frete Grátis`}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 900,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: isFreeShipping ? '#10b981' : 'rgba(212, 175, 55, 0.18)',
+                    color: isFreeShipping ? '#ffffff' : '#D4AF37',
+                    border: isFreeShipping ? 'none' : '1px solid rgba(212, 175, 55, 0.4)',
+                    flexShrink: 0,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {progressPercent}%
+                </span>
+              </div>
+
+              <div
+                style={{
+                  width: '100%',
+                  height: 7,
+                  borderRadius: 999,
+                  background: 'rgba(148, 163, 184, 0.22)',
+                  overflow: 'hidden',
+                  marginBottom: 6,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progressPercent}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background: isFreeShipping
+                      ? 'linear-gradient(90deg, #10b981, #34d399)'
+                      : 'linear-gradient(90deg, #D4AF37, #FFDF73)',
+                    transition: 'width 0.45s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                />
+              </div>
+
+              <p style={{ margin: 0, fontSize: 10.5, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'left' }}>
+                {isFreeShipping
+                  ? `Você já economizou R$ ${baseShippingFee.toFixed(2)} na taxa de entrega!`
+                  : `Economize R$ ${baseShippingFee.toFixed(2)} na entrega completando os ${100 - progressPercent}% restantes.`}
+              </p>
+            </div>
+
             {/* ITEMS LIST CONTAINER */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
             {cartItems.map((item) => (
@@ -192,7 +288,7 @@ export function Cart() {
           </div>
 
           {/* CLEAR CART LINK BUTTON */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
             <button 
               onClick={clearCart}
               style={{ background: 'none', border: 'none', color: '#FF6B6B', fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
@@ -202,26 +298,138 @@ export function Cart() {
             </button>
           </div>
 
+          {/* LISTA "LEVE TAMBÉM" ANTES DO RESUMO DO PEDIDO */}
+          {recommendations.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <h3 style={{ fontSize: 12.5, fontWeight: 900, color: 'var(--text-primary)', margin: 0, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Sparkles size={13} color="#D4AF37" />
+                  Leve também
+                </h3>
+                {!isFreeShipping && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37' }}>
+                    Complete o frete grátis
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+                {recommendations.map((prod) => {
+                  const coversShipping = !isFreeShipping && prod.price >= missingForFreeShipping;
+                  const justAdded = recentlyAddedId === prod.id;
+                  return (
+                    <div
+                      key={prod.id}
+                      style={{
+                        minWidth: 112,
+                        maxWidth: 118,
+                        background: 'var(--card-gradient)',
+                        border: coversShipping ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-primary)',
+                        borderRadius: 12,
+                        padding: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {coversShipping && (
+                        <span
+                          style={{
+                            fontSize: 8.5,
+                            fontWeight: 800,
+                            color: '#10b981',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            padding: '1px 6px',
+                            borderRadius: 999,
+                            marginBottom: 4,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Fecha frete grátis
+                        </span>
+                      )}
+                      <div style={{ width: 46, height: 46, borderRadius: 8, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, height: 26, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.25 }}>
+                        {prod.title}
+                      </span>
+                      <span style={{ fontSize: 11.5, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>
+                        R$ {prod.price.toFixed(2)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addToCart({ id: prod.id, title: prod.title, price: prod.price, image: prod.image }, 1);
+                          setRecentlyAddedId(prod.id);
+                          window.setTimeout(() => setRecentlyAddedId((cur) => (cur === prod.id ? null : cur)), 1200);
+                        }}
+                        style={{
+                          background: justAdded ? '#10b981' : 'var(--input-bg)',
+                          border: justAdded ? '1px solid #10b981' : '1px solid #D4AF37',
+                          color: justAdded ? '#ffffff' : '#D4AF37',
+                          borderRadius: 6,
+                          padding: '4px 0',
+                          width: '100%',
+                          fontSize: 10,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: 3,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <Plus size={10} /> {justAdded ? 'Adicionado!' : 'Aproveite'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* COUPON BOX */}
-          <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 14, padding: 12, marginBottom: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Tag size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <input 
-              type="text" 
-              placeholder="CUPOM DE DESCONTO" 
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 11, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
-            />
-            <button 
-              onClick={applyCoupon}
-              style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 9.5, fontWeight: 900, padding: '5px 12px', cursor: 'pointer', textTransform: 'uppercase' }}
-            >
-              Aplicar
-            </button>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 14, padding: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Tag size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+              <input 
+                type="text" 
+                placeholder="CUPOM DE DESCONTO" 
+                value={couponCode}
+                onChange={(e) => {
+                  setCouponCode(e.target.value);
+                  if (couponFeedback) setCouponFeedback(null);
+                }}
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 11, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
+              />
+              <button 
+                type="button"
+                onClick={applyCoupon}
+                style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 9.5, fontWeight: 900, padding: '5px 12px', cursor: 'pointer', textTransform: 'uppercase' }}
+              >
+                Aplicar
+              </button>
+            </div>
+            {couponFeedback && (
+              <p
+                style={{
+                  margin: '6px 4px 0',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: couponFeedback.type === 'ok' ? '#10b981' : '#ef4444',
+                  textAlign: 'left',
+                }}
+              >
+                {couponFeedback.text}
+              </p>
+            )}
           </div>
 
           {/* CHECKOUT BOX */}
-          <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 18, padding: 16, marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 18, padding: 16, marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-primary)', margin: '0 0 4px 0', borderBottom: '1px solid var(--border-primary)', paddingBottom: 6, textAlign: 'left' }}>Resumo do Pedido</h3>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-secondary)' }}>
@@ -245,6 +453,25 @@ export function Cart() {
               )}
             </div>
 
+            {totalSavings > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: '#10b981',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  padding: '6px 10px',
+                  borderRadius: 8,
+                }}
+              >
+                <span>Economia total neste pedido</span>
+                <span>R$ {totalSavings.toFixed(2)}</span>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', borderTop: '1px dashed var(--border-primary)', paddingTop: 10, marginTop: 4 }}>
               <span>Total Estimado</span>
               <span style={{ color: 'var(--text-primary)' }}>R$ {estimatedTotal.toFixed(2)}</span>
@@ -262,29 +489,6 @@ export function Cart() {
         </div>
         </div>
       )}
-
-      {/* RECOMMENDED OFFERS CAROUSEL ROW */}
-      <h3 style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 8, padding: '0 16px', textAlign: 'left' }}>Leve também</h3>
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 16px 20px', scrollbarWidth: 'none' }}>
-        {recommendations.map((prod) => (
-          <div 
-            key={prod.id}
-            style={{ minWidth: 105, background: 'var(--card-gradient)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}
-          >
-            <div style={{ width: 44, height: 44, borderRadius: 7, background: '#fff', marginBottom: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={prod.image} alt={prod.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
-            </div>
-            <span style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 3, height: 24, overflow: 'hidden' }}>{prod.title}</span>
-            <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>R$ {prod.price.toFixed(2)}</span>
-            <button 
-              onClick={() => addToCart({ id: prod.id, title: prod.title, price: prod.price, image: prod.image }, 1)} 
-              style={{ background: 'var(--input-bg)', border: '1px solid #D4AF37', color: '#D4AF37', borderRadius: 5, padding: '3px 0', width: '100%', fontSize: 10, fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3 }}
-            >
-              <Plus size={10} /> Aproveite
-            </button>
-          </div>
-        ))}
-      </div>
       </div>
     </div>
   );
