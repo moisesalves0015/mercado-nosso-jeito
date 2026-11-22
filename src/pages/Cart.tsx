@@ -456,17 +456,21 @@ export function Cart() {
             <button
               type="button"
               className={`commerce-btn-primary ${checkoutLoading ? 'is-loading' : ''}`}
-              style={{ width: '100%', marginTop: 8 }}
+              style={{ width: '100%', marginTop: 8, justifyContent: 'space-between', padding: '0 16px' }}
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >
               {checkoutLoading ? (
-                'Carregando checkout...'
+                <span style={{ margin: '0 auto' }}>Carregando checkout...</span>
               ) : (
                 <>
-                  <span>Finalizar Compra</span>
-                  <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
-                  <ChevronRight size={17} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                    <span>Finalizar Compra</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
+                    <ChevronRight size={17} />
+                  </div>
                 </>
               )}
             </button>

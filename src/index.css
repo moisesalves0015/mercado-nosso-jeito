@@ -10443,6 +10443,13 @@ body.light-mode .commerce-count-badge {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   line-height: 1;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.commerce-btn-primary span,
+.commerce-btn-secondary span {
+  white-space: nowrap;
 }
 
 /* BOTÃO PRINCIPAL (EMERALD LUXURY / ALTA CONVERSÃO) */
@@ -10511,6 +10518,8 @@ body.light-mode .commerce-btn-secondary:hover:not(:disabled) {
   font-variant-numeric: tabular-nums;
   border: 1px solid rgba(255, 255, 255, 0.18);
   margin-left: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* CARREGAMENTO DESLIZANTE NOS BOTÕES (BEAM SHIMMER) */
@@ -10755,7 +10764,27 @@ body.light-mode .commerce-btn-dashed {
   .commerce-btn-secondary {
     height: 48px;
     font-size: 14px;
-    padding: 0 16px;
+    padding: 0 14px;
+    gap: 6px;
+  }
+
+  .commerce-btn-badge {
+    font-size: 12px;
+    padding: 2.5px 7px;
+  }
+}
+
+@media (max-width: 360px) {
+  .commerce-btn-primary,
+  .commerce-btn-secondary {
+    font-size: 13px;
+    padding: 0 10px;
+    gap: 4px;
+  }
+
+  .commerce-btn-badge {
+    font-size: 11px;
+    padding: 2px 6px;
   }
 }
 

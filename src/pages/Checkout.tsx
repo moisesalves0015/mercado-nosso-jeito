@@ -576,10 +576,16 @@ export function Checkout() {
               </div>
 
               <div className="commerce-btn-row" style={{ marginTop: 16 }}>
-                <button type="button" onClick={() => setStep('summary')} className="commerce-btn-secondary" style={{ flex: 1 }}>
-                  <ArrowLeft size={16} /> Voltar
+                <button
+                  type="button"
+                  onClick={() => setStep('summary')}
+                  className="commerce-btn-secondary"
+                  style={{ width: 48, flex: '0 0 48px', padding: 0, display: 'grid', placeItems: 'center' }}
+                  aria-label="Voltar para itens"
+                >
+                  <ArrowLeft size={18} />
                 </button>
-                <button type="button" onClick={handleNext} className="commerce-btn-primary" style={{ flex: 2 }}>
+                <button type="button" onClick={handleNext} className="commerce-btn-primary" style={{ flex: 1 }}>
                   <span>Avançar para Pagamento</span>
                   <ChevronRight size={17} />
                 </button>
@@ -694,20 +700,35 @@ export function Checkout() {
                 </div>
               </div>
 
-              <div className="commerce-btn-row" style={{ marginTop: 10 }}>
-                <button type="button" onClick={() => setStep('delivery')} disabled={loading} className="commerce-btn-secondary" style={{ flex: 1 }}>
-                  <ArrowLeft size={16} /> Voltar
-                </button>
-                <button type="button" onClick={() => void handleFinish()} disabled={loading} className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`} style={{ flex: 2 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => void handleFinish()}
+                  disabled={loading}
+                  className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`}
+                  style={{ width: '100%', justifyContent: 'space-between', padding: '0 16px' }}
+                >
                   {loading ? (
-                    'Finalizando seu pedido...'
+                    <span style={{ margin: '0 auto' }}>Finalizando seu pedido...</span>
                   ) : (
                     <>
-                      <ShieldCheck size={17} />
-                      <span>Confirmar e Finalizar</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <ShieldCheck size={18} />
+                        <span>Confirmar e Finalizar</span>
+                      </div>
                       <span className="commerce-btn-badge">R$ {previewTotal.toFixed(2)}</span>
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('delivery')}
+                  disabled={loading}
+                  className="commerce-btn-secondary"
+                  style={{ width: '100%', height: 44, fontSize: 13 }}
+                >
+                  <ArrowLeft size={16} /> Voltar para Entrega
                 </button>
               </div>
             </div>
