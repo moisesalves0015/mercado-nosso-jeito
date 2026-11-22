@@ -51,16 +51,18 @@ service firebase.storage {
       allow delete: if isAuthenticated();
     }
 
-    // Inbox ADM private attachments (max 15MB, strictly private to admins / signed URLs):
+    // Inbox ADM private attachments (max 15MB, authenticated staff/admin upload; access gated via RBAC & signed/callable URLs):
     match /admin-inbox/{messageId}/{attachmentId}/{fileName} {
-      allow read: if isAdmin();
-      allow write: if isAdmin()
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
                     && request.resource.size < 15 * 1024 * 1024
                     && (
-                      request.resource.contentType.matches('image/(jpeg|jpg|png|webp)')
+                      request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)')
                       || request.resource.contentType == 'application/pdf'
                       || request.resource.contentType == 'text/csv'
+                      || request.resource.contentType == 'application/csv'
                       || request.resource.contentType == 'text/plain'
+                      || request.resource.contentType == 'application/msword'
                       || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                       || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                       || request.resource.contentType == 'application/vnd.ms-excel'

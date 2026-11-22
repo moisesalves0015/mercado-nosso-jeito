@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bot, MessageSquare, Paperclip, Star } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Archive, Bot, MessageSquare, Paperclip, Pin, Star, Trash2 } from 'lucide-react';
 import { formatDateTime } from '../../components/AdminUi';
 import {
   INBOX_PRIORITY_META,
@@ -15,12 +15,21 @@ const PRIORITY_CHIP_CLASSES: Record<InboxPriority, string> = {
   critical: 'bg-[#fef2f2] text-[#c2414b] border-[#fecaca]',
 };
 
+const LEFT_SWIPE_OPEN_X = -148;
+const RIGHT_SWIPE_TRIGGER_X = 68;
+const MAX_RIGHT_SWIPE_X = 96;
+
 interface InboxMessageItemProps {
   message: AdminInboxMessage;
   isSelected: boolean;
   isUnread: boolean;
   currentUid: string;
+  canArchive?: boolean;
+  canPin?: boolean;
   onSelect: () => void;
+  onArchive?: (message: AdminInboxMessage) => void;
+  onDelete?: (message: AdminInboxMessage) => void;
+  onTogglePin?: (message: AdminInboxMessage, nextPinned: boolean) => void;
 }
 
 export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
@@ -28,32 +37,202 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
   isSelected,
   isUnread,
   currentUid,
+  canArchive = false,
+  canPin = true,
   onSelect,
+  onArchive,
+  onDelete,
+  onTogglePin,
 }) => {
   const agent = message.agentId ? SYSTEM_AGENTS_BY_ID[message.agentId] : undefined;
   const isStarred = Boolean(message.starredBy?.[currentUid]);
+  const isPinned = Boolean(message.pinnedBy?.[currentUid]);
+
+  const [offsetX, setOffsetX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    baseOffset: number;
+    pointerId: number;
+    moved: boolean;
+    lockedAxis: 'h' | 'v' | null;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      baseOffset: offsetX,
+      pointerId: e.pointerId,
+      moved: false,
+      lockedAxis: null,
+    };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+
+    if (!start.lockedAxis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        start.lockedAxis = 'v';
+        return;
+      }
+      start.lockedAxis = 'h';
+      start.moved = true;
+      setDragging(true);
+      try {
+        e.currentTarget.setPointerCapture(start.pointerId);
+      } catch {
+        /* ignore capture errors */
+      }
+    }
+
+    if (start.lockedAxis !== 'h') return;
+
+    let next = start.baseOffset + dx;
+    if (!canArchive && next < 0) next = 0;
+    if (!canPin && next > 0) next = 0;
+    next = Math.max(LEFT_SWIPE_OPEN_X - 24, Math.min(MAX_RIGHT_SWIPE_X, next));
+    setOffsetX(next);
+  };
+
+  const finishDrag = () => {
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    if (!start) return;
+
+    setDragging(false);
+    if (start.moved) {
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 150);
+    }
+
+    if (canPin && offsetX >= RIGHT_SWIPE_TRIGGER_X) {
+      setOffsetX(0);
+      onTogglePin?.(message, !isPinned);
+      return;
+    }
+
+    if (canArchive && offsetX <= -48) {
+      setOffsetX(LEFT_SWIPE_OPEN_X);
+      return;
+    }
+
+    setOffsetX(0);
+  };
+
+  const handleRowClick = () => {
+    if (suppressClickRef.current) return;
+    if (offsetX !== 0) {
+      setOffsetX(0);
+      return;
+    }
+    onSelect();
+  };
 
   return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={isSelected}
-      onClick={onSelect}
-      className={`w-full text-left px-3 py-2 transition-colors border-b border-[#eceff4] last:border-b-0 relative group ${
-        isSelected
-          ? 'bg-[#e8f0fe]'
-          : isUnread
-          ? 'bg-white hover:bg-[#f5f8fd] hover:shadow-[inset_0_-1px_0_#dadce0]'
-          : 'bg-[#f9fafb]/80 hover:bg-[#f2f4f8]'
-      }`}
-    >
-      {/* Subtle left bar for unread */}
-      {isUnread && (
-        <span
-          className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-[#1a73e8]"
+    <div className="relative overflow-hidden border-b border-[#eceff4] last:border-b-0 select-none">
+      {/* Right-swipe background: Fixar / Desafixar */}
+      {canPin && offsetX > 0 && (
+        <div
+          className={`absolute inset-y-0 left-0 flex items-center px-4 text-white text-xs font-semibold transition-colors ${
+            offsetX >= RIGHT_SWIPE_TRIGGER_X ? 'bg-[#d97706]' : 'bg-[#f59e0b]'
+          }`}
+          style={{ width: `${Math.max(offsetX + 12, 80)}px` }}
           aria-hidden="true"
-        />
+        >
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <Pin size={14} className={isPinned ? 'fill-white' : ''} />
+            {isPinned ? 'Desafixar' : 'Fixar'}
+          </span>
+        </div>
       )}
+
+      {/* Left-swipe background: Arquivar e Excluir */}
+      {canArchive && offsetX < 0 && (
+        <div
+          className="absolute inset-y-0 right-0 flex items-stretch"
+          style={{ width: `${Math.abs(LEFT_SWIPE_OPEN_X)}px` }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOffsetX(0);
+              onArchive?.(message);
+            }}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-[#1967d2] hover:bg-[#1557b0] text-white text-[11px] font-semibold transition-colors"
+            title={message.status === 'archived' ? 'Desarquivar' : 'Arquivar'}
+          >
+            <Archive size={14} />
+            <span>{message.status === 'archived' ? 'Restaurar' : 'Arquivar'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOffsetX(0);
+              onDelete?.(message);
+            }}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-[#dc2626] hover:bg-[#b91c1c] text-white text-[11px] font-semibold transition-colors"
+            title="Excluir mensagem"
+          >
+            <Trash2 size={14} />
+            <span>Excluir</span>
+          </button>
+        </div>
+      )}
+
+      {/* Foreground swipeable row */}
+      <div
+        role="option"
+        tabIndex={0}
+        aria-selected={isSelected}
+        onClick={handleRowClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
+        style={{
+          transform: `translate3d(${offsetX}px, 0, 0)`,
+          transition: dragging ? 'none' : 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }}
+        className={`w-full text-left px-3 py-2 cursor-pointer relative group touch-pan-y ${
+          isSelected
+            ? 'bg-[#e8f0fe]'
+            : isPinned
+            ? 'bg-[#fffbeb]/70 hover:bg-[#fef3c7]/60'
+            : isUnread
+            ? 'bg-white hover:bg-[#f5f8fd] hover:shadow-[inset_0_-1px_0_#dadce0]'
+            : 'bg-[#f9fafb] hover:bg-[#f2f4f8]'
+        }`}
+      >
+        {/* Subtle left bar for unread or pinned */}
+        {(isUnread || isPinned) && (
+          <span
+            className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r ${
+              isPinned ? 'bg-[#d97706]' : 'bg-[#1a73e8]'
+            }`}
+            aria-hidden="true"
+          />
+        )}
 
       {/* Desktop Gmail-style horizontal row + Clean mobile stacking */}
       <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2.5 min-w-0">
@@ -80,6 +259,14 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
             >
               <Bot size={12} />
             </span>
+          )}
+
+          {isPinned && (
+            <Pin
+              size={12}
+              className="shrink-0 text-[#d97706] fill-[#d97706]"
+              aria-label="Fixada"
+            />
           )}
 
           <Star
@@ -171,6 +358,7 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
           </span>
         </div>
       </div>
-    </button>
+      </div>
+    </div>
   );
 };

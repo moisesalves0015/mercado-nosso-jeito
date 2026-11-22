@@ -268,7 +268,9 @@ export interface UpdateInboxStatusInput {
   requestedResponseFromUserId?: string | null;
   dueAt?: string | null;
   starred?: boolean;
+  pinned?: boolean;
   important?: boolean;
+  deleted?: boolean;
   confirmReceipt?: boolean;
   details?: string;
   justification?: string;

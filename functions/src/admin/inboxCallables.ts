@@ -570,8 +570,20 @@ export const inboxUpdateStatus = functions.https.onCall(async (data, context) =>
       if (typeof data?.starred === 'boolean') {
         updates[`starredBy.${access.uid}`] = data.starred;
       }
+      if (typeof data?.pinned === 'boolean') {
+        updates[`pinnedBy.${access.uid}`] = data.pinned;
+        actions.push(data.pinned ? 'Mensagem fixada' : 'Mensagem desafixada');
+      }
       if (typeof data?.important === 'boolean') {
         updates[`importantBy.${access.uid}`] = data.important;
+      }
+      if (typeof data?.deleted === 'boolean') {
+        if (!access.permissions.includes('*') && !access.permissions.includes('inbox:archive') && !access.permissions.includes('inbox:admin')) {
+          throw new HttpsError('permission-denied', 'Sem permissão para excluir mensagens.');
+        }
+        updates.deletedAt = data.deleted ? nowTs : null;
+        updates.deletedBy = data.deleted ? access.uid : null;
+        actions.push(data.deleted ? 'Mensagem excluída' : 'Mensagem restaurada');
       }
       if (data?.confirmReceipt === true) {
         updates[`confirmedBy.${access.uid}`] = nowTs;

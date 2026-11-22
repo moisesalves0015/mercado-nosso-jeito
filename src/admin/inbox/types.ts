@@ -136,6 +136,8 @@ export interface AdminInboxMessage {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string | null;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
   sourceEvent?: string;
   sourceEntityId?: string;
   deduplicationKey?: string;
@@ -155,6 +157,7 @@ export interface AdminInboxMessage {
   };
   readBy: Record<string, string>;
   starredBy: Record<string, boolean>;
+  pinnedBy?: Record<string, boolean>;
   importantBy: Record<string, boolean>;
   confirmedBy: Record<string, string>;
   commentCount: number;

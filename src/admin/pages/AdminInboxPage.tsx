@@ -290,8 +290,10 @@ export const AdminInboxPage: React.FC = () => {
         ? 30 * 24 * 3600 * 1000
         : null;
 
-    return messages.filter((m) => {
-      if (!isMessageVisibleToPartner(m, staffAccess?.permissions ?? [])) return false;
+    return messages
+      .filter((m) => {
+        if (m.deletedAt) return false;
+        if (!isMessageVisibleToPartner(m, staffAccess?.permissions ?? [])) return false;
 
       if (quickFilter !== 'archived' && m.status === 'archived') return false;
 
@@ -357,6 +359,12 @@ export const AdminInboxPage: React.FC = () => {
       }
 
       return true;
+    })
+    .sort((a, b) => {
+      const aPinned = Boolean(a.pinnedBy?.[currentUid]);
+      const bPinned = Boolean(b.pinnedBy?.[currentUid]);
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+      return 0;
     });
   }, [
     messages,
@@ -1132,7 +1140,30 @@ export const AdminInboxPage: React.FC = () => {
                         isSelected={msg.id === selectedMessageId}
                         isUnread={isUnreadByUser(msg, currentUid)}
                         currentUid={currentUid}
+                        canArchive={canArchive}
+                        canPin={canEdit}
                         onSelect={() => setSelectedMessageId(msg.id)}
+                        onArchive={(m) =>
+                          handleStatusPatch(
+                            {
+                              messageId: m.id,
+                              status: m.status === 'archived' ? 'read' : 'archived',
+                            },
+                            m.status === 'archived' ? 'Mensagem restaurada.' : 'Mensagem arquivada.',
+                          )
+                        }
+                        onDelete={(m) =>
+                          handleStatusPatch(
+                            { messageId: m.id, deleted: true },
+                            'Mensagem excluída.',
+                          )
+                        }
+                        onTogglePin={(m, nextPinned) =>
+                          handleStatusPatch(
+                            { messageId: m.id, pinned: nextPinned },
+                            nextPinned ? 'Mensagem fixada no topo.' : 'Mensagem desafixada.',
+                          )
+                        }
                       />
                     ))}
                   </div>
