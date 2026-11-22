@@ -2169,7 +2169,7 @@ body.light-mode .topbar-search-container {
   overflow-y: visible;
   scrollbar-width: none;
   padding-top: 8px;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   padding-right: 0px;
   padding-left: 0px;
 }
@@ -2300,7 +2300,7 @@ body.light-mode .topbar-search-container {
   margin-top: 4px;
   /* Extremely pulled closer to title */
   padding-bottom: 8px;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
   /* Integrated category shadows */
   overflow: visible;
   /* Allow badge to bleed outside the card */
@@ -2311,7 +2311,7 @@ body.light-mode .topbar-search-container {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
 /* Maintain exact mobile styling for horizontal scroll lists */
@@ -6597,7 +6597,7 @@ body.light-mode .topbar-search-container {
   padding: 8px 6px;
   margin-top: 12px;
   padding-bottom: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
   overflow: visible;
   /* Permite o botÃ£o na base e a badge superior vazarem */
   z-index: 1;
@@ -9874,7 +9874,7 @@ body.light-mode .flash-offer-colon {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 10px;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
