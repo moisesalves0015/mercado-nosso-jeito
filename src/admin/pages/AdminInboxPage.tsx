@@ -15,7 +15,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminData } from '../AdminDataContext';
-import { SYSTEM_AGENTS, SYSTEM_AGENTS_BY_ID } from '../inbox/agents';
+import {
+  INBOX_STATUS_LABELS,
+  INBOX_TYPE_LABELS,
+  SYSTEM_AGENTS,
+  SYSTEM_AGENTS_BY_ID,
+} from '../inbox/agents';
 import {
   isMessageVisibleToPartner,
   isUnreadByUser,
@@ -56,7 +61,7 @@ import {
   updateInboxTask,
   uploadInboxAttachment,
 } from '../../services/adminInboxService';
-import { InboxSummaryBar } from '../inbox/components/InboxSummaryBar';
+import { InboxSummaryBar, type InboxCategoryTab } from '../inbox/components/InboxSummaryBar';
 import { InboxFolderNav } from '../inbox/components/InboxFolderNav';
 import { InboxMessageItem } from '../inbox/components/InboxMessageItem';
 import { InboxDetailPane } from '../inbox/components/InboxDetailPane';
@@ -97,11 +102,18 @@ export const AdminInboxPage: React.FC = () => {
 
   // Filters
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
+  const [categoryTab, setCategoryTab] = useState<InboxCategoryTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'human' | 'system_agent'>('all');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'to_me' | 'to_all' | 'awaiting_my_reply' | 'unassigned'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [agentFilter, setAgentFilter] = useState<string>('all');
   const [sectorFilter, setSectorFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
+  const [onlyWithAttachments, setOnlyWithAttachments] = useState(false);
+  const [onlyStarred, setOnlyStarred] = useState(false);
   const [periodRefMs, setPeriodRefMs] = useState<number>(() => Date.now());
 
   // Collapsible Advanced Filters state (defaults to MINIMIZED as requested)
@@ -301,9 +313,27 @@ export const AdminInboxPage: React.FC = () => {
       if (quickFilter === 'resolved' && m.status !== 'resolved') return false;
       if (quickFilter === 'archived' && m.status !== 'archived') return false;
 
+      if (categoryTab === 'human' && m.source !== 'human') return false;
+      if (categoryTab === 'system_agent' && m.source === 'human') return false;
+      if (categoryTab === 'critical' && m.priority !== 'critical') return false;
+
+      if (sourceFilter === 'human' && m.source !== 'human') return false;
+      if (sourceFilter === 'system_agent' && m.source === 'human') return false;
+
+      if (scopeFilter === 'to_me' && !m.toUserIds.includes(currentUid) && m.assignedToUserId !== currentUid)
+        return false;
+      if (scopeFilter === 'to_all' && !m.toAll) return false;
+      if (scopeFilter === 'awaiting_my_reply' && m.requestedResponseFromUserId !== currentUid)
+        return false;
+      if (scopeFilter === 'unassigned' && Boolean(m.assignedToUserId)) return false;
+
+      if (typeFilter !== 'all' && m.type !== typeFilter) return false;
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false;
       if (agentFilter !== 'all' && m.agentId !== agentFilter) return false;
       if (sectorFilter !== 'all' && m.agentSector !== sectorFilter) return false;
       if (priorityFilter !== 'all' && m.priority !== priorityFilter) return false;
+      if (onlyWithAttachments && (m.attachmentCount ?? 0) === 0) return false;
+      if (onlyStarred && !m.starredBy?.[currentUid]) return false;
 
       if (periodMs !== null) {
         const createdMs = Date.parse(m.createdAt);
@@ -329,27 +359,79 @@ export const AdminInboxPage: React.FC = () => {
   }, [
     messages,
     quickFilter,
+    categoryTab,
     currentUid,
+    sourceFilter,
+    scopeFilter,
+    typeFilter,
+    statusFilter,
     agentFilter,
     sectorFilter,
     priorityFilter,
+    onlyWithAttachments,
+    onlyStarred,
     periodFilter,
     periodRefMs,
     searchQuery,
     staffAccess?.permissions,
   ]);
 
+  const categoryTabCounts = useMemo(() => {
+    const active = messages.filter((m) =>
+      quickFilter === 'archived' ? m.status === 'archived' : m.status !== 'archived',
+    );
+    return {
+      all: active.length,
+      human: active.filter((m) => m.source === 'human').length,
+      systemAgent: active.filter((m) => m.source !== 'human').length,
+      critical: active.filter((m) => m.priority === 'critical').length,
+    };
+  }, [messages, quickFilter]);
+
   const activeAdvancedFilterCount = useMemo(() => {
     let count = 0;
+    if (sourceFilter !== 'all') count++;
+    if (scopeFilter !== 'all') count++;
+    if (typeFilter !== 'all') count++;
+    if (statusFilter !== 'all') count++;
     if (agentFilter !== 'all') count++;
     if (sectorFilter !== 'all') count++;
     if (priorityFilter !== 'all') count++;
     if (periodFilter !== 'all') count++;
+    if (onlyWithAttachments) count++;
+    if (onlyStarred) count++;
     return count;
-  }, [agentFilter, sectorFilter, priorityFilter, periodFilter]);
+  }, [
+    sourceFilter,
+    scopeFilter,
+    typeFilter,
+    statusFilter,
+    agentFilter,
+    sectorFilter,
+    priorityFilter,
+    periodFilter,
+    onlyWithAttachments,
+    onlyStarred,
+  ]);
 
   const activeFilterSummary = useMemo(() => {
     const parts: string[] = [];
+    if (sourceFilter !== 'all') parts.push(sourceFilter === 'human' ? 'Sócios' : 'Agentes');
+    if (scopeFilter !== 'all') {
+      const sMap: Record<string, string> = {
+        to_me: 'Para mim',
+        to_all: 'Para todos',
+        awaiting_my_reply: 'Aguard. minha resposta',
+        unassigned: 'Sem responsável',
+      };
+      parts.push(sMap[scopeFilter] || scopeFilter);
+    }
+    if (typeFilter !== 'all') {
+      parts.push(`Tipo: ${INBOX_TYPE_LABELS[typeFilter as keyof typeof INBOX_TYPE_LABELS] || typeFilter}`);
+    }
+    if (statusFilter !== 'all') {
+      parts.push(`Status: ${INBOX_STATUS_LABELS[statusFilter as keyof typeof INBOX_STATUS_LABELS] || statusFilter}`);
+    }
     if (agentFilter !== 'all') {
       const ag = SYSTEM_AGENTS_BY_ID[agentFilter as SystemAgentId];
       parts.push(`Agente: ${ag ? ag.name : agentFilter}`);
@@ -372,8 +454,21 @@ export const AdminInboxPage: React.FC = () => {
       };
       parts.push(dLabels[periodFilter] || periodFilter);
     }
+    if (onlyWithAttachments) parts.push('Com anexos');
+    if (onlyStarred) parts.push('Com estrela');
     return parts.join(' · ');
-  }, [agentFilter, sectorFilter, priorityFilter, periodFilter]);
+  }, [
+    sourceFilter,
+    scopeFilter,
+    typeFilter,
+    statusFilter,
+    agentFilter,
+    sectorFilter,
+    priorityFilter,
+    periodFilter,
+    onlyWithAttachments,
+    onlyStarred,
+  ]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -387,10 +482,16 @@ export const AdminInboxPage: React.FC = () => {
   }, [decisionPrompt, showAdvancedFilters]);
 
   const handleClearAdvancedFilters = () => {
+    setSourceFilter('all');
+    setScopeFilter('all');
+    setTypeFilter('all');
+    setStatusFilter('all');
     setAgentFilter('all');
     setSectorFilter('all');
     setPriorityFilter('all');
     setPeriodFilter('all');
+    setOnlyWithAttachments(false);
+    setOnlyStarred(false);
   };
 
   const handleRunAgents = async (agentId?: SystemAgentId) => {
@@ -547,9 +648,9 @@ export const AdminInboxPage: React.FC = () => {
   };
 
   return (
-    <div className="inbox-light-shell bg-[#f6f8fc] p-3 sm:p-5 border border-[#e3e7ec] shadow-sm space-y-4">
-      {/* Gmail / iOS Mail Top App Bar */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="inbox-light-shell flex-1 flex flex-col w-full min-h-[calc(100vh-4rem)] bg-[#f6f8fc]">
+      {/* Gmail / iOS Mail Full-Width Top App Bar */}
+      <header className="px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e3e7ec] bg-[#f6f8fc]">
         {/* Left: Brand Title + Unread Badge */}
         <div className="flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -573,7 +674,7 @@ export const AdminInboxPage: React.FC = () => {
                 )}
               </div>
               <p className="text-[11px] text-[#5f6368] mt-0.5 hidden sm:block">
-                Caixa compartilhada dos sócios & agentes
+                Caixa compartilhada
               </p>
             </div>
           </div>
@@ -671,12 +772,12 @@ export const AdminInboxPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Collapsible Advanced Filters Drawer (Closed by default) */}
+      {/* Collapsible Rich Advanced Filters Drawer (Closed by default) */}
       {viewMode === 'inbox' && showAdvancedFilters && (
-        <div className="bg-white border border-[#e3e7ec] rounded-2xl p-4 shadow-sm space-y-3 text-xs">
+        <div className="bg-white border-b border-[#e3e7ec] px-4 sm:px-6 py-4 shadow-sm space-y-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-[#1f1f1f]">Filtros avançados</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {activeAdvancedFilterCount > 0 && (
                 <button
                   type="button"
@@ -698,6 +799,82 @@ export const AdminInboxPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5f6368] mb-1">
+                Origem
+              </label>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value as 'all' | 'human' | 'system_agent')}
+                aria-label="Filtrar por origem"
+                className="w-full px-3 py-2 rounded-xl bg-[#f6f8fc] border border-[#e3e7ec] text-xs text-[#1f1f1f]"
+              >
+                <option value="all">Todas (Humanas e Agentes)</option>
+                <option value="human">Apenas Sócios (Humanas)</option>
+                <option value="system_agent">Apenas Funcionários Sistêmicos</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5f6368] mb-1">
+                Destinatário / Atribuição
+              </label>
+              <select
+                value={scopeFilter}
+                onChange={(e) =>
+                  setScopeFilter(
+                    e.target.value as 'all' | 'to_me' | 'to_all' | 'awaiting_my_reply' | 'unassigned',
+                  )
+                }
+                aria-label="Filtrar por destinatário ou atribuição"
+                className="w-full px-3 py-2 rounded-xl bg-[#f6f8fc] border border-[#e3e7ec] text-xs text-[#1f1f1f]"
+              >
+                <option value="all">Qualquer destinatário</option>
+                <option value="to_me">Direcionadas / atribuídas a mim</option>
+                <option value="to_all">Para todos os sócios</option>
+                <option value="awaiting_my_reply">Aguardando minha resposta</option>
+                <option value="unassigned">Sem responsável definido</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5f6368] mb-1">
+                Tipo de Mensagem
+              </label>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                aria-label="Filtrar por tipo de mensagem"
+                className="w-full px-3 py-2 rounded-xl bg-[#f6f8fc] border border-[#e3e7ec] text-xs text-[#1f1f1f]"
+              >
+                <option value="all">Todos os tipos</option>
+                {Object.entries(INBOX_TYPE_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[#5f6368] mb-1">
+                Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filtrar por status"
+                className="w-full px-3 py-2 rounded-xl bg-[#f6f8fc] border border-[#e3e7ec] text-xs text-[#1f1f1f]"
+              >
+                <option value="all">Todos os status</option>
+                {Object.entries(INBOX_STATUS_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-[11px] font-semibold text-[#5f6368] mb-1">
                 Funcionário Sistêmico
@@ -774,12 +951,34 @@ export const AdminInboxPage: React.FC = () => {
               </select>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-[#eceff4]">
+            <label className="inline-flex items-center gap-2 text-xs text-[#1f1f1f] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onlyWithAttachments}
+                onChange={(e) => setOnlyWithAttachments(e.target.checked)}
+                className="rounded accent-[#167a52]"
+              />
+              <span>Somente com anexos</span>
+            </label>
+
+            <label className="inline-flex items-center gap-2 text-xs text-[#1f1f1f] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onlyStarred}
+                onChange={(e) => setOnlyStarred(e.target.checked)}
+                className="rounded accent-[#167a52]"
+              />
+              <span>Somente com estrela</span>
+            </label>
+          </div>
         </div>
       )}
 
       {/* Active Filter Summary Pill Bar when filters are minimized */}
       {viewMode === 'inbox' && !showAdvancedFilters && activeAdvancedFilterCount > 0 && (
-        <div className="flex items-center justify-between gap-2 text-xs text-[#444746] bg-white px-4 py-2 rounded-xl border border-[#d2e3fc]">
+        <div className="flex items-center justify-between gap-2 text-xs text-[#444746] bg-white px-4 sm:px-6 py-2 border-b border-[#d2e3fc]">
           <span>
             <strong className="text-[#1967d2]">
               {activeAdvancedFilterCount} filtro{activeAdvancedFilterCount > 1 ? 's' : ''} ativo{activeAdvancedFilterCount > 1 ? 's' : ''}
@@ -800,7 +999,7 @@ export const AdminInboxPage: React.FC = () => {
         <div
           role="alert"
           aria-live="assertive"
-          className="p-3 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#c2414b] text-xs flex items-center gap-2"
+          className="px-4 sm:px-6 py-2.5 bg-[#fef2f2] border-b border-[#fecaca] text-[#c2414b] text-xs flex items-center gap-2"
         >
           <AlertTriangle size={15} className="shrink-0" />
           <span>{syncError}</span>
@@ -808,33 +1007,37 @@ export const AdminInboxPage: React.FC = () => {
       )}
 
       {viewMode === 'agents' ? (
-        <InboxAgentRulesView
-          rules={agentRules}
-          partners={partners}
-          canAdmin={canAdminAgents}
-          busyAction={busyAction}
-          onRunAgent={handleRunAgents}
-          onShowToast={showToast}
-        />
+        <div className="p-4 sm:p-6">
+          <InboxAgentRulesView
+            rules={agentRules}
+            partners={partners}
+            canAdmin={canAdminAgents}
+            busyAction={busyAction}
+            onRunAgent={handleRunAgents}
+            onShowToast={showToast}
+          />
+        </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-4 items-start">
+        <div className="flex-1 flex flex-col lg:flex-row w-full items-stretch">
           {/* Gmail-Style Left Sidebar (Desktop) */}
-          <aside className="hidden lg:block w-56 shrink-0 sticky top-20">
-            <InboxFolderNav
-              variant="sidebar"
-              activeFilter={quickFilter}
-              onSelectFilter={(f) => {
-                setQuickFilter(f);
-                setSelectedMessageId(null);
-              }}
-              counts={folderCounts}
-              canCreate={canCreate}
-              onCompose={() => setComposeOpen(true)}
-            />
+          <aside className="hidden lg:block w-56 shrink-0 p-3 bg-[#f6f8fc]">
+            <div className="sticky top-20">
+              <InboxFolderNav
+                variant="sidebar"
+                activeFilter={quickFilter}
+                onSelectFilter={(f) => {
+                  setQuickFilter(f);
+                  setSelectedMessageId(null);
+                }}
+                counts={folderCounts}
+                canCreate={canCreate}
+                onCompose={() => setComposeOpen(true)}
+              />
+            </div>
           </aside>
 
           {/* Mobile Folder Selector Pills */}
-          <div className="w-full lg:hidden">
+          <div className="w-full lg:hidden px-3 py-2 bg-[#f6f8fc] border-b border-[#e3e7ec]">
             <InboxFolderNav
               variant="tabs"
               activeFilter={quickFilter}
@@ -846,25 +1049,24 @@ export const AdminInboxPage: React.FC = () => {
             />
           </div>
 
-          {/* Main Gmail / Outlook Full-Width Workspace (Either List OR Open Email, NO Split-Screen) */}
-          <div className="flex-1 w-full min-w-0 bg-white border border-[#e3e7ec] rounded-2xl overflow-hidden shadow-2xs">
+          {/* Full-Bleed White Email Workspace (100% Width & Height, Zero Outer Margins) */}
+          <div className="flex-1 w-full min-w-0 bg-white lg:border-l border-[#e3e7ec] flex flex-col">
             {!selectedMessage ? (
               <>
                 {/* Gmail Category Tabs inside the List Card */}
                 <InboxSummaryBar
-                  kpis={kpis}
-                  totalCount={folderCounts.all}
-                  activeFilter={quickFilter}
-                  onSelectFilter={(f) => setQuickFilter(f)}
+                  counts={categoryTabCounts}
+                  activeTab={categoryTab}
+                  onSelectTab={(t) => setCategoryTab(t)}
                 />
 
                 {/* Sub-header with count & shared status */}
-                <div className="px-4 py-2 border-b border-[#eceff4] flex items-center justify-between text-[11px] bg-[#fbfcfd] text-[#5f6368]">
+                <div className="px-4 sm:px-6 py-2 border-b border-[#eceff4] flex items-center justify-between text-[11px] bg-[#fbfcfd] text-[#5f6368]">
                   <span>
                     <strong className="text-[#1f1f1f]">{filteredMessages.length}</strong> mensagem(ns)
                   </span>
                   <span className="inline-flex items-center gap-1 text-[#167a52] font-medium">
-                    <Users size={11} /> Caixa compartilhada dos 3 sócios
+                    <Users size={11} /> Caixa compartilhada
                   </span>
                 </div>
 
@@ -892,11 +1094,12 @@ export const AdminInboxPage: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                       {messages.length > 0 &&
-                        (activeAdvancedFilterCount > 0 || quickFilter !== 'all' || searchQuery) && (
+                        (activeAdvancedFilterCount > 0 || quickFilter !== 'all' || categoryTab !== 'all' || searchQuery) && (
                           <button
                             type="button"
                             onClick={() => {
                               setQuickFilter('all');
+                              setCategoryTab('all');
                               setSearchQuery('');
                               handleClearAdvancedFilters();
                             }}

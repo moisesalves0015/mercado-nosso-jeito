@@ -137,7 +137,7 @@
 
   background-color: var(--adm-bg);
   color: var(--adm-text);
-  border-radius: 16px;
+  border-radius: 0;
 }
 
 .admin-shell .inbox-light-shell :focus-visible {
