@@ -321,7 +321,7 @@ export function Checkout() {
               <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Seu carrinho está vazio</h3>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0', maxWidth: 260, lineHeight: 1.5 }}>Que tal dar uma olhada em nossas ofertas e encher o carrinho?</p>
             </div>
-            <button onClick={() => navigate('/')} style={{ marginTop: 8, background: 'linear-gradient(135deg, #D4AF37, #FFDF73)', border: 'none', borderRadius: 14, color: '#090705', fontSize: 14, fontWeight: 900, padding: '14px 32px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => navigate('/')} className="commerce-btn-primary" style={{ marginTop: 8, width: '100%', maxWidth: 260 }}>
               Explorar produtos 🛍️
             </button>
           </div>
@@ -336,12 +336,12 @@ export function Checkout() {
         {/* Topbar */}
         <div style={{ position: 'sticky', top: 0, zIndex: 1000, background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-gold)' }}>
           <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
+          <div className="commerce-topbar-inner">
             <button onClick={() => {
               if (step === 'payment') setStep('delivery');
               else if (step === 'delivery') setStep('summary');
               else navigate('/cart');
-            }} style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', cursor: 'pointer', flexShrink: 0 }}>
+            }} className="btn-icon-round" aria-label="Voltar">
               <ArrowLeft size={16} />
             </button>
             <MercadoLogo size="sm" />
@@ -349,11 +349,10 @@ export function Checkout() {
           </div>
         </div>
 
-        <div style={{ padding: '10px 16px 2px' }}>
-          <h1 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Checkout</h1>
-        </div>
-
-        <div style={{ padding: '10px 16px', maxWidth: 600, margin: '0 auto' }}>
+        <div className="commerce-shell commerce-fade-in">
+          <div style={{ padding: '4px 0 10px' }}>
+            <h1 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Checkout</h1>
+          </div>
 
           {/* Progress Bar */}
           {step !== 'success' && (
@@ -385,14 +384,23 @@ export function Checkout() {
           {step === 'summary' && (
             <div className="checkout-step">
               {/* Free shipping progress */}
-              <div style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid var(--border-gold)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)' }}>
+              <div style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid var(--border-gold)', borderRadius: 12, padding: '10px 12px', marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>
                     {totalPrice >= freeShippingThreshold ? '🎉 Você ganhou Frete Grátis!' : `Faltam R$ ${(freeShippingThreshold - totalPrice).toFixed(2)} para Frete Grátis`}
                   </span>
+                  <span style={{ fontSize: 10.5, fontWeight: 900, color: totalPrice >= freeShippingThreshold ? '#10b981' : '#D4AF37', fontVariantNumeric: 'tabular-nums' }}>
+                    {Math.round(progressPercent)}%
+                  </span>
                 </div>
-                <div style={{ width: '100%', height: 5, background: 'var(--input-bg)', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #D4AF37, #FFDF73)', transition: 'width 0.3s ease' }} />
+                <div className="commerce-progress-track">
+                  <div
+                    className="commerce-progress-fill"
+                    style={{
+                      width: `${progressPercent}%`,
+                      background: totalPrice >= freeShippingThreshold ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #D4AF37, #FFDF73)',
+                    }}
+                  />
                 </div>
               </div>
 
@@ -476,7 +484,7 @@ export function Checkout() {
                 </>
               )}
 
-              <button onClick={() => setStep('delivery')} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 14 }}>
+              <button type="button" onClick={() => setStep('delivery')} className="commerce-btn-primary" style={{ width: '100%', marginTop: 4 }}>
                 Continuar para Entrega <ChevronRight size={16} />
               </button>
             </div>
@@ -529,11 +537,11 @@ export function Checkout() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                <button onClick={() => setStep('summary')} style={{ flex: 1, padding: '11px 12px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
+              <div className="commerce-btn-row" style={{ marginTop: 14 }}>
+                <button type="button" onClick={() => setStep('summary')} className="commerce-btn-secondary" style={{ flex: 1 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
-                <button onClick={handleNext} style={{ flex: 2, padding: '11px 12px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                <button type="button" onClick={handleNext} className="commerce-btn-primary" style={{ flex: 2 }}>
                   Ir p/ Pagamento <ChevronRight size={16} />
                 </button>
               </div>
@@ -627,12 +635,12 @@ export function Checkout() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button onClick={() => setStep('delivery')} className="btn-secondary" style={{ flex: 1 }}>
+              <div className="commerce-btn-row" style={{ marginTop: 8 }}>
+                <button type="button" onClick={() => setStep('delivery')} disabled={loading} className="commerce-btn-secondary" style={{ flex: 1 }}>
                   <ArrowLeft size={16} /> Voltar
                 </button>
-                <button onClick={() => void handleFinish()} disabled={loading} className="btn-primary" style={{ flex: 2 }}>
-                  {loading ? 'Processando...' : <><ShieldCheck size={16} /> Finalizar</>}
+                <button type="button" onClick={() => void handleFinish()} disabled={loading} className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`} style={{ flex: 2 }}>
+                  {loading ? 'Finalizando pedido...' : <><ShieldCheck size={16} /> Finalizar</>}
                 </button>
               </div>
             </div>
@@ -711,10 +719,10 @@ export function Checkout() {
                 </div>
               )}
 
-              <button onClick={() => navigate('/orders')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000', fontWeight: '900', cursor: 'pointer', marginBottom: 10, fontSize: 13, border: 'none' }}>
+              <button type="button" onClick={() => navigate('/orders')} className="commerce-btn-primary" style={{ width: '100%', marginBottom: 10 }}>
                 Acompanhar Status do Pedido
               </button>
-              <button onClick={() => navigate('/')} style={{ width: '100%', padding: '11px 16px', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', fontSize: 13 }}>
+              <button type="button" onClick={() => navigate('/')} className="commerce-btn-secondary" style={{ width: '100%' }}>
                 Voltar à Loja
               </button>
             </div>

@@ -6,7 +6,7 @@ import { useCatalog } from '../hooks/useCatalog';
 import { useUpsellConfig } from '../hooks/useUpsellConfig';
 import { getEffectiveProductPrice } from '../utils/productPricing';
 import { buildCartComplementaryProducts } from '../utils/upsellRecommendations';
-import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag, Truck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, Tag, Truck, Sparkles, CheckCircle2, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { MercadoLogo } from './Login';
 
@@ -20,8 +20,9 @@ export function Cart() {
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [couponFeedback, setCouponFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
-  const checkoutLoading = false;
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const freeShippingThreshold = shippingConfig?.freeShippingThreshold ?? 60;
   const baseShippingFee = shippingConfig?.baseShippingFee ?? 5;
@@ -52,29 +53,35 @@ export function Cart() {
   }, [upsellConfig.cart, cartItems, catalog.products, catalog.byId]);
 
   const applyCoupon = () => {
+    if (applyingCoupon) return;
     const normalized = couponCode.trim().toUpperCase();
     if (!normalized) {
       setCouponFeedback({ type: 'err', text: 'Digite um código de cupom antes de aplicar.' });
       return;
     }
-    if (normalized === 'DOBEMFRETE' || normalized === 'NOSSOJEITO10') {
-      setDiscount(totalPrice * 0.1);
-      setCouponFeedback({ type: 'ok', text: 'Cupom de 10% aplicado com sucesso!' });
-    } else {
-      setDiscount(0);
-      setCouponFeedback({ type: 'err', text: 'Cupom inválido ou expirado.' });
-    }
+    setApplyingCoupon(true);
+    window.setTimeout(() => {
+      if (normalized === 'DOBEMFRETE' || normalized === 'NOSSOJEITO10') {
+        setDiscount(totalPrice * 0.1);
+        setCouponFeedback({ type: 'ok', text: 'Cupom de 10% aplicado com sucesso!' });
+      } else {
+        setDiscount(0);
+        setCouponFeedback({ type: 'err', text: 'Cupom inválido ou expirado.' });
+      }
+      setApplyingCoupon(false);
+    }, 320);
   };
 
   const handleCheckout = () => {
-    if (cartItems.length === 0) return;
-
-    if (!user) {
-      navigate('/login?returnUrl=/checkout');
-      return;
-    }
-
-    navigate('/checkout');
+    if (cartItems.length === 0 || checkoutLoading) return;
+    setCheckoutLoading(true);
+    window.setTimeout(() => {
+      if (!user) {
+        navigate('/login?returnUrl=/checkout');
+        return;
+      }
+      navigate('/checkout');
+    }, 320);
   };
 
   return (
@@ -91,12 +98,7 @@ export function Cart() {
           borderBottom: '1px solid var(--border-gold)',
         }}>
           <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 16px',
-          }}>
+          <div className="commerce-topbar-inner">
             <button
               onClick={() => navigate(-1)}
               className="btn-icon-round"
@@ -111,52 +113,60 @@ export function Cart() {
           </div>
         </div>
 
+      <div className="commerce-shell commerce-fade-in">
       {/* ── Page title ──────────────────────────── */}
-      <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Meu Carrinho</h1>
+      <div style={{ padding: '4px 0 10px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <h1 style={{ fontSize: 19, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Meu Carrinho</h1>
+        {totalItems > 0 && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+          </span>
+        )}
       </div>
 
       {cartItems.length === 0 ? (
-        <div style={{ padding: '80px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div className="clube-mission-icon-box" style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--card-bg)', border: '1px solid var(--border-primary)' }}>
-            <ShoppingBag size={24} color="var(--text-muted)" />
+        <div style={{ padding: '64px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <div className="clube-mission-icon-box" style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--card-bg)', border: '1px solid var(--border-gold)' }}>
+            <ShoppingBag size={26} color="#D4AF37" />
           </div>
-          <h3 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, margin: '20px 0 6px 0' }}>Seu carrinho está vazio</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 12, margin: '0 0 32px 0', maxWidth: 240 }}>
-            Adicione produtos refrescantes ou premium e garanta ótimos descontos!
+          <h3 style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 800, margin: '18px 0 6px 0' }}>Seu carrinho está vazio</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 12.5, margin: '0 0 26px 0', maxWidth: 260, lineHeight: 1.5 }}>
+            Adicione produtos refrescantes ou guloseimas e receba em até 20 minutos!
           </p>
-          <button 
-            className="clube-mission-action-btn"
-            style={{ padding: '10px 24px', borderRadius: 8, fontSize: 10, fontWeight: 900, background: 'linear-gradient(135deg, #FFDF73, #D4AF37)', color: '#000' }}
+          <button
+            type="button"
+            className="commerce-btn-primary"
+            style={{ width: '100%', maxWidth: 260 }}
             onClick={() => navigate('/')}
           >
             Ir às Compras
+            <ChevronRight size={16} />
           </button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           
           {/* NATIVE ENTREGA RÁPIDA BANNER */}
-          <div style={{ padding: '0 16px', marginBottom: 12 }}>
+          <div style={{ marginBottom: 12 }}>
             <div className="promo-banner" style={{ 
               background: 'var(--card-gradient)', 
               border: '1px solid var(--border-gold)',
               boxShadow: 'var(--card-shadow)',
               padding: '12px 16px',
-              margin: '0 0 8px 0'
+              margin: 0
             }}>
               <div className="promo-text">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
                   <span style={{ color: '#D4AF37', fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3px' }}>⚡ Envio Condomínio</span>
                 </div>
                 <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 2px' }}>Entrega Rápida</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>Seus produtos entregues em até 20 minutos direto na sua porta!</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '11px', margin: 0 }}>Seus produtos entregues em até 20 minutos direto na sua porta!</p>
               </div>
-              <span style={{ fontSize: '30px' }}>⚡</span>
+              <span className="commerce-pulse-icon" style={{ fontSize: '28px' }}>⚡</span>
             </div>
           </div>
 
-          <div style={{ padding: '0 16px' }}>
+          <div>
             {/* PROGRESSO & INCENTIVO PARA FRETE GRÁTIS (%) */}
             <div
               style={{
@@ -169,7 +179,7 @@ export function Cart() {
                 marginBottom: 14,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
                   {isFreeShipping ? (
                     <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
@@ -186,7 +196,7 @@ export function Cart() {
                   style={{
                     fontSize: 11,
                     fontWeight: 900,
-                    padding: '2px 8px',
+                    padding: '2px 9px',
                     borderRadius: 999,
                     background: isFreeShipping ? '#10b981' : 'rgba(212, 175, 55, 0.18)',
                     color: isFreeShipping ? '#ffffff' : '#D4AF37',
@@ -199,25 +209,14 @@ export function Cart() {
                 </span>
               </div>
 
-              <div
-                style={{
-                  width: '100%',
-                  height: 7,
-                  borderRadius: 999,
-                  background: 'rgba(148, 163, 184, 0.22)',
-                  overflow: 'hidden',
-                  marginBottom: 6,
-                }}
-              >
+              <div className="commerce-progress-track" style={{ marginBottom: 6 }}>
                 <div
+                  className="commerce-progress-fill"
                   style={{
                     width: `${progressPercent}%`,
-                    height: '100%',
-                    borderRadius: 999,
                     background: isFreeShipping
                       ? 'linear-gradient(90deg, #10b981, #34d399)'
                       : 'linear-gradient(90deg, #D4AF37, #FFDF73)',
-                    transition: 'width 0.45s cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
                 />
               </div>
@@ -225,6 +224,8 @@ export function Cart() {
               <p style={{ margin: 0, fontSize: 10.5, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'left' }}>
                 {isFreeShipping
                   ? `Você já economizou R$ ${baseShippingFee.toFixed(2)} na taxa de entrega!`
+                  : progressPercent >= 60
+                  ? `Quase lá! Complete os ${100 - progressPercent}% restantes e economize R$ ${baseShippingFee.toFixed(2)}.`
                   : `Economize R$ ${baseShippingFee.toFixed(2)} na entrega completando os ${100 - progressPercent}% restantes.`}
               </p>
             </div>
@@ -376,12 +377,22 @@ export function Cart() {
                 }}
                 style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 11, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
               />
-              <button 
+              <button
                 type="button"
                 onClick={applyCoupon}
-                style={{ background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)', borderRadius: 6, color: 'var(--text-primary)', fontSize: 9.5, fontWeight: 900, padding: '5px 12px', cursor: 'pointer', textTransform: 'uppercase' }}
+                disabled={applyingCoupon}
+                className={`commerce-btn-pill ${applyingCoupon ? 'is-loading' : ''}`}
+                style={{
+                  background: 'var(--back-btn-bg)',
+                  border: '1px solid var(--border-primary)',
+                  color: 'var(--text-primary)',
+                  textTransform: 'uppercase',
+                  height: 30,
+                  fontSize: 9.5,
+                  fontWeight: 900,
+                }}
               >
-                Aplicar
+                {applyingCoupon ? 'Aplicando...' : 'Aplicar'}
               </button>
             </div>
             {couponFeedback && (
@@ -448,18 +459,32 @@ export function Cart() {
               <span style={{ color: 'var(--text-primary)' }}>R$ {estimatedTotal.toFixed(2)}</span>
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 10.5, color: '#10b981', fontWeight: 700, marginTop: 4 }}>
+              <ShieldCheck size={13} />
+              <span>Entrega rápida garantida no condomínio</span>
+            </div>
+
             <button
-              className="btn-primary"
-              style={{ width: '100%', marginTop: 12, height: 48, fontSize: 13.5, letterSpacing: '0.2px', opacity: checkoutLoading ? 0.7 : 1 }}
+              type="button"
+              className={`commerce-btn-primary ${checkoutLoading ? 'is-loading' : ''}`}
+              style={{ width: '100%', marginTop: 6 }}
               onClick={handleCheckout}
               disabled={checkoutLoading}
             >
-              {checkoutLoading ? 'Processando...' : 'Seguir com a Compra 💳'}
+              {checkoutLoading ? (
+                'Abrindo checkout...'
+              ) : (
+                <>
+                  <span>Seguir com a Compra · R$ {estimatedTotal.toFixed(2)}</span>
+                  <ChevronRight size={16} />
+                </>
+              )}
             </button>
           </div>
         </div>
         </div>
       )}
+      </div>
       </div>
     </div>
   );
