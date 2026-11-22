@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import * as crypto from 'crypto';
 import * as functions from 'firebase-functions';
 import { requireAnyPermission, requirePermission, StaffAccess } from './rbac';
 import { writeAudit, writeAuditSafe } from './audit';
@@ -227,10 +228,65 @@ export const inboxCreateMessage = functions.https.onCall(async (data, context) =
 
     const actor = await resolveActorProfile(access);
     const msgRef = db().collection('admin_inbox_messages').doc();
+    const rateRef = db().collection('admin_inbox_rate_limits').doc(access.uid);
     const nowTs = admin.firestore.FieldValue.serverTimestamp();
+    const nowMs = Date.now();
+    const clientRequestId =
+      typeof data?.clientRequestId === 'string' && data.clientRequestId.trim()
+        ? data.clientRequestId.trim().slice(0, 64)
+        : null;
+    const contentHash = crypto
+      .createHash('sha256')
+      .update(`${subject}::${body}::${toAll ? 'ALL' : toUserIds.join(',')}`)
+      .digest('hex');
     const initialStatus = requestedResponseFromUserId ? 'awaiting_reply' : createTaskAlong ? 'converted_to_task' : 'new';
 
+    let createdMessageId = msgRef.id;
+    let deduplicated = false;
+
     await db().runTransaction(async (tx) => {
+      const rateSnap = await tx.get(rateRef);
+      if (rateSnap.exists) {
+        const rate = rateSnap.data() as {
+          lastMessageAtMs?: number;
+          lastContentHash?: string;
+          lastClientRequestId?: string | null;
+          lastMessageId?: string;
+        };
+        const lastMs = typeof rate.lastMessageAtMs === 'number' ? rate.lastMessageAtMs : 0;
+        const elapsedMs = nowMs - lastMs;
+
+        if (clientRequestId && rate.lastClientRequestId === clientRequestId && rate.lastMessageId && elapsedMs < 120_000) {
+          createdMessageId = rate.lastMessageId;
+          deduplicated = true;
+          return;
+        }
+        if (elapsedMs < 5_000) {
+          throw new HttpsError(
+            'resource-exhausted',
+            'Aguarde alguns segundos antes de enviar outra mensagem.',
+          );
+        }
+        if (rate.lastContentHash === contentHash && elapsedMs < 60_000) {
+          throw new HttpsError(
+            'already-exists',
+            'Mensagem idêntica já enviada há menos de 1 minuto. Aguarde antes de reenviar.',
+          );
+        }
+      }
+
+      tx.set(
+        rateRef,
+        {
+          lastMessageAtMs: nowMs,
+          lastContentHash: contentHash,
+          lastClientRequestId: clientRequestId,
+          lastMessageId: msgRef.id,
+          updatedAt: nowTs,
+        },
+        { merge: true },
+      );
+
       let suggestedTaskId: string | null = null;
       if (createTaskAlong) {
         const taskRef = db().collection('admin_inbox_tasks').doc();
@@ -316,7 +372,7 @@ export const inboxCreateMessage = functions.https.onCall(async (data, context) =
       );
     });
 
-    return { messageId: msgRef.id };
+    return { messageId: createdMessageId, deduplicated };
   });
 });
 

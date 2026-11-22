@@ -53,6 +53,9 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
   const [entityId, setEntityId] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<string | null>(null);
+  const submitLockRef = React.useRef(false);
+  const requestIdRef = React.useRef<string | null>(null);
 
   const entityChoices = useMemo(() => {
     if (entityType === 'product') {
@@ -98,6 +101,7 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current || submitting) return;
     if (!subject.trim() || !body.trim()) {
       onError('Preencha o assunto e a mensagem.');
       return;
@@ -106,7 +110,15 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
       onError('Selecione pelo menos um sócio ou marque Todos os sócios.');
       return;
     }
+    submitLockRef.current = true;
+    if (!requestIdRef.current) {
+      requestIdRef.current =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
     setSubmitting(true);
+    setSubmitStage('Enviando mensagem...');
     try {
       const res = await createInboxMessage({
         type,
@@ -121,17 +133,24 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         dueAt: dueAt ? new Date(dueAt).toISOString() : null,
         relatedEntities,
         createTaskAlong,
+        clientRequestId: requestIdRef.current,
       });
 
-      for (const file of pendingFiles) {
-        await uploadInboxAttachment(res.messageId, file).promise;
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const file = pendingFiles[i];
+        setSubmitStage(`Enviando anexo ${i + 1} de ${pendingFiles.length}...`);
+        await uploadInboxAttachment(res.messageId, file, (pct) => {
+          setSubmitStage(`Enviando anexo ${i + 1} de ${pendingFiles.length} (${pct}%)...`);
+        }).promise;
       }
 
       onCreated(res.messageId);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Erro ao enviar mensagem.');
     } finally {
+      submitLockRef.current = false;
       setSubmitting(false);
+      setSubmitStage(null);
     }
   };
 
@@ -478,18 +497,19 @@ export const InboxComposeModal: React.FC<InboxComposeModalProps> = ({
         <div className="flex justify-end gap-2 px-6 py-3.5 border-t border-[#e3e7ec] bg-[#fbfcfd] shrink-0">
           <button
             type="button"
+            disabled={submitting}
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-medium border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7]"
+            className="px-4 py-2 rounded-lg text-xs font-medium border border-[#e3e7ec] bg-white text-[#5b6573] hover:text-[#17202a] hover:bg-[#f1f4f7] disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#167a52] hover:bg-[#106441] text-white disabled:opacity-60 transition-opacity"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            Enviar Mensagem
+            <span>{submitStage || 'Enviar Mensagem'}</span>
           </button>
         </div>
       </form>

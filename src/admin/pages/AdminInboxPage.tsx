@@ -120,6 +120,8 @@ export const AdminInboxPage: React.FC = () => {
   // Composer / modals / busy flags
   const [composeOpen, setComposeOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const busyLockRef = React.useRef<Record<string, boolean>>({});
+  const [busyMessageIds, setBusyMessageIds] = useState<Record<string, string>>({});
   const [decisionPrompt, setDecisionPrompt] = useState<{
     kind: 'approved' | 'rejected' | 'disagreed' | 'disagree_reaction';
     label: string;
@@ -492,7 +494,10 @@ export const AdminInboxPage: React.FC = () => {
   };
 
   const handleRunAgents = async (agentId?: SystemAgentId) => {
-    setBusyAction(agentId ? `run_${agentId}` : 'run_all');
+    const lockKey = agentId ? `run_${agentId}` : 'run_all';
+    if (busyLockRef.current[lockKey]) return;
+    busyLockRef.current[lockKey] = true;
+    setBusyAction(lockKey);
     try {
       const res = await runInboxAgents(agentId);
       showToast(
@@ -502,12 +507,14 @@ export const AdminInboxPage: React.FC = () => {
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Erro ao executar agentes.', 'err');
     } finally {
+      busyLockRef.current[lockKey] = false;
       setBusyAction(null);
     }
   };
 
   const handleSendComment = async (text: string, kind: 'comment' | 'forward' | 'request_info') => {
-    if (!selectedMessage) return;
+    if (!selectedMessage || busyLockRef.current.comment) return;
+    busyLockRef.current.comment = true;
     setBusyAction('comment');
     try {
       await addInboxComment(selectedMessage.id, text, kind);
@@ -516,6 +523,7 @@ export const AdminInboxPage: React.FC = () => {
       showToast(err instanceof Error ? err.message : 'Erro ao comentar.', 'err');
       throw err;
     } finally {
+      busyLockRef.current.comment = false;
       setBusyAction(null);
     }
   };
@@ -574,15 +582,30 @@ export const AdminInboxPage: React.FC = () => {
   const handleStatusPatch = async (
     patch: Parameters<typeof updateInboxMessageStatus>[0],
     toastMsg?: string,
+    busyLabel?: string,
   ) => {
+    const msgLockKey = `msg_${patch.messageId}`;
+    if (busyLockRef.current[msgLockKey]) return;
+    busyLockRef.current[msgLockKey] = true;
     setBusyAction('status');
+    if (busyLabel) {
+      setBusyMessageIds((prev) => ({ ...prev, [patch.messageId]: busyLabel }));
+    }
     try {
       await updateInboxMessageStatus(patch);
       if (toastMsg) showToast(toastMsg, 'ok');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Erro ao atualizar status.', 'err');
     } finally {
+      busyLockRef.current[msgLockKey] = false;
       setBusyAction(null);
+      if (busyLabel) {
+        setBusyMessageIds((prev) => {
+          const next = { ...prev };
+          delete next[patch.messageId];
+          return next;
+        });
+      }
     }
   };
 
@@ -1059,20 +1082,33 @@ export const AdminInboxPage: React.FC = () => {
         <div className="flex-1 w-full min-w-0 bg-white lg:border-l border-[#e3e7ec] flex flex-col">
           {!selectedMessage ? (
             <>
-              {/* Sub-header with count & shared status */}
+              {/* Sub-header with count, refresh indicator & shared status */}
               <div className="px-3 sm:px-4 py-1.5 border-b border-[#eceff4] flex items-center justify-between text-[11px] bg-[#fbfcfd] text-[#5f6368]">
-                <span>
-                  <strong className="text-[#1f1f1f]">{filteredMessages.length}</strong> mensagem(ns)
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    <strong className="text-[#1f1f1f]">{filteredMessages.length}</strong> mensagem(ns)
+                  </span>
+                  {busyAction === 'run_all' && (
+                    <span className="inline-flex items-center gap-1 text-[#1967d2] font-medium">
+                      <Loader2 size={11} className="animate-spin" /> Atualizando caixa...
+                    </span>
+                  )}
+                </div>
                 <span className="inline-flex items-center gap-1 text-[#167a52] font-medium">
                   <Users size={11} /> Caixa compartilhada
                 </span>
               </div>
 
                 {loadingList ? (
-                  <div className="p-14 text-center text-xs text-[#5f6368]" aria-live="polite">
-                    <Loader2 size={22} className="animate-spin mx-auto mb-2.5 text-[#167a52]" />
-                    Carregando mensagens da Inbox...
+                  <div className="divide-y divide-[#eceff4]" aria-live="polite" aria-label="Carregando mensagens da Inbox">
+                    {Array.from({ length: 6 }).map((_, idx) => (
+                      <div key={idx} className="px-3 py-2.5 flex items-center gap-3 animate-pulse">
+                        <span className="w-6 h-6 rounded-full bg-[#e3e7ec] shrink-0" />
+                        <div className="w-36 h-3 rounded bg-[#e3e7ec] shrink-0" />
+                        <div className="flex-1 h-3 rounded bg-[#eceff4]" />
+                        <div className="w-20 h-3 rounded bg-[#eceff4] shrink-0 hidden md:block" />
+                      </div>
+                    ))}
                   </div>
                 ) : filteredMessages.length === 0 ? (
                   <div className="p-12 text-center space-y-3">
@@ -1142,6 +1178,7 @@ export const AdminInboxPage: React.FC = () => {
                         currentUid={currentUid}
                         canArchive={canArchive}
                         canPin={canEdit}
+                        busyLabel={busyMessageIds[msg.id]}
                         onSelect={() => setSelectedMessageId(msg.id)}
                         onArchive={(m) =>
                           handleStatusPatch(
@@ -1150,18 +1187,21 @@ export const AdminInboxPage: React.FC = () => {
                               status: m.status === 'archived' ? 'read' : 'archived',
                             },
                             m.status === 'archived' ? 'Mensagem restaurada.' : 'Mensagem arquivada.',
+                            m.status === 'archived' ? 'Restaurando...' : 'Arquivando...',
                           )
                         }
                         onDelete={(m) =>
                           handleStatusPatch(
                             { messageId: m.id, deleted: true },
                             'Mensagem excluída.',
+                            'Excluindo...',
                           )
                         }
                         onTogglePin={(m, nextPinned) =>
                           handleStatusPatch(
                             { messageId: m.id, pinned: nextPinned },
                             nextPinned ? 'Mensagem fixada no topo.' : 'Mensagem desafixada.',
+                            nextPinned ? 'Fixando...' : 'Desafixando...',
                           )
                         }
                       />

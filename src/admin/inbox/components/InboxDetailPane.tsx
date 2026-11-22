@@ -15,6 +15,7 @@ import {
   Eye,
   History,
   Link2,
+  Loader2,
   Lock,
   MailOpen,
   MessageSquare,
@@ -197,6 +198,7 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
   const [commentText, setCommentText] = useState('');
   const [commentKind, setCommentKind] = useState<'comment' | 'forward' | 'request_info'>('comment');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const submittingCommentRef = useRef(false);
   const [showResolveMenu, setShowResolveMenu] = useState(false);
   const resolveMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -240,12 +242,14 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (submittingCommentRef.current || isSubmittingComment || !commentText.trim()) return;
+    submittingCommentRef.current = true;
     setIsSubmittingComment(true);
     try {
       await onSendComment(commentText.trim(), commentKind);
       setCommentText('');
     } finally {
+      submittingCommentRef.current = false;
       setIsSubmittingComment(false);
     }
   };
@@ -265,32 +269,41 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
 
         {/* Grouped Quick Actions (Gmail/Outlook style) */}
         <div className="flex flex-wrap items-center gap-1">
+          {busyAction === 'status' && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium bg-[#e8f0fe] text-[#1967d2] mr-1">
+              <Loader2 size={12} className="animate-spin" />
+              Salvando...
+            </span>
+          )}
           {canEdit && (
             <>
               <button
                 type="button"
+                disabled={busyAction === 'status'}
                 title={isUnread ? 'Marcar como lida' : 'Marcar como não lida'}
                 onClick={() => onToggleRead(!isUnread)}
                 aria-label={isUnread ? 'Marcar como lida' : 'Marcar como não lida'}
-                className="p-2 rounded-full text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] transition-colors"
+                className="p-2 rounded-full text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] disabled:opacity-50 transition-colors"
               >
                 <MailOpen size={16} />
               </button>
               <button
                 type="button"
+                disabled={busyAction === 'status'}
                 title={isStarred ? 'Remover favorito' : 'Marcar como favorito'}
                 onClick={() => onToggleStarred(!isStarred)}
                 aria-label={isStarred ? 'Remover favorito' : 'Marcar como favorito'}
-                className="p-2 rounded-full text-[#d97706] hover:bg-[#fef3c7]/50 transition-colors"
+                className="p-2 rounded-full text-[#d97706] hover:bg-[#fef3c7]/50 disabled:opacity-50 transition-colors"
               >
                 <Star size={16} className={isStarred ? 'fill-[#f59e0b]' : ''} />
               </button>
               <button
                 type="button"
+                disabled={busyAction === 'status'}
                 title="Confirmar ciência desta mensagem"
                 onClick={onConfirmReceipt}
                 aria-label="Confirmar ciência"
-                className="p-2 rounded-full text-[#167a52] hover:bg-[#e8f4ee] transition-colors"
+                className="p-2 rounded-full text-[#167a52] hover:bg-[#e8f4ee] disabled:opacity-50 transition-colors"
               >
                 <CheckCheck size={16} />
               </button>
@@ -307,6 +320,7 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
                 {canEdit && message.status !== 'resolved' ? (
                   <button
                     type="button"
+                    disabled={busyAction === 'status'}
                     onClick={() =>
                       onUpdateStatus(
                         { messageId: message.id, status: 'resolved' },
@@ -314,9 +328,9 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
                       )
                     }
                     title="Marcar como resolvida"
-                    className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 text-xs font-semibold text-[#167a52] hover:bg-[#d7ede1] transition-colors"
+                    className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 text-xs font-semibold text-[#167a52] hover:bg-[#d7ede1] disabled:opacity-50 transition-colors"
                   >
-                    <Check size={14} />
+                    {busyAction === 'status' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     <span>Resolver</span>
                   </button>
                 ) : (
@@ -405,13 +419,14 @@ export const InboxDetailPane: React.FC<InboxDetailPaneProps> = ({
           {canArchive && message.status !== 'archived' && (
             <button
               type="button"
+              disabled={busyAction === 'status'}
               onClick={() =>
                 onUpdateStatus({ messageId: message.id, status: 'archived' }, 'Mensagem arquivada.')
               }
               title="Arquivar mensagem"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#5f6368] hover:text-[#1f1f1f] hover:bg-[#f1f3f4] disabled:opacity-50 transition-colors"
             >
-              <Archive size={14} />
+              {busyAction === 'status' ? <Loader2 size={14} className="animate-spin" /> : <Archive size={14} />}
               <span className="hidden sm:inline">Arquivar</span>
             </button>
           )}

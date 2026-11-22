@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Archive, Bot, MessageSquare, Paperclip, Pin, Star, Trash2 } from 'lucide-react';
+import { Archive, Bot, Loader2, MessageSquare, Paperclip, Pin, Star, Trash2 } from 'lucide-react';
 import { formatDateTime } from '../../components/AdminUi';
 import {
   INBOX_PRIORITY_META,
@@ -26,6 +26,7 @@ interface InboxMessageItemProps {
   currentUid: string;
   canArchive?: boolean;
   canPin?: boolean;
+  busyLabel?: string;
   onSelect: () => void;
   onArchive?: (message: AdminInboxMessage) => void;
   onDelete?: (message: AdminInboxMessage) => void;
@@ -39,6 +40,7 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
   currentUid,
   canArchive = false,
   canPin = true,
+  busyLabel,
   onSelect,
   onArchive,
   onDelete,
@@ -215,6 +217,8 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
           transition: dragging ? 'none' : 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)',
         }}
         className={`w-full text-left px-3 py-2 cursor-pointer relative group touch-pan-y ${
+          busyLabel ? 'opacity-65 pointer-events-none' : ''
+        } ${
           isSelected
             ? 'bg-[#e8f0fe]'
             : isPinned
@@ -325,11 +329,18 @@ export const InboxMessageItem: React.FC<InboxMessageItemProps> = ({
           </p>
         </div>
 
-        {/* Right: Type badge, Attachment/Comment counts, and Date */}
+        {/* Right: Type badge, Busy indicator, Attachment/Comment counts, and Date */}
         <div className="flex items-center gap-2.5 pl-6 md:pl-0 shrink-0">
-          <span className="hidden lg:inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-[#f1f3f4] text-[#5f6368]">
-            {INBOX_TYPE_LABELS[message.type]}
-          </span>
+          {busyLabel ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#e8f0fe] text-[#1967d2]">
+              <Loader2 size={10} className="animate-spin" />
+              {busyLabel}
+            </span>
+          ) : (
+            <span className="hidden lg:inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-[#f1f3f4] text-[#5f6368]">
+              {INBOX_TYPE_LABELS[message.type]}
+            </span>
+          )}
 
           {message.commentCount > 0 && (
             <span

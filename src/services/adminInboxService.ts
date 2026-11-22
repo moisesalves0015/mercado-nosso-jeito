@@ -234,10 +234,16 @@ export interface CreateInboxMessageInput {
   relatedEntities?: InboxEntityReference[];
   createTaskAlong?: boolean;
   taskTitle?: string;
+  clientRequestId?: string;
 }
 
-export function createInboxMessage(input: CreateInboxMessageInput): Promise<{ messageId: string }> {
-  return callInbox<CreateInboxMessageInput, { messageId: string }>('inboxCreateMessage', input);
+export function createInboxMessage(
+  input: CreateInboxMessageInput,
+): Promise<{ messageId: string; deduplicated?: boolean }> {
+  return callInbox<CreateInboxMessageInput, { messageId: string; deduplicated?: boolean }>(
+    'inboxCreateMessage',
+    input,
+  );
 }
 
 export function addInboxComment(
