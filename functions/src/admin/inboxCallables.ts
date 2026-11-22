@@ -440,7 +440,7 @@ export const inboxToggleReaction = functions.https.onCall(async (data, context) 
         actorName: actor.name,
         actorType: 'human',
         action: `reaction_${type}`,
-        justification: justification || undefined,
+        ...(justification ? { justification } : {}),
         createdAt: nowTs,
       });
       await writeAudit(
@@ -582,18 +582,22 @@ export const inboxUpdateStatus = functions.https.onCall(async (data, context) =>
       tx.update(msgRef, updates);
 
       if (actions.length > 0) {
-        tx.set(msgRef.collection('history').doc(), {
+        const detailsText = sanitizeText(data?.details, 280);
+        const justificationText = sanitizeText(data?.justification, 400);
+        const historyDoc: Record<string, unknown> = {
           messageId,
           actorId: access.uid,
           actorName: actor.name,
           actorType: 'human',
           action: actions.join('; '),
-          fromStatus: typeof prev.status === 'string' ? prev.status : undefined,
-          toStatus: typeof updates.status === 'string' ? updates.status : undefined,
-          details: sanitizeText(data?.details, 280) || undefined,
-          justification: sanitizeText(data?.justification, 400) || undefined,
           createdAt: nowTs,
-        });
+        };
+        if (typeof prev.status === 'string') historyDoc.fromStatus = prev.status;
+        if (typeof updates.status === 'string') historyDoc.toStatus = updates.status;
+        if (detailsText) historyDoc.details = detailsText;
+        if (justificationText) historyDoc.justification = justificationText;
+
+        tx.set(msgRef.collection('history').doc(), historyDoc);
 
         await writeAudit(
           {
@@ -604,7 +608,11 @@ export const inboxUpdateStatus = functions.https.onCall(async (data, context) =>
             module: 'inbox',
             entityType: 'admin_inbox_message',
             entityId: messageId,
-            before: { status: prev.status, priority: prev.priority, assignedToUserId: prev.assignedToUserId },
+            before: {
+              status: prev.status ?? null,
+              priority: prev.priority ?? null,
+              assignedToUserId: prev.assignedToUserId ?? null,
+            },
             after: updates,
             reason: sanitizeText(data?.justification, 300) || null,
             result: 'success',
@@ -666,9 +674,9 @@ export const inboxDecideMessage = functions.https.onCall(async (data, context) =
         actorName: actor.name,
         actorType: 'human',
         action: `decision_${outcome}`,
-        fromStatus: prev.status,
+        fromStatus: prev.status ?? null,
         toStatus: nextStatus,
-        justification: justification || undefined,
+        ...(justification ? { justification } : {}),
         createdAt: nowTs,
       });
 
