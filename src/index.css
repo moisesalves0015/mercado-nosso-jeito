@@ -624,11 +624,26 @@ button, input[type="button"], input[type="submit"], .btn-base {
 
 .bg {
   position: fixed;
-  inset: 0;
-  background: var(--bg-primary);
-  /* Full black background, keeping the image file intact in public/ */
+  inset: -20px;
+  background-color: var(--bg-primary);
+  background-image: url("/bg-supermercado-new.png");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  filter: blur(14px) brightness(0.42) saturate(130%);
+  -webkit-filter: blur(14px) brightness(0.42) saturate(130%);
+  transform: scale(1.08);
   z-index: -2;
-  transition: background 0.3s ease;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+  pointer-events: none;
+}
+
+body.light-mode .bg {
+  background-image: none !important;
+  background-color: var(--bg-primary);
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none;
 }
 
 .overlay {
@@ -637,6 +652,7 @@ button, input[type="button"], input[type="submit"], .btn-base {
   background: var(--overlay-bg);
   z-index: -1;
   transition: background 0.3s ease;
+  pointer-events: none;
 }
 
 /* =========================================================
