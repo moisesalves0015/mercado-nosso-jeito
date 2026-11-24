@@ -39,84 +39,108 @@ export const BottomNav = () => {
           className="floating-mini-cart responsive-bottom-width"
           onClick={() => navigate('/cart')}
         >
-          {/* Shipping Progress Section */}
-          <div style={{ padding: '10px 16px 6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <Truck size={14} color="#2ecc71" />
-              <span style={{ fontSize: '11.5px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                {missingForFreeShipping > 0 
-                  ? <>Faltam <strong style={{color:'#D4AF37'}}>R$ {missingForFreeShipping.toFixed(2).replace('.', ',')}</strong> para frete grátis</>
-                  : <strong style={{color:'#2ecc71'}}>Você ganhou frete grátis!</strong>
-                }
-              </span>
-            </div>
-            {/* Progress Bar */}
-            <div style={{ 
-              width: '100%', 
-              height: '5px', 
-              background: 'var(--border-primary)', 
-              borderRadius: '3px',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                width: `${progressPercent}%`,
-                height: '100%',
-                background: progressPercent === 100 ? '#2ecc71' : 'linear-gradient(90deg, #D4AF37, #FFDF73)',
-                borderRadius: '3px',
-                transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
-              }} />
-            </div>
-          </div>
-
-          {/* Cart Info Section */}
+          {/* Compact Top Row: Bag + Ver meu carrinho + Frete Grátis Info + Price */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '6px 14px 12px',
+            padding: '6px 12px 4px',
+            gap: '8px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
               <div className="mini-cart-bag-box" style={{
                 background: 'rgba(212, 175, 55, 0.16)',
                 border: '1px solid rgba(212, 175, 55, 0.35)',
-                borderRadius: '11px',
-                width: '32px',
-                height: '32px',
+                borderRadius: '10px',
+                width: '28px',
+                height: '28px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                position: 'relative'
+                position: 'relative',
+                flexShrink: 0,
               }}>
-                <ShoppingBag size={15} color="#D4AF37" className="lucide-shopping-bag" />
+                <ShoppingBag size={14} color="#D4AF37" className="lucide-shopping-bag" />
                 <span style={{
                   position: 'absolute',
-                  top: '-5px',
-                  right: '-5px',
+                  top: '-4px',
+                  right: '-4px',
                   background: '#D4AF37',
                   color: '#000',
-                  fontSize: '8.5px',
+                  fontSize: '8px',
                   fontWeight: '900',
-                  borderRadius: '6px',
-                  minWidth: '15px',
-                  height: '15px',
-                  padding: '0 3px',
+                  borderRadius: '5px',
+                  minWidth: '14px',
+                  height: '14px',
+                  padding: '0 2.5px',
                   display: 'grid',
                   placeItems: 'center',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.45)'
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.45)'
                 }}>
                   {totalItems}
                 </span>
               </div>
-              <span style={{ fontSize: '11.5px', fontWeight: '850', color: 'var(--text-primary)', letterSpacing: '-0.1px' }}>
-                Ver meu carrinho
-              </span>
+
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.15 }}>
+                <span style={{ fontSize: '11px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+                  Ver meu carrinho
+                </span>
+                <span style={{ fontSize: '10px', color: 'var(--text-primary)', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.92 }}>
+                  {missingForFreeShipping > 0 
+                    ? <>Faltam <strong style={{ color: '#FFE57F' }}>R$ {missingForFreeShipping.toFixed(2).replace('.', ',')}</strong> p/ frete grátis</>
+                    : <strong style={{ color: '#2ecc71' }}>Você ganhou frete grátis!</strong>
+                  }
+                </span>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px', fontWeight: '950', color: '#D4AF37' }}>
-                R$ {totalPrice.toFixed(2)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+              <span style={{ fontSize: '12px', fontWeight: '950', color: '#FFE57F' }}>
+                R$ {totalPrice.toFixed(2).replace('.', ',')}
               </span>
-              <span style={{ fontSize: '10px', color: '#D4AF37', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
+              <span style={{ fontSize: '10px', color: '#FFE57F', animation: 'bounce-right 1.2s infinite ease-in-out', display: 'inline-block' }}>➔</span>
+            </div>
+          </div>
+
+          {/* Slim Progress Track with Truck Moving Along the Fill Tip */}
+          <div style={{ padding: '5px 14px 7px' }}>
+            <div style={{ 
+              width: '100%', 
+              height: '4px', 
+              background: 'rgba(255, 255, 255, 0.14)', 
+              borderRadius: '99px',
+              position: 'relative',
+              overflow: 'visible',
+            }}>
+              <div style={{
+                width: `${progressPercent}%`,
+                height: '100%',
+                background: progressPercent === 100 ? '#2ecc71' : 'linear-gradient(90deg, #D4AF37, #FFE57F)',
+                borderRadius: '99px',
+                transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: progressPercent === 100 ? '0 0 8px rgba(46, 204, 113, 0.7)' : '0 0 8px rgba(255, 229, 127, 0.55)',
+              }} />
+              {/* Caminhãozinho progredindo exatamente no mesmo ponto da ponta da barra */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `clamp(8px, ${progressPercent}%, calc(100% - 8px))`,
+                  top: '50%',
+                  transform: 'translate(-50%, -58%)',
+                  transition: 'left 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.85))',
+                }}
+              >
+                <Truck
+                  size={13}
+                  color={progressPercent === 100 ? '#2ecc71' : '#FFE57F'}
+                  strokeWidth={2.5}
+                />
+              </div>
             </div>
           </div>
         </div>
