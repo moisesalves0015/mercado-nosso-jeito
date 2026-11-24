@@ -21,7 +21,7 @@ export const BottomNav = () => {
   // Showcase routes where product catalogs/cards are rendered
   const isShowcaseRoute = (pathname: string): boolean => {
     if (pathname === '/') return true;
-    if (['/categories', '/promotions', '/search', '/bebidas', '/padaria', '/eletronicos', '/tabacaria'].includes(pathname)) return true;
+    if (['/categories', '/promotions', '/search', '/bebidas', '/padaria', '/eletronicos', '/tabacaria', '/favorites'].includes(pathname)) return true;
     if (pathname.startsWith('/product/')) return true;
     return false;
   };

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, Star, ChevronDown, CheckCircle, Shield, ShoppingCart, RefreshCw } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
+import { useFavorites } from '../hooks/useFavorites';
 import { getEffectiveProductPrice } from '../utils/productPricing';
 import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
 import { useCatalog } from '../hooks/useCatalog';
@@ -92,7 +93,8 @@ export const ProductDetail = () => {
 
   // State for subscription selection, quantity, and favoriting
   const [quantity, setQuantity] = useState<number>(1);
-  const [isFavorited, setIsFavorited] = useState<boolean>(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFavorited = isFavorite(productId || '');
   const [selectedImageIdx, setSelectedImageIdx] = useState<number>(0);
   const { addToCart } = useCart();
 
@@ -144,7 +146,7 @@ export const ProductDetail = () => {
             <button onClick={handleShare} className="header-icon-btn">
               <Share2 size={18} color="currentColor" />
             </button>
-            <button onClick={() => setIsFavorited(!isFavorited)} className="header-icon-btn">
+            <button onClick={() => productId && toggleFavorite(productId)} className="header-icon-btn" title="Favoritar">
               <Heart size={18} fill={isFavorited ? "#FF4F4F" : "none"} color={isFavorited ? "#FF4F4F" : "currentColor"} />
             </button>
           </div>

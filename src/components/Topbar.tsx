@@ -1,57 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, ChevronRight, Heart, Menu, X, Home, LayoutGrid, Flame, Wine, Cigarette, Smartphone, Gamepad2, ShoppingBag, ClipboardList, User, ShieldAlert, LogOut, Cookie, Sun, Moon } from 'lucide-react';
+import { MapPin, ChevronRight, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useAdminConfig } from '../hooks/useAdminConfig';
 import { useDefaultCondo } from '../hooks/useDefaultCondo';
 import { useUserDiamonds } from '../hooks/useUserDiamonds';
+import { useFavorites } from '../hooks/useFavorites';
 
 export const Topbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { userProfile, isAdmin, logout } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { userProfile } = useAuth();
   // Condomínio vem do endereço padrão do usuário; prazo vem de settings/admin.deliveryEta.
   const condoName = useDefaultCondo();
   const { config: adminConfig } = useAdminConfig();
   const { diamonds } = useUserDiamonds();
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-  const isLight = theme === 'light';
-
-  useEffect(() => {
-    const handleThemeChange = () => {
-      setTheme(localStorage.getItem('theme') || 'dark');
-    };
-    window.addEventListener('theme-changed', handleThemeChange);
-    return () => window.removeEventListener('theme-changed', handleThemeChange);
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = isLight ? 'dark' : 'light';
-    localStorage.setItem('theme', nextTheme);
-    setTheme(nextTheme);
-    window.dispatchEvent(new Event('theme-changed'));
-  };
-
+  const { count: favoritesCount } = useFavorites();
   const navRef = useRef<HTMLDivElement>(null);
-
-  // Menu lateral: Escape fecha, foco entra no painel ao abrir e volta ao botão ao fechar.
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const menuButton = menuButtonRef.current;
-    closeButtonRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      menuButton?.focus();
-    };
-  }, [isMenuOpen]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -162,207 +127,35 @@ export const Topbar = () => {
           <button
             className="topbar-icon-btn"
             aria-label="Favoritos"
-            title="Favoritos"
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Meus Favoritos"
+            onClick={() => navigate('/favorites')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: favoritesCount > 0 ? '#ef4444' : 'var(--text-primary)',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative'
+            }}
           >
-            <Heart size={18} />
-          </button>
-          <button
-            className="topbar-hamburger-btn"
-            title="Menu"
-            aria-label="Abrir menu"
-            aria-expanded={isMenuOpen}
-            aria-controls="topbar-drawer"
-            style={{ padding: '4px' }}
-            ref={menuButtonRef}
-            onClick={() => setIsMenuOpen(true)}
-          >
-            <Menu size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* SIDEBAR DRAWER MENU BACKDROP */}
-      <div 
-        className={`topbar-menu-backdrop ${isMenuOpen ? 'open' : ''}`}
-        onClick={() => setIsMenuOpen(false)}
-      />
-
-      {/* SIDEBAR DRAWER MENU PANEL */}
-      <div
-        id="topbar-drawer"
-        role="dialog"
-        aria-label="Menu de navegação"
-        aria-modal="true"
-        aria-hidden={!isMenuOpen}
-        inert={!isMenuOpen}
-        className={`topbar-menu-drawer ${isMenuOpen ? 'open' : ''}`}
-      >
-        <div className="topbar-menu-header">
-          <div className="topbar-menu-logo">
-            <h3 className="logo-main" style={{ margin: 0 }}>mercado do</h3>
-            <span className="logo-sub" style={{ margin: 0 }}>nosso jeito</span>
-          </div>
-          <button
-            className="topbar-menu-close-btn"
-            onClick={() => setIsMenuOpen(false)}
-            aria-label="Fechar menu" ref={closeButtonRef}
-            title="Fechar menu"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* User profile summary */}
-        <div className="topbar-menu-profile">
-          {userProfile ? (
-            <>
-              {userProfile.foto ? (
-                <img src={userProfile.foto} alt={userProfile.name} className="topbar-menu-avatar" />
-              ) : (
-                <div className="topbar-menu-avatar">
-                  {userProfile.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="topbar-menu-user-info">
-                <span className="topbar-menu-username">{userProfile.name}</span>
-                <span className="topbar-menu-user-points">
-                  {diamonds !== null ? `${diamonds.toLocaleString('pt-BR')} diamantes` : 'Membro do Clube'}
-                </span>
-              </div>
-            </>
-          ) : (
-            <div style={{ width: '100%' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', textAlign: 'center' }}>
-                Acesse sua conta para fazer pedidos
-              </div>
-              <Link 
-                to="/login" 
-                className="topbar-menu-login-btn" 
-                onClick={() => setIsMenuOpen(false)}
-                style={{ display: 'block' }}
-              >
-                Entrar / Cadastrar
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Nav Links */}
-        <div className="topbar-menu-nav">
-          <Link to="/" className={`topbar-menu-nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Home size={16} />
-            <span>Início</span>
-          </Link>
-
-          <Link to="/categories" className={`topbar-menu-nav-link ${location.pathname === '/categories' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <LayoutGrid size={16} />
-            <span>Categorias</span>
-          </Link>
-
-          <Link to="/promotions" className={`topbar-menu-nav-link ${location.pathname === '/promotions' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Flame size={16} />
-            <span>Promoções</span>
-          </Link>
-
-          <Link to="/bebidas" className={`topbar-menu-nav-link ${location.pathname === '/bebidas' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Wine size={16} />
-            <span>Bebidas</span>
-          </Link>
-
-          <Link to="/padaria" className={`topbar-menu-nav-link ${location.pathname === '/padaria' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Cookie size={16} />
-            <span>Padaria</span>
-          </Link>
-
-          <Link to="/tabacaria" className={`topbar-menu-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Cigarette size={16} />
-            <span>Tabacaria</span>
-          </Link>
-
-          <Link to="/eletronicos" className={`topbar-menu-nav-link ${location.pathname === '/eletronicos' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Smartphone size={16} />
-            <span>Eletrônicos</span>
-          </Link>
-
-          <Link to="/roleta" className={`topbar-menu-nav-link ${location.pathname === '/roleta' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <Gamepad2 size={16} />
-            <span>Roleta Premiada</span>
-          </Link>
-
-          <Link to="/cart" className={`topbar-menu-nav-link ${location.pathname === '/cart' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <ShoppingBag size={16} />
-            <span>Meu Carrinho</span>
-          </Link>
-
-          <Link to="/orders" className={`topbar-menu-nav-link ${location.pathname === '/orders' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <ClipboardList size={16} />
-            <span>Meus Pedidos</span>
-          </Link>
-
-          <Link to="/profile" className={`topbar-menu-nav-link ${location.pathname === '/profile' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-            <User size={16} />
-            <span>Minha Conta</span>
-          </Link>
-
-          {isAdmin && (
-            <Link to="/admin" className={`topbar-menu-nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
-              <ShieldAlert size={16} />
-              <span>Painel Admin</span>
-            </Link>
-          )}
-
-          {/* Theme switcher inside list */}
-          <button
-            className="topbar-menu-nav-link"
-            role="menuitem"
-            onClick={toggleTheme}
-            aria-label={isLight ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-primary)' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {isLight ? <Sun size={16} color="#D4AF37" /> : <Moon size={16} color="#6366F1" />}
-              <span>Modo Claro</span>
-            </div>
-            <div style={{
-              width: '34px',
-              height: '18px',
-              borderRadius: '99px',
-              background: isLight ? 'linear-gradient(135deg, #D4AF37, #FFDF73)' : 'rgba(255,255,255,0.15)',
-              position: 'relative',
-              transition: 'all 0.2s ease',
-              border: '1px solid var(--border-primary)',
-            }}>
-              <div style={{
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                background: isLight ? '#000' : '#fff',
+            <Heart size={20} fill={favoritesCount > 0 ? '#ef4444' : 'none'} color={favoritesCount > 0 ? '#ef4444' : 'currentColor'} />
+            {favoritesCount > 0 && (
+              <span style={{
                 position: 'absolute',
-                top: '1px',
-                left: isLight ? '17px' : '1px',
-                transition: 'all 0.2s ease',
+                top: '2px',
+                right: '2px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 6px rgba(239, 68, 68, 0.9)'
               }} />
-            </div>
+            )}
           </button>
         </div>
-
-        {/* Footer with logout button */}
-        {userProfile && (
-          <div className="topbar-menu-footer">
-            <button 
-              className="topbar-menu-logout-btn"
-              onClick={() => {
-                setIsMenuOpen(false);
-                logout();
-                navigate('/');
-              }}
-            >
-              <LogOut size={16} />
-              <span>Sair da Conta</span>
-            </button>
-          </div>
-        )}
       </div>
       </div>
     </div>

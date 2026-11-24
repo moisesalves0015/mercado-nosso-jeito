@@ -35,6 +35,7 @@ const Addresses       = lazy(() => import('./pages/Addresses').then(m => ({ defa
 const Coupons         = lazy(() => import('./pages/Coupons').then(m => ({ default: m.Coupons })));
 const Support         = lazy(() => import('./pages/Support').then(m => ({ default: m.Support })));
 const BadgesCenter    = lazy(() => import('./pages/BadgesCenter').then(m => ({ default: m.BadgesCenter })));
+const Favorites       = lazy(() => import('./pages/Favorites').then(m => ({ default: m.Favorites })));
 
 // Lazy: Modular Admin CRM Shell & Route Pages
 const AdminLayout             = lazy(() => import('./admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -281,6 +282,7 @@ function AppContent() {
           <Route path="/eletronicos" element={<Eletronicos />} />
           <Route path="/padaria" element={<Padaria />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="/product/:productId" element={<ProductDetail />} />
           <Route path="/roleta" element={<Roleta />} />
           
