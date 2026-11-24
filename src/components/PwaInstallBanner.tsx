@@ -142,9 +142,11 @@ export function PwaInstallBanner() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        margin: '4px 16px', // Margem em bloco mínima e rigorosamente igual em cima e embaixo
-        height: '24px',
+        margin: '6px 14px 6px',
+        height: '26px',
         overflow: 'hidden',
+        position: 'relative',
+        zIndex: 1005,
       }}
     >
       <div
@@ -162,11 +164,12 @@ export function PwaInstallBanner() {
         <span
           className="pwa-banner-text"
           style={{
-            fontSize: 11.5,
-            fontWeight: 600,
+            fontSize: 12,
+            fontWeight: 800,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            textShadow: '0 1px 4px rgba(0, 0, 0, 0.75)',
           }}
         >
           {activeSlide.text}
@@ -184,11 +187,12 @@ export function PwaInstallBanner() {
           background: 'none',
           border: 'none',
           fontSize: 11.5,
-          fontWeight: 800,
+          fontWeight: 900,
           cursor: 'pointer',
           padding: '2px 0 2px 8px',
           textTransform: 'uppercase',
           flexShrink: 0,
+          textShadow: '0 1px 4px rgba(0, 0, 0, 0.75)',
           opacity: isTransitioning ? 0 : 1,
           transform: isTransitioning ? 'translateY(4px)' : 'translateY(0)',
           transition: 'opacity 0.24s ease, transform 0.24s ease',

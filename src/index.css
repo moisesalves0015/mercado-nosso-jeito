@@ -2856,20 +2856,20 @@ body.light-mode .topbar-search-container {
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.2) 0%,
     rgba(255, 255, 255, 0.08) 50%,
     rgba(255, 255, 255, 0.03) 100%
   ) !important;
-  backdrop-filter: url(#liquid-glass) blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(18px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 1200 !important;
   padding: 4px 12px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
   box-sizing: border-box !important;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.4);
+  transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 2.2);
 }
 
 .floating-mini-cart {
@@ -2883,7 +2883,7 @@ body.light-mode .topbar-search-container {
   width: calc(100% - 24px) !important;
   max-width: 480px !important;
   /* Rests right above the bottom-nav with OS safe-area support */
-  border-radius: 24px !important;
+  border-radius: 28px !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   background: linear-gradient(
     135deg,
@@ -2891,9 +2891,9 @@ body.light-mode .topbar-search-container {
     rgba(255, 255, 255, 0.08) 50%,
     rgba(255, 255, 255, 0.03) 100%
   ) !important;
-  backdrop-filter: url(#liquid-glass) blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(18px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
   z-index: 1150 !important;
   display: flex;
   flex-direction: column;
@@ -11355,4 +11355,398 @@ body.light-mode .commerce-btn-dashed {
   .commerce-btn-coupon.is-loading::before {
     animation: none !important;
   }
+}
+
+
+/* =========================================================
+   LIQUID GLASS — PADRÃO ÚNICO E HARMONIA GEOMÉTRICA (PAIS & FILHOS)
+   - Pai e filhos com border-radius concêntricos (R_filho = R_pai - padding).
+   - Embaça intensamente + distorce o conteúdo de fundo via #liquid-glass.
+   - Topbar principal e cabeçalhos internos unificados na mesma estética glass.
+========================================================= */
+:root {
+  --float-radius: 22px;
+  --float-child-radius: 15px;
+  --float-subchild-radius: 11px;
+  --glass-tint: rgba(14, 12, 10, 0.62);
+  --glass-sheen:
+    radial-gradient(120% 100% at 15% 0%, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.05) 48%,
+      rgba(212, 175, 55, 0.06) 100%);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 24px rgba(255, 255, 255, 0.07),
+    0 18px 42px rgba(0, 0, 0, 0.72),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+body.light-mode {
+  --glass-tint: rgba(255, 255, 255, 0.68);
+  --glass-sheen:
+    radial-gradient(120% 100% at 15% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.25) 60%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.65) 0%,
+      rgba(255, 255, 255, 0.28) 50%,
+      rgba(212, 175, 55, 0.08) 100%);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 20px rgba(255, 255, 255, 0.45),
+    0 14px 34px rgba(15, 23, 42, 0.18),
+    0 3px 8px rgba(15, 23, 42, 0.08);
+}
+
+/* 1. CONTAINERS FLUTUANTES (PAIS) — Raio único 22px + Liquid Glass Distortion & Deep Blur */
+.bottom-nav,
+.floating-mini-cart,
+.floating-topbar-inner,
+.commerce-topbar-inner,
+.categories-page-header,
+.search-side-feed,
+.search-filters-glass-card,
+body.light-mode .bottom-nav,
+body.light-mode .floating-mini-cart,
+body.light-mode .floating-topbar-inner,
+body.light-mode .commerce-topbar-inner,
+body.light-mode .categories-page-header,
+body.light-mode .search-side-feed,
+body.light-mode .search-filters-glass-card {
+  border-radius: var(--float-radius) !important;
+  border: 1px solid var(--glass-border) !important;
+  background: var(--glass-sheen), var(--glass-tint) !important;
+  box-shadow: var(--glass-shadow) !important;
+  /* Fallback (Safari/Firefox): blur intenso. Chromium: filtro #liquid-glass com refração + blur pesado */
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: url(#liquid-glass) blur(22px) saturate(195%) brightness(0.96) !important;
+  isolation: isolate;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.4), box-shadow 0.3s ease !important;
+}
+
+/* 2. TOPBAR PRINCIPAL (Home e vitrines) — Combinando o mesmo efeito Liquid Glass */
+.category-topbar-wrapper,
+.topbar-container,
+body.light-mode .category-topbar-wrapper,
+body.light-mode .topbar-container {
+  background: transparent !important;
+  border-bottom: none !important;
+  z-index: 950 !important;
+}
+
+.topbar-container .safe-area-top-bg {
+  background: transparent !important;
+}
+
+.topbar,
+body.light-mode .topbar {
+  background: var(--glass-sheen), var(--glass-tint) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  border-bottom-left-radius: var(--float-radius) !important;
+  border-bottom-right-radius: var(--float-radius) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.10),
+    0 6px 14px rgba(0, 0, 0, 0.28) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: url(#liquid-glass) blur(22px) saturate(195%) brightness(0.96) !important;
+  padding: 10px 12px 6px 12px !important;
+  isolation: isolate;
+}
+
+/* Avisos acima do Hero (.pwa-install-ticker e .section-state-message) sempre na frente da sombra do Topbar */
+.pwa-install-ticker,
+.section-state-message {
+  position: relative !important;
+  z-index: 1005 !important;
+}
+
+body.light-mode .pwa-banner-text,
+body.light-mode .pwa-banner-btn {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 2.5 TIPOGRAFIA REFORÇADA EM CIMA DO EFEITO LIQUID GLASS (Mais forte, nítida e legível) */
+.topbar .location-label {
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75) !important;
+}
+
+.topbar .location-value {
+  color: #ffffff !important;
+  font-weight: 850 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+}
+
+.topbar .location-highlight {
+  color: #FFE57F !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+}
+
+.topbar .logo-main {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+.topbar .gold-badge-title {
+  color: #FFE57F !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.topbar .gold-badge-points {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.topbar .topbar-nav-link {
+  color: rgba(255, 255, 255, 0.90) !important;
+  font-weight: 750 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75) !important;
+}
+
+.topbar .topbar-nav-link.active {
+  color: #FFE57F !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+}
+
+.topbar .active-line {
+  background-color: #FFE57F !important;
+  box-shadow: 0 0 6px rgba(255, 229, 127, 0.8) !important;
+}
+
+.bottom-nav a {
+  color: rgba(255, 255, 255, 0.90) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+.bottom-nav a span {
+  font-weight: 800 !important;
+  letter-spacing: 0.1px !important;
+}
+
+.bottom-nav a.active {
+  color: #FFE57F !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+}
+
+.floating-mini-cart span,
+.floating-mini-cart strong,
+.floating-topbar-inner span,
+.floating-topbar-inner h1,
+.floating-topbar-inner h2,
+.commerce-topbar-inner .commerce-topbar-title,
+.categories-page-header h2,
+.search-side-feed .promo-title,
+.search-side-feed .miniproduct-title,
+.search-side-feed .miniproduct-price {
+  font-weight: 850 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75) !important;
+}
+
+.search-side-feed .promo-sub {
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-weight: 700 !important;
+}
+
+/* Contraste forte no Modo Claro sobre o Liquid Glass */
+body.light-mode .topbar .location-label {
+  color: #1e293b !important;
+  font-weight: 750 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+body.light-mode .topbar .location-value,
+body.light-mode .topbar .logo-main,
+body.light-mode .topbar .gold-badge-points {
+  color: #090e17 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+body.light-mode .topbar .location-highlight,
+body.light-mode .topbar .gold-badge-title {
+  color: #92400e !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+body.light-mode .topbar .topbar-nav-link {
+  color: #1e293b !important;
+  font-weight: 750 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85) !important;
+}
+
+body.light-mode .topbar .topbar-nav-link.active {
+  color: #92400e !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+body.light-mode .topbar .active-line {
+  background-color: #92400e !important;
+  box-shadow: none !important;
+}
+
+body.light-mode .bottom-nav a {
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+body.light-mode .bottom-nav a.active {
+  color: #92400e !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+body.light-mode .floating-mini-cart span,
+body.light-mode .floating-mini-cart strong,
+body.light-mode .commerce-topbar-inner .commerce-topbar-title,
+body.light-mode .categories-page-header h2,
+body.light-mode .search-side-feed .promo-title,
+body.light-mode .search-side-feed .miniproduct-title {
+  color: #090e17 !important;
+  font-weight: 850 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85) !important;
+}
+
+body.light-mode .search-side-feed .promo-sub {
+  color: #1e293b !important;
+  font-weight: 750 !important;
+}
+
+/* Filhos do Topbar principal alinhados com o raio concêntrico */
+.gold-level-badge {
+  border-radius: var(--float-subchild-radius) !important;
+  background: rgba(255, 223, 115, 0.1) !important;
+  border: 1px solid rgba(255, 223, 115, 0.35) !important;
+  padding: 4px 8px !important;
+}
+
+.topbar-icon-btn,
+body.light-mode .topbar-icon-btn {
+  width: auto !important;
+  height: auto !important;
+  padding: 4px 6px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  transition: opacity 0.2s ease, transform 0.15s ease !important;
+}
+
+/* 3. FILHOS DO MENU FLUTUANTE (.bottom-nav) — Concentricidade perfeita (Pai 22px - Padding 6px = Filho 16px) */
+.bottom-nav {
+  padding: 5px 6px !important;
+  height: 60px !important;
+  gap: 4px !important;
+}
+
+.bottom-nav a {
+  flex: 1 1 0 !important;
+  border-radius: var(--float-child-radius) !important;
+  padding: 5px 4px !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  border: 1px solid transparent !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.bottom-nav a.active,
+body.light-mode .bottom-nav a.active {
+  border-radius: var(--float-child-radius) !important;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.24) 0%, rgba(212, 175, 55, 0.08) 100%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.38) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transform: none !important;
+}
+
+/* 4. FILHOS DOS CABEÇALHOS FLUTUANTES (Botões de voltar e ação: squircle 14px em vez de círculo 50% ou quadrado) */
+.btn-icon-round,
+.header-icon-btn,
+.categories-back-btn,
+.floating-topbar-inner .btn-icon-round,
+.commerce-topbar-inner .btn-icon-round {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: var(--text-primary) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.btn-icon-round.is-active {
+  background: rgba(212, 175, 55, 0.22) !important;
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  color: #D4AF37 !important;
+}
+
+body.light-mode .btn-icon-round,
+body.light-mode .header-icon-btn,
+body.light-mode .categories-back-btn {
+  background: rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 5. FILHOS DO FEED LATERAL (.search-side-feed) — Concentricidade com pai de 22px e padding 6px */
+.search-side-feed {
+  padding: 6px 5px !important;
+  gap: 6px !important;
+}
+
+.search-side-feed-header {
+  border-radius: 12px !important;
+  padding: 4px 6px !important;
+}
+
+.search-side-promo,
+.search-side-miniproduct {
+  border-radius: 14px !important;
+  padding: 6px 4px !important;
+}
+
+.miniproduct-img-wrap {
+  border-radius: 10px !important;
+}
+
+.miniproduct-tag,
+.search-side-promo .promo-badge {
+  border-radius: 6px !important;
+}
+
+.miniproduct-add-btn {
+  border-radius: 9px !important;
+}
+
+/* 6. MINI-CARRINHO FLUTUANTE */
+.floating-mini-cart {
+  overflow: hidden;
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Wrapper do cabeçalho não deve ter vidro próprio, só o fade */
+.floating-topbar-wrapper {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }

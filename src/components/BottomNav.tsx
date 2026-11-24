@@ -73,34 +73,36 @@ export const BottomNav = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 16px 14px',
+            padding: '6px 14px 12px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                background: 'rgba(212, 175, 55, 0.15)',
-                borderRadius: '50%',
-                width: '28px',
-                height: '28px',
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="mini-cart-bag-box" style={{
+                background: 'rgba(212, 175, 55, 0.16)',
+                border: '1px solid rgba(212, 175, 55, 0.35)',
+                borderRadius: '11px',
+                width: '32px',
+                height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative'
               }}>
-                <ShoppingBag size={14} color="#D4AF37" className="lucide-shopping-bag" />
+                <ShoppingBag size={15} color="#D4AF37" className="lucide-shopping-bag" />
                 <span style={{
                   position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
+                  top: '-5px',
+                  right: '-5px',
                   background: '#D4AF37',
                   color: '#000',
                   fontSize: '8.5px',
                   fontWeight: '900',
-                  borderRadius: '50%',
-                  width: '14px',
-                  height: '14px',
+                  borderRadius: '6px',
+                  minWidth: '15px',
+                  height: '15px',
+                  padding: '0 3px',
                   display: 'grid',
                   placeItems: 'center',
-                  boxShadow: '0 0 4px rgba(212,175,55,0.6)'
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.45)'
                 }}>
                   {totalItems}
                 </span>

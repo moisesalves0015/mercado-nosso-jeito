@@ -13,7 +13,7 @@ const card = {
   backdropFilter: 'blur(28px)',
   WebkitBackdropFilter: 'blur(28px)',
   border: '1px solid var(--border-gold)',
-  borderRadius: '18px',
+  borderRadius: '22px',
   boxShadow: 'var(--card-shadow)',
 };
 
@@ -142,21 +142,13 @@ export const Search = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '7px 12px',
+            padding: '7px 8px',
           }}>
             <button
               onClick={() => navigate(-1)}
-              style={{
-                background: 'rgba(212, 175, 55, 0.12)',
-                border: '1px solid rgba(212, 175, 55, 0.35)',
-                borderRadius: '50%',
-                width: '36px', height: '36px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#D4AF37', flexShrink: 0,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
-                transition: 'transform 0.15s ease'
-              }}
+              className="btn-icon-round"
               title="Voltar"
+              aria-label="Voltar"
             >
               <ArrowLeft size={17} />
             </button>
@@ -165,18 +157,12 @@ export const Search = () => {
 
             <button
               onClick={() => setShowFilters(v => !v)}
+              className={`btn-icon-round ${showFilters ? 'is-active' : ''}`}
               style={{
-                background: showFilters ? 'rgba(212,175,55,0.22)' : 'rgba(255, 255, 255, 0.06)',
-                border: `1.2px solid ${showFilters ? '#D4AF37' : 'rgba(212,175,55,0.3)'}`,
-                borderRadius: 12, width: 36, height: 36,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: showFilters ? '#D4AF37' : 'var(--text-secondary)',
-                flexShrink: 0,
                 position: 'relative',
-                boxShadow: showFilters ? '0 0 12px rgba(212,175,55,0.3)' : '0 2px 8px rgba(0,0,0,0.25)',
-                transition: 'all 0.2s ease'
               }}
               title="Filtros e Busca"
+              aria-label="Filtros e Busca"
             >
               <SlidersHorizontal size={15} />
               {hasFilters && (
@@ -202,9 +188,9 @@ export const Search = () => {
 
         {/* ── Toggleable Filters Card Panel ── */}
         {showFilters && (
-          <div style={{ ...card, padding: '14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="search-filters-glass-card" style={{ ...card, padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* Search Input */}
-            <div className="search-bar" style={{ marginBottom: 0, position: 'relative', height: '38px', borderRadius: '10px', padding: '8px 12px' }}>
+            <div className="search-bar" style={{ marginBottom: 0, position: 'relative', height: '40px', borderRadius: '14px', padding: '8px 12px' }}>
               <SearchIcon size={16} color="#D4AF37" />
               <input
                 type="text"
@@ -251,8 +237,8 @@ export const Search = () => {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '5px 11px',
-                      borderRadius: '999px',
+                      padding: '6px 12px',
+                      borderRadius: '12px',
                       border: `1px solid ${isActive ? cat.color : 'var(--border-primary)'}`,
                       background: isActive ? `${cat.color}18` : 'var(--input-bg)',
                       color: isActive ? (theme === 'light' ? cat.color : '#fff') : 'var(--text-secondary)',

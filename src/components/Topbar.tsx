@@ -129,19 +129,8 @@ export const Topbar = () => {
             aria-label="Favoritos"
             title="Meus Favoritos"
             onClick={() => navigate('/favorites')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: favoritesCount > 0 ? '#ef4444' : 'var(--text-primary)',
-              padding: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative'
-            }}
           >
-            <Heart size={20} fill={favoritesCount > 0 ? '#ef4444' : 'none'} color={favoritesCount > 0 ? '#ef4444' : 'currentColor'} />
+            <Heart size={18} fill={favoritesCount > 0 ? '#ef4444' : 'none'} color={favoritesCount > 0 ? '#ef4444' : 'currentColor'} />
             {favoritesCount > 0 && (
               <span style={{
                 position: 'absolute',
@@ -151,7 +140,6 @@ export const Topbar = () => {
                 height: '7px',
                 borderRadius: '50%',
                 background: '#ef4444',
-                boxShadow: '0 0 6px rgba(239, 68, 68, 0.9)'
               }} />
             )}
           </button>

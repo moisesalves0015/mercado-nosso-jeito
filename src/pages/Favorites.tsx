@@ -25,44 +25,34 @@ export function Favorites() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '7px 14px',
+            padding: '7px 8px',
           }}>
             <button
               onClick={() => navigate(-1)}
-              style={{
-                background: 'rgba(212, 175, 55, 0.12)',
-                border: '1px solid rgba(212, 175, 55, 0.35)',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#D4AF37',
-                flexShrink: 0,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
-                transition: 'transform 0.15s ease'
-              }}
+              className="btn-icon-round"
               title="Voltar"
+              aria-label="Voltar"
             >
               <ArrowLeft size={17} />
             </button>
 
             <MercadoLogo size="sm" />
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444'
-            }}>
-              <Heart size={16} fill="#ef4444" />
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 38,
+                height: 38,
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                color: '#ef4444',
+                cursor: 'default'
+              }}
+            >
+              <Heart size={18} fill="#ef4444" />
             </div>
           </div>
         </div>
