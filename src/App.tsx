@@ -249,6 +249,36 @@ function AppContent() {
 
   return (
     <>
+      {/* SVG Displacement Filter para Liquid Glass Effect */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }} aria-hidden="true">
+        <filter
+          id="liquid-glass"
+          x="-50%"
+          y="-50%"
+          width="200%"
+          height="200%"
+          primitiveUnits="objectBoundingBox"
+        >
+          <feImage
+            href="/glass-map.png"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+            result="map"
+          />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.02" result="blur" />
+          <feDisplacementMap
+            id="disp"
+            in="blur"
+            in2="map"
+            scale="0.8"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </svg>
+
       <div className="bg"></div>
       <div className="overlay"></div>
       <div 

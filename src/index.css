@@ -2852,18 +2852,24 @@ body.light-mode .topbar-search-container {
   width: calc(100% - 24px) !important;
   max-width: 480px !important;
   height: 56px !important;
-  background: rgba(18, 14, 10, 0.84) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  ) !important;
+  backdrop-filter: url(#liquid-glass) blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 1200 !important;
-  border: 1.2px solid rgba(212, 175, 55, 0.35) !important;
-  border-radius: 24px !important;
-  padding: 4px 10px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.5), 0 0 1px rgba(212, 175, 55, 0.45) !important;
+  padding: 4px 12px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
   box-sizing: border-box !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.4);
 }
 
 .floating-mini-cart {
@@ -2877,16 +2883,21 @@ body.light-mode .topbar-search-container {
   width: calc(100% - 24px) !important;
   max-width: 480px !important;
   /* Rests right above the bottom-nav with OS safe-area support */
-  background: rgba(22, 17, 12, 0.88) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  ) !important;
+  backdrop-filter: url(#liquid-glass) blur(24px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1.2px solid rgba(212, 175, 55, 0.38) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
   z-index: 1150 !important;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  border-radius: 20px !important;
   overflow: hidden;
   box-sizing: border-box !important;
   animation: slideUpCart 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
