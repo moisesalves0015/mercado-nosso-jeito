@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
-import { defaultProducts } from '../data/defaultProducts';
 import { PageHeroBanner } from '../components/common/PageHeroBanner';
+import { useCatalog } from '../hooks/useCatalog';
 
 const DEFAULT_ELETRONICOS_SLIDES = [
   {
@@ -14,76 +14,12 @@ const DEFAULT_ELETRONICOS_SLIDES = [
   },
 ];
 
-interface Product {
-  id: string;
-  title: string;
-  price: number | string;
-  image: string;
-  category: string;
-  badge?: string;
-  badgeStyle?: 'orange' | 'light';
-  diamondReward?: number;
-}
-
 export const Eletronicos = () => {
-  const [eletronicoProds, setEletronicoProds] = useState<Product[]>([]);
+  const { products } = useCatalog();
 
-  useEffect(() => {
-    const loadProducts = () => {
-      const stored = localStorage.getItem('app-products');
-      let allProds: Product[] = [];
-      let updated = false;
-
-      if (stored) {
-        allProds = JSON.parse(stored) as Product[];
-        // Check for missing default products and add them
-        defaultProducts.forEach(defP => {
-          if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP);
-            updated = true;
-          }
-        });
-      } else {
-        allProds = [...defaultProducts];
-        updated = true;
-      }
-
-      // Sync specific image updates if necessary
-      allProds = allProds.map(p => {
-        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
-          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
-          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
-          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1549778398-f3c481549766')) {
-          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          updated = true;
-        }
-        return p;
-      });
-
-      if (updated) {
-        try {
-          localStorage.setItem('app-products', JSON.stringify(allProds));
-        } catch {
-          // ignore quota limits safely
-        }
-      }
-
-      setEletronicoProds(allProds.filter(p => p.category === 'Eletrônicos'));
-    };
-
-    loadProducts();
-    window.addEventListener('app-products-updated', loadProducts);
-    return () => window.removeEventListener('app-products-updated', loadProducts);
-  }, []);
+  const eletronicoProds = useMemo(() => {
+    return products.filter((p) => p.active !== false && p.category === 'Eletrônicos');
+  }, [products]);
 
   return (
     <main className="app eletronicos-page" style={{ paddingTop: 0 }}>

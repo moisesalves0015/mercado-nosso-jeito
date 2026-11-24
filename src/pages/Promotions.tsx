@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { isProductPromotionCurrent } from '../utils/productPricing';
 import { PageHeroBanner } from '../components/common/PageHeroBanner';
+import { useCatalog } from '../hooks/useCatalog';
 
 const DEFAULT_PROMO_SLIDES = [
   {
@@ -13,39 +14,14 @@ const DEFAULT_PROMO_SLIDES = [
   },
 ];
 
-interface Product {
-  id: string;
-  title: string;
-  price: number | string;
-  image: string;
-  category: string;
-  badge?: string;
-  badgeStyle?: 'orange' | 'light';
-  diamondReward?: number;
-  promoActive?: boolean;
-  promoPrice?: number | string;
-  promoExpiry?: string | number | Date | { toDate?: () => Date; seconds?: number } | null;
-}
-
 export const Promotions = () => {
-  const [promoProds, setPromoProds] = useState<Product[]>([]);
+  const { products } = useCatalog();
 
-  useEffect(() => {
-    const loadProducts = () => {
-      try {
-        const stored = localStorage.getItem('app-products');
-        const allProds = stored ? JSON.parse(stored) as Product[] : [];
-        setPromoProds(allProds.filter(p => p.category === 'Promoções' || isProductPromotionCurrent(p)));
-      } catch (error) {
-        console.error('Não foi possível ler o catálogo de promoções.', error);
-        setPromoProds([]);
-      }
-    };
-
-    loadProducts();
-    window.addEventListener('app-products-updated', loadProducts);
-    return () => window.removeEventListener('app-products-updated', loadProducts);
-  }, []);
+  const promoProds = useMemo(() => {
+    return products.filter(
+      (p) => p.active !== false && (p.category === 'Promoções' || isProductPromotionCurrent(p))
+    );
+  }, [products]);
 
   return (
     <main className="app promotions-page" style={{ paddingTop: 0 }}>

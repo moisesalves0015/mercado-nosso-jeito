@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { isProductPromotionCurrent } from '../utils/productPricing';
 import { MercadoLogo } from './Login';
+import { useCatalog } from '../hooks/useCatalog';
 
 const card = {
   background: 'var(--card-gradient)',
@@ -13,21 +14,6 @@ const card = {
   borderRadius: '18px',
   boxShadow: 'var(--card-shadow)',
 };
-
-interface Product {
-  id: string;
-  title: string;
-  price: number | string;
-  image: string;
-  category: string;
-  description?: string;
-  badge?: string;
-  badgeStyle?: 'light' | 'orange';
-  diamondReward?: number;
-  promoActive?: boolean;
-  promoPrice?: number | string;
-  promoExpiry?: string | number | Date | { toDate?: () => Date; seconds?: number } | null;
-}
 
 const CATEGORIES = [
   { id: '', label: 'Todas', icon: LayoutGrid, color: '#22c55e' },
@@ -41,7 +27,7 @@ const CATEGORIES = [
 ];
 
 export const Search = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products } = useCatalog();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
   const categoryParam = searchParams.get('category') || '';
@@ -73,23 +59,6 @@ export const Search = () => {
     setPrevCategoryParam(categoryParam);
     setSelectedCategory(categoryParam);
   }
-
-  // Firestore is the catalog source; localStorage is only its realtime cache.
-  useEffect(() => {
-    const loadProducts = () => {
-      try {
-        const stored = localStorage.getItem('app-products');
-        setProducts(stored ? JSON.parse(stored) as Product[] : []);
-      } catch (error) {
-        console.error('Não foi possível ler o catálogo da busca.', error);
-        setProducts([]);
-      }
-    };
-
-    loadProducts();
-    window.addEventListener('app-products-updated', loadProducts);
-    return () => window.removeEventListener('app-products-updated', loadProducts);
-  }, []);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
@@ -126,17 +95,20 @@ export const Search = () => {
     (str || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => {
+    return products.filter((p) => {
+      if (p.active === false) return false;
       const q = normalizeStr(searchQuery);
       const titleMatch = normalizeStr(p.title).includes(q);
-      const descMatch = p.description ? normalizeStr(p.description).includes(q) : false;
+      const descMatch = (p as { description?: string }).description
+        ? normalizeStr((p as { description?: string }).description || '').includes(q)
+        : false;
       const catMatch = normalizeStr(p.category).includes(q);
       const queryMatches = !searchQuery || titleMatch || descMatch || catMatch;
 
       let categoryMatches = true;
       if (selectedCategory) {
         const selCat = normalizeStr(selectedCategory);
-        if (selCat === 'promocoes' || selCat === 'promocoes' || selCat === 'promoçoes' || selCat === 'promotions') {
+        if (selCat === 'promocoes' || selCat === 'promoçoes' || selCat === 'promotions') {
           categoryMatches = isProductPromotionCurrent(p) || normalizeStr(p.category) === 'promocoes';
         } else {
           categoryMatches = normalizeStr(p.category) === selCat;

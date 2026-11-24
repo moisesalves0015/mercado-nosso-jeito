@@ -5,10 +5,7 @@ import { ProductCard } from '../components/ProductCard';
 import { useCart } from '../hooks/useCart';
 import { getEffectiveProductPrice } from '../utils/productPricing';
 import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
-import type { Product } from '../data/defaultProducts';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DetailProduct = any;
+import { useCatalog } from '../hooks/useCatalog';
 
 interface ProductMock {
   id: string;
@@ -16,21 +13,29 @@ interface ProductMock {
   price: string;
   priceNum: number;
   image: string;
+  images?: string[];
   badge?: string;
+  badgeStyle?: 'orange' | 'light';
+  diamondReward?: number;
   rating: number;
   ratingCount: number;
   soldCount: string;
   stockStatus: string;
   deliveryTime: string;
   category: string;
+  stock: number;
+  description?: string;
+  origin?: string;
+  conservation?: string;
 }
 
-const unavailableProduct = (id = ''): ProductMock & { stock: number; description: string } => ({
+const unavailableProduct = (id = ''): ProductMock => ({
   id,
   title: 'Produto indisponível',
   price: 'R$ 0,00',
   priceNum: 0,
   image: '',
+  images: [],
   rating: 0,
   ratingCount: 0,
   soldCount: '',
@@ -39,6 +44,8 @@ const unavailableProduct = (id = ''): ProductMock & { stock: number; description
   category: '',
   stock: 0,
   description: '',
+  origin: '',
+  conservation: '',
 });
 
 const productSlug = (title: string) => title.toLowerCase().normalize('NFD')
@@ -47,71 +54,41 @@ const productSlug = (title: string) => title.toLowerCase().normalize('NFD')
 export const ProductDetail = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
+  const catalog = useCatalog();
 
   // Scroll to top on mount or product change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [productId]);
 
-  const [allProducts, setAllProducts] = useState<DetailProduct[]>(() => {
-    const stored = localStorage.getItem('app-products');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const product: ProductMock = useMemo(() => {
+    if (!productId) return unavailableProduct(productId);
+    const found =
+      catalog.byId.get(productId) ||
+      catalog.products.find((p) => p.id === productId || productSlug(p.title) === productId);
 
-  const getProductInitial = () => {
-    const stored = localStorage.getItem('app-products');
-    if (stored) {
-      const list = JSON.parse(stored);
-      const found = list.find((p: Product) => p.id === productId || productSlug(p.title) === productId);
-      if (found) {
-        const priceNum = getEffectiveProductPrice(found);
-        return {
-          ...found,
-          priceNum,
-          price: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
-          rating: found.rating || 0,
-          ratingCount: found.ratingCount || 0,
-          soldCount: found.soldCount || '',
-          stockStatus: found.stock > 0 ? 'Em estoque' : 'Estoque indisponível',
-          deliveryTime: found.deliveryTime || 'Consulte no checkout',
-        };
-      }
+    if (found) {
+      const priceNum = getEffectiveProductPrice(found);
+      const raw = found as unknown as Record<string, unknown>;
+      return {
+        ...found,
+        priceNum,
+        price: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
+        images: Array.isArray(found.images) ? found.images : undefined,
+        description: typeof raw.description === 'string' ? raw.description : undefined,
+        origin: typeof raw.origin === 'string' ? raw.origin : undefined,
+        conservation: typeof raw.conservation === 'string' ? raw.conservation : undefined,
+        rating: Number(raw.rating) || 0,
+        ratingCount: Number(raw.ratingCount) || 0,
+        soldCount: typeof raw.soldCount === 'string' ? raw.soldCount : '',
+        stockStatus: found.stock > 0 ? 'Em estoque' : 'Estoque indisponível',
+        deliveryTime: typeof raw.deliveryTime === 'string' ? raw.deliveryTime : 'Consulte no checkout',
+      };
     }
     return unavailableProduct(productId);
-  };
+  }, [catalog.byId, catalog.products, productId]);
 
-  const [product, setProduct] = useState<DetailProduct | null>(getProductInitial);
-
-  useEffect(() => {
-    const loadProduct = () => {
-      const stored = localStorage.getItem('app-products');
-      if (stored) {
-        const list = JSON.parse(stored);
-        setAllProducts(list);
-        const found = list.find((p: DetailProduct) => p.id === productId || productSlug(p.title) === productId);
-        if (found) {
-        const priceNum = getEffectiveProductPrice(found);
-        setProduct({
-          ...found,
-          priceNum,
-          price: `R$ ${priceNum.toFixed(2).replace('.', ',')}`,
-            rating: found.rating || 0,
-            ratingCount: found.ratingCount || 0,
-            soldCount: found.soldCount || '',
-            stockStatus: found.stock > 0 ? 'Em estoque' : 'Estoque indisponível',
-            deliveryTime: found.deliveryTime || 'Consulte no checkout',
-          });
-          return;
-        }
-      }
-      setAllProducts([]);
-      setProduct(unavailableProduct(productId));
-    };
-
-    loadProduct();
-    window.addEventListener('app-products-updated', loadProduct);
-    return () => window.removeEventListener('app-products-updated', loadProduct);
-  }, [productId]);
+  const allProducts = catalog.products;
 
   // State for subscription selection, quantity, and favoriting
   const [quantity, setQuantity] = useState<number>(1);

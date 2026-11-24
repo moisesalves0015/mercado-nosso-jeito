@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AlertOctagon, Snowflake } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { Section } from '../components/Section';
-import { defaultProducts } from '../data/defaultProducts';
 import { PageHeroBanner } from '../components/common/PageHeroBanner';
+import { useCatalog } from '../hooks/useCatalog';
 
 const DEFAULT_BEBIDAS_SLIDES = [
   {
@@ -15,93 +15,13 @@ const DEFAULT_BEBIDAS_SLIDES = [
   },
 ];
 
-interface Product {
-  id: string;
-  title: string;
-  price: number | string;
-  image: string;
-  category: string;
-  badge?: string;
-  badgeStyle?: 'orange' | 'light';
-  diamondReward?: number;
-}
-
 export const Bebidas = () => {
-  const [bebidas, setBebidas] = useState<Product[]>([]);
+  const { products } = useCatalog();
   const [currentIceIndex, setCurrentIceIndex] = useState(0);
 
-  useEffect(() => {
-    const loadProducts = () => {
-      const stored = localStorage.getItem('app-products');
-      let allProds: Product[] = [];
-      let updated = false;
-
-      if (stored) {
-        allProds = JSON.parse(stored) as Product[];
-        // Check for missing default products and add them
-        defaultProducts.forEach(defP => {
-          if (!allProds.some(p => p.id === defP.id)) {
-            allProds.push(defP);
-            updated = true;
-          }
-        });
-      } else {
-        allProds = [...defaultProducts];
-        updated = true;
-      }
-
-      // Sync specific image updates if necessary
-      allProds = allProds.map(p => {
-        if (p.id === 'heineken-330ml' && p.image !== '/heineken.png') {
-          p.image = '/heineken.png';
-          updated = true;
-        }
-        if (p.id === 'coca-cola-350ml' && p.image !== '/coca_cola_zero.png') {
-          p.image = '/coca_cola_zero.png';
-          updated = true;
-        }
-        if (p.id === 'monster-energy' && p.image !== '/monster_energy.webp') {
-          p.image = '/monster_energy.webp';
-          updated = true;
-        }
-        if (p.id === 'spaten-350ml' && p.image !== '/spaten.webp') {
-          p.image = '/spaten.webp';
-          updated = true;
-        }
-        if (p.id === 'corona-330ml' && p.image.includes('1608270176050-12ec057deab0')) {
-          p.image = 'https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1548907040-4d42b52145ca')) {
-          p.image = 'https://images.unsplash.com/photo-1511381939415-e4401546383a?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1599490659213-e2b9527bb087')) {
-          p.image = 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600';
-          updated = true;
-        }
-        if (p.image && p.image.includes('1549778398-f3c481549766')) {
-          p.image = 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600';
-          updated = true;
-        }
-        return p;
-      });
-
-      if (updated) {
-        try {
-          localStorage.setItem('app-products', JSON.stringify(allProds));
-        } catch {
-          // ignore quota limits safely
-        }
-      }
-
-      setBebidas(allProds.filter(p => p.category === 'Bebidas'));
-    };
-
-    loadProducts();
-    window.addEventListener('app-products-updated', loadProducts);
-    return () => window.removeEventListener('app-products-updated', loadProducts);
-  }, []);
+  const bebidas = useMemo(() => {
+    return products.filter((p) => p.active !== false && p.category === 'Bebidas');
+  }, [products]);
 
   // Split products for the two 2-column showcases:
   const isAlcoholic = (title: string, badge?: string) =>

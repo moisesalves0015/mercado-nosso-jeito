@@ -197,56 +197,22 @@ function AppContent() {
     const onRetry = () => setProductsRetryNonce((n) => n + 1);
     window.addEventListener('app-products-retry', onRetry);
     const unsub = subscribeProductsWithMedia((list) => {
-      // 1. Always update memory cache first so all views have immediate zero-latency access
+      // 1. Always update memory cache first with real, full-fidelity products from Firestore
       setInMemoryProducts(list);
 
-      // 2. Strip heavy base64 data URIs from client cache to keep localStorage light & prevent QuotaExceededError
-      const sanitized: Array<Record<string, unknown>> = list.map((p) => {
-        const isHugeDataUri = typeof p.image === 'string' && p.image.startsWith('data:') && p.image.length > 1000;
-        const cleanImages = Array.isArray(p.images)
-          ? p.images
-              .map((img) => (typeof img === 'string' && img.startsWith('data:') && img.length > 1000 ? '' : img))
-              .filter(Boolean)
-          : p.images;
-        return {
-          ...p,
-          image: isHugeDataUri ? '' : p.image,
-          images: cleanImages,
-        };
-      });
-
-      // 3. Persist to storage with automatic self-healing on quota failure
+      // 2. Persist to storage with automatic self-healing on quota failure
       try {
-        localStorage.setItem('app-products', JSON.stringify(sanitized));
+        localStorage.setItem('app-products', JSON.stringify(list));
       } catch {
         try {
           // Evict non-critical large caches that might be hogging quota
           localStorage.removeItem('app-home-config-v2');
           localStorage.removeItem('home_snapshot_v1');
-
-          // Try storing compact lightweight version (no extra metadata or heavy strings)
-          const compact = sanitized.map((item) => {
-            const p = item as Record<string, unknown>;
-            return {
-              id: p.id,
-              title: p.title,
-              price: p.price,
-              costPrice: p.costPrice,
-              category: p.category,
-              stock: p.stock,
-              active: p.active,
-              badge: p.badge,
-              diamondReward: p.diamondReward,
-              promoActive: p.promoActive,
-              promoPrice: p.promoPrice,
-              image: typeof p.image === 'string' && !p.image.startsWith('data:') ? p.image : '',
-            };
-          });
-          localStorage.setItem('app-products', JSON.stringify(compact));
+          localStorage.setItem('app-products', JSON.stringify(list));
         } catch {
           // If localStorage is completely full/blocked, persist in sessionStorage
           try {
-            sessionStorage.setItem('app-products', JSON.stringify(sanitized));
+            sessionStorage.setItem('app-products', JSON.stringify(list));
           } catch {
             // Memory cache remains active and guarantees uninterrupted operation
           }
