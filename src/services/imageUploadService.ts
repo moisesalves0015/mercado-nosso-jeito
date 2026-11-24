@@ -452,8 +452,9 @@ export function subscribeProductsWithMedia(
   let rawProducts: Array<Record<string, unknown>> = [];
   let mediaMap = new Map<string, ProductMediaOverride>();
   let productsLoaded = false;
+  let emitTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const emit = () => {
+  const emitNow = () => {
     if (!productsLoaded) return;
     const merged = rawProducts.map((p) => {
       const id = String(p.id || '');
@@ -467,6 +468,12 @@ export function subscribeProductsWithMedia(
     });
     setInMemoryProducts(merged);
     onUpdate(merged);
+  };
+
+  const emit = () => {
+    if (!productsLoaded) return;
+    if (emitTimer) clearTimeout(emitTimer);
+    emitTimer = setTimeout(emitNow, 60);
   };
 
   const unsubProducts = onSnapshot(
@@ -498,6 +505,7 @@ export function subscribeProductsWithMedia(
   );
 
   return () => {
+    if (emitTimer) clearTimeout(emitTimer);
     unsubProducts();
     unsubMedia();
   };

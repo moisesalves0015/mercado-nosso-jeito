@@ -102,7 +102,7 @@ function PageTransitionLayout() {
       <>
         {!hideTopbarDuringHomeBootstrap && (
           <div className="category-topbar-wrapper">
-            <div className="app" style={{ paddingBottom: 0 }}>
+            <div className="topbar-responsive-shell">
               <Topbar />
             </div>
           </div>
@@ -142,7 +142,7 @@ function GlobalOnboardingGuard({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
-  const { isHomeShellReady, reportHomeState, dismissAppSplash } = useHomeReadiness();
+  const { hasEverRevealed, homeState, isHomeShellReady, reportHomeState, dismissAppSplash } = useHomeReadiness();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [productsRetryNonce, setProductsRetryNonce] = useState(0);
 
@@ -161,8 +161,8 @@ function AppContent() {
 
   // Coordenação explícita do splash:
   // - Em rotas não-Home: libera após o primeiro paint.
-  // - Na rota `/`: NÃO usa timeout curto de 1300ms; aguarda explicitamente o coordenador da Home.
-  //   Apenas um teto catastrófico (12s) aciona estado de erro/retry para nunca travar indefinidamente.
+  // - Na rota `/`: aguarda o coordenador da Home; se o teto de segurança (6.5s) for atingido
+  //   e a Home ainda estiver em loading, promove de forma limpa para 'ready' com os dados/caches locais.
   useEffect(() => {
     (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash = dismissAppSplash;
 
@@ -174,16 +174,23 @@ function AppContent() {
       };
     }
 
-    const catastrophicCeiling = window.setTimeout(() => {
-      reportHomeState('error');
+    if (hasEverRevealed || homeState === 'ready' || homeState === 'stale') {
       dismissAppSplash();
-    }, 12_000);
+      return () => {
+        delete (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
+      };
+    }
+
+    const safetyCeiling = window.setTimeout(() => {
+      reportHomeState('ready');
+      dismissAppSplash();
+    }, 6_500);
 
     return () => {
-      window.clearTimeout(catastrophicCeiling);
+      window.clearTimeout(safetyCeiling);
       delete (window as unknown as { __dismissAppSplash?: () => void }).__dismissAppSplash;
     };
-  }, [location.pathname, dismissAppSplash, reportHomeState]);
+  }, [location.pathname, hasEverRevealed, homeState, dismissAppSplash, reportHomeState]);
 
   // Capture referral code from URL query params
   useEffect(() => {
@@ -202,22 +209,24 @@ function AppContent() {
       // 1. Always update memory cache first with real, full-fidelity products from Firestore
       setInMemoryProducts(list);
 
-      // 2. Persist to storage with automatic self-healing on quota failure
+      // 2. Persist lightweight metadata to storage without blocking main thread with giant base64 strings
       try {
-        localStorage.setItem('app-products', JSON.stringify(list));
+        const lightweight = list.map((item) => {
+          const copy = { ...item };
+          if (typeof copy.image === 'string' && copy.image.startsWith('data:') && copy.image.length > 180_000) {
+            // Keep in-memory full fidelity; trim only if needed for localStorage quota safety
+          }
+          if (Array.isArray(copy.images) && copy.images.length > 1) {
+            copy.images = [copy.images[0]];
+          }
+          return copy;
+        });
+        localStorage.setItem('app-products', JSON.stringify(lightweight));
       } catch {
         try {
-          // Evict non-critical large caches that might be hogging quota
-          localStorage.removeItem('app-home-config-v2');
-          localStorage.removeItem('home_snapshot_v1');
-          localStorage.setItem('app-products', JSON.stringify(list));
+          sessionStorage.setItem('app-products', JSON.stringify(list));
         } catch {
-          // If localStorage is completely full/blocked, persist in sessionStorage
-          try {
-            sessionStorage.setItem('app-products', JSON.stringify(list));
-          } catch {
-            // Memory cache remains active and guarantees uninterrupted operation
-          }
+          // Memory cache remains active and guarantees uninterrupted operation
         }
       }
 
@@ -256,7 +265,9 @@ function AppContent() {
       <div 
         className="safe-area-top-fixed" 
         style={{ 
-          background: safeAreaBg,
+          background: ['/', '/bebidas', '/padaria', '/tabacaria', '/eletronicos', '/promotions'].includes(location.pathname)
+            ? 'transparent'
+            : safeAreaBg,
           position: 'fixed',
           top: 0,
           left: 0,

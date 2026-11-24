@@ -100,7 +100,7 @@ export const HomePeriodSelector = ({ catalog, periodConfig }: Props) => {
               aria-pressed={isSelected}
             >
               <span className="period-icon-circle period-icon-inline" aria-hidden="true">
-                <Icon size={13} strokeWidth={isSelected ? 2.3 : 2} />
+                <Icon size={13.5} active={isSelected} strokeWidth={isSelected ? 2.3 : 1.85} />
               </span>
               <span className="period-button-title">{item.label}</span>
             </button>

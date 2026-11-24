@@ -683,17 +683,24 @@ body.light-mode .bg {
 .app {
   position: relative;
   z-index: 10;
-  width: min(414px, 100%);
+  width: 100%;
+  max-width: 100%;
   margin: auto;
-  padding: 0px 0px calc(64px + env(safe-area-inset-bottom, 0px)) 0px;
-  /* Balanced bottom padding accounting for OS gesture bars */
+  padding: 0px 0px calc(68px + env(safe-area-inset-bottom, 0px)) 0px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .app {
+    max-width: 640px;
+  }
 }
 
 @media (min-width: 768px) {
   .app {
     width: 100%;
     max-width: 960px;
-    padding: 0px 0px calc(70px + env(safe-area-inset-bottom, 0px)) 0px;
+    padding: 0px 0px calc(74px + env(safe-area-inset-bottom, 0px)) 0px;
   }
 }
 
@@ -11368,39 +11375,38 @@ body.light-mode .commerce-btn-dashed {
   --float-radius: 22px;
   --float-child-radius: 15px;
   --float-subchild-radius: 11px;
-  --glass-tint: rgba(14, 12, 10, 0.86);
+  /* FÓRMULA ÚNICA DE LIQUID GLASS & DEGRADÊ GUCCI / BOUTIQUE:
+     Compartilhada 100% igual entre Topbar, Card de Carrinho, Menu Button, Categorias e Períodos */
+  --glass-tint: linear-gradient(150deg, rgba(14, 27, 19, 0.93) 0%, rgba(8, 18, 13, 0.96) 100%);
   --glass-sheen:
-    radial-gradient(120% 100% at 15% 0%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 55%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(135deg,
-      rgba(255, 255, 255, 0.18) 0%,
-      rgba(255, 255, 255, 0.07) 48%,
-      rgba(212, 175, 55, 0.08) 100%);
-  --glass-border: rgba(255, 255, 255, 0.26);
+    radial-gradient(125% 105% at 15% 0%, rgba(232, 201, 106, 0.12) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(150deg,
+      rgba(14, 27, 19, 0.93) 0%,
+      rgba(8, 18, 13, 0.96) 100%);
+  --glass-border: rgba(212, 175, 55, 0.32);
   --glass-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 28px rgba(255, 255, 255, 0.08),
-    0 18px 42px rgba(0, 0, 0, 0.78),
-    0 4px 12px rgba(0, 0, 0, 0.5);
+    inset 0 0 0 1px rgba(212, 175, 55, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 14px 34px rgba(0, 0, 0, 0.62),
+    0 4px 12px rgba(0, 0, 0, 0.42);
 }
 
 body.light-mode {
-  --glass-tint: rgba(255, 255, 255, 0.88);
+  --glass-tint: linear-gradient(150deg, rgba(255, 255, 255, 0.91) 0%, rgba(244, 248, 245, 0.95) 100%);
   --glass-sheen:
-    radial-gradient(120% 100% at 15% 0%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.35) 60%, rgba(255, 255, 255, 0) 100%),
-    linear-gradient(135deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.38) 50%,
-      rgba(212, 175, 55, 0.10) 100%);
-  --glass-border: rgba(255, 255, 255, 0.9);
+    radial-gradient(125% 105% at 15% 0%, rgba(255, 255, 255, 0.96) 0%, rgba(212, 175, 55, 0.09) 60%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(150deg,
+      rgba(255, 255, 255, 0.91) 0%,
+      rgba(244, 248, 245, 0.95) 100%);
+  --glass-border: rgba(212, 175, 55, 0.38);
   --glass-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    inset 0 0 22px rgba(255, 255, 255, 0.55),
-    0 14px 34px rgba(15, 23, 42, 0.20),
-    0 3px 8px rgba(15, 23, 42, 0.10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 12px 28px rgba(15, 23, 42, 0.16),
+    0 3px 8px rgba(15, 23, 42, 0.08);
 }
 
-/* 1. CONTAINERS FLUTUANTES (PAIS) — Raio único 22px + Liquid Glass Distortion & Deep Frosted Blur */
+/* 1. CONTAINERS FLUTUANTES E SUPERFÍCIES GLASS (Topbar, Carrinho, Menu Button, Categorias e Períodos 100% iguais) */
+.topbar,
 .bottom-nav,
 .floating-mini-cart,
 .floating-topbar-inner,
@@ -11408,6 +11414,7 @@ body.light-mode {
 .categories-page-header,
 .search-side-feed,
 .search-filters-glass-card,
+body.light-mode .topbar,
 body.light-mode .bottom-nav,
 body.light-mode .floating-mini-cart,
 body.light-mode .floating-topbar-inner,
@@ -11415,34 +11422,57 @@ body.light-mode .commerce-topbar-inner,
 body.light-mode .categories-page-header,
 body.light-mode .search-side-feed,
 body.light-mode .search-filters-glass-card {
-  border-radius: var(--float-radius) !important;
+  background: var(--glass-sheen) !important;
   border: 1px solid var(--glass-border) !important;
-  background: var(--glass-sheen), var(--glass-tint) !important;
   box-shadow: var(--glass-shadow) !important;
-  /* Desfoque denso + refração SVG para dissolver 100% os cards e textos que passam atrás */
-  -webkit-backdrop-filter: blur(44px) saturate(200%) !important;
-  backdrop-filter: blur(44px) saturate(200%) !important;
-  backdrop-filter: url(#liquid-glass) blur(38px) saturate(210%) brightness(0.92) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: url(#liquid-glass) blur(36px) saturate(195%) brightness(0.95) !important;
   isolation: isolate;
-  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.4), box-shadow 0.3s ease !important;
 }
 
-/* Menu de baixo e card de carrinho com vidro fosco ainda mais denso para ocultar tudo que passa atrás */
 .bottom-nav,
-.floating-mini-cart {
-  background:
-    var(--glass-sheen),
-    rgba(14, 12, 10, 0.90) !important;
+.floating-mini-cart,
+.floating-topbar-inner,
+.commerce-topbar-inner,
+.categories-page-header,
+.search-side-feed,
+.search-filters-glass-card {
+  border-radius: var(--float-radius) !important;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.2s ease !important;
 }
 
-body.light-mode .bottom-nav,
-body.light-mode .floating-mini-cart {
-  background:
-    var(--glass-sheen),
-    rgba(255, 255, 255, 0.92) !important;
+/* Botões circulares de Categorias e botões de Período na mesma família Liquid Glass & Ouro Champagne */
+.category-icon-wrapper.category-icon-circle,
+.period-button.period-button--circle,
+.quick-search-container.quick-search-container--premium {
+  background: var(--glass-sheen) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: #E8C96A !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 175, 55, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 6px 16px rgba(0, 0, 0, 0.42) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
+  backdrop-filter: blur(28px) saturate(185%) !important;
 }
 
-/* 2. TOPBAR PRINCIPAL (Home e vitrines) — Combinando o mesmo efeito Liquid Glass */
+.category-circle-link:hover .category-icon-circle,
+.period-button.period-button--circle:hover {
+  border-color: rgba(212, 175, 55, 0.58) !important;
+  color: #F4DC8B !important;
+}
+
+.category-circle-link.active .category-icon-circle,
+.category-circle-link[aria-current='page'] .category-icon-circle,
+.period-button.period-button--circle.active,
+.period-button.period-button--circle[aria-pressed='true'] {
+  background: linear-gradient(135deg, #F0D57B 0%, #C9A236 100%) !important;
+  border-color: #F4DC8B !important;
+  color: #08120c !important;
+}
+
+/* 2. TOPBAR PRINCIPAL (Home e vitrines) — Full-bleed até as bordas do celular e subindo na área da bateria/Wi-Fi */
 .category-topbar-wrapper,
 .topbar-container,
 body.light-mode .category-topbar-wrapper,
@@ -11450,27 +11480,155 @@ body.light-mode .topbar-container {
   background: transparent !important;
   border-bottom: none !important;
   z-index: 950 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.topbar-responsive-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .topbar-responsive-shell {
+    max-width: 960px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .topbar-responsive-shell {
+    max-width: 1200px !important;
+  }
 }
 
 .topbar-container .safe-area-top-bg {
-  background: transparent !important;
+  display: none !important;
 }
 
 .topbar,
 body.light-mode .topbar {
-  background: var(--glass-sheen), var(--glass-tint) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--glass-sheen) !important;
   border-bottom: 1px solid var(--glass-border) !important;
-  border-bottom-left-radius: var(--float-radius) !important;
-  border-bottom-right-radius: var(--float-radius) !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-left-radius: 20px !important;
+  border-bottom-right-radius: 20px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.10),
-    0 6px 14px rgba(0, 0, 0, 0.28) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: url(#liquid-glass) blur(22px) saturate(195%) brightness(0.96) !important;
-  padding: 10px 12px 6px 12px !important;
+    inset 0 -1px 0 rgba(212, 175, 55, 0.14),
+    0 6px 16px rgba(0, 0, 0, 0.36) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: url(#liquid-glass) blur(36px) saturate(195%) brightness(0.95) !important;
+  /* Sobe exatamente no espaço da bateria, relógio e símbolo do Wi-Fi (status bar / notch) */
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+  padding-left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  padding-bottom: 6px !important;
   isolation: isolate;
+}
+
+/* DIVISÃO EM 3 PARTES IGUAIS NO TOPBAR (Endereço 1fr | Logo Central 1fr | Pontos 1fr) */
+.topbar-row-top {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+.topbar-col {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.topbar-col--left {
+  justify-content: flex-start !important;
+}
+
+.topbar-col--center {
+  justify-content: center !important;
+}
+
+.topbar-col--right {
+  justify-content: flex-end !important;
+}
+
+.topbar-location {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  text-decoration: none !important;
+}
+
+.topbar-location .location-pin-icon {
+  flex-shrink: 0 !important;
+}
+
+.topbar-location .location-info {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+}
+
+.topbar-location .location-label {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.topbar-location .location-value {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.topbar-location .location-value-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+.topbar-location .location-chevron {
+  flex-shrink: 0 !important;
+}
+
+.gold-level-badge-link {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: inline-flex !important;
+  justify-content: flex-end !important;
+}
+
+.gold-level-badge {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.gold-badge-info {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.gold-badge-points {
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 /* Avisos acima do Hero (.pwa-install-ticker e .section-state-message) sempre na frente da sombra do Topbar */
@@ -11540,24 +11698,36 @@ body.light-mode .pwa-banner-btn {
 }
 
 .bottom-nav a {
-  color: rgba(255, 255, 255, 0.90) !important;
-  font-weight: 800 !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
 }
 
 .bottom-nav a span {
-  font-weight: 800 !important;
-  letter-spacing: 0.1px !important;
+  font-family: 'Outfit', 'Manrope', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.25px !important;
+  text-shadow: none !important;
 }
 
 .bottom-nav a.active {
-  color: #FFE57F !important;
-  font-weight: 900 !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+  color: #E8C96A !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+.bottom-nav a.active span {
+  font-weight: 750 !important;
+  color: #F4DC8B !important;
+  text-shadow: none !important;
 }
 
 .floating-mini-cart span,
-.floating-mini-cart strong,
+.floating-mini-cart strong {
+  text-shadow: none !important;
+}
+
 .floating-topbar-inner span,
 .floating-topbar-inner h1,
 .floating-topbar-inner h2,
@@ -11666,33 +11836,108 @@ body.light-mode .topbar-icon-btn {
   transition: opacity 0.2s ease, transform 0.15s ease !important;
 }
 
-/* 3. FILHOS DO MENU FLUTUANTE (.bottom-nav) — Concentricidade perfeita (Pai 22px - Padding 6px = Filho 16px) */
+/* 3. FILHOS DO MENU FLUTUANTE (.bottom-nav) — Estética iOS SF Symbols: Preenchido Limpo, Sem Sombra Forte */
+.responsive-bottom-width {
+  width: calc(100% - 16px) !important;
+  max-width: 500px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .responsive-bottom-width {
+    width: calc(100% - 32px) !important;
+    max-width: 560px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-bottom-width {
+    width: calc(100% - 40px) !important;
+    max-width: 640px !important;
+  }
+}
+
 .bottom-nav {
-  padding: 5px 6px !important;
-  height: 60px !important;
-  gap: 4px !important;
+  width: calc(100% - 16px) !important;
+  max-width: 500px !important;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 4px 6px !important;
+  height: 58px !important;
+  gap: 2px !important;
 }
 
 .bottom-nav a {
   flex: 1 1 0 !important;
   border-radius: var(--float-child-radius) !important;
-  padding: 5px 4px !important;
-  min-height: 48px !important;
+  padding: 5px 2px 3px !important;
+  min-height: 46px !important;
   margin: 0 !important;
-  border: 1px solid transparent !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+  gap: 3px !important;
+  transition: color 0.2s ease, opacity 0.2s ease !important;
 }
 
+.bottom-nav a .nav-icon {
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  filter: none !important;
+  box-shadow: none !important;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Estado selecionado estilo iPhone Tab Bar:
+   Apenas a mudança escultural do ícone (de linha fina para preenchido sólido) + cor ouro champagne,
+   ZERO drop-shadow pesado, ZERO caixa escura, ZERO barra neon embaixo */
 .bottom-nav a.active,
 body.light-mode .bottom-nav a.active {
-  border-radius: var(--float-child-radius) !important;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.24) 0%, rgba(212, 175, 55, 0.08) 100%) !important;
-  border: 1px solid rgba(212, 175, 55, 0.38) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   transform: none !important;
 }
 
-/* 4. FILHOS DOS CABEÇALHOS FLUTUANTES (Botões de voltar e ação: squircle 14px em vez de círculo 50% ou quadrado) */
+.bottom-nav a.active .nav-icon,
+body.light-mode .bottom-nav a.active .nav-icon {
+  transform: scale(1.04) !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.bottom-nav a.active::after,
+body.light-mode .bottom-nav a.active::after {
+  display: none !important;
+  content: none !important;
+}
+
+.bottom-nav-clube-dot {
+  position: absolute;
+  top: -1px;
+  right: -3px;
+  width: 5px;
+  height: 5px;
+  background: #D4AF37;
+  border-radius: 50%;
+}
+
+/* Cabeçalhos flutuantes das páginas internas com mesma margem lateral responsiva (8px de cada lado no mobile) */
+.floating-topbar-wrapper {
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 12px 8px !important;
+}
+
+.commerce-topbar-inner,
+.categories-page-header {
+  width: calc(100% - 16px) !important;
+  max-width: 620px !important;
+}
+
+/* 4. FILHOS DOS CABEÇALHOS FLUTUANTES (Mesmo verde-esmeralda + borda dourada dos botões de categorias) */
 .btn-icon-round,
 .header-icon-btn,
 .categories-back-btn,
@@ -11701,27 +11946,28 @@ body.light-mode .bottom-nav a.active {
   width: 38px !important;
   height: 38px !important;
   border-radius: 14px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: var(--text-primary) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  background: linear-gradient(145deg, rgba(16, 29, 21, 0.96) 0%, rgba(10, 21, 16, 0.98) 100%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.28) !important;
+  color: #D4AF37 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 10px rgba(0, 0, 0, 0.35) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
 .btn-icon-round.is-active {
-  background: rgba(212, 175, 55, 0.22) !important;
-  border-color: rgba(212, 175, 55, 0.55) !important;
-  color: #D4AF37 !important;
+  background: linear-gradient(145deg, rgba(22, 38, 28, 0.98) 0%, rgba(12, 25, 18, 0.99) 100%) !important;
+  border-color: rgba(212, 175, 55, 0.65) !important;
+  color: #FFDF73 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 12px rgba(212, 175, 55, 0.18) !important;
 }
 
 body.light-mode .btn-icon-round,
 body.light-mode .header-icon-btn,
 body.light-mode .categories-back-btn {
-  background: rgba(15, 23, 42, 0.06) !important;
-  border-color: rgba(15, 23, 42, 0.14) !important;
-  color: var(--text-primary) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(212, 175, 55, 0.38) !important;
+  color: #92400e !important;
 }
 
 /* 5. FILHOS DO FEED LATERAL (.search-side-feed) — Concentricidade com pai de 22px e padding 6px */
@@ -11754,10 +12000,233 @@ body.light-mode .categories-back-btn {
   border-radius: 9px !important;
 }
 
-/* 6. MINI-CARRINHO FLUTUANTE */
+/* 6. MINI-CARRINHO FLUTUANTE — Elegância Editorial Alta Costura (Mesmo Liquid Glass & Degradê do Topbar e Menu Button) */
 .floating-mini-cart {
+  width: calc(100% - 16px) !important;
+  max-width: 500px !important;
   overflow: hidden;
-  bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 0 !important;
+  background: var(--glass-sheen) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: blur(44px) saturate(190%) !important;
+  backdrop-filter: url(#liquid-glass) blur(36px) saturate(195%) brightness(0.95) !important;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease !important;
+}
+
+.floating-mini-cart:hover {
+  border-color: rgba(212, 175, 55, 0.52) !important;
+}
+
+.floating-mini-cart:active {
+  transform: scale(0.99) !important;
+}
+
+.mini-cart-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 11px 5px 11px;
+  gap: 10px;
+}
+
+.mini-cart-left-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Emblema da Sacola em Latão Escovado & Verde Imperial */
+.mini-cart-bag-box {
+  background: linear-gradient(145deg, rgba(21, 38, 28, 0.95) 0%, rgba(11, 22, 16, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  color: #E8C96A;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+.mini-cart-bag-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mini-cart-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #F0D57B 0%, #C9A236 100%);
+  color: #08120c;
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 8.5px;
+  font-weight: 800;
+  border-radius: 99px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3.5px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(10, 21, 16, 0.85);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  animation: miniCartBadgePop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mini-cart-text-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 2px;
+}
+
+.mini-cart-title-text {
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #F7F4EB;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.mini-cart-shipping-text {
+  font-family: 'Manrope', sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(247, 244, 235, 0.78);
+  letter-spacing: 0.1px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-cart-shipping-highlight {
+  color: #E8C96A;
+  font-weight: 700;
+}
+
+.mini-cart-shipping-unlocked {
+  color: #48C78E;
+  font-weight: 700;
+  letter-spacing: 0.15px;
+}
+
+/* Fecho Metálico de Preço (Brushed Gold Hardware Clasp) */
+.mini-cart-price-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5.5px 11px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.06) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
+  color: #F0D57B;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.floating-mini-cart:hover .mini-cart-price-pill {
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.22) 0%, rgba(212, 175, 55, 0.10) 100%);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.mini-cart-price-value {
+  font-family: 'Outfit', 'Manrope', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #F4DC8B;
+  letter-spacing: 0.35px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mini-cart-price-arrow {
+  color: #E8C96A;
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.floating-mini-cart:hover .mini-cart-price-arrow {
+  transform: translateX(2.5px);
+}
+
+/* Fio de Ouro Fino (2.5px) com Courier Deslizando Suavemente */
+.mini-cart-progress-wrap {
+  padding: 4px 13px 7px 13px;
+}
+
+.mini-cart-progress-track {
+  width: 100%;
+  height: 2.5px;
+  background: rgba(212, 175, 55, 0.16);
+  border-radius: 99px;
+  position: relative;
+  overflow: visible;
+}
+
+body.light-mode .mini-cart-progress-track {
+  background: rgba(180, 83, 9, 0.15);
+}
+
+.mini-cart-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #B89128 0%, #E8C96A 60%, #F7E39B 100%);
+  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mini-cart-progress-fill.is-unlocked {
+  background: linear-gradient(90deg, #1E8E5A 0%, #48C78E 100%);
+}
+
+.mini-cart-truck-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -56%);
+  transition: left 0.65s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: #E8C96A;
+}
+
+.mini-cart-truck-marker.is-unlocked {
+  color: #48C78E;
+}
+
+@keyframes miniCartBadgePop {
+  0% { transform: scale(0.75); }
+  65% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+body.light-mode .mini-cart-title-text {
+  color: #09140e !important;
+}
+
+body.light-mode .mini-cart-shipping-text {
+  color: #334155 !important;
+}
+
+body.light-mode .mini-cart-shipping-highlight,
+body.light-mode .mini-cart-price-value,
+body.light-mode .mini-cart-price-arrow {
+  color: #92400e !important;
 }
 
 /* Wrapper do cabeçalho não deve ter vidro próprio, só o fade */

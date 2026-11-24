@@ -23,23 +23,52 @@ const DEFAULT_CONFIG: AdminConfig = {
 const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 export const useAdminConfig = () => {
-  const [config, setConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
-  const [loading, setLoading] = useState(true);
+  const [initialState] = useState<{ config: AdminConfig; hasCache: boolean }>(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('app-admin-config') : null;
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data && typeof data === 'object') {
+          return {
+            config: {
+              pixKey: text(data.pixKey),
+              pixName: text(data.pixName),
+              supportPhone: text(data.supportPhone),
+              storeHours: text(data.storeHours),
+              deliveryEta: text(data.deliveryEta),
+            },
+            hasCache: true,
+          };
+        }
+      }
+    } catch {
+      // ignore corrupted cache
+    }
+    return { config: DEFAULT_CONFIG, hasCache: false };
+  });
+
+  const [config, setConfig] = useState<AdminConfig>(initialState.config);
+  const [loading, setLoading] = useState(!initialState.hasCache);
 
   useEffect(() => {
-    const safetyTimer = window.setTimeout(() => setLoading(false), 5000);
+    const safetyTimer = window.setTimeout(() => setLoading(false), 2200);
     const unsub = onSnapshot(doc(db, 'settings', 'admin'), (docSnap) => {
       window.clearTimeout(safetyTimer);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Campos ausentes/inválidos viram string vazia (nunca undefined nos componentes).
-        setConfig({
+        const next: AdminConfig = {
           pixKey: text(data.pixKey),
           pixName: text(data.pixName),
           supportPhone: text(data.supportPhone),
           storeHours: text(data.storeHours),
           deliveryEta: text(data.deliveryEta),
-        });
+        };
+        setConfig(next);
+        try {
+          localStorage.setItem('app-admin-config', JSON.stringify(next));
+        } catch {
+          // ignore quota error
+        }
       }
       setLoading(false);
     }, () => {

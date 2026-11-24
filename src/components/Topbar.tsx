@@ -30,127 +30,142 @@ export const Topbar = () => {
         const navRect = nav.getBoundingClientRect();
         const activeRect = activeEl.getBoundingClientRect();
         const currentScrollLeft = nav.scrollLeft;
-        const targetScrollLeft = currentScrollLeft + (activeRect.left - navRect.left) - (nav.clientWidth / 2) + (activeEl.clientWidth / 2);
+        const targetScrollLeft =
+          currentScrollLeft + (activeRect.left - navRect.left) - nav.clientWidth / 2 + activeEl.clientWidth / 2;
 
         nav.scrollTo({
           left: Math.max(0, targetScrollLeft),
-          behavior: 'smooth'
+          behavior: 'smooth',
         });
       }
     }, 100);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  const addressDisplay = condoName ?? (userProfile ? 'Cadastre seu endereço' : 'Escolher local');
+
   return (
     <div className="topbar-container">
-      <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
       <div className="topbar">
-        {/* ROW 1: LOCATION LEFT - SEARCH CENTER - GOLD BADGE RIGHT */}
-      <div className="topbar-row-top">
-        {/* ADDRESS / LOCATION */}
-        <div className="topbar-location">
-          <MapPin size={15} color="#FFDF73" fill="rgba(255, 223, 115, 0.15)" className="location-pin-icon" />
-          <div className="location-info">
-            <span className="location-label">
-              {adminConfig.deliveryEta ? (
-                <>Entrega em <span className="location-highlight">{adminConfig.deliveryEta}</span></>
-              ) : (
-                'Entrega no condomínio'
+        {/* ROW 1: 3 PARTES IGUAIS (1fr | 1fr | 1fr) -> Endereço à esquerda, Logo sempre fixa no centro, Pontos à direita */}
+        <div className="topbar-row-top">
+          {/* COLUNA 1: ENDEREÇO / LOCALIZAÇÃO */}
+          <div className="topbar-col topbar-col--left">
+            <Link
+              to={userProfile ? '/addresses' : '/login'}
+              className="topbar-location"
+              title={addressDisplay}
+            >
+              <MapPin size={15} color="#FFDF73" fill="rgba(255, 223, 115, 0.18)" className="location-pin-icon" />
+              <div className="location-info">
+                <span className="location-label">
+                  {adminConfig.deliveryEta ? (
+                    <>
+                      Entrega em <span className="location-highlight">{adminConfig.deliveryEta}</span>
+                    </>
+                  ) : (
+                    'Entrega no condomínio'
+                  )}
+                </span>
+                <span className="location-value">
+                  <span className="location-value-text">{addressDisplay}</span>
+                  <ChevronRight size={9} color="#FFDF73" className="location-chevron" />
+                </span>
+              </div>
+            </Link>
+          </div>
+
+          {/* COLUNA 2: LOGO SEMPRE CENTRALIZADA */}
+          <div className="topbar-col topbar-col--center">
+            <Link to="/" className="logo-compact" style={{ textDecoration: 'none' }} aria-label="Início Mercado do Nosso Jeito">
+              <h1 className="logo-main">mercado do</h1>
+              <span className="logo-sub">nosso jeito</span>
+            </Link>
+          </div>
+
+          {/* COLUNA 3: NOSSO CLUBE / PONTOS À DIREITA */}
+          <div className="topbar-col topbar-col--right">
+            <Link to="/clube" className="gold-level-badge-link" style={{ textDecoration: 'none' }} aria-label="Acessar o Clube">
+              <div className="gold-level-badge">
+                <div className="gold-badge-info">
+                  <span className="gold-badge-title">NOSSO CLUBE</span>
+                  <span className="gold-badge-points">
+                    {diamonds !== null ? (
+                      <>
+                        {diamonds.toLocaleString('pt-BR')} pts
+                        <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px', flexShrink: 0 }} />
+                      </>
+                    ) : (
+                      <>
+                        Benefícios
+                        <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px', flexShrink: 0 }} />
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* ROW 2: NAV LINKS LEFT/CENTER - FAVORITOS RIGHT */}
+        <div className="topbar-row-bottom">
+          <div className="topbar-nav-links" ref={navRef}>
+            <Link to="/" className={`topbar-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+              Tudo
+              {location.pathname === '/' && <span className="active-line" />}
+            </Link>
+            <Link to="/promotions" className={`topbar-nav-link ${location.pathname === '/promotions' ? 'active' : ''}`}>
+              Promoções
+              {location.pathname === '/promotions' && <span className="active-line" />}
+            </Link>
+            <Link to="/bebidas" className={`topbar-nav-link ${location.pathname === '/bebidas' ? 'active' : ''}`}>
+              Bebidas
+              {location.pathname === '/bebidas' && <span className="active-line" />}
+            </Link>
+            <Link to="/padaria" className={`topbar-nav-link ${location.pathname === '/padaria' ? 'active' : ''}`}>
+              Padaria
+              {location.pathname === '/padaria' && <span className="active-line" />}
+            </Link>
+            <Link to="/tabacaria" className={`topbar-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`}>
+              Tabacaria
+              {location.pathname === '/tabacaria' && <span className="active-line" />}
+            </Link>
+            <Link to="/eletronicos" className={`topbar-nav-link ${location.pathname === '/eletronicos' ? 'active' : ''}`}>
+              Eletrônicos
+              {location.pathname === '/eletronicos' && <span className="active-line" />}
+            </Link>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <button
+              className="topbar-icon-btn"
+              aria-label="Favoritos"
+              title="Meus Favoritos"
+              onClick={() => navigate('/favorites')}
+            >
+              <Heart
+                size={18}
+                fill={favoritesCount > 0 ? '#ef4444' : 'none'}
+                color={favoritesCount > 0 ? '#ef4444' : 'currentColor'}
+              />
+              {favoritesCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                  }}
+                />
               )}
-            </span>
-            <span className="location-value">
-              {condoName ?? (userProfile ? 'Cadastre seu endereço' : 'Entre para escolher o local')}
-              <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
-            </span>
+            </button>
           </div>
         </div>
-
-        {/* LOGO COMPACT IN CENTER */}
-        <div className="logo-compact">
-          <h1 className="logo-main">mercado do</h1>
-          <span className="logo-sub">nosso jeito</span>
-        </div>
-
-        {/* GOLD LEVEL BADGE */}
-        <Link to="/clube" style={{ textDecoration: 'none' }} aria-label="Acessar o Clube">
-          <div className="gold-level-badge">
-            <div className="gold-badge-info">
-              <span className="gold-badge-title">NOSSO CLUBE</span>
-              <span className="gold-badge-points">
-                {diamonds !== null ? (
-                  <>
-                    {diamonds.toLocaleString('pt-BR')} pts
-                    <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
-                  </>
-                ) : (
-                  <>
-                    Benefícios
-                    <ChevronRight size={8} color="#FFDF73" style={{ display: 'inline', marginLeft: '1px' }} />
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* ROW 2: NAV LINKS LEFT/CENTER - ICONS RIGHT */}
-      <div className="topbar-row-bottom">
-        <div className="topbar-nav-links" ref={navRef}>
-          <Link to="/" className={`topbar-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-            Tudo
-            {location.pathname === '/' && <span className="active-line"></span>}
-          </Link>
-          <Link to="/promotions" className={`topbar-nav-link ${location.pathname === '/promotions' ? 'active' : ''}`}>
-            Promoções
-            {location.pathname === '/promotions' && <span className="active-line"></span>}
-          </Link>
-          <Link to="/bebidas" className={`topbar-nav-link ${location.pathname === '/bebidas' ? 'active' : ''}`}>
-            Bebidas
-            {location.pathname === '/bebidas' && <span className="active-line"></span>}
-          </Link>
-          <Link to="/padaria" className={`topbar-nav-link ${location.pathname === '/padaria' ? 'active' : ''}`}>
-            Padaria
-            {location.pathname === '/padaria' && <span className="active-line"></span>}
-          </Link>
-          <Link to="/tabacaria" className={`topbar-nav-link ${location.pathname === '/tabacaria' ? 'active' : ''}`}>
-            Tabacaria
-            {location.pathname === '/tabacaria' && <span className="active-line"></span>}
-          </Link>
-          <Link to="/eletronicos" className={`topbar-nav-link ${location.pathname === '/eletronicos' ? 'active' : ''}`}>
-            Eletrônicos
-            {location.pathname === '/eletronicos' && <span className="active-line"></span>}
-          </Link>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <button
-            className="topbar-icon-btn"
-            aria-label="Favoritos"
-            title="Meus Favoritos"
-            onClick={() => navigate('/favorites')}
-          >
-            <Heart size={18} fill={favoritesCount > 0 ? '#ef4444' : 'none'} color={favoritesCount > 0 ? '#ef4444' : 'currentColor'} />
-            {favoritesCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '2px',
-                right: '2px',
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                background: '#ef4444',
-              }} />
-            )}
-          </button>
-        </div>
-      </div>
       </div>
     </div>
   );
 };
-
-
-
-
-

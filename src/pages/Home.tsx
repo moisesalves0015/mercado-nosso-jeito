@@ -44,7 +44,9 @@ import {
 } from '../utils/homeBootstrap';
 import type { HeroBannerConfig, HomeLayoutBlock } from '../types/home';
 
-const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.map((b) => ({
+const DEFAULT_HERO_SLIDES: HeroSlide[] = DEFAULT_HERO_BANNERS.filter(
+  (b) => b.active !== false && (!b.placement || b.placement === 'home' || b.placement === 'all'),
+).map((b) => ({
   id: b.id,
   image: b.image,
   link: b.link,
@@ -200,7 +202,7 @@ export const Home = () => {
     homeConfig.retry();
   }, [catalog, homeConfig]);
 
-  if (bootstrapState === 'error' && !hasEverRevealed) {
+  if (bootstrapState === 'error' && !hasEverRevealed && catalog.products.length === 0) {
     return <HomeErrorState onRetry={handleRetry} />;
   }
 

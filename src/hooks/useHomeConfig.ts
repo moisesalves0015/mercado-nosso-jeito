@@ -77,7 +77,7 @@ export interface HomeConfig {
   retry: () => void;
 }
 
-const INITIAL_SYNC_TIMEOUT_MS = 10_000;
+const INITIAL_SYNC_TIMEOUT_MS = 3_800;
 const CRITICAL_CONFIG_SOURCES: readonly HomeConfigSourceKey[] = ['vitrines', 'heroBanners', 'homeLayout'];
 
 const reportedIssues = new Set<string>();
@@ -222,9 +222,10 @@ export const useHomeConfig = (): HomeConfig => {
     const commitAtomicSnapshot = (timedOut = false) => {
       if (!active) return;
 
-      const allCriticalFailed = CRITICAL_CONFIG_SOURCES.every(
-        (key) => failed.has(key) || (timedOut && !settled.has(key)),
-      );
+      const allCriticalFailed =
+        !timedOut &&
+        CRITICAL_CONFIG_SOURCES.every((key) => failed.has(key)) &&
+        settled.size >= CRITICAL_CONFIG_SOURCES.length;
 
       if (allCriticalFailed && !hasCoherentCacheRef.current) {
         initialCommitted = true;
@@ -263,7 +264,8 @@ export const useHomeConfig = (): HomeConfig => {
       }
 
       if (!initialCommitted) {
-        if (settled.size >= HOME_CONFIG_SOURCES.length) {
+        const criticalSettled = CRITICAL_CONFIG_SOURCES.every((k) => settled.has(k));
+        if (settled.size >= HOME_CONFIG_SOURCES.length || (criticalSettled && failed.size === 0)) {
           window.clearTimeout(bootstrapTimer);
           commitAtomicSnapshot(false);
         }
