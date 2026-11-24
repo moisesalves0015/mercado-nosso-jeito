@@ -134,36 +134,45 @@ export const Search = () => {
   }, [products]);
 
   return (
-    <main className="app search-page" style={{ padding: 0, minHeight: '100vh' }}>
-      {/* ── TOP BAR ── */}
+    <main className="app search-page" style={{ padding: 0, minHeight: '100vh', paddingBottom: '85px' }}>
+      {/* ── TOP BAR FLUTUANTE GLASS (MENOS O DO HOME) ── */}
       <div style={{
         position: 'sticky',
-        top: 0,
+        top: 'calc(6px + env(safe-area-inset-top, 0px))',
         zIndex: 1000,
-        background: 'var(--bg-secondary)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid var(--border-primary)',
+        margin: '6px 10px 10px',
+        maxWidth: 620,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        borderRadius: 20,
+        background: 'rgba(18, 14, 10, 0.82)',
+        backdropFilter: 'blur(28px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+        border: '1.2px solid rgba(212, 175, 55, 0.35)',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.55), 0 0 1px rgba(212, 175, 55, 0.35)',
+        overflow: 'hidden'
       }}>
-        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 16px',
+          padding: '8px 14px',
         }}>
           <button
             onClick={() => navigate(-1)}
             style={{
-              background: 'var(--back-btn-bg)',
-              border: '1px solid var(--border-primary)',
+              background: 'rgba(212, 175, 55, 0.1)',
+              border: '1px solid rgba(212, 175, 55, 0.3)',
               borderRadius: '50%',
               width: '38px', height: '38px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
+              cursor: 'pointer', color: '#D4AF37', flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              transition: 'transform 0.15s ease'
             }}
+            title="Voltar"
           >
-            <ArrowLeft size={17} />
+            <ArrowLeft size={18} />
           </button>
 
           <MercadoLogo size="sm" />
@@ -171,21 +180,26 @@ export const Search = () => {
           <button
             onClick={() => setShowFilters(v => !v)}
             style={{
-              background: showFilters ? 'rgba(212,175,55,0.1)' : 'var(--input-bg)',
-              border: `1px solid ${showFilters ? 'rgba(212,175,55,0.3)' : 'var(--input-border)'}`,
-              borderRadius: 10, width: 38, height: 38,
+              background: showFilters ? 'rgba(212,175,55,0.22)' : 'rgba(255, 255, 255, 0.06)',
+              border: `1.2px solid ${showFilters ? '#D4AF37' : 'rgba(212,175,55,0.3)'}`,
+              borderRadius: 12, width: 38, height: 38,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', color: showFilters ? '#D4AF37' : 'var(--text-secondary)',
               flexShrink: 0,
-              position: 'relative'
+              position: 'relative',
+              boxShadow: showFilters ? '0 0 12px rgba(212,175,55,0.3)' : '0 2px 8px rgba(0,0,0,0.25)',
+              transition: 'all 0.2s ease'
             }}
+            title="Filtros e Busca"
           >
-            <SlidersHorizontal size={15} />
+            <SlidersHorizontal size={16} />
             {hasFilters && (
               <span style={{
-                position: 'absolute', top: 8, right: 8,
-                width: 7, height: 7, borderRadius: '50%',
-                background: '#D4AF37', border: `1.5px solid var(--bg-secondary)`,
+                position: 'absolute', top: 7, right: 7,
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#D4AF37',
+                border: '1.5px solid #120e0a',
+                boxShadow: '0 0 6px rgba(212,175,55,0.9)'
               }} />
             )}
           </button>
