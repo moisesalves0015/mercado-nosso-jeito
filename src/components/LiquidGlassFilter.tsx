@@ -1,9 +1,9 @@
 /**
  * Filtro SVG global do efeito "liquid glass".
  * Usado via CSS: backdrop-filter: url(#liquid-glass) blur(...)
- * Combina desfoque interno do backdrop + ruído fractal orgânico +
- * deslocamento cromático/óptico (feDisplacementMap) para refratar e
- * embaçar de verdade o conteúdo que passa por trás dos elementos flutuantes.
+ * Combina desfoque profundo do backdrop + ruído fractal orgânico +
+ * deslocamento óptico (feDisplacementMap) para dissolver totalmente formas,
+ * fotos e textos de trás, deixando apenas manchas líquidas refratadas.
  */
 export const LiquidGlassFilter = () => (
   <svg
@@ -14,30 +14,30 @@ export const LiquidGlassFilter = () => (
     <defs>
       <filter
         id="liquid-glass"
-        x="-15%"
-        y="-15%"
-        width="130%"
-        height="130%"
+        x="-20%"
+        y="-20%"
+        width="140%"
+        height="140%"
         colorInterpolationFilters="sRGB"
       >
         <feTurbulence
           type="fractalNoise"
-          baseFrequency="0.015 0.024"
+          baseFrequency="0.018 0.028"
           numOctaves="3"
-          seed="17"
+          seed="23"
           result="noise"
         />
-        <feGaussianBlur in="noise" stdDeviation="2.8" result="softNoise" />
-        <feGaussianBlur in="SourceGraphic" stdDeviation="11" result="preBlur" />
+        <feGaussianBlur in="noise" stdDeviation="3.2" result="softNoise" />
+        <feGaussianBlur in="SourceGraphic" stdDeviation="20" result="preBlur" />
         <feDisplacementMap
           in="preBlur"
           in2="softNoise"
-          scale="42"
+          scale="58"
           xChannelSelector="R"
           yChannelSelector="G"
           result="displaced"
         />
-        <feGaussianBlur in="displaced" stdDeviation="5" result="finalBlur" />
+        <feGaussianBlur in="displaced" stdDeviation="12" result="finalBlur" />
       </filter>
     </defs>
   </svg>
