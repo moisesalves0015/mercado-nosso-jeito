@@ -11,9 +11,9 @@ export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide completely on login, register, forgot-password, admin pages, or during initial Home bootstrap
+  // Hide completely on login, register, forgot-password, checkout, admin pages, or during initial Home bootstrap
   const isHiddenRoute =
-    ['/login', '/register', '/forgot-password'].includes(location.pathname) ||
+    ['/login', '/register', '/forgot-password', '/checkout'].includes(location.pathname) ||
     location.pathname.startsWith('/admin') ||
     (location.pathname === '/' && !isHomeShellReady);
   if (isHiddenRoute) return null;

@@ -476,7 +476,7 @@ body {
 
 html {
   scrollbar-gutter: stable;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -485,7 +485,7 @@ body {
     'Manrope',
     sans-serif;
   background: var(--bg-primary);
-  overflow-x: hidden;
+  overflow-x: clip;
   color: var(--text-primary);
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -2805,53 +2805,60 @@ body.light-mode .topbar-search-container {
 
 .responsive-bottom-width {
   width: 100%;
-  max-width: 414px;
+  max-width: 480px;
   /* Centered and capped on mobile default */
 }
 
 @media (min-width: 768px) {
   .responsive-bottom-width {
-    max-width: 960px;
+    max-width: 560px;
   }
 }
 
 @media (min-width: 1024px) {
   .responsive-bottom-width {
-    max-width: 1200px;
+    max-width: 640px;
   }
 }
 
 .bottom-nav {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 0;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  bottom: 0 !important;
+  transform: none !important;
   height: calc(56px + env(safe-area-inset-bottom, 0px));
   background: var(--bg-secondary);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 110;
+  z-index: 1200 !important;
   border-top: 1.2px solid var(--border-gold);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   padding-top: 2px;
   padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
   box-sizing: border-box;
 }
 
 .floating-mini-cart {
-  position: fixed;
-  left: 50%;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  transform: none !important;
   /* Rests right above the bottom-nav with OS safe-area support */
   background: var(--bg-secondary);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1.2px solid var(--border-gold);
-  box-shadow: var(--card-shadow);
-  z-index: 105;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+  z-index: 1150 !important;
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -2863,14 +2870,42 @@ body.light-mode .topbar-search-container {
 
 @keyframes slideUpCart {
   0% {
-    transform: translate(-50%, calc(56px + env(safe-area-inset-bottom, 0px)));
+    transform: translateY(calc(56px + env(safe-area-inset-bottom, 0px)));
     opacity: 0.2;
   }
 
   100% {
-    transform: translate(-50%, 0);
+    transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* =========================================================
+   CHECKOUT FIXED BOTTOM ACTION BAR
+========================================================= */
+.checkout-fixed-bottom-bar {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  z-index: 1300 !important;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1.5px solid var(--border-gold);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+body.light-mode .checkout-fixed-bottom-bar {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-top-color: #e2e8f0 !important;
+  box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.1) !important;
 }
 
 .bottom-nav a {

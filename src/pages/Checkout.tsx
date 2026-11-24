@@ -333,7 +333,7 @@ export function Checkout() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: step !== 'success' ? 140 : 90 }}>
         {/* Topbar */}
         <div style={{ position: 'sticky', top: 0, zIndex: 1000, background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-gold)' }}>
           <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
@@ -491,11 +491,6 @@ export function Checkout() {
                   </div>
                 </>
               )}
-
-              <button type="button" onClick={() => setStep('delivery')} className="commerce-btn-primary" style={{ width: '100%', marginTop: 6 }}>
-                <span>Continuar para a Entrega</span>
-                <ChevronRight size={17} />
-              </button>
             </div>
           )}
 
@@ -573,22 +568,6 @@ export function Checkout() {
                     </button>
                   </div>
                 )}
-              </div>
-
-              <div className="commerce-btn-row" style={{ marginTop: 16 }}>
-                <button
-                  type="button"
-                  onClick={() => setStep('summary')}
-                  className="commerce-btn-secondary"
-                  style={{ width: 48, flex: '0 0 48px', padding: 0, display: 'grid', placeItems: 'center' }}
-                  aria-label="Voltar para itens"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                <button type="button" onClick={handleNext} className="commerce-btn-primary" style={{ flex: 1 }}>
-                  <span>Avançar para Pagamento</span>
-                  <ChevronRight size={17} />
-                </button>
               </div>
             </div>
           )}
@@ -699,38 +678,6 @@ export function Checkout() {
                   <ShieldCheck size={12} /> <span style={{ fontSize: 10.5, fontWeight: 700 }}>Dados Criptografados</span>
                 </div>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-                <button
-                  type="button"
-                  onClick={() => void handleFinish()}
-                  disabled={loading}
-                  className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`}
-                  style={{ width: '100%', justifyContent: 'space-between', padding: '0 16px' }}
-                >
-                  {loading ? (
-                    <span style={{ margin: '0 auto' }}>Finalizando seu pedido...</span>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        <ShieldCheck size={18} />
-                        <span>Confirmar e Finalizar</span>
-                      </div>
-                      <span className="commerce-btn-badge">R$ {previewTotal.toFixed(2)}</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep('delivery')}
-                  disabled={loading}
-                  className="commerce-btn-secondary"
-                  style={{ width: '100%', height: 44, fontSize: 13 }}
-                >
-                  <ArrowLeft size={16} /> Voltar para Entrega
-                </button>
-              </div>
             </div>
           )}
 
@@ -823,6 +770,84 @@ export function Checkout() {
           )}
 
         </div>
+
+        {/* FIXED BOTTOM ACTION BAR: permanently pinned at the bottom of the screen */}
+        {step !== 'success' && (
+          <aside
+            role="region"
+            aria-label="Ações de finalização do pedido"
+            className="checkout-fixed-bottom-bar responsive-bottom-width"
+          >
+            {step === 'summary' && (
+              <button
+                type="button"
+                onClick={() => setStep('delivery')}
+                className="commerce-btn-primary"
+                style={{ width: '100%', height: 48, fontSize: 14 }}
+              >
+                <span>Continuar para a Entrega</span>
+                <ChevronRight size={18} />
+              </button>
+            )}
+
+            {step === 'delivery' && (
+              <div className="commerce-btn-row">
+                <button
+                  type="button"
+                  onClick={() => setStep('summary')}
+                  className="commerce-btn-secondary"
+                  style={{ width: 48, flex: '0 0 48px', height: 48, padding: 0, display: 'grid', placeItems: 'center' }}
+                  aria-label="Voltar para itens"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="commerce-btn-primary"
+                  style={{ flex: 1, height: 48, fontSize: 14 }}
+                >
+                  <span>Avançar para Pagamento</span>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+
+            {step === 'payment' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={() => void handleFinish()}
+                  disabled={loading}
+                  className={`commerce-btn-primary ${loading ? 'is-loading' : ''}`}
+                  style={{ width: '100%', height: 48, justifyContent: 'space-between', padding: '0 16px' }}
+                >
+                  {loading ? (
+                    <span style={{ margin: '0 auto' }}>Finalizando seu pedido...</span>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <ShieldCheck size={18} />
+                        <span>Confirmar e Finalizar</span>
+                      </div>
+                      <span className="commerce-btn-badge" style={{ flexShrink: 0 }}>R$ {previewTotal.toFixed(2)}</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('delivery')}
+                  disabled={loading}
+                  className="commerce-btn-secondary"
+                  style={{ width: '100%', height: 38, fontSize: 12.5 }}
+                >
+                  <ArrowLeft size={15} /> Voltar para Entrega
+                </button>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
     </div>
   );
