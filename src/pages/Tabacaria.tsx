@@ -33,10 +33,10 @@ export const Tabacaria = () => {
       <PageHeroBanner placement="tabacaria" defaultSlides={DEFAULT_TABACARIA_SLIDES} />
 
       {/* COMPLIANCE AGE WARNING BANNER (18+) */}
-      <div className="glass-panel" style={{ 
-        margin: '0 4px 20px', 
-        background: 'rgba(239, 68, 68, 0.04)', 
-        border: '1px solid rgba(239, 68, 68, 0.2)', 
+      <div className="glass-panel" style={{
+        margin: '0 4px 20px',
+        background: 'rgba(239, 68, 68, 0.04)',
+        border: '1px solid rgba(239, 68, 68, 0.2)',
         padding: '12px',
         borderRadius: '12px'
       }}>

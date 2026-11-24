@@ -33,10 +33,10 @@ export const Padaria = () => {
       <PageHeroBanner placement="padaria" defaultSlides={DEFAULT_PADARIA_SLIDES} />
 
       {/* WARNING BANNER */}
-      <div className="glass-panel" style={{ 
-        margin: '0 4px 20px', 
-        background: 'rgba(251, 191, 36, 0.03)', 
-        border: '1px solid rgba(251, 191, 36, 0.15)', 
+      <div className="glass-panel" style={{
+        margin: '0 4px 20px',
+        background: 'rgba(251, 191, 36, 0.03)',
+        border: '1px solid rgba(251, 191, 36, 0.15)',
         padding: '12px',
         borderRadius: '12px'
       }}>

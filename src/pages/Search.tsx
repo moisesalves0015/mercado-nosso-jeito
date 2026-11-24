@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid } from 'lucide-react';
+import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid, Plus, Check } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
-import { isProductPromotionCurrent } from '../utils/productPricing';
+import { isProductPromotionCurrent, getEffectiveProductPrice } from '../utils/productPricing';
 import { MercadoLogo } from './Login';
 import { useCatalog } from '../hooks/useCatalog';
+import { useCart } from '../hooks/useCart';
+import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
 
 const card = {
   background: 'var(--card-gradient)',
@@ -28,6 +30,8 @@ const CATEGORIES = [
 
 export const Search = () => {
   const { products } = useCatalog();
+  const { addToCart } = useCart();
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
   const categoryParam = searchParams.get('category') || '';
@@ -91,7 +95,7 @@ export const Search = () => {
     setSearchParams({});
   };
 
-  const normalizeStr = (str: string) => 
+  const normalizeStr = (str: string) =>
     (str || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const filteredProducts = useMemo(() => {
@@ -118,6 +122,16 @@ export const Search = () => {
       return queryMatches && categoryMatches;
     });
   }, [products, searchQuery, selectedCategory]);
+
+  const sideFeedProducts = useMemo(() => {
+    const promoItems = products.filter(
+      (p) => p.active !== false && (p.promoActive || isProductPromotionCurrent(p))
+    );
+    const otherItems = products.filter(
+      (p) => p.active !== false && !promoItems.some((pi) => pi.id === p.id)
+    );
+    return [...promoItems, ...otherItems].slice(0, 6);
+  }, [products]);
 
   return (
     <main className="app search-page" style={{ padding: 0, minHeight: '100vh' }}>
@@ -178,9 +192,9 @@ export const Search = () => {
         </div>
       </div>
 
-      {/* ── Page contents with standardized width constraint ── */}
-      <div style={{ padding: '12px 16px 0', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        
+      {/* ── Page contents with standardized responsive constraint ── */}
+      <div className="search-container-wrap">
+
         <div style={{ padding: '6px 0 0 2px' }}>
           <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Buscar Produtos</h1>
         </div>
@@ -191,15 +205,15 @@ export const Search = () => {
             {/* Search Input */}
             <div className="search-bar" style={{ marginBottom: 0, position: 'relative', height: '38px', borderRadius: '10px', padding: '8px 12px' }}>
               <SearchIcon size={16} color="#D4AF37" />
-              <input 
-                type="text" 
-                placeholder="O que você está procurando?" 
+              <input
+                type="text"
+                placeholder="O que você está procurando?"
                 value={searchQuery}
                 onChange={e => handleSearchChange(e.target.value)}
                 style={{ width: '100%', paddingRight: '36px', fontSize: '14px', color: 'var(--text-primary)', outline: 'none' }}
               />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => handleSearchChange('')}
                   style={{
                     position: 'absolute',
@@ -262,13 +276,13 @@ export const Search = () => {
         {/* ── SEARCH RESULTS GRID HEADER ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px' }}>
           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '13px', fontWeight: 800 }}>
-            {selectedCategory ? `${selectedCategory}` : 'Todos os Produtos'} 
+            {selectedCategory ? `${selectedCategory}` : 'Todos os Produtos'}
             <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '11px', marginLeft: '6px' }}>
               ({filteredProducts.length} itens)
             </span>
           </h3>
           {(searchQuery || selectedCategory) && (
-            <button 
+            <button
               onClick={handleClearAll}
               style={{
                 background: 'transparent',
@@ -284,18 +298,105 @@ export const Search = () => {
           )}
         </div>
 
-        {/* Products Results Grid */}
-        <div className="products-grid" style={{ paddingBottom: '80px' }}>
-          {filteredProducts.map(product => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-          {filteredProducts.length === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', padding: '40px 16px', color: 'var(--text-muted)', textAlign: 'center' }}>
-              <span style={{ fontSize: '28px' }}>🔍</span>
-              <span style={{ fontSize: '12px', fontWeight: 700 }}>Nenhum produto correspondente.</span>
-              <span style={{ fontSize: '10px' }}>Tente ajustar os termos de busca ou mudar o filtro da categoria.</span>
+        {/* ── SEARCH MAIN LAYOUT: 3 Tight Columns + Slender Lateral Feed ── */}
+        <div className="search-layout-row" style={{ paddingBottom: '88px' }}>
+          {/* Main 3-column products grid tightly spaced */}
+          <div className="search-main-col">
+            <div className="search-products-grid">
+              {filteredProducts.map(product => (
+                <ProductCard key={product.id} {...product} />
+              ))}
+              {filteredProducts.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', padding: '40px 16px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  <span style={{ fontSize: '28px' }}>🔍</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>Nenhum produto correspondente.</span>
+                  <span style={{ fontSize: '10px' }}>Tente ajustar os termos de busca ou mudar o filtro da categoria.</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Fino Feed Lateral: Propaganda Interna + Produtos Menores */}
+          <aside className="search-side-feed" aria-label="Feed de Ofertas e Destaques">
+            {/* Header do Feed Lateral */}
+            <div className="search-side-feed-header">
+              <Sparkles size={11} color="#D4AF37" />
+              <span>Destaques</span>
+            </div>
+
+            {/* Propaganda Interna 1: Frete Grátis */}
+            <div
+              className="search-side-promo promo-gold"
+              onClick={() => navigate('/cart')}
+              role="button"
+              tabIndex={0}
+            >
+              <span className="promo-badge">⚡ VIP</span>
+              <div className="promo-title">Frete Grátis</div>
+              <div className="promo-sub">a partir de R$ 60</div>
+            </div>
+
+            {/* Cards Menores de Produtos */}
+            {sideFeedProducts.map((p) => {
+              const justAdded = recentlyAddedId === p.id;
+              const numericPrice = getEffectiveProductPrice(p);
+              return (
+                <div key={`side-${p.id}`} className="search-side-miniproduct">
+                  <div
+                    className="miniproduct-link"
+                    onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                  >
+                    <div className="miniproduct-img-wrap">
+                      <img
+                        src={cleanImageUrl(p.image)}
+                        alt={p.title}
+                        onError={handleImageError}
+                        loading="lazy"
+                      />
+                      {p.promoActive && <span className="miniproduct-tag">OFF</span>}
+                    </div>
+                    <span className="miniproduct-title">{p.title}</span>
+                    <span className="miniproduct-price">
+                      R$ {numericPrice.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(
+                        { id: p.id, title: p.title, price: numericPrice, image: p.image },
+                        1
+                      );
+                      setRecentlyAddedId(p.id);
+                      window.setTimeout(
+                        () => setRecentlyAddedId((cur) => (cur === p.id ? null : cur)),
+                        1200
+                      );
+                    }}
+                    title={`Adicionar ${p.title}`}
+                    aria-label={`Adicionar ${p.title} ao carrinho`}
+                  >
+                    {justAdded ? <Check size={11} /> : <Plus size={12} />}
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Propaganda Interna 2: Pagamento Pix */}
+            <div
+              className="search-side-promo promo-emerald"
+              onClick={() => navigate('/checkout')}
+              role="button"
+              tabIndex={0}
+            >
+              <span className="promo-badge">🚀 PIX</span>
+              <div className="promo-title">Pague no Pix</div>
+              <div className="promo-sub">Rápido e 100% seguro</div>
+            </div>
+          </aside>
         </div>
 
       </div>

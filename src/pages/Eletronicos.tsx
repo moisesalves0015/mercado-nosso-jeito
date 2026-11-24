@@ -33,10 +33,10 @@ export const Eletronicos = () => {
       <PageHeroBanner placement="eletronicos" defaultSlides={DEFAULT_ELETRONICOS_SLIDES} />
 
       {/* PRE-TESTED & WARRANTY NOTICE */}
-      <div className="glass-panel" style={{ 
-        margin: '0 0 20px', 
-        background: 'rgba(168, 85, 247, 0.03)', 
-        border: '1px solid rgba(168, 85, 247, 0.15)', 
+      <div className="glass-panel" style={{
+        margin: '0 0 20px',
+        background: 'rgba(168, 85, 247, 0.03)',
+        border: '1px solid rgba(168, 85, 247, 0.15)',
         padding: '12px',
         borderRadius: '12px'
       }}>

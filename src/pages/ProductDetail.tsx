@@ -199,16 +199,16 @@ export const ProductDetail = () => {
         {/* SOCIAL PROOF BLOCK */}
         <div className="social-proof-header">
           <div className="store-link">Visite a Loja Mercado do Nosso Jeito</div>
-          
+
           {product.ratingCount > 0 && product.rating > 0 && <div className="rating-row">
             <div className="stars">
               <span className="rating-value">{product.rating}</span>
               {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={12} 
-                  fill={i < Math.floor(product.rating) ? "#D4AF37" : "none"} 
-                  color="#D4AF37" 
+                <Star
+                  key={i}
+                  size={12}
+                  fill={i < Math.floor(product.rating) ? "#D4AF37" : "none"}
+                  color="#D4AF37"
                   style={{ marginLeft: 1 }}
                 />
               ))}
@@ -228,7 +228,7 @@ export const ProductDetail = () => {
               R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          
+
         </div>
 
         <div className="purchase-options-container">
@@ -258,11 +258,11 @@ export const ProductDetail = () => {
           <div className="shipping-info-badges">
             <div className="info-badge-item">
               <CheckCircle size={14} color="#D4AF37" />
-              <span className="info-text">Receba: <strong style={{color: 'var(--text-primary)'}}>{product.deliveryTime}</strong></span>
+              <span className="info-text">Receba: <strong style={{ color: 'var(--text-primary)' }}>{product.deliveryTime}</strong></span>
             </div>
             <div className="info-badge-item">
               <CheckCircle size={14} color={product.stock === 0 ? "#FF6B6B" : "#34C759"} />
-              <span className="info-text" style={{color: product.stock === 0 ? '#FF6B6B' : '#34C759'}}>
+              <span className="info-text" style={{ color: product.stock === 0 ? '#FF6B6B' : '#34C759' }}>
                 {product.stock === 0 ? 'Esgotado' : product.stockStatus}
               </span>
             </div>
@@ -291,80 +291,80 @@ export const ProductDetail = () => {
 
         {/* OBVIOUS HIGH-CONTRAST CONVERSION CALL-TO-ACTION (CTA) BUTTON */}
         <div className="cta-container">
-          <button 
+          <button
             className="main-gold-cta"
             disabled={!Number.isInteger(product.stock) || product.stock <= 0}
             style={{ opacity: !Number.isInteger(product.stock) || product.stock <= 0 ? 0.6 : 1, cursor: !Number.isInteger(product.stock) || product.stock <= 0 ? 'not-allowed' : 'pointer' }}
             onClick={(e) => {
               if (!Number.isInteger(product.stock) || product.stock <= 0) return;
-                // Trigger visual flying item thumbnail
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                const startX = rect.left + rect.width / 2;
-                const startY = rect.top + rect.height / 2;
+              // Trigger visual flying item thumbnail
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const startX = rect.left + rect.width / 2;
+              const startY = rect.top + rect.height / 2;
 
-                const flyer = document.createElement('div');
-                flyer.style.position = 'fixed';
-                flyer.style.left = `${startX}px`;
-                flyer.style.top = `${startY}px`;
-                flyer.style.width = '36px';
-                flyer.style.height = '36px';
-                flyer.style.borderRadius = '50%';
-                flyer.style.background = '#fff';
-                flyer.style.border = '1.5px solid #FFDF73';
-                flyer.style.boxShadow = '0 0 10px rgba(212,175,55,0.7)';
-                flyer.style.backgroundImage = `url(${product.image})`;
-                flyer.style.backgroundSize = 'contain';
-                flyer.style.backgroundPosition = 'center';
-                flyer.style.backgroundRepeat = 'no-repeat';
-                flyer.style.zIndex = '99999';
-                flyer.style.pointerEvents = 'none';
-                flyer.style.transition = 'all 0.9s cubic-bezier(0.25, 1, 0.5, 1)';
+              const flyer = document.createElement('div');
+              flyer.style.position = 'fixed';
+              flyer.style.left = `${startX}px`;
+              flyer.style.top = `${startY}px`;
+              flyer.style.width = '36px';
+              flyer.style.height = '36px';
+              flyer.style.borderRadius = '50%';
+              flyer.style.background = '#fff';
+              flyer.style.border = '1.5px solid #FFDF73';
+              flyer.style.boxShadow = '0 0 10px rgba(212,175,55,0.7)';
+              flyer.style.backgroundImage = `url(${product.image})`;
+              flyer.style.backgroundSize = 'contain';
+              flyer.style.backgroundPosition = 'center';
+              flyer.style.backgroundRepeat = 'no-repeat';
+              flyer.style.zIndex = '99999';
+              flyer.style.pointerEvents = 'none';
+              flyer.style.transition = 'all 0.9s cubic-bezier(0.25, 1, 0.5, 1)';
 
-                document.body.appendChild(flyer);
+              document.body.appendChild(flyer);
 
-                const wasEmpty = !document.querySelector('.floating-mini-cart');
-                addToCart({ id: product.id, title: product.title, price: finalPrice, image: product.image }, quantity);
+              const wasEmpty = !document.querySelector('.floating-mini-cart');
+              addToCart({ id: product.id, title: product.title, price: finalPrice, image: product.image }, quantity);
 
-                if (wasEmpty) {
-                  flyer.style.transform = 'scale(1.15)';
-                  flyer.style.boxShadow = '0 0 25px rgba(212,175,55,0.9)';
+              if (wasEmpty) {
+                flyer.style.transform = 'scale(1.15)';
+                flyer.style.boxShadow = '0 0 25px rgba(212,175,55,0.9)';
+              }
+
+              setTimeout(() => {
+                let targetX = window.innerWidth / 2;
+                let targetY = window.innerHeight - 56;
+
+                const cartIcon = document.querySelector('.floating-mini-cart .lucide-shopping-bag') || document.querySelector('a[href="/orders"] .nav-icon');
+                if (cartIcon) {
+                  const cartRect = cartIcon.getBoundingClientRect();
+                  targetX = cartRect.left + cartRect.width / 2;
+                  targetY = cartRect.top + cartRect.height / 2;
                 }
 
+                flyer.style.left = `${targetX - 18}px`;
+                flyer.style.top = `${targetY - 18}px`;
+                flyer.style.transform = 'scale(0.35) rotate(360deg)';
+                flyer.style.opacity = '0.9';
+
                 setTimeout(() => {
-                  let targetX = window.innerWidth / 2;
-                  let targetY = window.innerHeight - 56;
-
-                  const cartIcon = document.querySelector('.floating-mini-cart .lucide-shopping-bag') || document.querySelector('a[href="/orders"] .nav-icon');
-                  if (cartIcon) {
-                    const cartRect = cartIcon.getBoundingClientRect();
-                    targetX = cartRect.left + cartRect.width / 2;
-                    targetY = cartRect.top + cartRect.height / 2;
-                  }
-
-                  flyer.style.left = `${targetX - 18}px`;
-                  flyer.style.top = `${targetY - 18}px`;
-                  flyer.style.transform = 'scale(0.35) rotate(360deg)';
-                  flyer.style.opacity = '0.9';
-
-                  setTimeout(() => {
-                    flyer.remove();
-                  }, 900);
-                }, wasEmpty ? 650 : 50);
+                  flyer.remove();
+                }, 900);
+              }, wasEmpty ? 650 : 50);
             }}
           >
             {product.stock === 0 ? (
               <>
-                <Shield size={18} style={{marginRight: 8}} />
+                <Shield size={18} style={{ marginRight: 8 }} />
                 Produto Esgotado
               </>
             ) : (
               <>
-                <ShoppingCart size={18} style={{marginRight: 8}} />
+                <ShoppingCart size={18} style={{ marginRight: 8 }} />
                 Adicionar ao Carrinho
               </>
             )}
           </button>
-          
+
           <div className="cta-assurance-sub">🔒 Compra protegida; frete e total confirmados no checkout.</div>
         </div>
 
@@ -387,7 +387,7 @@ export const ProductDetail = () => {
           </div>
           <div className="products suggested-carousel">
             {finalSuggested.map((prod, index) => (
-              <ProductCard 
+              <ProductCard
                 key={index}
                 title={prod.title}
                 price={prod.price}
