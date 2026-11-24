@@ -316,85 +316,259 @@ export const Search = () => {
             </div>
           </div>
 
-          {/* Fino Feed Lateral: Propaganda Interna + Produtos Menores */}
+          {/* Fino Feed Lateral Automático com Rolagem Lenta */}
           <aside className="search-side-feed" aria-label="Feed de Ofertas e Destaques">
-            {/* Header do Feed Lateral */}
+            {/* Header Fixo do Feed */}
             <div className="search-side-feed-header">
-              <Sparkles size={11} color="#D4AF37" />
+              <Sparkles size={9} color="#D4AF37" />
               <span>Destaques</span>
             </div>
 
-            {/* Propaganda Interna 1: Frete Grátis */}
-            <div
-              className="search-side-promo promo-gold"
-              onClick={() => navigate('/cart')}
-              role="button"
-              tabIndex={0}
-            >
-              <span className="promo-badge">⚡ VIP</span>
-              <div className="promo-title">Frete Grátis</div>
-              <div className="promo-sub">a partir de R$ 60</div>
-            </div>
-
-            {/* Cards Menores de Produtos */}
-            {sideFeedProducts.map((p) => {
-              const justAdded = recentlyAddedId === p.id;
-              const numericPrice = getEffectiveProductPrice(p);
-              return (
-                <div key={`side-${p.id}`} className="search-side-miniproduct">
+            {/* Viewport com Máscara e Trilha Dupla de Rolagem Contínua */}
+            <div className="search-side-feed-viewport">
+              <div className="search-side-feed-track">
+                {/* Track Grupo 1 */}
+                <div className="search-side-feed-group">
                   <div
-                    className="miniproduct-link"
-                    onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                    className="search-side-promo promo-gold"
+                    onClick={() => navigate('/cart')}
+                    role="button"
+                    tabIndex={0}
                   >
-                    <div className="miniproduct-img-wrap">
-                      <img
-                        src={cleanImageUrl(p.image)}
-                        alt={p.title}
-                        onError={handleImageError}
-                        loading="lazy"
-                      />
-                      {p.promoActive && <span className="miniproduct-tag">OFF</span>}
-                    </div>
-                    <span className="miniproduct-title">{p.title}</span>
-                    <span className="miniproduct-price">
-                      R$ {numericPrice.toFixed(2).replace('.', ',')}
-                    </span>
+                    <span className="promo-badge">⚡ VIP</span>
+                    <div className="promo-title">Frete Grátis</div>
+                    <div className="promo-sub">acima R$ 60</div>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(
-                        { id: p.id, title: p.title, price: numericPrice, image: p.image },
-                        1
-                      );
-                      setRecentlyAddedId(p.id);
-                      window.setTimeout(
-                        () => setRecentlyAddedId((cur) => (cur === p.id ? null : cur)),
-                        1200
-                      );
-                    }}
-                    title={`Adicionar ${p.title}`}
-                    aria-label={`Adicionar ${p.title} ao carrinho`}
-                  >
-                    {justAdded ? <Check size={11} /> : <Plus size={12} />}
-                  </button>
-                </div>
-              );
-            })}
+                  {sideFeedProducts.slice(0, 3).map((p) => {
+                    const justAdded = recentlyAddedId === `g1-${p.id}`;
+                    const numericPrice = getEffectiveProductPrice(p);
+                    return (
+                      <div key={`g1-side-${p.id}`} className="search-side-miniproduct">
+                        <div
+                          className="miniproduct-link"
+                          onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                        >
+                          <div className="miniproduct-img-wrap">
+                            <img
+                              src={cleanImageUrl(p.image)}
+                              alt={p.title}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                            {p.promoActive && <span className="miniproduct-tag">OFF</span>}
+                          </div>
+                          <span className="miniproduct-title">{p.title}</span>
+                          <span className="miniproduct-price">
+                            R$ {numericPrice.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
 
-            {/* Propaganda Interna 2: Pagamento Pix */}
-            <div
-              className="search-side-promo promo-emerald"
-              onClick={() => navigate('/checkout')}
-              role="button"
-              tabIndex={0}
-            >
-              <span className="promo-badge">🚀 PIX</span>
-              <div className="promo-title">Pague no Pix</div>
-              <div className="promo-sub">Rápido e 100% seguro</div>
+                        <button
+                          type="button"
+                          className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(
+                              { id: p.id, title: p.title, price: numericPrice, image: p.image },
+                              1
+                            );
+                            setRecentlyAddedId(`g1-${p.id}`);
+                            window.setTimeout(
+                              () => setRecentlyAddedId((cur) => (cur === `g1-${p.id}` ? null : cur)),
+                              1200
+                            );
+                          }}
+                          title={`Adicionar ${p.title}`}
+                          aria-label={`Adicionar ${p.title} ao carrinho`}
+                        >
+                          {justAdded ? <Check size={10} /> : <Plus size={10} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <div
+                    className="search-side-promo promo-emerald"
+                    onClick={() => navigate('/checkout')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className="promo-badge">🚀 PIX</span>
+                    <div className="promo-title">Pague Pix</div>
+                    <div className="promo-sub">100% seguro</div>
+                  </div>
+
+                  {sideFeedProducts.slice(3, 6).map((p) => {
+                    const justAdded = recentlyAddedId === `g1-${p.id}`;
+                    const numericPrice = getEffectiveProductPrice(p);
+                    return (
+                      <div key={`g1-side-${p.id}`} className="search-side-miniproduct">
+                        <div
+                          className="miniproduct-link"
+                          onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                        >
+                          <div className="miniproduct-img-wrap">
+                            <img
+                              src={cleanImageUrl(p.image)}
+                              alt={p.title}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                            {p.promoActive && <span className="miniproduct-tag">OFF</span>}
+                          </div>
+                          <span className="miniproduct-title">{p.title}</span>
+                          <span className="miniproduct-price">
+                            R$ {numericPrice.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(
+                              { id: p.id, title: p.title, price: numericPrice, image: p.image },
+                              1
+                            );
+                            setRecentlyAddedId(`g1-${p.id}`);
+                            window.setTimeout(
+                              () => setRecentlyAddedId((cur) => (cur === `g1-${p.id}` ? null : cur)),
+                              1200
+                            );
+                          }}
+                          title={`Adicionar ${p.title}`}
+                          aria-label={`Adicionar ${p.title} ao carrinho`}
+                        >
+                          {justAdded ? <Check size={10} /> : <Plus size={10} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Track Grupo 2 (Loop Infinito) */}
+                <div className="search-side-feed-group" aria-hidden="true">
+                  <div
+                    className="search-side-promo promo-gold"
+                    onClick={() => navigate('/cart')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className="promo-badge">⚡ VIP</span>
+                    <div className="promo-title">Frete Grátis</div>
+                    <div className="promo-sub">acima R$ 60</div>
+                  </div>
+
+                  {sideFeedProducts.slice(0, 3).map((p) => {
+                    const justAdded = recentlyAddedId === `g2-${p.id}`;
+                    const numericPrice = getEffectiveProductPrice(p);
+                    return (
+                      <div key={`g2-side-${p.id}`} className="search-side-miniproduct">
+                        <div
+                          className="miniproduct-link"
+                          onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                        >
+                          <div className="miniproduct-img-wrap">
+                            <img
+                              src={cleanImageUrl(p.image)}
+                              alt={p.title}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                            {p.promoActive && <span className="miniproduct-tag">OFF</span>}
+                          </div>
+                          <span className="miniproduct-title">{p.title}</span>
+                          <span className="miniproduct-price">
+                            R$ {numericPrice.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(
+                              { id: p.id, title: p.title, price: numericPrice, image: p.image },
+                              1
+                            );
+                            setRecentlyAddedId(`g2-${p.id}`);
+                            window.setTimeout(
+                              () => setRecentlyAddedId((cur) => (cur === `g2-${p.id}` ? null : cur)),
+                              1200
+                            );
+                          }}
+                          title={`Adicionar ${p.title}`}
+                          aria-label={`Adicionar ${p.title} ao carrinho`}
+                        >
+                          {justAdded ? <Check size={10} /> : <Plus size={10} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <div
+                    className="search-side-promo promo-emerald"
+                    onClick={() => navigate('/checkout')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className="promo-badge">🚀 PIX</span>
+                    <div className="promo-title">Pague Pix</div>
+                    <div className="promo-sub">100% seguro</div>
+                  </div>
+
+                  {sideFeedProducts.slice(3, 6).map((p) => {
+                    const justAdded = recentlyAddedId === `g2-${p.id}`;
+                    const numericPrice = getEffectiveProductPrice(p);
+                    return (
+                      <div key={`g2-side-${p.id}`} className="search-side-miniproduct">
+                        <div
+                          className="miniproduct-link"
+                          onClick={() => navigate(`/product/${encodeURIComponent(p.id)}`)}
+                        >
+                          <div className="miniproduct-img-wrap">
+                            <img
+                              src={cleanImageUrl(p.image)}
+                              alt={p.title}
+                              onError={handleImageError}
+                              loading="lazy"
+                            />
+                            {p.promoActive && <span className="miniproduct-tag">OFF</span>}
+                          </div>
+                          <span className="miniproduct-title">{p.title}</span>
+                          <span className="miniproduct-price">
+                            R$ {numericPrice.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`miniproduct-add-btn ${justAdded ? 'is-added' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(
+                              { id: p.id, title: p.title, price: numericPrice, image: p.image },
+                              1
+                            );
+                            setRecentlyAddedId(`g2-${p.id}`);
+                            window.setTimeout(
+                              () => setRecentlyAddedId((cur) => (cur === `g2-${p.id}` ? null : cur)),
+                              1200
+                            );
+                          }}
+                          title={`Adicionar ${p.title}`}
+                          aria-label={`Adicionar ${p.title} ao carrinho`}
+                        >
+                          {justAdded ? <Check size={10} /> : <Plus size={10} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </aside>
         </div>
