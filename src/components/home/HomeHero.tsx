@@ -42,40 +42,36 @@ const HeroSlideVideoItem: React.FC<{
     }
   }, [onRatioDetected]);
 
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (active) {
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, [active]);
+
   return (
     <video
       ref={(el) => {
         videoRef.current = el;
-        if (el) {
-          if (el.videoWidth && el.videoHeight && !aspectRatio) {
-            applyDimensions(el);
-          }
-          if (active) {
-            el.play().catch(() => {});
-          }
+        if (el && el.videoWidth && el.videoHeight && !aspectRatio) {
+          applyDimensions(el);
         }
       }}
       src={resolved || undefined}
       poster={poster ? sanitizeBannerImageUrl(poster, '') : undefined}
-      autoPlay
+      autoPlay={active}
       loop
       muted
       playsInline
       webkit-playsinline="true"
-      preload="auto"
+      preload={active ? 'auto' : 'metadata'}
       className="hero-slide-video"
       onLoadedMetadata={(e) => applyDimensions(e.currentTarget)}
       onLoadedData={(e) => applyDimensions(e.currentTarget)}
       onCanPlay={(e) => applyDimensions(e.currentTarget)}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'block',
-        pointerEvents: 'none',
-        objectFit: 'contain',
-        objectPosition: 'center',
-        background: 'transparent',
-      }}
     />
   );
 };
@@ -87,7 +83,13 @@ const HeroSlideVideoItem: React.FC<{
  *  - Exibe vídeos horizontais em sua totalidade de ponta a ponta sem forçar alturas incompatíveis.
  *  - Rotação automática pausa com mouse, foco ou `prefers-reduced-motion`.
  */
-export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
+export const HomeHero = ({
+  slides,
+  loading = false,
+}: {
+  slides: HeroSlide[];
+  loading?: boolean;
+}) => {
   const count = slides.length;
   const reducedMotion = usePrefersReducedMotion();
   const [rawIndex, setRawIndex] = useState(0);
@@ -95,12 +97,17 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const [slideRatios, setSlideRatios] = useState<Record<string, string>>({});
+  const [loadedSlides, setLoadedSlides] = useState<Record<string, boolean>>({});
 
   const registerSlideRatio = useCallback((id: string, ratio: string) => {
     setSlideRatios(prev => {
       if (prev[id] === ratio) return prev;
       return { ...prev, [id]: ratio };
     });
+  }, []);
+
+  const markSlideLoaded = useCallback((id: string) => {
+    setLoadedSlides(prev => (prev[id] ? prev : { ...prev, [id]: true }));
   }, []);
 
   const index = count > 0 ? Math.min(rawIndex, count - 1) : 0;
@@ -136,6 +143,16 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
   };
+
+  if (loading && count === 0) {
+    return (
+      <div
+        className="hero-banner hero-banner--skeleton"
+        aria-busy="true"
+        aria-label="Carregando destaques"
+      />
+    );
+  }
 
   if (count === 0) return null;
 
@@ -175,19 +192,10 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
           const videoSrc = slide.videoUrl || (isVideoExt(slide.image) ? slide.image : undefined);
           const cleanedImage = sanitizeBannerImageUrl(slide.image, '');
           const poster = slide.posterImage || undefined;
+          const isImageLoaded = Boolean(loadedSlides[slide.id]);
 
           const common = {
             className: `hero-slide${isVideo || cleanedImage ? '' : ' hero-slide--text'}`,
-            style: {
-              position: 'relative' as const,
-              background: 'transparent',
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-            },
             'aria-label': `${slide.title || 'Banner'} (${idx + 1} de ${count})`,
             'aria-hidden': active ? undefined : true,
           } as const;
@@ -195,7 +203,7 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
           // Slides fora de vista não entram na ordem de tabulação.
           const tabIndex = active ? undefined : -1;
           const content = isVideo && videoSrc ? (
-            <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+            <div className="hero-slide-media-wrap">
               <HeroSlideVideoItem
                 videoSrc={videoSrc}
                 poster={poster}
@@ -204,20 +212,8 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
                 onRatioDetected={(ratio) => registerSlideRatio(slide.id, ratio)}
               />
               {slide.title && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%)',
-                    padding: '16px 14px 10px',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}>
-                    {slide.title}
-                  </span>
+                <div className="hero-slide-video-caption">
+                  <span>{slide.title}</span>
                 </div>
               )}
             </div>
@@ -225,7 +221,7 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
             <img
               src={cleanedImage}
               alt={slide.title || 'Banner'}
-              className="hero-slide-img"
+              className={`hero-slide-img${isImageLoaded ? ' is-loaded' : ''}`}
               fetchPriority={idx === 0 ? 'high' : 'auto'}
               decoding="async"
               onLoad={(e) => {
@@ -233,20 +229,18 @@ export const HomeHero = ({ slides }: { slides: HeroSlide[] }) => {
                 if (img.naturalWidth && img.naturalHeight) {
                   registerSlideRatio(slide.id, `${img.naturalWidth} / ${img.naturalHeight}`);
                 }
+                markSlideLoaded(slide.id);
               }}
+              onError={() => markSlideLoaded(slide.id)}
               ref={(img) => {
-                if (img && img.naturalWidth && img.naturalHeight && !slideRatios[slide.id]) {
-                  registerSlideRatio(slide.id, `${img.naturalWidth} / ${img.naturalHeight}`);
+                if (img && img.complete && img.naturalWidth > 0) {
+                  if (!slideRatios[slide.id]) {
+                    registerSlideRatio(slide.id, `${img.naturalWidth} / ${img.naturalHeight}`);
+                  }
+                  if (!loadedSlides[slide.id]) {
+                    markSlideLoaded(slide.id);
+                  }
                 }
-              }}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                objectPosition: 'center',
-                display: 'block',
-                pointerEvents: 'none',
-                background: 'transparent',
               }}
             />
           ) : (

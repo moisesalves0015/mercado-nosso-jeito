@@ -73,15 +73,16 @@ export const Home = () => {
   const { config: shippingConfig, loading: shippingLoading } = useShippingConfig();
   const { hasEverRevealed, reportHomeState, dismissAppSplash } = useHomeReadiness();
 
-  // Banners principais do topo (Hero)
+  // Banners principais do topo (Hero): nunca exibe fallback antigo enquanto o CRM carrega
+  const isHeroLoading = homeConfig.status === 'loading' && homeConfig.heroBanners.length === 0;
   const heroSlides = useMemo<HeroSlide[]>(() => {
+    if (isHeroLoading) return [];
     if (homeConfig.heroBanners.length === 0) return DEFAULT_HERO_SLIDES;
     const activeBanners = homeConfig.heroBanners.filter(
       (b) => b.active !== false && (!b.placement || b.placement === 'home' || b.placement === 'all'),
     );
-    if (activeBanners.length === 0) return DEFAULT_HERO_SLIDES;
     return [...activeBanners].sort(byOrder).map(toHeroSlide);
-  }, [homeConfig.heroBanners]);
+  }, [homeConfig.heroBanners, isHeroLoading]);
 
   // Pré-carrega e decodifica apenas o asset crítico do primeiro slide do Hero antes da primeira revelação
   const [criticalAssetsReady, setCriticalAssetsReady] = useState(hasEverRevealed);
@@ -219,7 +220,7 @@ export const Home = () => {
 
     switch (block.type) {
       case 'hero':
-        return <HomeHero key={block.id} slides={heroSlides} />;
+        return <HomeHero key={block.id} slides={heroSlides} loading={isHeroLoading} />;
 
       case 'quick_categories':
         return <HomeQuickCategories key={block.id} items={quickCategories} />;
@@ -344,9 +345,26 @@ export const Home = () => {
           </div>
         )}
 
-        {effectiveLayout.map(renderBlock)}
+        {effectiveLayout.map((block, idx) => {
+          const rendered = renderBlock(block);
+          if (!rendered) return null;
+          return (
+            <div
+              key={block.id}
+              className="home-block-reveal"
+              style={{ '--block-index': Math.min(idx, 8) } as React.CSSProperties}
+            >
+              {rendered}
+            </div>
+          );
+        })}
 
-        <HomeFooter config={adminConfig} />
+        <div
+          className="home-block-reveal"
+          style={{ '--block-index': Math.min(effectiveLayout.length, 8) } as React.CSSProperties}
+        >
+          <HomeFooter config={adminConfig} />
+        </div>
       </main>
     </div>
   );
