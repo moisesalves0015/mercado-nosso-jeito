@@ -9,13 +9,31 @@ export interface UpsellConfigMap {
   checkout: UpsellShowcaseConfig;
 }
 
+const STORAGE_KEY = 'app-upsell-config';
+
 const DEFAULT_MAP: UpsellConfigMap = {
   cart: defaultUpsellConfig('cart'),
   checkout: defaultUpsellConfig('checkout'),
 };
 
+function loadCachedUpsell(): UpsellConfigMap {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<UpsellConfigMap>;
+      return {
+        cart: parsed.cart ? normalizeUpsellConfig('cart', parsed.cart as unknown as Record<string, unknown>) : DEFAULT_MAP.cart,
+        checkout: parsed.checkout ? normalizeUpsellConfig('checkout', parsed.checkout as unknown as Record<string, unknown>) : DEFAULT_MAP.checkout,
+      };
+    }
+  } catch {
+    // ignore corrupted cache
+  }
+  return DEFAULT_MAP;
+}
+
 export function useUpsellConfig(): UpsellConfigMap {
-  const [configs, setConfigs] = useState<UpsellConfigMap>(DEFAULT_MAP);
+  const [configs, setConfigs] = useState<UpsellConfigMap>(loadCachedUpsell);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -32,6 +50,11 @@ export function useUpsellConfig(): UpsellConfigMap {
           }
         });
         setConfigs(next);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore storage quota
+        }
       },
       () => {
         // Fallback silencioso para configuração padrão em modo auto
