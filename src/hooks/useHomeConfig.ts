@@ -69,6 +69,8 @@ export interface HomeConfig {
   status: HomeConfigStatus;
   /** true enquanto o snapshot inicial coerente não está disponível. */
   loading: boolean;
+  /** true quando a coleção `hero-banners` já respondeu (ou veio de cache coerente). */
+  heroBannersReady: boolean;
   /** true se houve falha em alguma coleção. */
   error: boolean;
   /** true quando o estado inicial partiu de um snapshot v2 validado em cache. */
@@ -112,6 +114,7 @@ function loadCoherentCachedConfig(): InternalHomeConfigState {
             issues: [],
             status: 'stale',
             loading: false,
+            heroBannersReady: true,
             error: false,
             hasCoherentCache: true,
           };
@@ -140,6 +143,7 @@ function loadCoherentCachedConfig(): InternalHomeConfigState {
     issues: [],
     status: 'loading',
     loading: true,
+    heroBannersReady: false,
     error: false,
     hasCoherentCache: false,
   };
@@ -189,6 +193,7 @@ export const useHomeConfig = (): HomeConfig => {
       ...prev,
       status: 'loading',
       loading: true,
+      heroBannersReady: false,
       error: false,
       hasCoherentCache: false,
     }));
@@ -215,9 +220,12 @@ export const useHomeConfig = (): HomeConfig => {
       issues: [],
       status: hasCoherentCacheRef.current ? 'stale' : 'loading',
       loading: !hasCoherentCacheRef.current,
+      heroBannersReady: hasCoherentCacheRef.current,
       error: false,
       hasCoherentCache: hasCoherentCacheRef.current,
     };
+
+    let postCommitTimer: number | null = null;
 
     const commitAtomicSnapshot = (timedOut = false) => {
       if (!active) return;
@@ -233,6 +241,7 @@ export const useHomeConfig = (): HomeConfig => {
           ...prev,
           status: 'error',
           loading: false,
+          heroBannersReady: true,
           error: true,
         }));
         return;
@@ -242,6 +251,7 @@ export const useHomeConfig = (): HomeConfig => {
         ...buffer,
         status: 'ready',
         loading: false,
+        heroBannersReady: hasCoherentCacheRef.current || settled.has('heroBanners'),
         error: failed.size > 0,
         hasCoherentCache: hasCoherentCacheRef.current,
       };
@@ -252,6 +262,22 @@ export const useHomeConfig = (): HomeConfig => {
       // Só persiste no cache v2 se todas as 8 coleções responderam sem falha crítica
       if (settled.size === HOME_CONFIG_SOURCES.length && failed.size === 0) {
         persistCoherentHomeSnapshot(nextState);
+      }
+    };
+
+    const flushPostBootstrapUpdate = () => {
+      if (!active) return;
+      const updatedState: InternalHomeConfigState = {
+        ...buffer,
+        status: 'ready',
+        loading: false,
+        heroBannersReady: hasCoherentCacheRef.current || settled.has('heroBanners'),
+        error: failed.size > 0,
+        hasCoherentCache: hasCoherentCacheRef.current,
+      };
+      setConfig(updatedState);
+      if (settled.size === HOME_CONFIG_SOURCES.length && failed.size === 0) {
+        persistCoherentHomeSnapshot(updatedState);
       }
     };
 
@@ -272,18 +298,14 @@ export const useHomeConfig = (): HomeConfig => {
         return;
       }
 
-      // Pós-bootstrap: atualizações em tempo real do CRM entram suavemente sem piscar
-      const updatedState: InternalHomeConfigState = {
-        ...buffer,
-        status: 'ready',
-        loading: false,
-        error: failed.size > 0,
-        hasCoherentCache: hasCoherentCacheRef.current,
-      };
-      setConfig(updatedState);
-      if (settled.size === HOME_CONFIG_SOURCES.length && failed.size === 0) {
-        persistCoherentHomeSnapshot(updatedState);
+      // Pós-bootstrap: agrupa atualizações simultâneas do Firestore para evitar múltiplos re-renders
+      if (postCommitTimer !== null) {
+        window.clearTimeout(postCommitTimer);
       }
+      postCommitTimer = window.setTimeout(() => {
+        postCommitTimer = null;
+        flushPostBootstrapUpdate();
+      }, 80);
     };
 
     const fail = (key: HomeConfigSourceKey, label: string) => () => {
@@ -391,6 +413,7 @@ export const useHomeConfig = (): HomeConfig => {
     return () => {
       active = false;
       window.clearTimeout(bootstrapTimer);
+      if (postCommitTimer !== null) window.clearTimeout(postCommitTimer);
       unsubs.forEach((unsub) => unsub());
     };
   }, [retryNonce]);
