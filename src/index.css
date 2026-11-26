@@ -10743,35 +10743,154 @@ body.light-mode .commerce-count-badge {
   padding: 24px;
   border: none;
   overflow: hidden;
-  background: rgba(8, 12, 10, 0.42);
-  -webkit-backdrop-filter: blur(28px) saturate(145%) brightness(0.72);
-  backdrop-filter: blur(28px) saturate(145%) brightness(0.72);
+  background: rgba(8, 16, 12, 0.56);
+  -webkit-backdrop-filter: blur(28px) saturate(145%) brightness(0.75);
+  backdrop-filter: blur(28px) saturate(145%) brightness(0.75);
   animation: cartOverlayFadeIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 body.light-mode .cart-freeship-overlay {
-  background: rgba(255, 255, 255, 0.46);
-  -webkit-backdrop-filter: blur(28px) saturate(145%) brightness(0.96);
-  backdrop-filter: blur(28px) saturate(145%) brightness(0.96);
+  background: rgba(250, 248, 242, 0.72);
+  -webkit-backdrop-filter: blur(28px) saturate(145%) brightness(0.98);
+  backdrop-filter: blur(28px) saturate(145%) brightness(0.98);
+}
+
+.cart-freeship-rain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cart-freeship-rain-item {
+  position: absolute;
+  top: -48px;
+  animation: cartIconRain linear infinite;
+  will-change: transform, opacity;
+}
+
+.cart-freeship-rain-item.is-emerald {
+  color: rgba(52, 211, 153, 0.72);
+  filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.38));
+}
+
+.cart-freeship-rain-item.is-gold {
+  color: rgba(240, 213, 123, 0.72);
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.38));
+}
+
+body.light-mode .cart-freeship-rain-item.is-emerald {
+  color: rgba(5, 150, 105, 0.6);
+}
+
+body.light-mode .cart-freeship-rain-item.is-gold {
+  color: rgba(180, 134, 24, 0.6);
+}
+
+.cart-freeship-overlay-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 800px;
 }
 
 .cart-freeship-overlay-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   font-family: 'Outfit', 'Manrope', sans-serif;
-  font-size: clamp(28px, 7.5vw, 44px);
   font-weight: 900;
   font-style: italic;
-  line-height: 1.12;
-  letter-spacing: -0.6px;
   text-align: center;
-  color: #34D399;
-  text-shadow: 0 8px 28px rgba(16, 185, 129, 0.38);
-  transform: rotate(-4deg);
-  animation: cartOverlayTitlePop 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-style: preserve-3d;
+  animation:
+    cartTitle3dEnter 0.62s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    cartTitle3dFloat 2.8s ease-in-out 0.62s infinite;
 }
 
-body.light-mode .cart-freeship-overlay-title {
-  color: #059669;
-  text-shadow: 0 6px 24px rgba(5, 150, 105, 0.22);
+.cart-freeship-title-main {
+  font-size: clamp(40px, 11vw, 64px);
+  line-height: 0.98;
+  letter-spacing: -1.2px;
+  color: #34D399;
+  -webkit-text-stroke: 1.2px #E8C96A;
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 0 #C9A236,
+    0 4px 0 #8F6B10,
+    0 12px 28px rgba(0, 0, 0, 0.58),
+    0 0 32px rgba(52, 211, 153, 0.32);
+}
+
+.cart-freeship-title-sub {
+  font-size: clamp(24px, 6.5vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.5px;
+  color: #F4DC8B;
+  text-shadow:
+    0 2px 0 #9A7214,
+    0 10px 24px rgba(0, 0, 0, 0.52);
+}
+
+body.light-mode .cart-freeship-title-main {
+  color: #10B981;
+  -webkit-text-stroke: 1.2px #C9A236;
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 0 #B88B1A,
+    0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+body.light-mode .cart-freeship-title-sub {
+  color: #B88B1A;
+  text-shadow:
+    0 2px 0 #845F09,
+    0 8px 20px rgba(15, 23, 42, 0.14);
+}
+
+@keyframes cartIconRain {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) rotate(-14deg) scale(0.85);
+  }
+  12% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(108vh) rotate(20deg) scale(1.05);
+  }
+}
+
+@keyframes cartTitle3dEnter {
+  0% {
+    opacity: 0;
+    transform: perspective(750px) rotateX(22deg) rotateY(-10deg) rotate(-5deg) scale(0.76) translateY(20px);
+  }
+  65% {
+    opacity: 1;
+    transform: perspective(750px) rotateX(-4deg) rotateY(4deg) rotate(-4deg) scale(1.04) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(750px) rotateX(6deg) rotateY(-4deg) rotate(-4deg) scale(1) translateY(0);
+  }
+}
+
+@keyframes cartTitle3dFloat {
+  0%, 100% {
+    transform: perspective(750px) rotateX(6deg) rotateY(-4deg) rotate(-4deg) translateY(0) scale(1);
+  }
+  50% {
+    transform: perspective(750px) rotateX(-4deg) rotateY(4deg) rotate(-3.2deg) translateY(-6px) scale(1.03);
+  }
 }
 
 .cart-freeship-overlay-close {
@@ -10988,6 +11107,72 @@ body.light-mode .cart-empty-icon-circle {
 .commerce-btn-primary:active:not(:disabled),
 .commerce-btn-secondary:active:not(:disabled) {
   transform: scale(0.982);
+}
+
+.cart-checkout-btn:not(:disabled) {
+  animation: cartCheckoutGlow 2.6s ease-in-out infinite;
+}
+
+.cart-checkout-btn:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -45%;
+  width: 38%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 35%,
+    rgba(255, 255, 255, 0.48) 50%,
+    rgba(255, 255, 255, 0.08) 65%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  animation: cartCheckoutSheen 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.cart-checkout-arrow {
+  animation: cartCheckoutArrowNudge 1.6s ease-in-out infinite;
+}
+
+@keyframes cartCheckoutGlow {
+  0%, 100% {
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+  50% {
+    box-shadow: 0 8px 28px rgba(212, 175, 55, 0.56), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+}
+
+@keyframes cartCheckoutSheen {
+  0% {
+    left: -45%;
+  }
+  42%, 100% {
+    left: 125%;
+  }
+}
+
+@keyframes cartCheckoutArrowNudge {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-checkout-btn:not(:disabled),
+  .cart-checkout-btn:not(:disabled)::after,
+  .cart-checkout-arrow,
+  .cart-freeship-icon-truck-badge,
+  .cart-freeship-icon-sparkle-l,
+  .cart-freeship-icon-sparkle-r {
+    animation: none !important;
+  }
 }
 
 /* BOTÃO SECUNDÁRIO (FROSTED GLASS / NEUTRO) */
@@ -11483,9 +11668,9 @@ body.light-mode .topbar {
   backdrop-filter: blur(44px) saturate(190%) !important;
   backdrop-filter: url(#liquid-glass) blur(36px) saturate(195%) brightness(0.95) !important;
   /* Sobe exatamente no espaço da bateria, relógio e símbolo do Wi-Fi (status bar / notch) */
-  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
-  padding-left: max(10px, env(safe-area-inset-left, 0px)) !important;
-  padding-right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  padding-top: calc(4px + env(safe-area-inset-top, 0px)) !important;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
   padding-bottom: 6px !important;
   isolation: isolate;
 }
@@ -11818,7 +12003,7 @@ body.light-mode .topbar-icon-btn {
 .bottom-nav {
   width: calc(100% - 16px) !important;
   max-width: 500px !important;
-  bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(3px + env(safe-area-inset-bottom, 0px)) !important;
   padding: 4px 6px !important;
   height: 58px !important;
   gap: 2px !important;
@@ -11882,15 +12067,26 @@ body.light-mode .bottom-nav a.active::after {
   border-radius: 50%;
 }
 
-/* Cabeçalhos flutuantes das páginas internas com mesma margem lateral responsiva (8px de cada lado no mobile) */
+/* Cabeçalhos flutuantes das páginas internas padronizados (mesma margem, altura e padding) */
 .floating-topbar-wrapper {
-  padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 12px 8px !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 8px 8px !important;
+}
+
+.floating-topbar-inner {
+  padding: 6px 12px !important;
+  min-height: 52px !important;
+  box-sizing: border-box !important;
 }
 
 .commerce-topbar-inner,
 .categories-page-header {
   width: calc(100% - 16px) !important;
   max-width: 620px !important;
+  margin: calc(4px + env(safe-area-inset-top, 0px)) auto 8px auto !important;
+  padding: 6px 12px !important;
+  min-height: 52px !important;
+  height: auto !important;
+  box-sizing: border-box !important;
 }
 
 /* 4. FILHOS DOS CABEÇALHOS FLUTUANTES (Mesmo verde-esmeralda + borda dourada dos botões de categorias) */

@@ -13,6 +13,57 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MercadoLogo } from './Login';
 
+const RAIN_ICONS = [
+  { id: 0, left: '6%', delay: '0s', duration: '3.6s', size: 20, kind: 'truck' },
+  { id: 1, left: '14%', delay: '0.7s', duration: '4.2s', size: 17, kind: 'tag' },
+  { id: 2, left: '22%', delay: '0.2s', duration: '3.4s', size: 18, kind: 'truck' },
+  { id: 3, left: '31%', delay: '1.1s', duration: '4.0s', size: 21, kind: 'tag' },
+  { id: 4, left: '39%', delay: '0.4s', duration: '3.7s', size: 18, kind: 'truck' },
+  { id: 5, left: '48%', delay: '1.4s', duration: '4.3s', size: 19, kind: 'tag' },
+  { id: 6, left: '57%', delay: '0.1s', duration: '3.5s', size: 21, kind: 'truck' },
+  { id: 7, left: '66%', delay: '0.9s', duration: '4.1s', size: 17, kind: 'tag' },
+  { id: 8, left: '74%', delay: '0.5s', duration: '3.8s', size: 19, kind: 'truck' },
+  { id: 9, left: '83%', delay: '1.2s', duration: '3.9s', size: 20, kind: 'tag' },
+  { id: 10, left: '91%', delay: '0.3s', duration: '4.4s', size: 18, kind: 'truck' },
+  { id: 11, left: '19%', delay: '1.8s', duration: '3.8s', size: 19, kind: 'tag' },
+  { id: 12, left: '44%', delay: '2.1s', duration: '3.6s', size: 20, kind: 'truck' },
+  { id: 13, left: '69%', delay: '1.6s', duration: '4.0s', size: 18, kind: 'tag' },
+  { id: 14, left: '88%', delay: '1.9s', duration: '3.5s', size: 19, kind: 'truck' },
+] as const;
+
+function playFreeShippingChime() {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 -> E5 -> G5 -> C6
+    const now = ctx.currentTime;
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.001, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.11, now + idx * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.36);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.38);
+    });
+    window.setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 1000);
+  } catch {
+    // Ignore audio errors when autoplay is blocked
+  }
+}
+
 const CartProductThumb = ({ src, alt }: { src?: string; alt: string }) => {
   const isVault = Boolean(src && src.startsWith('firestore-media://'));
   const resolvedVault = useResolvedMediaUrl(isVault ? src : undefined);
@@ -81,6 +132,7 @@ export function Cart() {
     const celebrateTimer = window.setTimeout(() => {
       fired = true;
       setShowFreeShippingPopup(true);
+      playFreeShippingChime();
       import('canvas-confetti')
         .then((confettiModule) => {
           const confetti = confettiModule.default;
@@ -243,6 +295,25 @@ export function Cart() {
                 typeof document !== 'undefined' &&
                 createPortal(
                   <div className="cart-freeship-overlay" role="dialog" aria-modal="true" aria-label="Frete Grátis desbloqueado">
+                    <div className="cart-freeship-rain" aria-hidden="true">
+                      {RAIN_ICONS.map((item) => (
+                        <span
+                          key={item.id}
+                          className={`cart-freeship-rain-item ${item.id % 2 === 0 ? 'is-emerald' : 'is-gold'}`}
+                          style={{
+                            left: item.left,
+                            animationDelay: item.delay,
+                            animationDuration: item.duration,
+                          }}
+                        >
+                          {item.kind === 'truck' ? (
+                            <Truck size={item.size} strokeWidth={1.35} />
+                          ) : (
+                            <Tag size={item.size} strokeWidth={1.35} />
+                          )}
+                        </span>
+                      ))}
+                    </div>
                     <button
                       type="button"
                       aria-label="Fechar aviso"
@@ -251,8 +322,11 @@ export function Cart() {
                     >
                       <X size={20} strokeWidth={1.4} />
                     </button>
-                    <div className="cart-freeship-overlay-title">
-                      Frete Grátis desbloqueado!
+                    <div className="cart-freeship-overlay-content">
+                      <div className="cart-freeship-overlay-title">
+                        <span className="cart-freeship-title-main">Frete Grátis</span>
+                        <span className="cart-freeship-title-sub">desbloqueado!</span>
+                      </div>
                     </div>
                   </div>,
                   document.body,
@@ -268,52 +342,70 @@ export function Cart() {
                     marginBottom: 4,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                      {isFreeShipping ? (
-                        <CheckCircle2 size={17} color="#34D399" style={{ flexShrink: 0 }} />
-                      ) : (
-                        <Truck size={17} color="#E8C96A" style={{ flexShrink: 0 }} />
-                      )}
-                      <div style={{ minWidth: 0, textAlign: 'left' }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 800, color: isFreeShipping ? '#34D399' : 'var(--text-primary)', lineHeight: 1.25 }}>
-                          {isFreeShipping
-                            ? 'Frete Grátis desbloqueado!'
-                            : `Faltam R$ ${missingForFreeShipping.toFixed(2)} para Frete Grátis`}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10, minWidth: 0 }}>
+                    {isFreeShipping ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexShrink: 0 }}>
+                          <CheckCircle2 size={14} strokeWidth={1.8} color="#34D399" style={{ flexShrink: 0 }} />
+                          <strong style={{ fontSize: 11.5, fontWeight: 900, color: '#34D399', whiteSpace: 'nowrap' }}>
+                            Frete Grátis desbloqueado!
+                          </strong>
                         </div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 1, lineHeight: 1.3 }}>
-                          {isFreeShipping
-                            ? `Você já economizou R$ ${baseShippingFee.toFixed(2)} na entrega`
-                            : progressPercent >= 60
-                              ? `Quase lá! Faltam ${100 - progressPercent}% para economizar R$ ${baseShippingFee.toFixed(2)}`
-                              : `Complete ${100 - progressPercent}% para economizar R$ ${baseShippingFee.toFixed(2)} na entrega`}
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>
+                          Você já economizou R$ {baseShippingFee.toFixed(2)} na entrega.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexShrink: 0 }}>
+                          <Truck size={14} strokeWidth={1.6} color="#E8C96A" style={{ flexShrink: 0 }} />
+                          <strong style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                            Faltam R$ {missingForFreeShipping.toFixed(2)}
+                          </strong>
                         </div>
-                      </div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11.5,
-                        fontWeight: 900,
-                        color: isFreeShipping ? '#34D399' : '#E8C96A',
-                        flexShrink: 0,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}
-                    >
-                      {animatedProgress}%
-                    </span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>
+                          para Frete Grátis.
+                        </span>
+                      </>
+                    )}
                   </div>
 
-                  <div className="commerce-progress-track" style={{ height: 6 }}>
+                  <div style={{ position: 'relative', padding: '4px 0' }}>
+                    <div className="commerce-progress-track" style={{ height: 6 }}>
+                      <div
+                        className="commerce-progress-fill"
+                        style={{
+                          width: `${animatedProgress}%`,
+                          transition: 'width 1.65s cubic-bezier(0.16, 1, 0.3, 1)',
+                          background: isFreeShipping
+                            ? 'linear-gradient(90deg, #10B981, #34D399)'
+                            : 'linear-gradient(90deg, #C9A236, #F0D57B)',
+                        }}
+                      />
+                    </div>
                     <div
-                      className="commerce-progress-fill"
+                      aria-hidden="true"
                       style={{
-                        width: `${animatedProgress}%`,
-                        transition: 'width 1.65s cubic-bezier(0.16, 1, 0.3, 1)',
-                        background: isFreeShipping
-                          ? 'linear-gradient(90deg, #10B981, #34D399)'
-                          : 'linear-gradient(90deg, #C9A236, #F0D57B)',
+                        position: 'absolute',
+                        top: '50%',
+                        left: `clamp(7px, ${animatedProgress}%, calc(100% - 9px))`,
+                        transform: 'translate(-50%, -50%)',
+                        transition: 'left 1.65s cubic-bezier(0.16, 1, 0.3, 1)',
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: isFreeShipping ? '#0B2419' : '#121E17',
+                        border: isFreeShipping ? '1.2px solid #34D399' : '1.2px solid #E8C96A',
+                        color: isFreeShipping ? '#34D399' : '#E8C96A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.35)',
+                        pointerEvents: 'none',
                       }}
-                    />
+                    >
+                      <Truck size={11} strokeWidth={1.6} />
+                    </div>
                   </div>
                 </div>
 
@@ -543,7 +635,7 @@ export function Cart() {
 
                   <button
                     type="button"
-                    className={`commerce-btn-primary ${checkoutLoading ? 'is-loading' : ''}`}
+                    className={`commerce-btn-primary cart-checkout-btn ${checkoutLoading ? 'is-loading' : ''}`}
                     style={{ width: '100%', marginTop: 8, justifyContent: 'space-between', padding: '0 16px' }}
                     onClick={handleCheckout}
                     disabled={checkoutLoading}
@@ -557,7 +649,7 @@ export function Cart() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                           <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
-                          <ChevronRight size={17} />
+                          <ChevronRight size={17} className="cart-checkout-arrow" />
                         </div>
                       </>
                     )}
