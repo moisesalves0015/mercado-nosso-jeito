@@ -2161,8 +2161,8 @@ body.light-mode .topbar-search-container {
   border: 1px solid var(--border-primary);
   /* Category style border */
   backdrop-filter: blur(12px);
-  border-radius: 6px;
-  /* Tight border-radius */
+  border-radius: 12px;
+  /* Concentric outer radius matching harmonized price/quantity bar */
   padding: 8px 6px;
   margin-top: 4px;
   /* Extremely pulled closer to title */
@@ -2171,6 +2171,25 @@ body.light-mode .topbar-search-container {
   /* Integrated category shadows */
   overflow: visible;
   /* Allow badge to bleed outside the card */
+  transition: border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease, transform 0.2s ease;
+}
+
+.product-card.is-in-cart {
+  border-color: rgba(212, 175, 55, 0.78) !important;
+  background: linear-gradient(165deg, rgba(212, 175, 55, 0.14) 0%, rgba(16, 28, 22, 0.88) 100%) !important;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(212, 175, 55, 0.26),
+    inset 0 1px 0 rgba(255, 223, 115, 0.18) !important;
+}
+
+body.light-mode .product-card.is-in-cart {
+  border-color: rgba(180, 128, 22, 0.72) !important;
+  background: linear-gradient(165deg, rgba(254, 243, 199, 0.78) 0%, rgba(255, 255, 255, 0.96) 100%) !important;
+  box-shadow:
+    0 6px 16px rgba(180, 128, 22, 0.14),
+    0 0 0 1px rgba(212, 175, 55, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .product-card.glass-card {
@@ -2465,18 +2484,29 @@ body.light-mode .topbar-search-container {
 
 .price-pill {
   width: 100%;
-  height: 24px;
-  border-radius: 99px;
-  /* 100% rounded pill shape */
+  height: 28px;
+  border-radius: 9px;
+  /* Concentric with 12px card radius */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 4px 2px 8px;
-  /* Increased right padding to 4px so button is well-spaced from the edge */
+  padding: 3px 4px 3px 8px;
   background: var(--input-bg);
-  /* Subtle backdrop pop on dark backgrounds */
-  border: 1.2px solid #D4AF37;
-  /* Solid gold, no glow shadow */
+  border: 1.2px solid rgba(212, 175, 55, 0.65);
+  box-sizing: border-box;
+  transition: border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.product-card.is-in-cart .price-pill {
+  border-color: rgba(212, 175, 55, 0.92);
+  background: rgba(212, 175, 55, 0.14);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.18);
+}
+
+body.light-mode .product-card.is-in-cart .price-pill {
+  border-color: rgba(180, 128, 22, 0.85);
+  background: rgba(254, 243, 199, 0.85);
+  box-shadow: 0 2px 6px rgba(180, 128, 22, 0.14);
 }
 
 .product-price {
@@ -2585,30 +2615,30 @@ body.light-mode .topbar-search-container {
 
 .add-btn {
   position: relative;
-  /* Increased touch area */
-  width: 14px;
-  /* Decreased button size */
-  height: 14px;
+  width: 20px;
+  height: 20px;
   border: none;
-  border-radius: 50%;
+  border-radius: 6px;
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, #FFDF73, #D4AF37);
-  /* Gold background, no glow shadow */
-  color: #000;
-  font-size: 10px;
+  color: #0b1410;
+  font-size: 12px;
   font-weight: 900;
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .add-btn::after {
   content: "";
   position: absolute;
-  top: -12px;
-  right: -12px;
-  bottom: -12px;
-  left: -12px;
+  top: -10px;
+  right: -10px;
+  bottom: -10px;
+  left: -10px;
   z-index: 1;
 }
 
@@ -2624,24 +2654,26 @@ body.light-mode .topbar-search-container {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0 2px;
+  padding: 0;
+  gap: 4px;
 }
 
 .minus-btn {
   position: relative;
-  width: 14px;
-  height: 14px;
-  border: none;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 6px;
   display: grid;
   place-items: center;
   background: var(--back-btn-bg);
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, border-color 0.2s ease;
 }
 
 .minus-btn::after {
@@ -4513,44 +4545,57 @@ body.light-mode .checkout-fixed-bottom-bar {
   font-size: 13px !important;
 }
 
-/* Fino feed lateral com rolagem lenta automática - Fixo em cima e em baixo */
+/* Fino feed lateral com rolagem lenta automática - Altura máxima entre topbar e rodapé/carrinho */
 .search-side-feed {
-  width: 74px !important;
+  --side-top: calc(74px + env(safe-area-inset-top, 0px));
+  --side-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  width: 88px !important;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   position: sticky !important;
-  top: calc(76px + env(safe-area-inset-top, 0px)) !important;
-  bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
+  top: var(--side-top) !important;
   align-self: flex-start;
-  height: calc(100vh - 156px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px)) !important;
-  max-height: calc(100vh - 156px) !important;
+  height: calc(100dvh - var(--side-top) - var(--side-bottom)) !important;
+  max-height: calc(100dvh - var(--side-top) - var(--side-bottom)) !important;
   overflow: hidden;
   box-sizing: border-box;
-  border-radius: 14px;
-  background: rgba(18, 14, 10, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.2px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 0, 0, 0.4);
-  padding: 5px 3px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  transition: top 0.26s ease, height 0.26s ease, max-height 0.26s ease;
+}
+
+.search-side-feed--filters-open {
+  --side-top: calc(198px + env(safe-area-inset-top, 0px));
+}
+
+.search-side-feed--with-cart {
+  --side-bottom: calc(148px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 640px) {
   .search-side-feed {
-    width: 84px !important;
-    top: calc(80px + env(safe-area-inset-top, 0px)) !important;
-    height: calc(100vh - 162px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px)) !important;
-    max-height: calc(100vh - 162px) !important;
+    --side-top: calc(78px + env(safe-area-inset-top, 0px));
+    --side-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    width: 98px !important;
+  }
+
+  .search-side-feed--filters-open {
+    --side-top: calc(204px + env(safe-area-inset-top, 0px));
+  }
+
+  .search-side-feed--with-cart {
+    --side-bottom: calc(152px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 @media (min-width: 1024px) {
   .search-side-feed {
-    width: 90px !important;
-    height: calc(100vh - 166px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px)) !important;
-    max-height: calc(100vh - 166px) !important;
+    width: 106px !important;
   }
 }
 
@@ -4572,12 +4617,14 @@ body.light-mode .checkout-fixed-bottom-bar {
   z-index: 2;
 }
 
-/* Viewport com máscara de fade nas bordas superior e inferior */
+/* Viewport com máscara de fade nas bordas superior e inferior e folga lateral para nunca cortar bordas */
 .search-side-feed-viewport {
   flex: 1;
   position: relative;
   overflow: hidden;
   width: 100%;
+  padding: 2px 3px;
+  box-sizing: border-box;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14px, black calc(100% - 16px), transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 14px, black calc(100% - 16px), transparent 100%);
 }
@@ -6914,7 +6961,7 @@ body.light-mode .miniproduct-price {
   background: linear-gradient(var(--mega-oferta-inner-bg), var(--mega-oferta-inner-bg)) padding-box, linear-gradient(135deg, #FFDF73, #D4AF37, #B45309) border-box;
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
-  border-radius: 6px;
+  border-radius: 12px;
   padding: 8px 6px;
   margin-top: 12px;
   padding-bottom: 12px;
@@ -6922,6 +6969,22 @@ body.light-mode .miniproduct-price {
   overflow: visible;
   /* Permite o botÃ£o na base e a badge superior vazarem */
   z-index: 1;
+  transition: box-shadow 0.24s ease, transform 0.2s ease, background 0.24s ease;
+}
+
+.mega-oferta-wrapper.product-card.is-in-cart {
+  background: linear-gradient(rgba(30, 38, 22, 0.94), rgba(16, 28, 22, 0.96)) padding-box, linear-gradient(135deg, #FFF1A8, #E8C96A, #D4AF37) border-box !important;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 223, 115, 0.35),
+    0 4px 14px rgba(212, 175, 55, 0.22) !important;
+}
+
+body.light-mode .mega-oferta-wrapper.product-card.is-in-cart {
+  background: linear-gradient(rgba(255, 250, 232, 0.98), rgba(255, 255, 255, 0.98)) padding-box, linear-gradient(135deg, #F59E0B, #D4AF37, #B45309) border-box !important;
+  box-shadow:
+    0 8px 18px rgba(180, 128, 22, 0.16),
+    0 0 0 1px rgba(212, 175, 55, 0.28) !important;
 }
 
 @keyframes mega-price-flash {
@@ -7225,26 +7288,47 @@ body.light-mode .miniproduct-price {
   align-items: center;
   gap: 6px;
   background: var(--bg-primary);
-  border: 1px solid var(--border-gold);
-  border-radius: 99px;
-  padding: 1px 5px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
-  height: 23px;
+  border: 1.2px solid var(--border-gold);
+  border-radius: 9px;
+  padding: 2px 4px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.42);
+  height: 26px;
   transition: all 0.2s ease;
+}
+
+.mega-oferta-wrapper.is-in-cart .quantity-control-pill {
+  border-color: #FFDF73;
+  background: rgba(16, 28, 22, 0.96);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.28);
+}
+
+body.light-mode .mega-oferta-wrapper.is-in-cart .quantity-control-pill {
+  background: #fffbeb;
+  border-color: #b45309;
+  box-shadow: 0 3px 10px rgba(180, 83, 9, 0.16);
 }
 
 .mega-oferta-wrapper .quantity-control-pill .minus-btn,
 .mega-oferta-wrapper .quantity-control-pill .add-btn {
-  background: none;
-  border: none;
+  background: rgba(212, 175, 55, 0.16);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 6px;
+  width: 18px;
+  height: 18px;
   color: #FFDF73;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+body.light-mode .mega-oferta-wrapper .quantity-control-pill .minus-btn,
+body.light-mode .mega-oferta-wrapper .quantity-control-pill .add-btn {
+  color: #92400e;
+  background: rgba(212, 175, 55, 0.2);
 }
 
 .mega-oferta-wrapper .quantity-control-pill .current-quantity {
@@ -11151,6 +11235,29 @@ body.light-mode .cart-empty-icon-circle {
   animation: cartCheckoutArrowNudge 1.6s ease-in-out infinite;
 }
 
+.cart-floating-checkout-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  width: calc(100% - 16px);
+  max-width: 500px;
+  z-index: 950;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.cart-floating-checkout-wrap .cart-checkout-btn {
+  border-radius: var(--float-radius, 24px) !important;
+  height: 52px;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.42),
+    0 6px 20px rgba(212, 175, 55, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48) !important;
+}
+
 @keyframes cartCheckoutGlow {
   0%, 100% {
     box-shadow: 0 6px 20px rgba(212, 175, 55, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.45);
@@ -11567,7 +11674,6 @@ body.light-mode {
 .floating-topbar-inner,
 .commerce-topbar-inner,
 .categories-page-header,
-.search-side-feed,
 .search-filters-glass-card,
 body.light-mode .topbar,
 body.light-mode .bottom-nav,
@@ -11575,7 +11681,6 @@ body.light-mode .floating-mini-cart,
 body.light-mode .floating-topbar-inner,
 body.light-mode .commerce-topbar-inner,
 body.light-mode .categories-page-header,
-body.light-mode .search-side-feed,
 body.light-mode .search-filters-glass-card {
   background: var(--glass-sheen) !important;
   border: 1px solid var(--glass-border) !important;
@@ -11591,7 +11696,6 @@ body.light-mode .search-filters-glass-card {
 .floating-topbar-inner,
 .commerce-topbar-inner,
 .categories-page-header,
-.search-side-feed,
 .search-filters-glass-card {
   border-radius: var(--float-radius) !important;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.2s ease !important;
@@ -12160,21 +12264,136 @@ body.light-mode .categories-back-btn {
   color: #92400e !important;
 }
 
-/* 5. FILHOS DO FEED LATERAL (.search-side-feed) — Concentricidade com pai de 22px e padding 6px */
-.search-side-feed {
-  padding: 6px 5px !important;
+.floating-topbar-inner--expandable {
+  height: auto !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+}
+
+.search-topbar-active-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.search-topbar-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.16);
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  color: #F4DC8B;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-topbar-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: #E8C96A;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.search-topbar-filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+.search-topbar-extra-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.search-topbar-extra-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.search-extra-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.search-extra-chip.is-active {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.72);
+  color: #F4DC8B;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.16);
+}
+
+body.light-mode .search-extra-chip {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(180, 128, 22, 0.24);
+  color: #334155;
+}
+
+body.light-mode .search-extra-chip.is-active {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: rgba(180, 128, 22, 0.72);
+  color: #78350f;
+}
+
+/* 5. FEED LATERAL LIVRE (.search-side-feed) — Sem div englobando tudo; cards livres em Liquid Glass */
+.search-side-feed,
+body.light-mode .search-side-feed {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
   gap: 6px !important;
 }
 
 .search-side-feed-header {
-  border-radius: 12px !important;
-  padding: 4px 6px !important;
+  border-radius: 999px !important;
+  padding: 4px 8px !important;
+  background: var(--glass-sheen) !important;
+  border: 1px solid var(--glass-border) !important;
 }
 
 .search-side-promo,
 .search-side-miniproduct {
-  border-radius: 14px !important;
-  padding: 6px 4px !important;
+  border-radius: 16px !important;
+  padding: 7px 6px !important;
+  background: var(--glass-sheen) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 .miniproduct-img-wrap {

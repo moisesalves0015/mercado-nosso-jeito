@@ -75,9 +75,9 @@ const labelStyle: React.CSSProperties = {
 // Address type config
 // ──────────────────────────────────────────────────────────────
 const TYPE_CONFIG: Record<AddressType, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
-  home:  { icon: <Home size={16} />,      label: 'Casa',     color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  work:  { icon: <Briefcase size={16} />, label: 'Trabalho', color: '#6366F1', bg: 'rgba(99,102,241,0.12)' },
-  other: { icon: <Building2 size={16} />, label: 'Outro',    color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' },
+  home: { icon: <Home size={16} />, label: 'Casa', color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  work: { icon: <Briefcase size={16} />, label: 'Trabalho', color: '#6366F1', bg: 'rgba(99,102,241,0.12)' },
+  other: { icon: <Building2 size={16} />, label: 'Outro', color: '#D4AF37', bg: 'rgba(212,175,55,0.12)' },
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ const AddressForm: React.FC<FormProps> = ({ initial, onSave, onCancel, saving })
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.cep || form.cep.replace(/\D/g,'').length < 8) e.cep = 'CEP inválido';
+    if (!form.cep || form.cep.replace(/\D/g, '').length < 8) e.cep = 'CEP inválido';
     if (!form.street.trim()) e.street = 'Logradouro obrigatório';
     if (!form.number.trim()) e.number = 'Número obrigatório';
     if (!form.neighborhood.trim()) e.neighborhood = 'Bairro obrigatório';

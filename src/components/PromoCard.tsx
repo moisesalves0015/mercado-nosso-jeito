@@ -203,7 +203,7 @@ export const PromoCard = ({
   })();
 
   return (
-    <div className="product-card mega-oferta-wrapper" ref={cardRef}>
+    <div className={`product-card mega-oferta-wrapper ${currentQuantity > 0 ? 'is-in-cart' : ''}`} ref={cardRef}>
       {rank !== undefined ? (
         <div
           className="badge-promo-top-left badge-square"

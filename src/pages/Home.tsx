@@ -7,7 +7,7 @@
  * Enquanto prepara, o splash permanece ativo e Topbar/BottomNav/mini-carrinho
  * ficam contidos pelo HomeReadinessContext — eliminando telas parciais.
  */
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { PwaInstallBanner } from '../components/PwaInstallBanner';
 import { SocialProofBanner } from '../components/SocialProofBanner';
 import { HomeHero } from '../components/home/HomeHero';
@@ -155,6 +155,41 @@ export const Home = () => {
       inlineBanners,
     );
   }, [homeConfig.homeLayout, showcases, inlineBanners]);
+
+  // Renderização progressiva dos blocos da Home: garante as 5 primeiras vitrines no carregamento inicial
+  const initialBlockCount = useMemo(() => {
+    let vitrinesFound = 0;
+    for (let i = 0; i < effectiveLayout.length; i++) {
+      if (effectiveLayout[i]?.type === 'vitrine') {
+        vitrinesFound++;
+        if (vitrinesFound >= 5) {
+          return i + 1;
+        }
+      }
+    }
+    return Math.max(5, effectiveLayout.length);
+  }, [effectiveLayout]);
+
+  const [extraBlocksCount, setExtraBlocksCount] = useState(0);
+  const renderedBlockCount = Math.min(effectiveLayout.length, initialBlockCount + extraBlocksCount);
+  const homeScrollSentinelRef = useRef<HTMLDivElement | null>(null);
+  const hasMoreHomeBlocks = renderedBlockCount < effectiveLayout.length;
+
+  useEffect(() => {
+    if (!hasMoreHomeBlocks || typeof IntersectionObserver === 'undefined') return;
+    const el = homeScrollSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setExtraBlocksCount((prev) => prev + 3);
+        }
+      },
+      { rootMargin: '400px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMoreHomeBlocks]);
 
   const bootstrapState = useMemo(
     () =>
@@ -345,23 +380,30 @@ export const Home = () => {
           </div>
         )}
 
-        {effectiveLayout.map((block, idx) => {
+        {effectiveLayout.slice(0, renderedBlockCount).map((block, idx) => {
           const rendered = renderBlock(block);
           if (!rendered) return null;
+          if (idx < initialBlockCount) {
+            return <div key={block.id}>{rendered}</div>;
+          }
           return (
             <div
               key={block.id}
               className="home-block-reveal"
-              style={{ '--block-index': Math.min(idx, 8) } as React.CSSProperties}
+              style={{ '--block-index': Math.min(idx - initialBlockCount, 4) } as React.CSSProperties}
             >
               {rendered}
             </div>
           );
         })}
 
+        {hasMoreHomeBlocks && (
+          <div ref={homeScrollSentinelRef} style={{ height: 24, width: '100%' }} aria-hidden="true" />
+        )}
+
         <div
           className="home-block-reveal"
-          style={{ '--block-index': Math.min(effectiveLayout.length, 8) } as React.CSSProperties}
+          style={{ '--block-index': Math.min(renderedBlockCount, 8) } as React.CSSProperties}
         >
           <HomeFooter config={adminConfig} />
         </div>

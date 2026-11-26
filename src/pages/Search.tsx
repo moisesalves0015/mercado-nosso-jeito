@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Search as SearchIcon, ArrowLeft, X, Flame, Wine, Cigarette, Smartphone, Apple, Sparkles, Cookie, SlidersHorizontal, LayoutGrid, Plus, Check, ArrowUpDown, Tag, PackageCheck } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { isProductPromotionCurrent, getEffectiveProductPrice } from '../utils/productPricing';
@@ -7,15 +7,6 @@ import { MercadoLogo } from './Login';
 import { useCatalog } from '../hooks/useCatalog';
 import { useCart } from '../hooks/useCart';
 import { cleanImageUrl, handleImageError } from '../utils/imageUrl';
-
-const card = {
-  background: 'var(--card-gradient)',
-  backdropFilter: 'blur(28px)',
-  WebkitBackdropFilter: 'blur(28px)',
-  border: '1px solid var(--border-gold)',
-  borderRadius: '22px',
-  boxShadow: 'var(--card-shadow)',
-};
 
 const CATEGORIES = [
   { id: '', label: 'Todas', icon: LayoutGrid, color: '#22c55e' },
@@ -30,7 +21,7 @@ const CATEGORIES = [
 
 export const Search = () => {
   const { products } = useCatalog();
-  const { addToCart } = useCart();
+  const { addToCart, totalItems } = useCart();
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
@@ -38,11 +29,29 @@ export const Search = () => {
 
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'alpha'>('relevance');
+  const [onlyPromo, setOnlyPromo] = useState(false);
+  const [onlyInStock, setOnlyInStock] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<'all' | '20' | '50'>('all');
+  const [visibleCount, setVisibleCount] = useState(15);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
-  const hasFilters = !!searchQuery.trim() || !!selectedCategory;
+  const hasFilters = !!searchQuery.trim() || !!selectedCategory || onlyPromo || onlyInStock || maxPrice !== 'all' || sortBy !== 'relevance';
+
+  const activeFilterTags = useMemo(() => {
+    const tags: string[] = [];
+    if (selectedCategory) tags.push(selectedCategory);
+    if (onlyPromo) tags.push('Ofertas');
+    if (onlyInStock) tags.push('Em estoque');
+    if (maxPrice !== 'all') tags.push(`Até R$${maxPrice}`);
+    if (sortBy === 'price_asc') tags.push('Menor R$');
+    if (sortBy === 'price_desc') tags.push('Maior R$');
+    if (sortBy === 'alpha') tags.push('A-Z');
+    return tags;
+  }, [selectedCategory, onlyPromo, onlyInStock, maxPrice, sortBy]);
 
   // React to theme changes
   useEffect(() => {
@@ -66,6 +75,7 @@ export const Search = () => {
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
+    setVisibleCount(15);
     const newParams: Record<string, string> = {};
     if (val) newParams.q = val;
     if (selectedCategory) newParams.category = selectedCategory;
@@ -73,6 +83,7 @@ export const Search = () => {
   };
 
   const handleCategorySelect = (catId: string) => {
+    setVisibleCount(15);
     if (catId === '') {
       // 'Todas' chip — clear the category filter
       setSelectedCategory('');
@@ -92,6 +103,11 @@ export const Search = () => {
   const handleClearAll = () => {
     setSearchQuery('');
     setSelectedCategory('');
+    setSortBy('relevance');
+    setOnlyPromo(false);
+    setOnlyInStock(false);
+    setMaxPrice('all');
+    setVisibleCount(15);
     setSearchParams({});
   };
 
@@ -99,7 +115,7 @@ export const Search = () => {
     (str || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const base = products.filter((p) => {
       if (p.active === false) return false;
       const q = normalizeStr(searchQuery);
       const titleMatch = normalizeStr(p.title).includes(q);
@@ -119,9 +135,46 @@ export const Search = () => {
         }
       }
 
-      return queryMatches && categoryMatches;
+      const promoMatches = !onlyPromo || isProductPromotionCurrent(p) || p.promoActive;
+      const stockMatches = !onlyInStock || p.stock > 0;
+      const effectivePrice = getEffectiveProductPrice(p);
+      const priceMatches = maxPrice === 'all' || effectivePrice <= Number(maxPrice);
+
+      return queryMatches && categoryMatches && promoMatches && stockMatches && priceMatches;
     });
-  }, [products, searchQuery, selectedCategory]);
+
+    if (sortBy === 'price_asc') {
+      return [...base].sort((a, b) => getEffectiveProductPrice(a) - getEffectiveProductPrice(b));
+    }
+    if (sortBy === 'price_desc') {
+      return [...base].sort((a, b) => getEffectiveProductPrice(b) - getEffectiveProductPrice(a));
+    }
+    if (sortBy === 'alpha') {
+      return [...base].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+    }
+    return base;
+  }, [products, searchQuery, selectedCategory, onlyPromo, onlyInStock, maxPrice, sortBy]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 15, filteredProducts.length));
+        }
+      },
+      { rootMargin: '220px 0px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filteredProducts.length]);
+
+  const visibleProducts = useMemo(
+    () => filteredProducts.slice(0, visibleCount),
+    [filteredProducts, visibleCount]
+  );
+  const hasMoreProducts = visibleCount < filteredProducts.length;
 
   const sideFeedProducts = useMemo(() => {
     const promoItems = products.filter(
@@ -135,14 +188,15 @@ export const Search = () => {
 
   return (
     <main className="app search-page" style={{ padding: 0, minHeight: '100vh', paddingBottom: '95px' }}>
-      {/* ── TOP BAR FLUTUANTE GLASS (MENOS O DO HOME) COM FADE MASK SUPERIOR ── */}
+      {/* ── TOP BAR FLUTUANTE GLASS COM FILTROS INTEGRADOS ── */}
       <div className="floating-topbar-wrapper">
-        <div className="floating-topbar-inner">
+        <div className="floating-topbar-inner floating-topbar-inner--expandable">
           <div style={{
             width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            minHeight: 40,
           }}>
             <button
               onClick={() => navigate(-1)}
@@ -157,140 +211,213 @@ export const Search = () => {
 
             <button
               onClick={() => setShowFilters(v => !v)}
-              className={`btn-icon-round ${showFilters ? 'is-active' : ''}`}
+              className={`btn-icon-round search-filter-trigger ${showFilters ? 'is-active' : ''} ${hasFilters ? 'has-active-filters' : ''}`}
               style={{
                 position: 'relative',
+                ...(hasFilters
+                  ? {
+                    borderColor: 'rgba(240, 213, 123, 0.78)',
+                    background: 'linear-gradient(135deg, rgba(240, 213, 123, 0.24), rgba(201, 162, 54, 0.14))',
+                    color: '#F4DC8B',
+                  }
+                  : {}),
               }}
               title="Filtros e Busca"
               aria-label="Filtros e Busca"
+              aria-expanded={showFilters}
             >
               <SlidersHorizontal size={15} />
               {hasFilters && (
                 <span style={{
                   position: 'absolute', top: 6, right: 6,
                   width: 7, height: 7, borderRadius: '50%',
-                  background: '#D4AF37',
-                  border: '1.5px solid #120e0a',
-                  boxShadow: '0 0 6px rgba(212,175,55,0.9)'
+                  background: '#F4DC8B',
+                  border: '1.5px solid #0a1510',
+                  boxShadow: '0 0 8px rgba(240, 213, 123, 0.95)'
                 }} />
               )}
             </button>
           </div>
+
+          {/* Resumo compacto dentro do menu quando recolhido com filtro ativo */}
+          {!showFilters && hasFilters && (
+            <div className="search-topbar-active-bar">
+              <button
+                type="button"
+                className="search-topbar-active-pill"
+                onClick={() => setShowFilters(true)}
+              >
+                <SlidersHorizontal size={11} />
+                <span>{activeFilterTags.join(' · ')}</span>
+              </button>
+              <button
+                type="button"
+                className="search-topbar-clear-btn"
+                onClick={handleClearAll}
+                aria-label="Limpar filtros ativos"
+              >
+                <X size={12} />
+                <span>Limpar</span>
+              </button>
+            </div>
+          )}
+
+          {/* Filtros expandidos englobados dentro do menu */}
+          {showFilters && (
+            <div className="search-topbar-filters-body">
+              <div className="search-bar" style={{ marginBottom: 0, position: 'relative', height: '38px', borderRadius: '14px', padding: '6px 12px' }}>
+                <SearchIcon size={15} color="#E8C96A" />
+                <input
+                  type="text"
+                  placeholder="O que você está procurando?"
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  style={{ width: '100%', paddingRight: '34px', fontSize: '14px', color: 'var(--text-primary)', outline: 'none' }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    aria-label="Limpar texto"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }} className="no-scrollbar">
+                {CATEGORIES.map(cat => {
+                  const isActive = cat.id === ''
+                    ? !selectedCategory
+                    : selectedCategory.toLowerCase() === cat.id.toLowerCase();
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategorySelect(cat.id)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 11px',
+                        borderRadius: '12px',
+                        border: `1px solid ${isActive ? cat.color : 'var(--border-primary)'}`,
+                        background: isActive ? `${cat.color}22` : 'rgba(255, 255, 255, 0.04)',
+                        color: isActive ? (theme === 'light' ? cat.color : '#fff') : 'var(--text-secondary)',
+                        fontSize: '11px',
+                        fontWeight: isActive ? 900 : 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontFamily: 'Manrope, sans-serif',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}
+                    >
+                      <Icon size={12} color={isActive ? cat.color : 'var(--text-muted)'} />
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Filtros adicionais: Ordenação, Ofertas, Em Estoque, Faixa de Preço */}
+              <div className="search-topbar-extra-filters no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const order: Array<typeof sortBy> = ['relevance', 'price_asc', 'price_desc', 'alpha'];
+                    setSortBy(order[(order.indexOf(sortBy) + 1) % order.length]);
+                    setVisibleCount(15);
+                  }}
+                  className={`search-extra-chip ${sortBy !== 'relevance' ? 'is-active' : ''}`}
+                >
+                  <ArrowUpDown size={11} />
+                  <span>
+                    {sortBy === 'relevance'
+                      ? 'Ordenar'
+                      : sortBy === 'price_asc'
+                        ? 'Menor preço'
+                        : sortBy === 'price_desc'
+                          ? 'Maior preço'
+                          : 'A-Z'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setOnlyPromo((v) => !v); setVisibleCount(15); }}
+                  className={`search-extra-chip ${onlyPromo ? 'is-active' : ''}`}
+                >
+                  <Tag size={11} />
+                  <span>Em oferta</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setOnlyInStock((v) => !v); setVisibleCount(15); }}
+                  className={`search-extra-chip ${onlyInStock ? 'is-active' : ''}`}
+                >
+                  <PackageCheck size={11} />
+                  <span>Em estoque</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next: Record<typeof maxPrice, typeof maxPrice> = { all: '20', '20': '50', '50': 'all' };
+                    setMaxPrice(next[maxPrice]);
+                    setVisibleCount(15);
+                  }}
+                  className={`search-extra-chip ${maxPrice !== 'all' ? 'is-active' : ''}`}
+                >
+                  <span>{maxPrice === 'all' ? 'Qualquer preço' : `Até R$ ${maxPrice}`}</span>
+                </button>
+
+                {hasFilters && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="search-topbar-clear-btn"
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    <X size={11} />
+                    <span>Limpar</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ── Page contents with standardized responsive constraint ── */}
       <div className="search-container-wrap">
 
-        <div className="page-title-block page-title-block--flush">
-          <h1 className="commerce-title">Buscar Produtos</h1>
-        </div>
-
-        {/* ── Toggleable Filters Card Panel ── */}
-        {showFilters && (
-          <div className="search-filters-glass-card" style={{ ...card, padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Search Input */}
-            <div className="search-bar" style={{ marginBottom: 0, position: 'relative', height: '40px', borderRadius: '14px', padding: '8px 12px' }}>
-              <SearchIcon size={16} color="#D4AF37" />
-              <input
-                type="text"
-                placeholder="O que você está procurando?"
-                value={searchQuery}
-                onChange={e => handleSearchChange(e.target.value)}
-                style={{ width: '100%', paddingRight: '36px', fontSize: '14px', color: 'var(--text-primary)', outline: 'none' }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => handleSearchChange('')}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
-            {/* Category selection chips */}
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }} className="no-scrollbar">
-              {CATEGORIES.map(cat => {
-                const isActive = cat.id === ''
-                  ? !selectedCategory  // 'Todas' active when no category selected
-                  : selectedCategory.toLowerCase() === cat.id.toLowerCase();
-                const Icon = cat.icon;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleCategorySelect(cat.id)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      borderRadius: '12px',
-                      border: `1px solid ${isActive ? cat.color : 'var(--border-primary)'}`,
-                      background: isActive ? `${cat.color}18` : 'var(--input-bg)',
-                      color: isActive ? (theme === 'light' ? cat.color : '#fff') : 'var(--text-secondary)',
-                      fontSize: '11px',
-                      fontWeight: isActive ? 900 : 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      fontFamily: 'Manrope, sans-serif',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0
-                    }}
-                  >
-                    <Icon size={12} color={isActive ? cat.color : 'var(--text-muted)'} />
-                    {cat.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── SEARCH RESULTS GRID HEADER ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px' }}>
-          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '13px', fontWeight: 800 }}>
-            {selectedCategory ? `${selectedCategory}` : 'Todos os Produtos'}
-            <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '11px', marginLeft: '6px' }}>
-              ({filteredProducts.length} itens)
-            </span>
-          </h3>
-          {(searchQuery || selectedCategory) && (
-            <button
-              onClick={handleClearAll}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#D4AF37',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer'
-              }}
-            >
-              Limpar Filtros
-            </button>
-          )}
-        </div>
-
         {/* ── SEARCH MAIN LAYOUT: 3 Tight Columns + Slender Lateral Feed ── */}
-        <div className="search-layout-row" style={{ paddingBottom: '88px' }}>
+        <div className="search-layout-row" style={{ paddingBottom: totalItems > 0 ? '148px' : '88px' }}>
           {/* Main 3-column products grid tightly spaced */}
           <div className="search-main-col">
+            <div className="page-title-block page-title-block--flush">
+              <h1 className="commerce-title">Buscar Produtos</h1>
+              <p className="commerce-subtitle commerce-subtitle--gold">
+                EXPLORE TODO O CATÁLOGO DO MERCADO
+              </p>
+            </div>
             <div className="search-products-grid">
-              {filteredProducts.map(product => (
+              {visibleProducts.map(product => (
                 <ProductCard key={product.id} {...product} />
               ))}
               {filteredProducts.length === 0 && (
@@ -301,10 +428,16 @@ export const Search = () => {
                 </div>
               )}
             </div>
+            {hasMoreProducts && (
+              <div ref={loadMoreRef} style={{ height: 32, width: '100%' }} aria-hidden="true" />
+            )}
           </div>
 
           {/* Fino Feed Lateral Automático com Rolagem Lenta */}
-          <aside className="search-side-feed" aria-label="Feed de Ofertas e Destaques">
+          <aside
+            className={`search-side-feed ${showFilters ? 'search-side-feed--filters-open' : ''} ${totalItems > 0 ? 'search-side-feed--with-cart' : ''}`}
+            aria-label="Feed de Ofertas e Destaques"
+          >
             {/* Header Fixo do Feed */}
             <div className="search-side-feed-header">
               <Sparkles size={9} color="#D4AF37" />

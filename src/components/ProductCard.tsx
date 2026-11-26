@@ -249,7 +249,7 @@ export const ProductCard = ({
   };
 
   return (
-    <div className={`product-card ${glassEffect ? 'glass-card' : ''}`} ref={cardRef}>
+    <div className={`product-card ${glassEffect ? 'glass-card' : ''} ${currentQuantity > 0 ? 'is-in-cart' : ''}`} ref={cardRef}>
       <Link to={`/product/${encodeURIComponent(productId)}`} style={{ textDecoration: 'none', color: 'inherit', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className={`product-image-wrapper ${isTall ? 'tall-product' : 'wide-product'}`}>
           <img src={cleanImageUrl(image)} alt={title} onError={handleImageError} loading="lazy" />

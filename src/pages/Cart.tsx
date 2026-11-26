@@ -231,7 +231,7 @@ export function Cart() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: cartItems.length > 0 ? 155 : 95 }}>
         {/* Topbar */}
         <div className="page-topbar-sticky">
           <div className="commerce-topbar-inner">
@@ -626,34 +626,41 @@ export function Cart() {
                     <ShieldCheck size={14} />
                     <span>Entrega rápida garantida no condomínio</span>
                   </div>
-
-                  <button
-                    type="button"
-                    className={`commerce-btn-primary cart-checkout-btn ${checkoutLoading ? 'is-loading' : ''}`}
-                    style={{ width: '100%', marginTop: 8, justifyContent: 'space-between', padding: '0 16px' }}
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                  >
-                    {checkoutLoading ? (
-                      <span style={{ margin: '0 auto' }}>Carregando checkout...</span>
-                    ) : (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-                          <span>Finalizar Compra</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
-                          <ChevronRight size={17} className="cart-checkout-arrow" />
-                        </div>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {cartItems.length > 0 &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="cart-floating-checkout-wrap">
+            <button
+              type="button"
+              className={`commerce-btn-primary cart-checkout-btn ${checkoutLoading ? 'is-loading' : ''}`}
+              style={{ width: '100%', justifyContent: 'space-between', padding: '0 16px' }}
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading ? (
+                <span style={{ margin: '0 auto' }}>Carregando checkout...</span>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                    <span>Finalizar Compra</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <span className="commerce-btn-badge">R$ {estimatedTotal.toFixed(2)}</span>
+                    <ChevronRight size={17} className="cart-checkout-arrow" />
+                  </div>
+                </>
+              )}
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
