@@ -10629,7 +10629,7 @@ body.light-mode .home-round-section--partners .home-round-avatar-initials {
   width: 100%;
   max-width: 620px;
   margin: 0 auto;
-  padding: 12px 16px 24px;
+  padding: 6px 16px 24px;
 }
 
 .commerce-topbar-inner {
@@ -10673,8 +10673,16 @@ body.light-mode .home-round-section--partners .home-round-avatar-initials {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0 12px;
+  padding: 10px 0;
   gap: 8px;
+}
+
+.page-title-block {
+  padding: 10px 16px;
+}
+
+.page-title-block--flush {
+  padding: 10px 0;
 }
 
 .commerce-title {
@@ -10690,10 +10698,16 @@ body.light-mode .home-round-section--partners .home-round-avatar-initials {
 .commerce-subtitle {
   font-family: 'Manrope', sans-serif;
   font-size: 11.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   line-height: 1.35;
+}
+
+.commerce-subtitle--gold {
+  color: #D4AF37;
+  font-size: 11px;
+  letter-spacing: 0.25px;
 }
 
 .commerce-count-badge {
@@ -11667,12 +11681,20 @@ body.light-mode .topbar {
   -webkit-backdrop-filter: blur(44px) saturate(190%) !important;
   backdrop-filter: blur(44px) saturate(190%) !important;
   backdrop-filter: url(#liquid-glass) blur(36px) saturate(195%) brightness(0.95) !important;
-  /* Sobe exatamente no espaço da bateria, relógio e símbolo do Wi-Fi (status bar / notch) */
-  padding-top: calc(4px + env(safe-area-inset-top, 0px)) !important;
+  /* Site normal: respiro superior confortável; PWA standalone: apenas safe-area nativa */
+  padding-top: calc(7px + env(safe-area-inset-top, 0px)) !important;
   padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
   padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
   padding-bottom: 6px !important;
   isolation: isolate;
+}
+
+@media (display-mode: standalone) {
+  .topbar,
+  body.light-mode .topbar {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-bottom: 5px !important;
+  }
 }
 
 /* DIVISÃO EM 3 PARTES IGUAIS NO TOPBAR (Endereço 1fr | Logo Central 1fr | Pontos 1fr) */
@@ -11869,7 +11891,7 @@ body.light-mode .pwa-banner-btn {
   text-shadow: none !important;
 }
 
-.floating-topbar-inner span,
+.floating-topbar-inner span:not(.auth-logo-sub),
 .floating-topbar-inner h1,
 .floating-topbar-inner h2,
 .commerce-topbar-inner .commerce-topbar-title,
@@ -12068,25 +12090,41 @@ body.light-mode .bottom-nav a.active::after {
 }
 
 /* Cabeçalhos flutuantes das páginas internas padronizados (mesma margem, altura e padding) */
-.floating-topbar-wrapper {
-  padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 8px 8px !important;
-}
-
-.floating-topbar-inner {
-  padding: 6px 12px !important;
-  min-height: 52px !important;
+.floating-topbar-wrapper,
+.page-topbar-sticky {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 6px 8px !important;
   box-sizing: border-box !important;
+  pointer-events: none !important;
 }
 
+.floating-topbar-inner,
 .commerce-topbar-inner,
 .categories-page-header {
-  width: calc(100% - 16px) !important;
+  width: 100% !important;
   max-width: 620px !important;
-  margin: calc(4px + env(safe-area-inset-top, 0px)) auto 8px auto !important;
+  margin: 0 auto !important;
   padding: 6px 12px !important;
   min-height: 52px !important;
-  height: auto !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   box-sizing: border-box !important;
+  pointer-events: auto !important;
+}
+
+.app-header-container {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) 8px 6px 8px !important;
+  background: transparent !important;
 }
 
 /* 4. FILHOS DOS CABEÇALHOS FLUTUANTES (Mesmo verde-esmeralda + borda dourada dos botões de categorias) */

@@ -455,23 +455,9 @@ export const Coupons: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: '110px' }}>
 
         {/* ── Topbar ─────────────────────────────────────────── */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 1000,
-          background: 'var(--bg-secondary)', backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid var(--border-primary)',
-        }}>
-          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 16px',
-          }}>
-            <button onClick={() => navigate(-1)} className="coupon-back-btn" style={{
-              background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)',
-              borderRadius: '50%', width: 38, height: 38,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-primary)',
-            }}>
+        <div className="page-topbar-sticky">
+          <div className="commerce-topbar-inner">
+            <button onClick={() => navigate(-1)} className="btn-icon-round coupon-back-btn" aria-label="Voltar">
               <ArrowLeft size={18} />
             </button>
             <MercadoLogo size="sm" />
@@ -480,8 +466,8 @@ export const Coupons: React.FC = () => {
         </div>
 
         {/* ── Page header ────────────────────────────────────── */}
-        <div style={{ padding: '18px 16px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+        <div className="page-title-block">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: 32, height: 32, borderRadius: '10px',
               background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)',
@@ -489,7 +475,7 @@ export const Coupons: React.FC = () => {
             }}>
               <Ticket size={16} color="#D4AF37" />
             </div>
-            <h1 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
+            <h1 className="commerce-title">
               Cupons e Descontos
             </h1>
           </div>

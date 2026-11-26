@@ -275,32 +275,12 @@ export const Profile: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: '110px' }}>
 
         {/* ── TOP BAR ──────────────────────────────────────── */}
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-          background: 'var(--bg-secondary)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-gold)',
-        }}>
-          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 16px',
-          }}>
+        <div className="page-topbar-sticky">
+          <div className="commerce-topbar-inner">
             <button
               onClick={() => navigate('/')}
-              style={{
-                background: 'var(--back-btn-bg)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: '50%',
-                width: '38px', height: '38px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
-              }}
+              className="btn-icon-round"
+              aria-label="Voltar"
             >
               <ArrowLeft size={18} />
             </button>
@@ -312,15 +292,9 @@ export const Profile: React.FC = () => {
             {!editMode ? (
               <button
                 onClick={() => setEditMode(true)}
-                style={{
-                  background: 'var(--back-btn-bg)',
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: '50%',
-                  width: '38px', height: '38px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
-                }}
+                className="btn-icon-round"
                 title="Editar perfil"
+                aria-label="Editar perfil"
               >
                 <Edit3 size={16} />
               </button>

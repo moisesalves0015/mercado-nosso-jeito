@@ -513,27 +513,13 @@ export const Orders: React.FC = () => {
 
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: '110px' }}>
 
-        {/* ── Topbar — same pattern as Profile ──────────────── */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 1000,
-          background: 'var(--bg-secondary)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid var(--border-gold)',
-        }}>
-          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 16px',
-          }}>
+        {/* ── Topbar ─────────────────────────────────────────── */}
+        <div className="page-topbar-sticky">
+          <div className="commerce-topbar-inner">
             <button
               onClick={() => navigate(-1)}
-              style={{
-                background: 'var(--back-btn-bg)', border: '1px solid var(--border-primary)',
-                borderRadius: '50%', width: 38, height: 38,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--text-primary)', flexShrink: 0,
-              }}
+              className="btn-icon-round"
+              aria-label="Voltar"
             >
               <ArrowLeft size={17} />
             </button>
@@ -543,22 +529,17 @@ export const Orders: React.FC = () => {
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters((v) => !v)}
-              style={{
-                background: showFilters ? 'var(--back-btn-bg)' : 'var(--card-bg)',
-                border: `1px solid ${showFilters ? 'var(--text-primary)' : 'var(--border-primary)'}`,
-                borderRadius: 10, width: 38, height: 38,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: showFilters ? 'var(--text-primary)' : 'var(--text-secondary)',
-                position: 'relative',
-              }}
+              className={`btn-icon-round ${showFilters ? 'is-active' : ''}`}
+              style={{ position: 'relative' }}
               title="Filtros"
+              aria-label="Filtros"
             >
               <SlidersHorizontal size={15} />
               {hasFilters && (
                 <span style={{
-                  position: 'absolute', top: 9, right: 9,
+                  position: 'absolute', top: 7, right: 7,
                   width: 5, height: 5, borderRadius: '50%',
-                  background: 'var(--text-primary)', border: '1.5px solid var(--bg-primary)',
+                  background: '#D4AF37', border: '1.5px solid #120e0a',
                 }} />
               )}
             </button>
@@ -566,10 +547,10 @@ export const Orders: React.FC = () => {
         </div>
 
         {/* ── Page title ──────────────────────────── */}
-        <div style={{ padding: '18px 16px 4px' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Meus Pedidos</h1>
+        <div className="page-title-block" style={{ maxWidth: 480, margin: '0 auto' }}>
+          <h1 className="commerce-title">Meus Pedidos</h1>
           {metrics.total > 0 && (
-            <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>
+            <p className="commerce-subtitle commerce-subtitle--gold">
               {metrics.total} pedido{metrics.total !== 1 ? 's' : ''} · {metrics.active > 0 ? `${metrics.active} em andamento` : 'Nenhum em andamento'}
             </p>
           )}

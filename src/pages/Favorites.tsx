@@ -22,10 +22,10 @@ export function Favorites() {
       <div className="floating-topbar-wrapper">
         <div className="floating-topbar-inner">
           <div style={{
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '7px 8px',
           }}>
             <button
               onClick={() => navigate(-1)}
@@ -62,34 +62,18 @@ export function Favorites() {
       <div style={{
         maxWidth: 620,
         margin: '0 auto',
-        padding: '12px 14px 20px',
+        padding: '6px 16px 20px',
         boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div className="commerce-header-row">
           <div>
-            <h1 style={{
-              fontSize: 20,
-              fontWeight: 900,
-              color: 'var(--text-primary)',
-              margin: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
+            <h1 className="commerce-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               Meus Favoritos
-              <span style={{
-                fontSize: 12,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 99,
-                background: 'rgba(212, 175, 55, 0.18)',
-                color: '#D4AF37',
-                border: '1px solid rgba(212, 175, 55, 0.3)'
-              }}>
+              <span className="commerce-count-badge">
                 {count} {count === 1 ? 'item' : 'itens'}
               </span>
             </h1>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+            <p className="commerce-subtitle">
               Produtos que você salvou com carinho para pedir mais rápido.
             </p>
           </div>

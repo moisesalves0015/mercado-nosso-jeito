@@ -1731,7 +1731,7 @@ export const AdminMarketing: React.FC = () => {
       const targetPlacement = (bannerDraft.placement || (bannerPageFilter !== 'all' ? bannerPageFilter : 'home')).trim();
 
       const data: Record<string, unknown> = {
-        title: bannerDraft.title?.trim() || 'Banner Principal',
+        title: bannerDraft.title?.trim() || '',
         subtitle: bannerDraft.subtitle?.trim() || '',
         image: resolvedImage || (bannerDraft.posterImage?.trim() || ''),
         link: (bannerDraft.link || (targetPlacement === 'home' ? '/promotions' : `/${targetPlacement}`)).trim(),

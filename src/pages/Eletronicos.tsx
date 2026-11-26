@@ -24,9 +24,9 @@ export const Eletronicos = () => {
   return (
     <main className="app eletronicos-page" style={{ paddingTop: 0 }}>
       {/* ── Page title ──────────────────────────── */}
-      <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Eletrônicos & Acessórios</h1>
-        <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.6)', margin: '3px 0 0', fontWeight: 600 }}>EMERGÊNCIA & CONVENIÊNCIA</p>
+      <div className="page-title-block">
+        <h1 className="commerce-title">Eletrônicos & Acessórios</h1>
+        <p className="commerce-subtitle commerce-subtitle--gold">EMERGÊNCIA & CONVENIÊNCIA</p>
       </div>
 
       {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}

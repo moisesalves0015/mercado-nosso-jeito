@@ -31,7 +31,6 @@ export const Categories = () => {
     <div className="categories-page-container">
       {/* HEADER */}
       <div className="app-header-container">
-        <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
         <header className="categories-page-header">
           <button className="categories-back-btn" onClick={() => navigate(-1)} aria-label="Voltar">
             <ArrowLeft size={18} />

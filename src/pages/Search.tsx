@@ -139,10 +139,10 @@ export const Search = () => {
       <div className="floating-topbar-wrapper">
         <div className="floating-topbar-inner">
           <div style={{
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '7px 8px',
           }}>
             <button
               onClick={() => navigate(-1)}
@@ -182,8 +182,8 @@ export const Search = () => {
       {/* ── Page contents with standardized responsive constraint ── */}
       <div className="search-container-wrap">
 
-        <div style={{ padding: '6px 0 0 2px' }}>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Buscar Produtos</h1>
+        <div className="page-title-block page-title-block--flush">
+          <h1 className="commerce-title">Buscar Produtos</h1>
         </div>
 
         {/* ── Toggleable Filters Card Panel ── */}

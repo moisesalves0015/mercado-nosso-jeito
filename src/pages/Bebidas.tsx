@@ -74,9 +74,9 @@ export const Bebidas = () => {
   return (
     <main className="app bebidas-page" style={{ paddingTop: 0 }}>
       {/* ── Page title ──────────────────────────── */}
-      <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Bebidas Geladas</h1>
-        <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>TRINCANDO NO GELO</p>
+      <div className="page-title-block">
+        <h1 className="commerce-title">Bebidas Geladas</h1>
+        <p className="commerce-subtitle commerce-subtitle--gold">TRINCANDO NO GELO</p>
       </div>
 
       {/* 1. DYNAMIC HERO BANNER VIA CRM ADMIN (Banner padrão adaptável) */}

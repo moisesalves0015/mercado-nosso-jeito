@@ -26,7 +26,7 @@ export const PageHeroBanner: React.FC<PageHeroBannerProps> = ({
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         .map((b) => ({
           id: b.id,
-          title: b.title || 'Destaque',
+          title: b.title || '',
           image: b.image,
           link: b.link || '',
           videoUrl: b.videoUrl,

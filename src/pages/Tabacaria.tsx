@@ -24,9 +24,9 @@ export const Tabacaria = () => {
   return (
     <main className="app tabacaria-page" style={{ paddingTop: 0 }}>
       {/* ── Page title ──────────────────────────── */}
-      <div style={{ padding: '18px 16px 4px' }}>
-        <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>Tabacaria Premium</h1>
-        <p style={{ fontSize: 11, color: '#D4AF37', margin: '3px 0 0', fontWeight: 600 }}>CONVENIÊNCIA 24 HORAS</p>
+      <div className="page-title-block">
+        <h1 className="commerce-title">Tabacaria Premium</h1>
+        <p className="commerce-subtitle commerce-subtitle--gold">CONVENIÊNCIA 24 HORAS</p>
       </div>
 
       {/* DYNAMIC HERO BANNER VIA CRM ADMIN */}

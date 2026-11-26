@@ -57,7 +57,7 @@ const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
 
 const toHeroSlide = (b: HeroBannerConfig): HeroSlide => ({
   id: b.id,
-  title: b.title || 'Banner',
+  title: b.title || '',
   image: b.image,
   link: b.link,
   videoUrl: b.videoUrl,

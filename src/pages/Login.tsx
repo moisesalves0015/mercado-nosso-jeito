@@ -34,6 +34,7 @@ export const MercadoLogo: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'm
           -webkit-background-clip: text !important;
           -webkit-text-fill-color: transparent !important;
           background-clip: text !important;
+          text-shadow: none !important;
           animation: megaGoldShine 3s linear infinite !important;
           display: inline-block !important;
         }

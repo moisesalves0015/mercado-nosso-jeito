@@ -39,7 +39,7 @@ function playFreeShippingChime() {
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().catch(() => { });
     }
     const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 -> E5 -> G5 -> C6
     const now = ctx.currentTime;
@@ -57,7 +57,7 @@ function playFreeShippingChime() {
       osc.stop(now + idx * 0.08 + 0.38);
     });
     window.setTimeout(() => {
-      ctx.close().catch(() => {});
+      ctx.close().catch(() => { });
     }, 1000);
   } catch {
     // Ignore audio errors when autoplay is blocked
@@ -158,7 +158,7 @@ export function Cart() {
           fireSides(60, 68);
           window.setTimeout(() => fireSides(45, 58), 220);
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 1850);
 
     const autoHideTimer = window.setTimeout(() => {
@@ -233,14 +233,8 @@ export function Cart() {
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: 90 }}>
         {/* Topbar */}
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-          background: 'transparent',
-          pointerEvents: 'none',
-        }}>
-          <div className="commerce-topbar-inner" style={{ pointerEvents: 'auto' }}>
+        <div className="page-topbar-sticky">
+          <div className="commerce-topbar-inner">
             <button
               onClick={() => navigate(-1)}
               className="btn-icon-round"
@@ -415,48 +409,48 @@ export function Cart() {
                     const liveProduct = catalog.byId.get(item.id);
                     const resolvedImage = liveProduct?.image || item.image;
                     return (
-                    <div
-                      key={item.id}
-                      className="clube-mission-row cart-glass-card"
-                      style={{ borderRadius: 16, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}
-                    >
-                      {/* Product Thumbnail */}
-                      <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <CartProductThumb src={resolvedImage} alt={item.title} />
-                      </div>
-
-                      {/* Info and controls */}
-                      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                        <h4 style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 3px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</h4>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)' }}>R$ {item.price.toFixed(2)}</span>
-                      </div>
-
-                      {/* Quantity Controls & Trash */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 2 }}>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', width: 22, height: 22, display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0 }}
-                          >
-                            <Minus size={10} />
-                          </button>
-                          <span style={{ fontSize: 11.5, fontWeight: 900, color: 'var(--text-primary)', width: 20, textAlign: 'center' }}>{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', width: 22, height: 22, display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0 }}
-                          >
-                            <Plus size={10} />
-                          </button>
+                      <div
+                        key={item.id}
+                        className="clube-mission-row cart-glass-card"
+                        style={{ borderRadius: 16, padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}
+                      >
+                        {/* Product Thumbnail */}
+                        <div style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <CartProductThumb src={resolvedImage} alt={item.title} />
                         </div>
 
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          style={{ background: 'none', border: 'none', color: '#FF6B6B', cursor: 'pointer', padding: 4 }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {/* Info and controls */}
+                        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                          <h4 style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 3px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</h4>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-primary)' }}>R$ {item.price.toFixed(2)}</span>
+                        </div>
+
+                        {/* Quantity Controls & Trash */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--input-bg)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 2 }}>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', width: 22, height: 22, display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0 }}
+                            >
+                              <Minus size={10} />
+                            </button>
+                            <span style={{ fontSize: 11.5, fontWeight: 900, color: 'var(--text-primary)', width: 20, textAlign: 'center' }}>{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', width: 22, height: 22, display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0 }}
+                            >
+                              <Plus size={10} />
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            style={{ background: 'none', border: 'none', color: '#FF6B6B', cursor: 'pointer', padding: 4 }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
                     );
                   })}
                 </div>

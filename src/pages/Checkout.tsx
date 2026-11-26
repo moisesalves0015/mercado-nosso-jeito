@@ -335,8 +335,7 @@ export function Checkout() {
     <div style={{ position: 'relative', minHeight: '100vh', fontFamily: "'Manrope','Outfit',sans-serif" }}>
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', paddingBottom: step !== 'success' ? 140 : 90 }}>
         {/* Topbar */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 1000, background: 'var(--bg-secondary)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-gold)' }}>
-          <div className="safe-area-top-bg" style={{ background: 'var(--bg-secondary)' }} />
+        <div className="page-topbar-sticky">
           <div className="commerce-topbar-inner">
             <button onClick={() => {
               if (step === 'payment') setStep('delivery');
